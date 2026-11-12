@@ -6,7 +6,7 @@ Ce document prépare l'architecture, la séparation et les protections des envir
 - Ticket parent : CHAN-92 – Définir le workflow Git, les releases et les déploiements.
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : architecture des environnements, séparation des données et des secrets, GitHub Environments, données de recette, accès, sauvegardes et contrôles.
-- Hors portée : procédure et automatisation des déploiements, déclencheur de déploiement et rollback. Ces sujets relèvent de CHAN-97.
+- Hors portée : recette fonctionnelle, migrations et rollback (CHAN-98). Les déploiements automatisés sont définis dans [`deployment-process.md`](deployment-process.md) (CHAN-97).
 
 Ce document est préparatoire. Il ne crée aucun environnement, ne configure aucun serveur, ne crée aucune base de données, aucun sous-domaine, aucun secret et ne déclenche aucun déploiement.
 
@@ -23,20 +23,22 @@ Ce document est préparatoire. Il ne crée aucun environnement, ne configure auc
 
 ## État constaté
 
-État vérifié le 12 novembre 2026 :
+État vérifié le 12 novembre 2026, lors de CHAN-96 :
 
 - le dépôt `C2ME-ORGA/chantier` est **public** ;
 - aucun GitHub Environment `staging` ou `production` n'est configuré ;
 - aucun secret ni aucune variable d'action ne sont configurés au niveau du dépôt ;
-- aucun workflow de déploiement n'existe dans `.github/workflows/` ;
-- le domaine de production n'est présent ni dans la documentation ni dans la configuration du dépôt ;
+- aucun workflow de déploiement n'existait dans `.github/workflows/` à cette date ;
+- le domaine de production n'était présent ni dans la documentation ni dans la configuration du dépôt ;
 - le domaine de staging est fourni par le ticket : `https://chantier-staging.c2me.ovh`.
+
+Depuis CHAN-97, les workflows `deploy-staging` et `deploy-production` existent et sont documentés dans [`deployment-process.md`](deployment-process.md). Les environnements GitHub, variables et secrets restent à créer manuellement.
 
 Aucune connexion au serveur, à aaPanel, à MySQL ou aux environnements GitHub n'a été effectuée pour produire ce document.
 
-Les documents `AGENTS.md`, `README.md`, `docs/development/git-workflow.md`, `docs/development/release-process.md`, `.env.example`, `.github/workflows/tests.yml` et `.github/workflows/release.yml` ont été examinés ; aucun domaine de production n'y figure.
+Les documents `AGENTS.md`, `README.md`, `docs/development/git-workflow.md`, `docs/development/release-process.md`, `.env.example`, `.github/workflows/tests.yml` et `.github/workflows/release.yml` ont été examinés lors de CHAN-96.
 
-> **Domaine de production :** il doit être relevé dans aaPanel ou dans la configuration existante avant toute intervention. Aucun domaine de production n'est déduit par convention dans ce document. Tant qu'il n'est pas confirmé, il est désigné par le placeholder `<domaine-production>`.
+> **Domaine de production :** il est fourni par le ticket CHAN-97 : `https://chantier.c2me.fr`. Il doit néanmoins être confirmé dans aaPanel avant la configuration du vhost et du certificat TLS.
 
 ## Architecture cible
 
@@ -49,7 +51,7 @@ Serveur Ubuntu 24.04 / aaPanel
 │   ├── base chantier_staging
 │   ├── utilisateur MySQL dédié
 │   └── .env, stockage, logs, workers et tâches planifiées dédiés
-└── <domaine-production>
+└── chantier.c2me.fr
     ├── /www/wwwroot/chantier
     ├── base chantier_production
     ├── utilisateur MySQL dédié
@@ -70,19 +72,19 @@ Les deux environnements partagent le serveur physique, mais aucun élément d'ex
 | Élément | Staging | Production |
 | --- | --- | --- |
 | Rôle | Validation fonctionnelle et recette. | Exploitation réelle. |
-| URL | `https://chantier-staging.c2me.ovh` | `<domaine-production>` à confirmer |
-| Répertoire cible proposé | `/www/wwwroot/chantier-staging` | `/www/wwwroot/chantier` |
-| DocumentRoot aaPanel | `/www/wwwroot/chantier-staging/public` | `/www/wwwroot/chantier/public` |
+| URL | `https://chantier-staging.c2me.ovh` | `https://chantier.c2me.fr` |
+| Répertoire cible | `/www/wwwroot/chantier-staging` | `/www/wwwroot/chantier` |
+| DocumentRoot aaPanel | `/www/wwwroot/chantier-staging/current/public` | `/www/wwwroot/chantier/current/public` |
 | Base de données | `chantier_staging` | `chantier_production` |
 | Utilisateur MySQL | Dédié au staging, distinct. | Dédié à la production, distinct. |
-| Fichier `.env` | `/www/wwwroot/chantier-staging/.env` | `/www/wwwroot/chantier/.env` |
-| Stockage applicatif | `/www/wwwroot/chantier-staging/storage` | `/www/wwwroot/chantier/storage` |
-| Journaux | `/www/wwwroot/chantier-staging/storage/logs` | `/www/wwwroot/chantier/storage/logs` |
+| Fichier `.env` | `/www/wwwroot/chantier-staging/shared/.env` | `/www/wwwroot/chantier/shared/.env` |
+| Stockage applicatif | `/www/wwwroot/chantier-staging/shared/storage` | `/www/wwwroot/chantier/shared/storage` |
+| Journaux | `/www/wwwroot/chantier-staging/shared/storage/logs` | `/www/wwwroot/chantier/shared/storage/logs` |
 | Données | Fictives ou anonymisées. | Données réelles. |
 | Accès HTTP | Réservé à l'équipe C2ME. | Application publique, administration protégée. |
 | GitHub Environment | `staging` | `production` |
 
-Les chemins de production et de staging sont des cibles proposées. Ils doivent être confirmés dans aaPanel avant toute création ou migration de site. Le répertoire cible Laravel reste la racine de l'installation ; le DocumentRoot du site aaPanel doit pointer vers son sous-répertoire `public`, jamais vers la racine Laravel. Le domaine de production doit être renseigné avant la configuration du vhost et du certificat TLS.
+Les répertoires et le domaine de production restent à confirmer dans aaPanel avant la création du site. Le répertoire cible Laravel est la racine de l'installation ; le DocumentRoot du site aaPanel pointe vers `current/public`, jamais vers la racine Laravel. Depuis CHAN-97, l'installation suit la structure `releases/`, `shared/` et `current` décrite dans [`deployment-process.md`](deployment-process.md).
 
 ## Séparation MySQL
 
@@ -111,17 +113,19 @@ Une restauration de sauvegarde de production vers staging est interdite sans ano
 
 ## Séparation des fichiers `.env`
 
-Chaque installation dispose de son propre fichier `.env`, à la racine de son répertoire cible :
+Chaque installation dispose de son propre fichier `.env`, dans son répertoire `shared/` :
 
-- `/www/wwwroot/chantier-staging/.env` ;
-- `/www/wwwroot/chantier/.env`.
+- `/www/wwwroot/chantier-staging/shared/.env` ;
+- `/www/wwwroot/chantier/shared/.env`.
+
+Chaque release active y accède par un lien symbolique interne. Le fichier partagé n'est jamais remplacé par un déploiement.
 
 Règles :
 
 - les fichiers `.env` ne sont jamais versionnés dans le dépôt ;
 - ils ne sont jamais copiés d'un environnement à l'autre ;
 - ils ne sont jamais échangés par lien symbolique ;
-- ils sont lisibles uniquement par l'utilisateur du site et l'administrateur, avec des permissions restrictives ;
+- ils sont lisibles uniquement par l'utilisateur du site et l'administrateur, avec des permissions restrictives ; l'écriture par le groupe et tout accès des autres utilisateurs sont interdits (`600` ou `640`) ;
 - chaque environnement possède une `APP_KEY` distincte ;
 - les secrets de production ne sont jamais utilisés pour staging et inversement ;
 - un déploiement ne doit pas écraser ni afficher le contenu du `.env` ;
@@ -131,9 +135,9 @@ Règles :
 
 ### Fichiers et stockage
 
-- Chaque installation utilise son propre répertoire `storage/`, sous son répertoire cible.
-- Les fichiers privés restent dans `storage/app/private` et les fichiers publics dans `storage/app/public`.
-- Le lien `public/storage` est créé dans chaque installation et pointe uniquement vers son propre `storage/app/public`.
+- Chaque installation utilise son propre répertoire `shared/storage/`, sous son répertoire cible.
+- Les fichiers privés restent dans `shared/storage/app/private` et les fichiers publics dans `shared/storage/app/public`.
+- Le lien `public/storage` est créé dans chaque release et pointe uniquement vers le stockage partagé de son propre environnement.
 - Aucun lien symbolique ne doit pointer de staging vers la production, ou inversement.
 - Les documents et pièces jointes de production ne sont jamais copiés dans staging sans anonymisation.
 - Si un stockage objet est ajouté plus tard, chaque environnement doit utiliser un bucket ou un préfixe distinct et des identifiants distincts.
@@ -171,8 +175,8 @@ Les cookies de session sont limités au domaine de l'environnement et configuré
 Chaque environnement possède sa propre entrée cron pour Laravel :
 
 ```text
-* * * * * cd /www/wwwroot/chantier-staging && <php> artisan schedule:run >> /www/wwwroot/chantier-staging/storage/logs/scheduler.log 2>&1
-* * * * * cd /www/wwwroot/chantier && <php> artisan schedule:run >> /www/wwwroot/chantier/storage/logs/scheduler.log 2>&1
+* * * * * cd /www/wwwroot/chantier-staging/current && <php> artisan schedule:run >> /www/wwwroot/chantier-staging/shared/storage/logs/scheduler.log 2>&1
+* * * * * cd /www/wwwroot/chantier/current && <php> artisan schedule:run >> /www/wwwroot/chantier/shared/storage/logs/scheduler.log 2>&1
 ```
 
 `<php>` doit être remplacé par le binaire PHP 8.4 validé sur le serveur. La commande doit s'exécuter avec l'utilisateur du site concerné et depuis le bon répertoire.
@@ -194,7 +198,7 @@ Ces variables sont définies dans le `.env` de chaque installation.
 | `APP_NAME` | `C2ME Chantier` | `C2ME Chantier` | Nom affiché de l'application. |
 | `APP_ENV` | `staging` | `production` | Environnement Laravel. |
 | `APP_DEBUG` | `false` | `false` | Aucun détail d'erreur exposé publiquement. |
-| `APP_URL` | `https://chantier-staging.c2me.ovh` | `https://<domaine-production>` | URL de base et génération des liens. |
+| `APP_URL` | `https://chantier-staging.c2me.ovh` | `https://chantier.c2me.fr` | URL de base et génération des liens. |
 | `APP_MAINTENANCE_DRIVER` | `file` | `file` | Mode maintenance local à l'installation. |
 | `LOG_CHANNEL` | `stack` | `stack` | Canal de journalisation. |
 | `LOG_STACK` | `daily` | `daily` | Rotation quotidienne recommandée. |
@@ -205,7 +209,7 @@ Ces variables sont définies dans le `.env` de chaque installation.
 | `DB_DATABASE` | `chantier_staging` | `chantier_production` | Base dédiée à l'environnement. |
 | `DB_USERNAME` | Utilisateur MySQL dédié au staging. | Utilisateur MySQL dédié à la production. | Compte applicatif à privilèges limités. |
 | `SESSION_DRIVER` | `database` ou `redis`. | `database` ou `redis`. | Stockage des sessions, isolé par base ou Redis. |
-| `SESSION_DOMAIN` | `chantier-staging.c2me.ovh` | `<domaine-production>` | Domaine du cookie de session. |
+| `SESSION_DOMAIN` | `chantier-staging.c2me.ovh` | `chantier.c2me.fr` | Domaine du cookie de session. |
 | `SESSION_SECURE_COOKIE` | `true` | `true` | Cookie uniquement transmis en HTTPS. |
 | `SESSION_COOKIE` | Nom distinct du staging. | Nom distinct de la production. | Évite toute ambiguïté de cookie. |
 | `CACHE_STORE` | `database` ou `redis`. | `database` ou `redis`. | Stockage du cache. |
@@ -250,7 +254,7 @@ Règles :
 
 ### Variables et secrets GitHub Environment
 
-Les noms ci-dessous sont une **cible prévisionnelle** pour le futur workflow de déploiement de CHAN-97. Ils ne sont pas encore créés et ne constituent pas une configuration de déploiement validée.
+Les noms ci-dessous sont la configuration retenue par CHAN-97. Les environnements ne sont pas encore créés : leur création et le renseignement de ces valeurs restent manuels.
 
 Variables non sensibles, définies par environnement :
 
@@ -258,7 +262,10 @@ Variables non sensibles, définies par environnement :
 | --- | --- | --- | --- |
 | `DEPLOY_ENVIRONMENT` | `staging` | `production` | Environnement ciblé par le workflow. |
 | `DEPLOY_PATH` | `/www/wwwroot/chantier-staging` | `/www/wwwroot/chantier` | Répertoire de l'installation. |
-| `APP_URL` | `https://chantier-staging.c2me.ovh` | `https://<domaine-production>` | URL publique de contrôle. |
+| `APP_URL` | `https://chantier-staging.c2me.ovh` | `https://chantier.c2me.fr` | URL publique de contrôle. |
+| `DEPLOY_PHP_BIN` | Binaire PHP 8.4 à relever et confirmer sur le serveur. | Binaire PHP 8.4 à relever et confirmer sur le serveur. | Interpréteur des commandes Artisan. |
+| `DEPLOY_ROUTE_CACHE` | `true` ou `false`. | `true` ou `false`. | Active `route:cache` après vérification de compatibilité. |
+| `DEPLOY_QUEUE_RESTART` | `false` par défaut. | `false` par défaut. | Active `queue:restart` uniquement si des workers sont supervisés. |
 
 Secrets, définis par environnement et jamais au niveau du dépôt :
 
@@ -270,7 +277,7 @@ Secrets, définis par environnement et jamais au niveau du dépôt :
 | `SSH_PRIVATE_KEY` | Clé de déploiement staging. | Clé de déploiement production. | Authentification SSH par clé. |
 | `SSH_KNOWN_HOSTS` | Empreinte du serveur pour staging. | Empreinte du serveur pour production. | Vérification de l'hôte SSH. |
 
-Les secrets applicatifs (`APP_KEY`, `DB_PASSWORD`, `MAIL_PASSWORD`, etc.) restent dans le `.env` du serveur et ne sont pas dupliqués dans GitHub par défaut. Si CHAN-97 choisit de gérer certains secrets via GitHub, cette décision devra être documentée et les secrets devront rester scoped à l'environnement concerné.
+Les secrets applicatifs (`APP_KEY`, `DB_PASSWORD`, `MAIL_PASSWORD`, etc.) restent dans le `.env` du serveur et ne sont pas dupliqués dans GitHub. CHAN-97 ne les déplace pas vers GitHub : seuls les secrets de connexion SSH sont stockés dans les environnements GitHub.
 
 ## Gestion des données de recette
 
@@ -328,7 +335,7 @@ Les environnements GitHub sont prévus mais ne sont pas configurés à ce jour. 
 | Délai d'attente | Aucun. | Aucun délai supplémentaire requis. |
 | Secrets et variables | Propres au staging. | Propres à la production. |
 | Accès aux secrets | Immédiat pour un job autorisé. | Uniquement après approbation. |
-| Restriction de branche ou de tag | À définir dans CHAN-97. | À définir dans CHAN-97. |
+| Restriction de branche ou de tag | Tags `v*-rc.*`. | Tags `v*` (release publiée). |
 
 ### Staging
 
@@ -347,15 +354,12 @@ Les environnements GitHub sont prévus mais ne sont pas configurés à ce jour. 
 
 ### Restriction de branche ou de tag
 
-Aucune restriction définitive de branche ou de tag ne doit être imposée à `production` dans CHAN-96.
+CHAN-97 a retenu les déclencheurs suivants, documentés dans [`deployment-process.md`](deployment-process.md) :
 
-CHAN-97 doit décider si le déclencheur de déploiement est :
+- **staging** : push d'un tag `vX.Y.Z-rc.N` rattaché au HEAD de `develop` ;
+- **production** : publication d'une release stable `vX.Y.Z` rattachée au HEAD de `main`, avec une référence `Staging-Candidate` vérifiable.
 
-- une branche, par exemple `main` ;
-- un tag stable, par exemple `vX.Y.Z` ;
-- un autre mécanisme explicitement documenté.
-
-Tant que cette décision n'est pas prise, la règle de déploiement de l'environnement `production` reste à finaliser. Il est interdit de supposer que `main` ou un tag stable est déjà le déclencheur officiel.
+La restriction de déploiement de l'environnement `production` doit être limitée aux tags `v*` lorsque GitHub le permet. Une fusion dans `main` ou un tag ne déploie rien sans release publiée et sans artefact staging valide.
 
 ### Dépôt public
 
@@ -390,7 +394,7 @@ Le dépôt étant public :
 
 ## Contrôles de validation
 
-Les contrôles suivants doivent être exécutés lors de la mise en place des environnements, puis vérifiés avant le premier déploiement de CHAN-97.
+Les contrôles suivants doivent être exécutés lors de la mise en place des environnements, puis vérifiés avant le premier déploiement automatique.
 
 ### Configuration serveur
 
@@ -428,25 +432,25 @@ Les contrôles suivants doivent être exécutés lors de la mise en place des en
 - [ ] Le bypass administrateur est désactivé pour `production`.
 - [ ] Les secrets de staging et de production sont distincts et scoped aux bons environnements.
 - [ ] Aucun secret de production n'est configuré au niveau du dépôt.
-- [ ] La restriction de branche ou de tag de `production` reste à finaliser dans CHAN-97.
-- [ ] Aucun workflow de déploiement n'est créé dans CHAN-96.
+- [ ] Les workflows `deploy-staging` et `deploy-production` référencent explicitement l'environnement correspondant.
+- [ ] La restriction de branche ou de tag de `production` est limitée aux tags `v*` lorsque GitHub le permet.
 
 ### Dépôt
 
 - [ ] Aucun secret n'est présent dans le dépôt ou dans l'historique.
 - [ ] Les liens Markdown sont valides.
 - [ ] `git diff --check` ne signale aucune erreur.
-- [ ] Les changements restent limités à la documentation des environnements.
 
 ## Points à finaliser
 
-- Identifier le domaine de production existant dans aaPanel et le reporter dans ce document.
-- Confirmer les chemins définitifs, les utilisateurs système et les certificats TLS.
-- Créer les environnements GitHub `staging` et `production` et configurer leurs protections.
+- Confirmer le domaine de production `chantier.c2me.fr` et les certificats TLS dans aaPanel.
+- Confirmer les chemins définitifs, les utilisateurs système et les permissions.
+- Créer les environnements GitHub `staging` et `production`, y définir les variables et secrets, et configurer les protections.
 - Confirmer l'identifiant du compte GitHub personnel de l'approbateur unique de production.
-- Décider dans CHAN-97 du déclencheur de déploiement et de la restriction de branche ou de tag associée.
-- Définir la politique de sauvegarde, de rétention et de test de restauration.
+- Relever et renseigner `DEPLOY_PHP_BIN` pour chaque environnement.
+- Vérifier l'empreinte SSH hors bande et renseigner `SSH_KNOWN_HOSTS`.
+- Définir la politique de sauvegarde, de rétention et de test de restauration (CHAN-98).
 - Définir la méthode de protection HTTP du staging.
 - Décider si Redis est utilisé et, le cas échéant, attribuer les bases et préfixes.
 - Décrire la procédure d'anonymisation des données de recette.
-- Mettre en place le workflow de déploiement dans CHAN-97, sans le créer dans CHAN-96.
+- Confirmer les workers supervisés avant d'activer `DEPLOY_QUEUE_RESTART`.
