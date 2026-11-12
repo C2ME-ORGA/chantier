@@ -68,10 +68,18 @@ Ne pas supposer qu'une dépendance est installée : vérifier `composer.json`, `
 
 ## Git et tickets
 
-- Associer les branches et Pull Requests à une clé Jira : `feature/CHAN-123-description`, `bugfix/CHAN-123-description`, `hotfix/CHAN-123-description`.
-- Préférer des commits atomiques avec des messages explicites.
-- Ne pas contourner les revues ou les contrôles CI.
+La référence détaillée est [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Les règles ci-dessous sont impératives.
+
+- Ne jamais pousser directement sur `main` ou `develop` : toute modification passe par une Pull Request.
+- Créer `feature/CHAN-123-description` et `bugfix/CHAN-123-description` depuis `develop`, et `hotfix/CHAN-123-description` depuis `main`.
+- Utiliser un préfixe et une clé Jira obligatoires, avec une description courte en minuscules séparée par des tirets.
+- Respecter les Conventional Commits : `type(scope): description`, avec un scope obligatoire et un type parmi `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `build`, `ci` et `perf`.
+- Ouvrir une Pull Request vers la branche cible avec la référence Jira, le résumé des changements, les tests et contrôles effectués.
+- Ne fusionner qu'après le succès du contrôle GitHub Actions `ci`, sans contourner les protections ni les contrôles.
+- Supprimer la branche temporaire après fusion. Après un hotfix, synchroniser `develop` depuis `main` via une Pull Request.
+- Ne pas utiliser de force-push et ne pas supprimer `main` ou `develop`.
 - Ne pas modifier le périmètre d'un ticket sans le signaler.
+- Ne pas inventer ni appliquer de procédure de release ou de déploiement : ces sujets relèvent de CHAN-92.
 - Ne jamais affirmer qu'une tâche, un test, un déploiement ou une revue a été réalisé sans preuve.
 
 ## Méthode de travail
