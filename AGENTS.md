@@ -68,7 +68,7 @@ Ne pas supposer qu'une dépendance est installée : vérifier `composer.json`, `
 
 ## Git et tickets
 
-La référence détaillée est [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Les règles ci-dessous sont impératives.
+La référence détaillée pour Git est [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Celle pour les versions et les releases est [`docs/development/release-process.md`](docs/development/release-process.md). Les règles ci-dessous sont impératives.
 
 - Ne jamais pousser directement sur `main` ou `develop` : toute modification passe par une Pull Request.
 - Créer `feature/CHAN-123-description` et `bugfix/CHAN-123-description` depuis `develop`, et `hotfix/CHAN-123-description` depuis `main`.
@@ -79,7 +79,9 @@ La référence détaillée est [`docs/development/git-workflow.md`](docs/develop
 - Supprimer la branche temporaire après fusion. Après un hotfix, synchroniser `develop` depuis `main` via une Pull Request.
 - Ne pas utiliser de force-push et ne pas supprimer `main` ou `develop`.
 - Ne pas modifier le périmètre d'un ticket sans le signaler.
-- Ne pas inventer ni appliquer de procédure de release ou de déploiement : ces sujets relèvent de CHAN-92.
+- Respecter le processus de versionnement et de release documenté dans [`docs/development/release-process.md`](docs/development/release-process.md).
+- Ne jamais déplacer, réutiliser ou supprimer un tag de release publié.
+- Ne pas automatiser ni réaliser de déploiement : ces sujets relèvent de CHAN-96 et CHAN-97.
 - Ne jamais affirmer qu'une tâche, un test, un déploiement ou une revue a été réalisé sans preuve.
 
 ## Méthode de travail

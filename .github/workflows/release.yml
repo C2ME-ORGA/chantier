@@ -1,0 +1,109 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.[1-9][0-9]*)?$ ]]; then
+            echo "Tag de release invalide : $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          if [[ "$(git cat-file -t "refs/tags/${RELEASE_TAG}")" != "tag" ]]; then
+            echo "Le tag $RELEASE_TAG doit être un tag annoté." >&2
+            exit 1
+          fi
+
+          if [[ "$RELEASE_TAG" == *-rc.* ]]; then
+            release_type="release candidate"
+            target_ref="origin/develop"
+            target_label="develop"
+          else
+            release_type="stable"
+            target_ref="origin/main"
+            target_label="main"
+          fi
+
+          if ! git rev-parse -q --verify "${target_ref}^{commit}" >/dev/null; then
+            echo "Impossible de résoudre la référence $target_ref." >&2
+            exit 1
+          fi
+
+          tag_sha="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          target_sha="$(git rev-parse "${target_ref}^{commit}")"
+
+          if [[ "$tag_sha" != "$target_sha" ]]; then
+            echo "Le tag $release_type $RELEASE_TAG pointe sur le commit $tag_sha, alors que $target_ref pointe sur le commit $target_sha." >&2
+            echo "Créez le tag sur le HEAD actuel de $target_label, sans déplacer un tag déjà publié." >&2
+            exit 1
+          fi
+
+      - name: Generate release notes
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          bash .github/scripts/generate-release-notes.sh \
+            "$RELEASE_TAG" \
+            "$RUNNER_TEMP/release-notes.md"
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          NOTES_FILE: ${{ runner.temp }}/release-notes.md
+        run: |
+          if [[ "$RELEASE_TAG" == *-rc.* ]]; then
+            release_flags=(--prerelease)
+          else
+            release_flags=(--draft)
+          fi
+
+          if gh release view "$RELEASE_TAG" --repo "$REPO" >/dev/null 2>&1; then
+            if [[ "$RELEASE_TAG" == *-rc.* ]]; then
+              gh release edit "$RELEASE_TAG" \
+                --repo "$REPO" \
+                --title "$RELEASE_TAG" \
+                --notes-file "$NOTES_FILE" \
+                --prerelease
+            else
+              gh release edit "$RELEASE_TAG" \
+                --repo "$REPO" \
+                --title "$RELEASE_TAG" \
+                --notes-file "$NOTES_FILE"
+            fi
+          else
+            gh release create "$RELEASE_TAG" \
+              --repo "$REPO" \
+              --verify-tag \
+              --title "$RELEASE_TAG" \
+              --notes-file "$NOTES_FILE" \
+              "${release_flags[@]}"
+          fi
