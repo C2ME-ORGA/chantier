@@ -20,6 +20,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Run release automation tests
+        run: bash .github/scripts/tests/test-release-automation.sh
+
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:

@@ -79,7 +79,7 @@ Les commits suivent les [Conventional Commits](https://www.conventionalcommits.o
 
 Les protections `protect-main` et `protect-develop` sont actives : les pushes directs, le force-push et la suppression des branches protégées sont bloqués, sans bypass.
 
-Les conventions détaillées (nommage, cycle de vie des branches, commits, Pull Requests et livraison) sont documentées dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Le workflow de release et de déploiement reste à définir dans le ticket CHAN-92.
+Les conventions détaillées (nommage, cycle de vie des branches, commits, Pull Requests et livraison) sont documentées dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Le versionnement Semantic Versioning, les tags (`vX.Y.Z` et `vX.Y.Z-rc.N`), les notes de version et le processus de publication sont définis dans [`docs/development/release-process.md`](docs/development/release-process.md). Les déploiements relèvent de CHAN-96 et CHAN-97.
 
 ## Suivi
 
