@@ -65,15 +65,21 @@ Ne jamais versionner `.env`, secrets, clés privées, exports de base de donnée
 
 Le projet suivra une architecture **Modular Monolith**. Les domaines métier seront isolés dans `modules/`, avec des contrats explicites et des règles de dépendance documentées. Le répertoire `app/` conservera le bootstrap Laravel et les éléments transverses nécessaires.
 
-## Workflow Git cible
+## Workflow Git
 
-- `main` : branche de référence et releases.
-- `develop` : intégration continue.
-- `feature/CHAN-123-description` : nouvelles fonctionnalités.
-- `bugfix/CHAN-123-description` : corrections.
-- `hotfix/CHAN-123-description` : correctifs urgents de production.
+Le projet utilise deux branches permanentes et des branches temporaires rattachées à un ticket Jira :
 
-Les protections de branches seront activées après la mise en place de la CI et la validation du premier cycle de Pull Request.
+- `main` : branche de référence des versions de production.
+- `develop` : branche d'intégration continue.
+- `feature/CHAN-123-description` : nouvelles fonctionnalités, créées depuis `develop`.
+- `bugfix/CHAN-123-description` : corrections non urgentes, créées depuis `develop`.
+- `hotfix/CHAN-123-description` : correctifs urgents, créés depuis `main`.
+
+Les commits suivent les [Conventional Commits](https://www.conventionalcommits.org/) (`feat`, `fix`, `docs`, etc.). Les Pull Requests sont obligatoires vers `main` et vers `develop`, et le contrôle GitHub Actions `ci` doit être vert avant toute fusion.
+
+Les protections `protect-main` et `protect-develop` sont actives : les pushes directs, le force-push et la suppression des branches protégées sont bloqués, sans bypass.
+
+Les conventions détaillées (nommage, cycle de vie des branches, commits, Pull Requests et livraison) sont documentées dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Le workflow de release et de déploiement reste à définir dans le ticket CHAN-92.
 
 ## Suivi
 
