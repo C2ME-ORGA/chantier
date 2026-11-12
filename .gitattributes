@@ -1,0 +1,18 @@
+* text=auto eol=lf
+
+*.php text diff=php
+*.js text
+*.css text
+*.scss text
+*.json text
+*.md text
+*.yml text
+*.yaml text
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.zip binary
