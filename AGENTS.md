@@ -1,0 +1,84 @@
+# AGENTS.md — C2ME Chantier
+
+## Objectif
+
+Construire une application de gestion de chantiers pour SARL C2ME. Toute modification doit préserver la cohérence métier, la sécurité des données et la maintenabilité.
+
+## Stack de référence
+
+- PHP 8.4
+- Laravel 13
+- Livewire 4
+- Filament 5
+- Bootstrap 5 et Vite
+- MySQL / MariaDB
+- Redis lorsque nécessaire
+- Pest, Laravel Pint et Larastan
+
+Ne pas supposer qu'une dépendance est installée : vérifier `composer.json`, `package.json` et le code existant avant de l'utiliser. Ne pas inventer d'API de framework ou de package ; consulter les sources et versions réellement installées.
+
+## Architecture
+
+- Architecture cible : Modular Monolith.
+- Les domaines métier sont isolés dans `modules/`.
+- Les dépendances entre modules doivent être explicites et orientées vers des contrats stables.
+- Éviter les dépendances circulaires et les accès directs aux tables d'un autre domaine.
+- Le code transversal doit rester limité et justifié.
+- Ne pas introduire de microservices sans décision d'architecture documentée.
+
+## Règles PHP / Laravel
+
+- Respecter les conventions Laravel et le style validé par Laravel Pint.
+- Utiliser les Form Requests, Policies, Gates et validations serveur adaptés au contexte.
+- Préférer les transactions pour les opérations métier multi-écritures.
+- Les opérations financières et les changements d'état sensibles doivent être validés côté serveur.
+- Les migrations doivent être sûres, réversibles lorsque possible et compatibles avec une livraison progressive.
+- Ne jamais exposer de données sensibles dans les logs, réponses ou exceptions.
+
+## Sécurité
+
+- Appliquer le principe du moindre privilège.
+- Vérifier l'autorisation côté serveur pour chaque action sensible.
+- Ne jamais faire confiance aux données provenant du navigateur, y compris en mode offline.
+- Protéger les fichiers privés par une autorisation explicite.
+- Ne jamais committer de secrets, tokens, mots de passe ou données personnelles réelles.
+
+## Frontend
+
+- Utiliser Vite pour les assets.
+- Bootstrap 5 est le socle CSS cible.
+- Éviter d'ajouter un second framework CSS ou JavaScript sans décision documentée.
+- Préserver l'accessibilité, la validation et les états de chargement/erreur.
+- Ne pas introduire de JavaScript inline inutile ; privilégier des modules dédiés.
+
+## Tests et qualité
+
+- Écrire des tests Pest pour les comportements métier et les régressions.
+- Tester les autorisations, validations, cas limites et échecs.
+- Exécuter Pint, les tests, Larastan et le build frontend lorsqu'ils sont disponibles.
+- Ne pas déclarer un contrôle réussi s'il n'a pas été exécuté.
+- Une CI verte est un prérequis à la fusion.
+
+## Données et mode hors connexion
+
+- Toute synchronisation offline doit être idempotente et traçable.
+- Utiliser des identifiants d'opération uniques et une stratégie explicite de résolution des conflits.
+- Ne pas utiliser un mécanisme générique « last-write-wins » pour les données financières ou les validations métier.
+- Le serveur reste l'autorité pour les calculs, droits et transitions d'état.
+
+## Git et tickets
+
+- Associer les branches et Pull Requests à une clé Jira : `feature/CHAN-123-description`, `bugfix/CHAN-123-description`, `hotfix/CHAN-123-description`.
+- Préférer des commits atomiques avec des messages explicites.
+- Ne pas contourner les revues ou les contrôles CI.
+- Ne pas modifier le périmètre d'un ticket sans le signaler.
+- Ne jamais affirmer qu'une tâche, un test, un déploiement ou une revue a été réalisé sans preuve.
+
+## Méthode de travail
+
+1. Examiner le code et la documentation existants.
+2. Identifier le ticket et les critères d'acceptation.
+3. Proposer une modification minimale et cohérente.
+4. Ajouter ou adapter les tests.
+5. Exécuter les contrôles pertinents.
+6. Résumer les fichiers modifiés, les résultats et les limites restantes.
