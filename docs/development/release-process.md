@@ -6,13 +6,14 @@ Ce document définit le versionnement, les tags, les notes de version et le proc
 - Ticket parent : CHAN-92 – Définir le workflow Git, les releases et les déploiements.
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : versionnement de l'application, tags Git, notes de version et releases GitHub.
-- Hors portée : environnements de recette, de préproduction et de production, déploiements et rollback. Ces sujets relèvent de CHAN-96 et CHAN-97.
+- Hors portée : déploiements et rollback (CHAN-97). Les environnements de recette et de production et leurs protections sont définis dans [`environments.md`](environments.md) (CHAN-96).
 
 ## Sources de vérité
 
 | Sujet | Référence |
 | --- | --- |
 | Branches, commits et Pull Requests | [`git-workflow.md`](git-workflow.md) |
+| Environnements et protections | [`environments.md`](environments.md) |
 | Versionnement, tags et releases | Ce document |
 | Workflow de release | [`.github/workflows/release.yml`](../../.github/workflows/release.yml) |
 | Génération des notes de version | [`.github/scripts/generate-release-notes.sh`](../../.github/scripts/generate-release-notes.sh) |
@@ -28,7 +29,7 @@ En cas de divergence entre ce document et les tags effectivement publiés, les t
 - Un tag publié est **immuable** : il n'est jamais déplacé, réutilisé ni supprimé.
 - La sélection de version, la création du tag et la publication d'une release stable sont des décisions humaines explicites.
 - Les notes de version sont générées automatiquement à partir des commits, puis relues avant la publication d'une version stable.
-- Aucun déploiement n'est déclenché par un tag ou par une release. Le déploiement est traité dans CHAN-96 et CHAN-97.
+- Aucun déploiement n'est déclenché par un tag ou par une release. Les environnements sont définis dans [`environments.md`](environments.md) (CHAN-96) et le déploiement relève de CHAN-97.
 
 ## Contrat public
 
@@ -225,7 +226,7 @@ Le push du tag déclenche le workflow de release. Celui-ci :
 2. génère les notes de version ;
 3. crée ou met à jour une release GitHub marquée **pre-release**.
 
-La release candidate est ensuite validée dans l'environnement de recette. Le déploiement de cet environnement relève de CHAN-96 et CHAN-97.
+La release candidate est ensuite validée dans l'environnement de recette défini dans [`environments.md`](environments.md). Le déploiement de cet environnement relève de CHAN-97.
 
 Si une correction est nécessaire :
 
@@ -313,7 +314,7 @@ Après un hotfix, la prochaine version issue de `develop` doit être calculée �
 - Supprimer les branches temporaires fusionnées.
 - Vérifier que la release GitHub est publiée, avec le bon tag et les bonnes notes.
 - Ne créer aucun tag stable sur `develop` : la version stable est toujours taguée sur `main`.
-- Ne déclencher aucun déploiement manuel en dehors du processus défini par CHAN-96 et CHAN-97.
+- Ne déclencher aucun déploiement manuel en dehors du processus défini par CHAN-97.
 
 ## Validation avant publication stable
 
@@ -358,7 +359,8 @@ Le workflow de release ne rejoue pas les tests. Le succès de `ci` sur le commit
 
 ## Points hors périmètre et limites connues
 
-- Les environnements de recette, de préproduction et de production, les déploiements et le rollback relèvent de CHAN-96 et CHAN-97.
+- Les environnements de recette et de production et leurs protections sont définis dans [`environments.md`](environments.md) (CHAN-96).
+- Les déploiements et le rollback relèvent de CHAN-97.
 - Aucune protection de tag n'est configurée (vérifié le 12 novembre 2026). Les tags ne sont donc protégés que par la convention et les droits des collaborateurs.
 - La version n'est pas exposée par l'application à l'exécution. Le tag reste la source de vérité.
 - Aucun fichier `CHANGELOG.md` n'est maintenu. Les releases GitHub portent les notes publiées.

@@ -79,7 +79,16 @@ Les commits suivent les [Conventional Commits](https://www.conventionalcommits.o
 
 Les protections `protect-main` et `protect-develop` sont actives : les pushes directs, le force-push et la suppression des branches protégées sont bloqués, sans bypass.
 
-Les conventions détaillées (nommage, cycle de vie des branches, commits, Pull Requests et livraison) sont documentées dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Le versionnement Semantic Versioning, les tags (`vX.Y.Z` et `vX.Y.Z-rc.N`), les notes de version et le processus de publication sont définis dans [`docs/development/release-process.md`](docs/development/release-process.md). Les déploiements relèvent de CHAN-96 et CHAN-97.
+Les conventions détaillées (nommage, cycle de vie des branches, commits, Pull Requests et livraison) sont documentées dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Le versionnement Semantic Versioning, les tags (`vX.Y.Z` et `vX.Y.Z-rc.N`), les notes de version et le processus de publication sont définis dans [`docs/development/release-process.md`](docs/development/release-process.md). Les environnements de recette et de production, leur séparation et leurs protections sont décrits dans [`docs/development/environments.md`](docs/development/environments.md). Les déploiements relèvent de CHAN-97.
+
+## Environnements
+
+Le projet prévoit deux environnements sur un même serveur Ubuntu 24.04 / aaPanel :
+
+- `staging` : recette, données fictives ou anonymisées, accès réservé à l'équipe C2ME.
+- `production` : données réelles et application publique.
+
+Leur architecture, leur isolation, les variables et secrets attendus, les protections GitHub et les contrôles de validation sont documentés dans [`docs/development/environments.md`](docs/development/environments.md). Aucun workflow de déploiement n'est défini dans CHAN-96 ; les déploiements relèvent de CHAN-97.
 
 ## Suivi
 

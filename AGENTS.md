@@ -81,7 +81,8 @@ La référence détaillée pour Git est [`docs/development/git-workflow.md`](doc
 - Ne pas modifier le périmètre d'un ticket sans le signaler.
 - Respecter le processus de versionnement et de release documenté dans [`docs/development/release-process.md`](docs/development/release-process.md).
 - Ne jamais déplacer, réutiliser ou supprimer un tag de release publié.
-- Ne pas automatiser ni réaliser de déploiement : ces sujets relèvent de CHAN-96 et CHAN-97.
+- Les environnements `staging` et `production` et leurs protections sont définis dans [`docs/development/environments.md`](docs/development/environments.md) (CHAN-96). Ne jamais partager de secret, de fichier `.env`, de base de données, de stockage ou d'accès SQL entre ces environnements.
+- Ne pas automatiser ni réaliser de déploiement : cette procédure relève de CHAN-97.
 - Ne jamais affirmer qu'une tâche, un test, un déploiement ou une revue a été réalisé sans preuve.
 
 ## Méthode de travail
