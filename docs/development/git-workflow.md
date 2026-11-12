@@ -7,13 +7,14 @@ Ce document définit les conventions de branches, de commits et de Pull Requests
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : conventions applicables à toutes les contributions au dépôt.
 
-Les règles de branches, de commits et de Pull Requests décrites ici sont applicables à compter de CHAN-93. Le versionnement, les tags et le processus de release sont définis dans [`release-process.md`](release-process.md) depuis CHAN-95. Les déploiements restent hors périmètre et relèvent de CHAN-96 et CHAN-97.
+Les règles de branches, de commits et de Pull Requests décrites ici sont applicables à compter de CHAN-93. Le versionnement, les tags et le processus de release sont définis dans [`release-process.md`](release-process.md) depuis CHAN-95. Les environnements et leurs protections sont définis dans [`environments.md`](environments.md) depuis CHAN-96. Les déploiements restent hors périmètre et relèvent de CHAN-97.
 
 ## Sources de vérité
 
 | Sujet | Référence |
 | --- | --- |
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
+| Environnements et protections | [`environments.md`](environments.md) |
 | Règles impératives pour les agents et contributeurs | [`AGENTS.md`](../../AGENTS.md) |
 | Présentation du projet et démarrage local | [`README.md`](../../README.md) |
 | Contrôle d'intégration continue | [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) |
@@ -240,7 +241,7 @@ hotfix/*               ──PR──>  main     ──PR──>  develop (synch
 - Une livraison consiste à ouvrir une Pull Request de `develop` vers `main`.
 - Un hotfix est fusionné dans `main`, puis reporté dans `develop`.
 
-Ce flux décrit l'intégration du code. La sélection de version, les tags, les notes de version et la publication GitHub sont définis dans [`release-process.md`](release-process.md). Le déploiement n'est pas couvert par ce flux.
+Ce flux décrit l'intégration du code. La sélection de version, les tags, les notes de version et la publication GitHub sont définis dans [`release-process.md`](release-process.md). Les environnements sont décrits dans [`environments.md`](environments.md). Le déploiement n'est pas couvert par ce flux et relève de CHAN-97.
 
 ### Pratiques actuelles
 
@@ -255,19 +256,25 @@ Sont actuellement opérationnels :
 
 Seuls les workflows de tests [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) et de release [`.github/workflows/release.yml`](../../.github/workflows/release.yml) sont présents dans `.github/workflows/`. Le workflow de tests valide les Pull Requests et les pushes sur `main`. Le workflow de release est déclenché par un tag de release et crée la release GitHub correspondante. Aucun workflow de déploiement n'y est défini : une fusion dans `main` ou un tag ne déclenche aucun déploiement automatique.
 
+Les environnements `staging` et `production` et leurs protections GitHub sont documentés dans [`environments.md`](environments.md). Aucun environnement GitHub ni aucun déploiement n'est configuré à ce stade.
+
 ### Versionnement et releases
 
 Le versionnement Semantic Versioning, les conventions de tags, la génération des notes de version et le processus de publication sont définis dans [`release-process.md`](release-process.md).
 
+### Environnements
+
+Les environnements de recette et de production, leur séparation MySQL, leurs fichiers `.env`, leurs variables et secrets, les données de recette, les accès, les sauvegardes et les protections GitHub sont définis dans [`environments.md`](environments.md).
+
 ### Sujets restant à définir
 
-Les sujets suivants restent hors périmètre de CHAN-95 et ne doivent pas être considérés comme applicables :
+Les sujets suivants restent hors périmètre de CHAN-95 et CHAN-96 et ne doivent pas être considérés comme applicables :
 
-- environnements de recette, de préproduction et de production ;
-- procédure et automatisation des déploiements (CHAN-96 et CHAN-97) ;
-- procédure de rollback.
+- procédure et automatisation des déploiements (CHAN-97) ;
+- déclencheur exact du déploiement, branche ou tag stable (CHAN-97) ;
+- procédure de rollback (CHAN-97).
 
-Toute évolution du workflow Git ou de la release devra être reportée dans ce document, dans [`release-process.md`](release-process.md) et, si nécessaire, dans [`AGENTS.md`](../../AGENTS.md) et [`README.md`](../../README.md).
+Toute évolution du workflow Git, de la release ou des environnements devra être reportée dans ce document, dans [`release-process.md`](release-process.md), dans [`environments.md`](environments.md) et, si nécessaire, dans [`AGENTS.md`](../../AGENTS.md) et [`README.md`](../../README.md).
 
 ## Protections GitHub actives
 
