@@ -1,14 +1,14 @@
+# Normalisation des fichiers texte
 * text=auto eol=lf
 
-*.php text diff=php
-*.js text
-*.css text
-*.scss text
-*.json text
-*.md text
-*.yml text
-*.yaml text
+# Détection du langage pour les diffs Git
+*.blade.php diff=html
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.php diff=php
 
+# Fichiers binaires
 *.png binary
 *.jpg binary
 *.jpeg binary
@@ -16,3 +16,7 @@
 *.webp binary
 *.pdf binary
 *.zip binary
+
+# Exclusion des fichiers lors de git archive
+CHANGELOG.md export-ignore
+README.md export-ignore
