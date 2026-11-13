@@ -88,7 +88,7 @@ if [[ -n "$previous_tag" ]]; then
   fi
 
   if ! git merge-base --is-ancestor "refs/tags/${previous_tag}^{commit}" "refs/tags/${tag}^{commit}"; then
-    printf 'Le tag précédent %s n’est pas un ancêtre du tag %s.\n' "$previous_tag" "$tag" >&2
+    printf 'Le tag précédent %s n'"'"'est pas un ancêtre du tag %s.\n' "$previous_tag" "$tag" >&2
     exit 1
   fi
 fi
