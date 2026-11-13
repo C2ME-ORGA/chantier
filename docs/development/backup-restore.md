@@ -792,7 +792,7 @@ Ces tests sont statiques : ils ne prouvent ni le comportement MariaDB 10.11, ni 
 - refus en présence d'un lien symbolique ;
 - refus si `age` est absent ;
 - interruption par `INT` et `TERM` : code retour 130/143, aucun jeu promu, verrou et zone de travail nettoyés ;
-- interruption d'un processus enfant bloqué (`mariadb-dump`, `gzip`, `age`, `tar`) : enfant effectivement terminé avant la libération du verrou et la suppression de la zone de travail ;
+- interruption d'un processus enfant bloqué (`mariadb-dump`, `gzip`, `age`, `tar`, import `mariadb`) : enfant effectivement terminé avant la libération du verrou et la suppression de la zone de travail ;
 - verrou orphelin : refus sans confirmation, refus si le PID est vivant, refus si l'hôte diffère ou est absent, libération explicite sur le même hôte ;
 - inspection d'archives malveillantes : symlink, hardlink, FIFO, périphériques, `../`, chemin absolu, entrée hors périmètre, en-tête corrompu, archive tronquée ;
 - en-têtes PAX : global `g`, `size`, `GNU.sparse.*`, `SCHILY.xattr.*`, enregistrement mal formé, en-tête vide, métadonnées contradictoires, nom long GNU mal formé, lien long GNU refusé ;

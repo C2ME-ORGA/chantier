@@ -166,6 +166,13 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 done
 
 if ((has_query == 0)); then
+  if [[ -n "${FAKE_MYSQL_BLOCK:-}" ]]; then
+    printf '%s\n' "$$" >"${FAKE_MYSQL_BLOCK_PID:-/dev/null}"
+    trap 'printf stopped >"${FAKE_MYSQL_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+    while :; do
+      sleep 1
+    done
+  fi
   if [[ -n "${FAKE_IMPORT_LOG:-}" ]]; then
     cat >"$FAKE_IMPORT_LOG"
   else
@@ -935,6 +942,8 @@ run_with_signal() {
       pass
     else
       fail "signal $signal : la zone de travail n'a pas été nettoyée."
+      ls -la "$backup_root/incoming" >&2 || true
+      find "$backup_root/incoming" -maxdepth 2 -print >&2 2>/dev/null || true
     fi
 
     if [[ ! -e "$backup_root/.lock" ]]; then
@@ -1140,6 +1149,36 @@ else
 fi
 
 assert_dir_absent "$work_dir/restauration/child-age" 'aucune cible créée après interruption de age'
+
+# mariadb bloqué pendant l'import d'une restauration
+mysql_pid_file="$work_dir/child-mysql.pid"
+mysql_stop_file="$work_dir/child-mysql.stop"
+rm -f "$mysql_pid_file" "$mysql_stop_file"
+
+FAKE_MYSQL_BLOCK=1 FAKE_MYSQL_BLOCK_PID="$mysql_pid_file" FAKE_MYSQL_BLOCK_STOP="$mysql_stop_file" \
+  bash "$ops_dir/restore.sh" db --env staging --set "$set_id" \
+  --target-db 'chantier_restore_20261113_feedface' --identity "$work_dir/id.age" \
+  >"$work_dir/child-mysql.log" 2>&1 &
+child_main_pid=$!
+
+if wait_for_file "$mysql_pid_file"; then
+  kill -TERM "$child_main_pid" 2>/dev/null
+  wait "$child_main_pid" 2>/dev/null
+  child_status=$?
+
+  assert_child_interrupted 'mariadb import interrompu' "$child_status" '143' "$mysql_pid_file" "$mysql_stop_file"
+else
+  fail 'le double de mariadb ne s est pas bloqué pendant l import.'
+  kill -KILL "$child_main_pid" 2>/dev/null || true
+  wait "$child_main_pid" 2>/dev/null || true
+  rm -rf "$backup_root/.lock"
+fi
+
+if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
+  pass
+else
+  fail 'mariadb import interrompu : zone de travail non nettoyée.'
+fi
 
 # tar bloqué pendant l'extraction
 tar_pid_file="$work_dir/child-tar.pid"
