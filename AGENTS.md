@@ -68,7 +68,7 @@ Ne pas supposer qu'une dépendance est installée : vérifier `composer.json`, `
 
 ## Git et tickets
 
-La référence détaillée pour Git est [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Celle pour les versions et les releases est [`docs/development/release-process.md`](docs/development/release-process.md). Les règles ci-dessous sont impératives.
+La référence détaillée pour Git est [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Celle pour les versions et les releases est [`docs/development/release-process.md`](docs/development/release-process.md). Celle pour les environnements est [`docs/development/environments.md`](docs/development/environments.md) et celle pour les déploiements est [`docs/development/deployment-process.md`](docs/development/deployment-process.md). Les règles ci-dessous sont impératives.
 
 - Ne jamais pousser directement sur `main` ou `develop` : toute modification passe par une Pull Request.
 - Créer `feature/CHAN-123-description` et `bugfix/CHAN-123-description` depuis `develop`, et `hotfix/CHAN-123-description` depuis `main`.
@@ -82,7 +82,7 @@ La référence détaillée pour Git est [`docs/development/git-workflow.md`](doc
 - Respecter le processus de versionnement et de release documenté dans [`docs/development/release-process.md`](docs/development/release-process.md).
 - Ne jamais déplacer, réutiliser ou supprimer un tag de release publié.
 - Les environnements `staging` et `production` et leurs protections sont définis dans [`docs/development/environments.md`](docs/development/environments.md) (CHAN-96). Ne jamais partager de secret, de fichier `.env`, de base de données, de stockage ou d'accès SQL entre ces environnements.
-- Ne pas automatiser ni réaliser de déploiement : cette procédure relève de CHAN-97.
+- Les déploiements sont automatisés par les workflows `deploy-staging` et `deploy-production` décrits dans [`docs/development/deployment-process.md`](docs/development/deployment-process.md) (CHAN-97). Ne jamais déployer manuellement, ne jamais reconstruire un paquet en production, ne jamais déplacer un artefact et ne jamais exécuter de commande sur le serveur hors de la procédure documentée. Un paquet de déploiement ne doit contenir ni lien symbolique, ni lien physique, ni chemin hors de la release ; le binaire PHP doit être vérifié en 8.4 avant toute commande Artisan. Le fichier `shared/.env` ne doit jamais être accessible en écriture au groupe ou aux autres utilisateurs. Les migrations, la recette détaillée et le rollback relèvent de CHAN-98.
 - Ne jamais affirmer qu'une tâche, un test, un déploiement ou une revue a été réalisé sans preuve.
 
 ## Méthode de travail

@@ -264,6 +264,7 @@ else
 fi
 
 for tag in v0.1.0 v0.1.0-rc.1; do
+  # shellcheck disable=SC2254 # le filtre extrait du workflow est volontairement un motif glob
   case "$tag" in
     $filters) pass ;;
     *) fail "Le filtre '$filters' ne correspond pas au tag '$tag'." ;;

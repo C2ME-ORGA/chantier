@@ -6,7 +6,7 @@ Ce document définit le versionnement, les tags, les notes de version et le proc
 - Ticket parent : CHAN-92 – Définir le workflow Git, les releases et les déploiements.
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : versionnement de l'application, tags Git, notes de version et releases GitHub.
-- Hors portée : déploiements et rollback (CHAN-97). Les environnements de recette et de production et leurs protections sont définis dans [`environments.md`](environments.md) (CHAN-96).
+- Hors portée : recette, migrations et rollback (CHAN-98). Les environnements de recette et de production et leurs protections sont définis dans [`environments.md`](environments.md) (CHAN-96). Les déploiements automatisés et la promotion des artefacts sont définis dans [`deployment-process.md`](deployment-process.md) (CHAN-97).
 
 ## Sources de vérité
 
@@ -14,6 +14,7 @@ Ce document définit le versionnement, les tags, les notes de version et le proc
 | --- | --- |
 | Branches, commits et Pull Requests | [`git-workflow.md`](git-workflow.md) |
 | Environnements et protections | [`environments.md`](environments.md) |
+| Déploiements et promotion des artefacts | [`deployment-process.md`](deployment-process.md) |
 | Versionnement, tags et releases | Ce document |
 | Workflow de release | [`.github/workflows/release.yml`](../../.github/workflows/release.yml) |
 | Génération des notes de version | [`.github/scripts/generate-release-notes.sh`](../../.github/scripts/generate-release-notes.sh) |
@@ -29,7 +30,7 @@ En cas de divergence entre ce document et les tags effectivement publiés, les t
 - Un tag publié est **immuable** : il n'est jamais déplacé, réutilisé ni supprimé.
 - La sélection de version, la création du tag et la publication d'une release stable sont des décisions humaines explicites.
 - Les notes de version sont générées automatiquement à partir des commits, puis relues avant la publication d'une version stable.
-- Aucun déploiement n'est déclenché par un tag ou par une release. Les environnements sont définis dans [`environments.md`](environments.md) (CHAN-96) et le déploiement relève de CHAN-97.
+- Un tag de release candidate déclenche le déploiement en staging ; la publication d'une release stable déclenche la promotion du même artefact en production, selon [`deployment-process.md`](deployment-process.md) (CHAN-97).
 
 ## Contrat public
 
@@ -226,7 +227,7 @@ Le push du tag déclenche le workflow de release. Celui-ci :
 2. génère les notes de version ;
 3. crée ou met à jour une release GitHub marquée **pre-release**.
 
-La release candidate est ensuite validée dans l'environnement de recette défini dans [`environments.md`](environments.md). Le déploiement de cet environnement relève de CHAN-97.
+La release candidate est ensuite déployée automatiquement en recette par le workflow `deploy-staging`, conformément à [`deployment-process.md`](deployment-process.md). Le résultat de ce déploiement et le paquet publié servent de base à la future promotion en production.
 
 Si une correction est nécessaire :
 
@@ -291,7 +292,15 @@ gh release edit v0.5.0 --draft=false
 
 La publication peut aussi se faire depuis l'interface GitHub. Tant que la release stable est un brouillon, elle ne doit pas être considérée comme publiée.
 
-Les notes peuvent être corrigées avant publication si le classement ou une description est incorrect. Ne jamais modifier le tag pour corriger des notes.
+Le workflow ajoute automatiquement une section `Déploiement` aux notes d'une version stable. Lorsqu'une release candidate vérifiable existe (même version de base, tag annoté ancêtre, arbre Git identique), elle contient la ligne :
+
+```text
+Staging-Candidate: v0.5.0-rc.2
+```
+
+Cette référence est obligatoire pour le déploiement en production. Sans candidate vérifiable, la release reste publiable mais n'est pas déployable ; le workflow de production échoue explicitement. Ne jamais ajouter cette ligne manuellement pour contourner une candidate absente ou invalide.
+
+Les notes peuvent être corrigées avant publication si le classement ou une description est incorrect. Ne jamais modifier le tag pour corriger des notes, ni la référence `Staging-Candidate` pour forcer un déploiement.
 
 ### 6. Cas d'un hotfix
 
@@ -344,6 +353,7 @@ Il :
 - génère les notes avec le script dédié ;
 - crée une release **pre-release** publiée pour une release candidate ;
 - crée une release **brouillon** pour une version stable ;
+- ajoute aux notes d'une version stable la référence `Staging-Candidate` vérifiable, ou une mention explicite d'absence de candidate ;
 - met à jour la release existante si le workflow est relancé pour le même tag.
 
 Caractéristiques de sécurité et de maintenance :
@@ -352,7 +362,7 @@ Caractéristiques de sécurité et de maintenance :
 - il utilise le `GITHUB_TOKEN` fourni par GitHub Actions, sans secret supplémentaire ;
 - la seule action externe est `actions/checkout`, épinglée par SHA comme dans le workflow de tests ;
 - aucune action tierce de release, aucun gestionnaire de changelog et aucune dépendance supplémentaire ne sont ajoutés ;
-- le workflow ne déploie rien et ne modifie pas les branches ;
+- le workflow ne déploie rien lui-même et ne modifie pas les branches : les déploiements sont assurés par des workflows distincts, documentés dans [`deployment-process.md`](deployment-process.md) ;
 - un tag publié n'est jamais déplacé par l'automatisation.
 
 Le workflow de release ne rejoue pas les tests. Le succès de `ci` sur le commit tagué est un prérequis humain vérifié avant la création du tag. En cas d'échec transitoire du workflow, relancer le job sans recréer le tag. Si le workflow lui-même doit être corrigé, exécuter le script localement puis mettre à jour la release avec `gh release edit` ; ne jamais déplacer le tag.
@@ -360,7 +370,8 @@ Le workflow de release ne rejoue pas les tests. Le succès de `ci` sur le commit
 ## Points hors périmètre et limites connues
 
 - Les environnements de recette et de production et leurs protections sont définis dans [`environments.md`](environments.md) (CHAN-96).
-- Les déploiements et le rollback relèvent de CHAN-97.
+- Les déploiements et la promotion des artefacts sont définis dans [`deployment-process.md`](deployment-process.md) (CHAN-97). La recette fonctionnelle, les migrations et le rollback relèvent de CHAN-98.
+- Le déploiement en production exige une release candidate vérifiable référencée dans la release stable ; une version stable sans candidate reste publiable mais n'est pas déployable.
 - Aucune protection de tag n'est configurée (vérifié le 12 novembre 2026). Les tags ne sont donc protégés que par la convention et les droits des collaborateurs.
 - La version n'est pas exposée par l'application à l'exécution. Le tag reste la source de vérité.
 - Aucun fichier `CHANGELOG.md` n'est maintenu. Les releases GitHub portent les notes publiées.

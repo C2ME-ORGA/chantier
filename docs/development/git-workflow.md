@@ -7,7 +7,7 @@ Ce document définit les conventions de branches, de commits et de Pull Requests
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : conventions applicables à toutes les contributions au dépôt.
 
-Les règles de branches, de commits et de Pull Requests décrites ici sont applicables à compter de CHAN-93. Le versionnement, les tags et le processus de release sont définis dans [`release-process.md`](release-process.md) depuis CHAN-95. Les environnements et leurs protections sont définis dans [`environments.md`](environments.md) depuis CHAN-96. Les déploiements restent hors périmètre et relèvent de CHAN-97.
+Les règles de branches, de commits et de Pull Requests décrites ici sont applicables à compter de CHAN-93. Le versionnement, les tags et le processus de release sont définis dans [`release-process.md`](release-process.md) depuis CHAN-95. Les environnements et leurs protections sont définis dans [`environments.md`](environments.md) depuis CHAN-96. Les déploiements sont définis dans [`deployment-process.md`](deployment-process.md) depuis CHAN-97.
 
 ## Sources de vérité
 
@@ -15,6 +15,7 @@ Les règles de branches, de commits et de Pull Requests décrites ici sont appli
 | --- | --- |
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
 | Environnements et protections | [`environments.md`](environments.md) |
+| Déploiements et promotion des artefacts | [`deployment-process.md`](deployment-process.md) |
 | Règles impératives pour les agents et contributeurs | [`AGENTS.md`](../../AGENTS.md) |
 | Présentation du projet et démarrage local | [`README.md`](../../README.md) |
 | Contrôle d'intégration continue | [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) |
@@ -241,7 +242,7 @@ hotfix/*               ──PR──>  main     ──PR──>  develop (synch
 - Une livraison consiste à ouvrir une Pull Request de `develop` vers `main`.
 - Un hotfix est fusionné dans `main`, puis reporté dans `develop`.
 
-Ce flux décrit l'intégration du code. La sélection de version, les tags, les notes de version et la publication GitHub sont définis dans [`release-process.md`](release-process.md). Les environnements sont décrits dans [`environments.md`](environments.md). Le déploiement n'est pas couvert par ce flux et relève de CHAN-97.
+Ce flux décrit l'intégration du code. La sélection de version, les tags, les notes de version et la publication GitHub sont définis dans [`release-process.md`](release-process.md). Les environnements sont décrits dans [`environments.md`](environments.md). Le déploiement automatisé est décrit dans [`deployment-process.md`](deployment-process.md) : un tag de release candidate déclenche le déploiement en staging et la publication d'une release stable déclenche la promotion du même artefact en production.
 
 ### Pratiques actuelles
 
@@ -254,9 +255,9 @@ Sont actuellement opérationnels :
 - les rulesets `protect-main` et `protect-develop` ;
 - l'interdiction du force-push et de la suppression des branches protégées.
 
-Seuls les workflows de tests [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) et de release [`.github/workflows/release.yml`](../../.github/workflows/release.yml) sont présents dans `.github/workflows/`. Le workflow de tests valide les Pull Requests et les pushes sur `main`. Le workflow de release est déclenché par un tag de release et crée la release GitHub correspondante. Aucun workflow de déploiement n'y est défini : une fusion dans `main` ou un tag ne déclenche aucun déploiement automatique.
+Seuls les workflows de tests [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml), de release [`.github/workflows/release.yml`](../../.github/workflows/release.yml) et de déploiement [`deploy-staging.yml`](../../.github/workflows/deploy-staging.yml) et [`deploy-production.yml`](../../.github/workflows/deploy-production.yml) sont présents dans `.github/workflows/`. Le workflow de tests valide les Pull Requests et les pushes sur `main`. Le workflow de release est déclenché par un tag de release et crée la release GitHub correspondante. Depuis CHAN-97, un tag `vX.Y.Z-rc.N` déclenche le déploiement en staging et la publication d'une release stable déclenche la promotion du même artefact en production.
 
-Les environnements `staging` et `production` et leurs protections GitHub sont documentés dans [`environments.md`](environments.md). Aucun environnement GitHub ni aucun déploiement n'est configuré à ce stade.
+Les environnements `staging` et `production` et leurs protections GitHub sont documentés dans [`environments.md`](environments.md). Aucun environnement GitHub ni aucun déploiement n'est configuré à ce stade : les workflows existent mais restent inopérants tant que les environnements, variables et secrets ne sont pas créés manuellement.
 
 ### Versionnement et releases
 
@@ -268,13 +269,12 @@ Les environnements de recette et de production, leur séparation MySQL, leurs fi
 
 ### Sujets restant à définir
 
-Les sujets suivants restent hors périmètre de CHAN-95 et CHAN-96 et ne doivent pas être considérés comme applicables :
+Les sujets suivants restent hors périmètre de CHAN-93 à CHAN-97 et ne doivent pas être considérés comme applicables :
 
-- procédure et automatisation des déploiements (CHAN-97) ;
-- déclencheur exact du déploiement, branche ou tag stable (CHAN-97) ;
-- procédure de rollback (CHAN-97).
+- stratégie détaillée des migrations et rollback (CHAN-98) ;
+- recette fonctionnelle (CHAN-98).
 
-Toute évolution du workflow Git, de la release ou des environnements devra être reportée dans ce document, dans [`release-process.md`](release-process.md), dans [`environments.md`](environments.md) et, si nécessaire, dans [`AGENTS.md`](../../AGENTS.md) et [`README.md`](../../README.md).
+Toute évolution du workflow Git, de la release, des environnements ou des déploiements devra être reportée dans ce document, dans [`release-process.md`](release-process.md), dans [`environments.md`](environments.md), dans [`deployment-process.md`](deployment-process.md) et, si nécessaire, dans [`AGENTS.md`](../../AGENTS.md) et [`README.md`](../../README.md).
 
 ## Protections GitHub actives
 

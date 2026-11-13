@@ -1,0 +1,332 @@
+name: deploy-staging
+
+on:
+  push:
+    tags:
+      - 'v*-rc.*'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    name: deploy-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: staging
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.ref_name }}
+      DEPLOY_ENVIRONMENT: ${{ vars.DEPLOY_ENVIRONMENT }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      APP_URL: ${{ vars.APP_URL }}
+      DEPLOY_PHP_BIN: ${{ vars.DEPLOY_PHP_BIN }}
+      DEPLOY_ROUTE_CACHE: ${{ vars.DEPLOY_ROUTE_CACHE }}
+      DEPLOY_QUEUE_RESTART: ${{ vars.DEPLOY_QUEUE_RESTART }}
+      GITHUB_REPOSITORY_NAME: ${{ github.repository }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release candidate tag
+        id: tag
+        run: |
+          bash .github/scripts/deploy/validate-tag.sh \
+            --channel staging \
+            --tag "$RELEASE_TAG" \
+            --ref origin/develop
+
+      - name: Validate environment configuration
+        run: |
+          expected_environment='staging'
+          expected_path='/www/wwwroot/chantier-staging'
+          expected_url='https://chantier-staging.c2me.ovh'
+
+          if [[ "$DEPLOY_ENVIRONMENT" != "$expected_environment" ]]; then
+            echo "DEPLOY_ENVIRONMENT incohérent pour ce workflow." >&2
+            exit 1
+          fi
+
+          if [[ "$DEPLOY_PATH" != "$expected_path" ]]; then
+            echo "DEPLOY_PATH incohérent pour ce workflow." >&2
+            exit 1
+          fi
+
+          if [[ "$APP_URL" != "$expected_url" ]]; then
+            echo "APP_URL incohérent pour ce workflow." >&2
+            exit 1
+          fi
+
+          if [[ "$DEPLOY_ROUTE_CACHE" != 'true' && "$DEPLOY_ROUTE_CACHE" != 'false' ]]; then
+            echo "DEPLOY_ROUTE_CACHE doit valoir true ou false." >&2
+            exit 1
+          fi
+
+          if [[ "$DEPLOY_QUEUE_RESTART" != 'true' && "$DEPLOY_QUEUE_RESTART" != 'false' ]]; then
+            echo "DEPLOY_QUEUE_RESTART doit valoir true ou false." >&2
+            exit 1
+          fi
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build deployment package
+        id: build
+        run: |
+          bash .github/scripts/package/build-package.sh \
+            --tag "$RELEASE_TAG" \
+            --output-dir "$RUNNER_TEMP/artifact"
+
+      - name: Publish immutable package artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: chantier-package-${{ github.ref_name }}
+          path: ${{ runner.temp }}/artifact
+          retention-days: 90
+          compression-level: 0
+          if-no-files-found: error
+
+      - name: Resolve published artifact metadata
+        id: artifact
+        run: |
+          artifact_name="chantier-package-${RELEASE_TAG}"
+
+          for _ in 1 2 3 4 5; do
+            gh api "repos/${GITHUB_REPOSITORY_NAME}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" \
+              > "$RUNNER_TEMP/artifacts.json"
+
+            line="$(php .github/scripts/lib/github-data.php artifacts "$RUNNER_TEMP/artifacts.json" "$artifact_name" | head -n 1)"
+
+            if [[ -n "$line" ]]; then
+              break
+            fi
+
+            sleep 5
+          done
+
+          if [[ -z "${line:-}" ]]; then
+            echo "Artefact publié introuvable : $artifact_name" >&2
+            exit 1
+          fi
+
+          IFS=$'\t' read -r artifact_id artifact_expired artifact_label _artifact_size <<< "$line"
+
+          if [[ "$artifact_expired" != "false" ]]; then
+            echo "Artefact publié expiré : $artifact_name" >&2
+            exit 1
+          fi
+
+          {
+            echo "artifact_id=$artifact_id"
+            echo "artifact_name=$artifact_label"
+            echo "sha256=${{ steps.build.outputs.sha256 }}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Configure SSH
+        run: |
+          for name in SSH_HOST SSH_PORT SSH_USER SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Secret manquant pour l'environnement staging : $name" >&2
+              exit 1
+            fi
+          done
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
+
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          if ! ssh-keygen -F "$SSH_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null 2>&1 \
+            && ! ssh-keygen -F "[$SSH_HOST]:$SSH_PORT" -f "$HOME/.ssh/known_hosts" >/dev/null 2>&1; then
+            echo "SSH_KNOWN_HOSTS ne contient pas l'hôte attendu." >&2
+            exit 1
+          fi
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+
+      - name: Transfer package
+        id: transfer
+        run: |
+          remote_package="/tmp/chantier-${RELEASE_TAG}-${GITHUB_RUN_ID}.tar.gz"
+
+          scp -P "$SSH_PORT" -i "$HOME/.ssh/deploy_key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=15 \
+            "${{ steps.build.outputs.archive_path }}" \
+            "$SSH_USER@$SSH_HOST:$remote_package"
+
+          echo "remote_package=$remote_package" >> "$GITHUB_OUTPUT"
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+
+      - name: Deploy release
+        id: deploy
+        run: |
+          release_id="${RELEASE_TAG}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          ssh -p "$SSH_PORT" -i "$HOME/.ssh/deploy_key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=15 \
+            -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+            "$SSH_USER@$SSH_HOST" \
+            "DEPLOY_PHP_BIN='$DEPLOY_PHP_BIN' bash -s -- \
+              --environment '$DEPLOY_ENVIRONMENT' \
+              --release-id '$release_id' \
+              --version '$RELEASE_TAG' \
+              --commit '${{ steps.tag.outputs.commit_sha }}' \
+              --tree '${{ steps.tag.outputs.tree_sha }}' \
+              --artifact-id '${{ steps.artifact.outputs.artifact_id }}' \
+              --sha256 '${{ steps.build.outputs.sha256 }}' \
+              --package '${REMOTE_PACKAGE}' \
+              --expected-path '$DEPLOY_PATH' \
+              --route-cache '$DEPLOY_ROUTE_CACHE' \
+              --queue-restart '$DEPLOY_QUEUE_RESTART'" \
+            < .github/scripts/deploy/remote-deploy.sh
+
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PACKAGE: ${{ steps.transfer.outputs.remote_package }}
+
+      - name: Check deployment
+        run: |
+          ssh -p "$SSH_PORT" -i "$HOME/.ssh/deploy_key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=15 \
+            "$SSH_USER@$SSH_HOST" \
+            "bash -s -- \
+              --environment '$DEPLOY_ENVIRONMENT' \
+              --release-id '${{ steps.deploy.outputs.release_id }}' \
+              --version '$RELEASE_TAG' \
+              --commit '${{ steps.tag.outputs.commit_sha }}' \
+              --sha256 '${{ steps.build.outputs.sha256 }}' \
+              --expected-path '$DEPLOY_PATH'" \
+            < .github/scripts/deploy/remote-check.sh
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+
+      - name: Check HTTP health endpoint
+        run: |
+          body="$RUNNER_TEMP/health.json"
+          code=""
+          status=""
+
+          for _ in 1 2 3 4 5 6; do
+            code="$(curl -sS -o "$body" -w '%{http_code}' --max-time 15 \
+              -H 'Accept: application/json' "${APP_URL}/up" || true)"
+
+            status=""
+            if [[ -s "$body" ]]; then
+              status="$(php .github/scripts/lib/manifest.php get "$body" status 2>/dev/null || true)"
+            fi
+
+            if [[ "$code" == "200" && "$status" == "up" ]]; then
+              echo "Point de santé disponible : HTTP 200, statut up." >&2
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "Point de santé indisponible : code HTTP '$code', statut '$status'." >&2
+          exit 1
+
+      - name: Write deployment manifest
+        id: manifest
+        run: |
+          mkdir -p "$RUNNER_TEMP/manifest"
+
+          php .github/scripts/lib/manifest.php create "$RUNNER_TEMP/manifest/manifest.json" \
+            schema_version=1 \
+            environment=staging \
+            version="$RELEASE_TAG" \
+            tag="$RELEASE_TAG" \
+            channel=rc \
+            commit_sha="${{ steps.tag.outputs.commit_sha }}" \
+            tree_sha="${{ steps.tag.outputs.tree_sha }}" \
+            "workflow.name=deploy-staging" \
+            "workflow.run_id=$GITHUB_RUN_ID" \
+            "workflow.run_attempt=$GITHUB_RUN_ATTEMPT" \
+            "artifact.name=${{ steps.artifact.outputs.artifact_name }}" \
+            "artifact.id=${{ steps.artifact.outputs.artifact_id }}" \
+            "artifact.sha256=${{ steps.build.outputs.sha256 }}" \
+            staging_deployment.status=success \
+            "staging_deployment.run_id=$GITHUB_RUN_ID" \
+            staging_deployment.job=deploy \
+            created_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+          php .github/scripts/lib/manifest.php validate "$RUNNER_TEMP/manifest/manifest.json"
+
+          echo "manifest_path=$RUNNER_TEMP/manifest/manifest.json" >> "$GITHUB_OUTPUT"
+
+      - name: Upload deployment manifest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: chantier-manifest-${{ github.ref_name }}
+          path: ${{ runner.temp }}/manifest/manifest.json
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Clean up remote package
+        if: always()
+        continue-on-error: true
+        run: |
+          ssh -p "$SSH_PORT" -i "$HOME/.ssh/deploy_key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=15 \
+            "$SSH_USER@$SSH_HOST" "rm -f '${{ steps.transfer.outputs.remote_package }}'"
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+
+      - name: Summary
+        run: |
+          {
+            echo "## Déploiement staging"
+            echo ""
+            echo "- Version : \`$RELEASE_TAG\`"
+            echo "- Commit : \`${{ steps.tag.outputs.commit_sha }}\`"
+            echo "- Arbre Git : \`${{ steps.tag.outputs.tree_sha }}\`"
+            echo "- Artefact : \`${{ steps.artifact.outputs.artifact_name }}\` (#${{ steps.artifact.outputs.artifact_id }})"
+            echo "- Release : \`${{ steps.deploy.outputs.release_id }}\`"
+            echo "- Point de santé : \`${APP_URL}/up\`"
+          } >> "$GITHUB_STEP_SUMMARY"

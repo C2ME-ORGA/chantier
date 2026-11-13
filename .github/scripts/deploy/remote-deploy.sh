@@ -1,0 +1,691 @@
+#!/usr/bin/env bash
+#
+# Déploiement d'une release sur le serveur, exécuté via SSH sans élévation de
+# privilèges.
+#
+# Ce script est autonome : il est transmis par `ssh` et n'importe aucun fichier
+# local. Il refuse tout environnement, utilisateur, chemin ou paquet qui ne
+# correspond pas exactement à la configuration autorisée.
+#
+# Il ne modifie jamais `shared/.env`, ne déplace jamais `shared/storage`,
+# n'exécute aucune migration et n'active pas le mode maintenance.
+
+readonly STAGING_ROOT='/www/wwwroot/chantier-staging'
+readonly PRODUCTION_ROOT='/www/wwwroot/chantier'
+readonly STAGING_USER='c2me-deploy-staging'
+readonly PRODUCTION_USER='c2me-deploy-production'
+
+# Marqueur de propriété écrit dans tout répertoire créé par l'exécution
+# courante. Le nettoyage ne supprime un répertoire que si ce marqueur contient
+# le jeton unique de l'exécution : un nom de chemin prévisible ne suffit jamais.
+readonly OWNER_MARKER='.c2me-deploy-owner'
+
+environment=""
+release_id=""
+version=""
+commit_sha=""
+tree_sha=""
+artifact_id=""
+expected_sha=""
+package=""
+expected_path=""
+route_cache="true"
+queue_restart="false"
+dry_run=0
+preflight=0
+
+root=""
+shared=""
+php_bin=""
+php_version=""
+release_dir=""
+incoming_dir=""
+incoming_created=0
+release_created=0
+activated=0
+log_ready=0
+deployment_failure_status="failure"
+entries_file=""
+verbose_file=""
+run_token=""
+
+usage() {
+  cat <<'USAGE'
+Usage : remote-deploy.sh --environment <staging|production> --release-id <id> \
+          --version <tag> --commit <sha> --tree <sha> --artifact-id <id> \
+          --sha256 <empreinte> --package <fichier> --expected-path <chemin> \
+          [--route-cache <true|false>] [--queue-restart <true|false>] [--dry-run]
+
+Mode diagnostic :
+  remote-deploy.sh --environment <staging|production> --expected-path <chemin> \
+          --preflight
+
+Le mode --preflight vérifie uniquement le binaire PHP 8.4 configuré et
+n'effectue aucune écriture.
+USAGE
+}
+
+die() {
+  printf 'ERREUR: %s\n' "$*" >&2
+  exit 1
+}
+
+log() {
+  printf '[%s] %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"
+}
+
+# Ligne JSON du journal. Ne reçoit et n'écrit que des valeurs déjà validées par
+# le script ; aucun contenu de fichier n'y est injecté.
+deployment_log_line() {
+  local status="$1"
+
+  printf '{"timestamp":"%s","environment":"%s","release":"%s","version":"%s","commit":"%s","artifact_id":"%s","sha256":"%s","status":"%s","user":"%s"}\n' \
+    "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    "$environment" \
+    "$release_id" \
+    "$version" \
+    "$commit_sha" \
+    "$artifact_id" \
+    "$expected_sha" \
+    "$status" \
+    "$(id -un)"
+}
+
+# Journalise uniquement si le chemin de journal a été jugé sûr par
+# prepare_logging(). N'écrit jamais dans .env ni dans storage et ne suit jamais
+# un lien symbolique.
+deployment_log() {
+  local status="$1"
+
+  if [[ "$log_ready" -ne 1 || -z "$shared" ]]; then
+    return 0
+  fi
+
+  local log_file="$shared/deployment.log"
+
+  if [[ -L "$log_file" ]]; then
+    printf 'ERREUR: journal symbolique détecté, écriture refusée : %s\n' "$log_file" >&2
+    return 1
+  fi
+
+  if [[ -e "$log_file" && ! -f "$log_file" ]]; then
+    printf 'ERREUR: journal non régulier, écriture refusée : %s\n' "$log_file" >&2
+    return 1
+  fi
+
+  (
+    umask 077
+
+    if [[ -e "$log_file" ]]; then
+      deployment_log_line "$status" >> "$log_file"
+    else
+      # noclobber empêche de créer le journal à travers un lien apparu entre
+      # le contrôle de prepare_logging() et cette écriture.
+      set -C
+      deployment_log_line "$status" > "$log_file"
+    fi
+  )
+}
+
+prepare_logging() {
+  [[ -n "$root" ]] || return 0
+
+  # Pré-déploiement : `shared` n'a pas encore été provisionné, le déploiement
+  # échouera plus loin faute de stockage partagé. Aucun journal n'est exigé.
+  if [[ ! -e "$shared" && ! -L "$shared" ]]; then
+    return 0
+  fi
+
+  if [[ ! -d "$root" || -L "$root" ]]; then
+    die "racine de déploiement invalide ou symbolique : $root"
+  fi
+
+  # `shared` existe (y compris sous forme de lien cassé) : il doit s'agir d'un
+  # répertoire réel. La journalisation devient obligatoire.
+  if [[ -L "$shared" ]]; then
+    die "répertoire shared symbolique interdit : journalisation impossible"
+  fi
+
+  if [[ ! -d "$shared" ]]; then
+    die "répertoire shared invalide : journalisation impossible"
+  fi
+
+  if [[ ! -w "$shared" ]]; then
+    die "répertoire shared non accessible en écriture : journal obligatoire"
+  fi
+
+  local log_file="$shared/deployment.log"
+
+  if [[ -L "$log_file" ]]; then
+    die "journal symbolique interdit : $log_file"
+  fi
+
+  if [[ -e "$log_file" ]]; then
+    if [[ ! -f "$log_file" ]]; then
+      die "journal non régulier : $log_file"
+    fi
+
+    if [[ ! -w "$log_file" ]]; then
+      die "journal non accessible en écriture : $log_file"
+    fi
+  fi
+
+  log_ready=1
+
+  # Une écriture réelle prouve que le journal est utilisable (permissions,
+  # espace disque, système de fichiers non figé) avant toute action métier.
+  if ! deployment_log "start"; then
+    log_ready=0
+    die "journal de déploiement inutilisable : $log_file"
+  fi
+}
+
+# Politique de permissions de shared/.env :
+# - écriture de groupe interdite ;
+# - écriture, lecture ou exécution par les autres interdites ;
+# - lecture de groupe autorisée (600, 640, 700, 750).
+env_mode_is_secure() {
+  local mode="${1:-}"
+
+  [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
+
+  (( (8#$mode & 8#0020) == 0 && (8#$mode & 8#0007) == 0 ))
+}
+
+# Jeton unique de l'exécution. Il est écrit dans chaque répertoire créé pour
+# prouver la propriété de création sans se fier au nom du chemin.
+init_run_token() {
+  [[ -n "$run_token" ]] && return 0
+
+  local random=""
+
+  random="$(od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"
+
+  [[ -n "$random" ]] || random="$$-${RANDOM}-${RANDOM}-$(date -u '+%s')"
+
+  run_token="c2me-${release_id:-unknown}-$$-${random}"
+}
+
+# Écrit le marqueur de propriété dans un répertoire fraîchement créé. Le
+# marqueur est créé sans écrasement (noclobber) et n'est jamais un lien.
+claim_created_directory() {
+  local directory="$1"
+  local marker="$directory/$OWNER_MARKER"
+
+  [[ -n "$run_token" ]] || return 1
+  [[ -d "$directory" && ! -L "$directory" ]] || return 1
+
+  if ! ( set -C; printf '%s\n' "$run_token" > "$marker" ) 2>/dev/null; then
+    return 1
+  fi
+
+  chmod 0600 "$marker" 2>/dev/null || true
+}
+
+# Vérifie que le répertoire a bien été créé par cette exécution : marqueur
+# régulier, non symbolique, dont le contenu correspond au jeton courant.
+directory_owned_by_run() {
+  local directory="$1"
+  local marker="$directory/$OWNER_MARKER"
+  local recorded=""
+
+  [[ -n "$run_token" ]] || return 1
+  [[ -d "$directory" && ! -L "$directory" ]] || return 1
+  [[ -f "$marker" && ! -L "$marker" ]] || return 1
+
+  recorded="$(cat -- "$marker" 2>/dev/null || true)"
+
+  [[ "$recorded" == "$run_token" ]]
+}
+
+# Conserve un résidu plutôt que de risquer une suppression destructive.
+retain_residue() {
+  local directory="$1"
+
+  printf 'AVERTISSEMENT: résidu conservé, suppression non sûre : %s\n' "$directory" >&2
+  deployment_log "incomplete-retained" || true
+}
+
+# Ne supprime que les répertoires dont cette exécution prouve la propriété.
+# Une release préexistante, une release active, `current` et `shared/` ne sont
+# jamais supprimés. Une interruption entre la création et le positionnement de
+# l'indicateur en mémoire reste couverte : la décision repose sur le marqueur
+# de propriété, pas sur l'indicateur seul.
+cleanup_incomplete() {
+  local active=""
+
+  if [[ -n "$incoming_dir" && -d "$incoming_dir" && ! -L "$incoming_dir" ]]; then
+    case "$incoming_dir" in
+      "$root/releases/.incoming-"*)
+        if directory_owned_by_run "$incoming_dir"; then
+          rm -rf -- "$incoming_dir" || retain_residue "$incoming_dir"
+        elif [[ "$incoming_created" -eq 1 ]]; then
+          retain_residue "$incoming_dir"
+        fi
+        ;;
+      *)
+        if [[ "$incoming_created" -eq 1 ]]; then
+          retain_residue "$incoming_dir"
+        fi
+        ;;
+    esac
+  fi
+
+  if [[ "$activated" -eq 0 && -n "$release_dir" && -d "$release_dir" && ! -L "$release_dir" ]]; then
+    case "$release_dir" in
+      "$root/releases/"*)
+        if directory_owned_by_run "$release_dir"; then
+          active="$(readlink -f "$root/current" 2>/dev/null || true)"
+
+          if [[ "$active" != "$(readlink -f "$release_dir" 2>/dev/null || true)" ]]; then
+            rm -rf -- "$release_dir" || retain_residue "$release_dir"
+          fi
+        elif [[ "$release_created" -eq 1 ]]; then
+          retain_residue "$release_dir"
+        fi
+        ;;
+      *)
+        if [[ "$release_created" -eq 1 ]]; then
+          retain_residue "$release_dir"
+        fi
+        ;;
+    esac
+  fi
+
+  return 0
+}
+
+on_exit() {
+  local status=$?
+
+  cleanup_incomplete || true
+  rm -f -- "${entries_file:-}" "${verbose_file:-}" 2>/dev/null || true
+
+  if [[ "$status" -ne 0 ]]; then
+    deployment_log "${deployment_failure_status:-failure}" || true
+  fi
+
+  exit "$status"
+}
+
+on_signal() {
+  exit "$1"
+}
+
+# Ignore temporairement les signaux pendant une section critique de création
+# ou d'activation, afin qu'un signal ne puisse pas laisser un indicateur
+# incohérent avec l'état du système de fichiers.
+mask_signals() {
+  trap '' HUP INT TERM
+}
+
+unmask_signals() {
+  trap 'on_signal 129' HUP
+  trap 'on_signal 130' INT
+  trap 'on_signal 143' TERM
+}
+
+install_traps() {
+  trap on_exit EXIT
+  unmask_signals
+}
+
+resolve_php_bin() {
+  php_bin="${DEPLOY_PHP_BIN:-}"
+
+  if [[ -z "$php_bin" ]]; then
+    php_bin="$(command -v php8.4 || true)"
+  fi
+
+  [[ -n "$php_bin" && -x "$php_bin" ]] || die "binaire PHP 8.4 introuvable : définir DEPLOY_PHP_BIN après vérification sur le serveur"
+}
+
+assert_php_version() {
+  local reported
+
+  reported="$("$php_bin" -r 'echo PHP_VERSION;' 2>/dev/null || true)"
+
+  if [[ ! "$reported" =~ ^8\.4\.[0-9]+$ ]]; then
+    die "PHP 8.4 requis pour le déploiement, version détectée : ${reported:-inconnue}"
+  fi
+
+  php_version="$reported"
+}
+
+# Envoie le signal de redémarrage aux workers uniquement après l'activation.
+# La fonction vérifie elle-même que `current` pointe vers la nouvelle release :
+# une erreur de séquencement ne peut donc pas redémarrer les workers sur
+# l'ancien code. Un échec de la commande est journalisé avec un statut distinct
+# et la release déjà activée est conservée.
+restart_workers_after_activation() {
+  [[ "$queue_restart" == "true" ]] || return 0
+
+  if [[ "$activated" -ne 1 ]]; then
+    die "queue:restart refusé : la release n'est pas encore activée"
+  fi
+
+  local active_release
+  local target_release
+
+  active_release="$(readlink -f "$root/current" 2>/dev/null || true)"
+  target_release="$(readlink -f "$release_dir" 2>/dev/null || true)"
+
+  if [[ -z "$active_release" || "$active_release" != "$target_release" ]]; then
+    die "queue:restart refusé : current ne pointe pas vers la release $release_id"
+  fi
+
+  if ! (
+    cd "$release_dir" || exit 1
+    "$php_bin" artisan queue:restart
+  ); then
+    deployment_failure_status="activated-queue-restart-failed"
+    die "redémarrage des workers impossible après activation de $release_id"
+  fi
+}
+
+# Contrôle les types d'entrées avant toute extraction : les liens symboliques,
+# liens physiques et fichiers spéciaux sont refusés.
+inspect_archive() {
+  local listing="$1"
+  local verbose="$2"
+
+  if grep -Eq '^[lhbcp]' "$verbose"; then
+    die "type d'entrée interdit dans le paquet (lien symbolique, lien physique ou fichier spécial)"
+  fi
+
+  if grep -Eq '(^/)|(^|/)\.\.(/|$)' "$listing"; then
+    die "chemin absolu ou traversée de répertoire détecté dans le paquet"
+  fi
+
+  grep -Fqx -- './artisan' "$listing" || die "paquet incomplet : artisan absent"
+  grep -Fqx -- './vendor/autoload.php' "$listing" || die "paquet incomplet : vendor absent"
+  grep -Fqx -- './public/index.php' "$listing" || die "paquet incomplet : public/index.php absent"
+
+  if grep -Eq '(^|/)\.env($|\.)' "$listing"; then
+    die "le paquet ne doit pas contenir de fichier .env"
+  fi
+
+  if grep -Eq '(^|/)storage/' "$listing"; then
+    die "le paquet ne doit pas contenir le dossier storage"
+  fi
+}
+
+# Vérifie après extraction qu'aucune entrée ne sort du répertoire cible.
+verify_extraction() {
+  local directory="$1"
+  local directory_real
+  local resolved
+  local path
+
+  directory_real="$(realpath -m -- "$directory")"
+
+  if [[ -n "$(find "$directory" -type l -print -quit)" ]]; then
+    die "lien symbolique extrait interdit"
+  fi
+
+  if [[ -n "$(find "$directory" -type f -links +1 -print -quit)" ]]; then
+    die "lien physique extrait interdit"
+  fi
+
+  if [[ -n "$(find "$directory" \( -type b -o -type c -o -type p -o -type s \) -print -quit)" ]]; then
+    die "entrée spéciale extraite interdite"
+  fi
+
+  while IFS= read -r -d '' path; do
+    resolved="$(realpath -m -- "$path")"
+
+    case "$resolved" in
+      "$directory_real"/*) ;;
+      *) die "extraction hors du répertoire de release : $path" ;;
+    esac
+  done < <(find "$directory" -mindepth 1 -print0)
+}
+
+# Prépare les caches de la nouvelle release, la publie, bascule `current`,
+# puis envoie le signal de redémarrage des workers. Appelée par main() après
+# l'extraction et la préparation du répertoire incoming.
+prepare_and_activate_release() {
+  local tmp_link
+
+  log "PHP $php_version"
+
+  (
+    cd "$incoming_dir"
+
+    "$php_bin" artisan config:cache
+    "$php_bin" artisan view:cache
+
+    if [[ "$route_cache" == "true" ]]; then
+      "$php_bin" artisan route:cache
+    fi
+  )
+
+  cat > "$incoming_dir/release.json" <<JSON
+{
+    "environment": "$environment",
+    "release": "$release_id",
+    "version": "$version",
+    "commit_sha": "$commit_sha",
+    "tree_sha": "$tree_sha",
+    "artifact_id": "$artifact_id",
+    "sha256": "$expected_sha",
+    "deployed_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+}
+JSON
+
+  chmod 0644 "$incoming_dir/release.json"
+
+  # Publication atomique du répertoire de release, puis activation du lien.
+  mask_signals
+
+  if ! mv -T -- "$incoming_dir" "$release_dir"; then
+    unmask_signals
+    die "publication de la release impossible : $release_id"
+  fi
+
+  release_created=1
+  incoming_created=0
+  incoming_dir=""
+
+  tmp_link="$root/.current.$$"
+
+  if ! ln -sfn "$release_dir" "$tmp_link"; then
+    unmask_signals
+    die "création du lien temporaire current impossible"
+  fi
+
+  if ! mv -Tf "$tmp_link" "$root/current"; then
+    rm -f -- "$tmp_link"
+    unmask_signals
+    die "activation de la release impossible : $release_id"
+  fi
+
+  activated=1
+  unmask_signals
+
+  # Le marqueur de propriété ne fait pas partie du contenu applicatif de la
+  # release activée. Son retrait n'est pas critique : en cas d'échec, un
+  # fichier caché inoffensif reste présent et la release active est conservée.
+  rm -f -- "$release_dir/$OWNER_MARKER" \
+    || log "avertissement: marqueur de propriété non supprimé : $release_dir/$OWNER_MARKER"
+
+  # Le redémarrage des workers intervient après l'activation : `current` pointe
+  # déjà vers la nouvelle release, et un échec conserve cette release active.
+  restart_workers_after_activation
+
+  deployment_log "success"
+  log "release $release_id activée pour $environment"
+}
+
+main() {
+  set -euo pipefail
+
+  install_traps
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --environment) environment="${2:-}"; shift 2 ;;
+      --release-id) release_id="${2:-}"; shift 2 ;;
+      --version) version="${2:-}"; shift 2 ;;
+      --commit) commit_sha="${2:-}"; shift 2 ;;
+      --tree) tree_sha="${2:-}"; shift 2 ;;
+      --artifact-id) artifact_id="${2:-}"; shift 2 ;;
+      --sha256) expected_sha="${2:-}"; shift 2 ;;
+      --package) package="${2:-}"; shift 2 ;;
+      --expected-path) expected_path="${2:-}"; shift 2 ;;
+      --route-cache) route_cache="${2:-}"; shift 2 ;;
+      --queue-restart) queue_restart="${2:-}"; shift 2 ;;
+      --dry-run) dry_run=1; shift ;;
+      --preflight) preflight=1; shift ;;
+      -h|--help) usage; exit 0 ;;
+      *) usage >&2; exit 64 ;;
+    esac
+  done
+
+  case "$environment" in
+    staging)
+      root="$STAGING_ROOT"
+      expected_user="$STAGING_USER"
+      ;;
+    production)
+      root="$PRODUCTION_ROOT"
+      expected_user="$PRODUCTION_USER"
+      ;;
+    *)
+      usage >&2
+      exit 64
+      ;;
+  esac
+
+  shared="$root/shared"
+
+  [[ "$expected_path" == "$root" ]] || die "chemin cible refusé pour $environment : chemin attendu $root"
+
+  if [[ "$preflight" -eq 1 ]]; then
+    resolve_php_bin
+    assert_php_version
+    printf 'php-version=%s\n' "$php_version"
+    log "preflight OK pour $environment : PHP $php_version"
+
+    exit 0
+  fi
+
+  prepare_logging
+
+  if [[ "$dry_run" -ne 1 ]]; then
+    actual_user="$(id -un)"
+
+    [[ "$actual_user" == "$expected_user" ]] || die "utilisateur refusé pour $environment : $actual_user"
+  fi
+
+  [[ "$release_id" =~ ^[a-z0-9][a-z0-9._-]{2,80}$ ]] || die "identifiant de release invalide : $release_id"
+  [[ "$version" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.[1-9][0-9]*)?$ ]] || die "version invalide : $version"
+  [[ "$commit_sha" =~ ^[0-9a-f]{40}$ ]] || die "commit invalide : $commit_sha"
+  [[ "$tree_sha" =~ ^[0-9a-f]{40}$ ]] || die "arbre Git invalide : $tree_sha"
+  [[ "$artifact_id" =~ ^[0-9]+$ ]] || die "identifiant d'artefact invalide : $artifact_id"
+  [[ "$expected_sha" =~ ^[0-9a-f]{64}$ ]] || die "empreinte SHA-256 invalide"
+
+  case "$route_cache" in true|false) ;; *) die "valeur route-cache invalide : $route_cache" ;; esac
+  case "$queue_restart" in true|false) ;; *) die "valeur queue-restart invalide : $queue_restart" ;; esac
+
+  [[ -n "$package" && -f "$package" && -r "$package" ]] || die "paquet introuvable ou illisible"
+
+  package_real="$(realpath -m -- "$package")"
+  tmp_root="$(realpath -m -- "${TMPDIR:-/tmp}")"
+
+  case "$package_real" in
+    "$tmp_root"/*) ;;
+    *) die "le paquet doit être transféré dans $tmp_root" ;;
+  esac
+
+  actual_sha="$(sha256sum "$package_real" | awk '{print $1}')"
+
+  [[ "$actual_sha" == "$expected_sha" ]] || die "empreinte SHA-256 du paquet incorrecte"
+
+  entries_file="$(mktemp "${TMPDIR:-/tmp}/chantier-entries.XXXXXX")"
+  verbose_file="$(mktemp "${TMPDIR:-/tmp}/chantier-verbose.XXXXXX")"
+
+  tar -tzf "$package_real" > "$entries_file" || die "paquet illisible"
+  tar -tvzf "$package_real" > "$verbose_file" || die "paquet illisible"
+
+  inspect_archive "$entries_file" "$verbose_file"
+
+  if [[ "$dry_run" -eq 1 ]]; then
+    log "dry-run OK pour $environment : release $release_id, paquet vérifié"
+    exit 0
+  fi
+
+  [[ -d "$root" ]] || die "répertoire d'installation introuvable : $root"
+  [[ -d "$root/releases" ]] || die "répertoire releases introuvable : $root/releases"
+  [[ -d "$shared/storage" ]] || die "stockage partagé introuvable : $shared/storage"
+  [[ -f "$shared/.env" ]] || die "fichier .env partagé introuvable : $shared/.env"
+
+  app_env="$(grep -E '^APP_ENV=' "$shared/.env" | head -n 1 | cut -d= -f2- | tr -d '"' || true)"
+
+  [[ "$app_env" == "$environment" ]] || die "APP_ENV du .env ne correspond pas à l'environnement attendu"
+
+  env_mode="$(stat -c '%a' "$shared/.env")"
+
+  env_mode_is_secure "$env_mode" || die "permissions du .env trop permissives (mode $env_mode) : écriture de groupe et accès des autres utilisateurs interdits"
+
+  release_dir="$root/releases/$release_id"
+
+  [[ ! -e "$release_dir" ]] || die "la release existe déjà : $release_id"
+
+  # Répertoire unique créé par mktemp : une collision ne peut pas désigner un
+  # répertoire préexistant ou appartenant à une autre exécution. Les signaux
+  # sont ignorés pendant la création et le marquage de propriété.
+  init_run_token
+  mask_signals
+
+  if ! incoming_dir="$(mktemp -d "$root/releases/.incoming-${release_id}-XXXXXX")"; then
+    unmask_signals
+    die "création du répertoire d'extraction impossible"
+  fi
+
+  incoming_created=1
+
+  if ! claim_created_directory "$incoming_dir"; then
+    unmask_signals
+    die "marquage de propriété du répertoire d'extraction impossible"
+  fi
+
+  unmask_signals
+
+  [[ -d "$incoming_dir" && ! -L "$incoming_dir" ]] || die "répertoire d'extraction invalide : $incoming_dir"
+  [[ "$(stat -c '%u' "$incoming_dir")" == "$(id -u)" ]] || die "répertoire d'extraction non détenu par l'utilisateur courant"
+
+  tar -xzf "$package_real" -C "$incoming_dir" --no-same-owner --no-same-permissions
+
+  verify_extraction "$incoming_dir"
+
+  # Le paquet ne doit pas avoir remplacé le marqueur de propriété créé par
+  # cette exécution. Un marqueur altéré interdit la publication.
+  directory_owned_by_run "$incoming_dir" \
+    || die "marqueur de propriété du répertoire d'extraction invalide"
+
+  [[ -f "$incoming_dir/artisan" ]] || die "release incomplète : artisan absent"
+  [[ -f "$incoming_dir/vendor/autoload.php" ]] || die "release incomplète : vendor absent"
+  [[ -f "$incoming_dir/public/index.php" ]] || die "release incomplète : public/index.php absent"
+
+  ln -s "$shared/.env" "$incoming_dir/.env"
+  ln -s "$shared/storage" "$incoming_dir/storage"
+  ln -s ../storage/app/public "$incoming_dir/public/storage"
+
+  [[ -d "$incoming_dir/storage" ]] || die "lien storage invalide"
+  [[ -w "$incoming_dir/storage" ]] || die "stockage partagé non accessible en écriture"
+  [[ -d "$incoming_dir/bootstrap/cache" ]] || die "répertoire bootstrap/cache absent"
+
+  mkdir -p "$incoming_dir/bootstrap/cache"
+
+  [[ -w "$incoming_dir/bootstrap/cache" ]] || die "bootstrap/cache non accessible en écriture"
+
+  resolve_php_bin
+  assert_php_version
+
+  prepare_and_activate_release
+}
+
+if [[ -z "${BASH_SOURCE[0]:-}" || "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
