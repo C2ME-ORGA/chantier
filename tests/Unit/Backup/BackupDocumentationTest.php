@@ -125,7 +125,11 @@ test('la documentation couvre les signaux, l inspection TAR et les verrous orphe
         ->toContain('lien physique')
         ->toContain('FIFO')
         ->toContain('garde-fou heuristique, pas une preuve d\'absence')
-        ->toContain('Aucune extraction ne commence si une seule entrée est interdite');
+        ->toContain('Aucune extraction ne commence si une seule entrée est interdite')
+        ->toContain('Formats acceptés : **ustar POSIX** et **GNU**')
+        ->toContain('PAX global')
+        ->toContain('`GNU.sparse.*`')
+        ->toContain('un PID distant ne constitue jamais une preuve de processus mort');
 });
 
 test('le runbook documente la récupération d un verrou orphelin', function () use ($runbookPath): void {

@@ -249,6 +249,78 @@ test('un verrou orphelin n est jamais supprimé automatiquement', function () us
     expect($runbook)->toContain('### 5.1 Verrou orphelin');
 });
 
+test('les archives sont créées sans ACL ni xattrs et inspectées strictement', function () use ($ops): void {
+    $backup = (string) file_get_contents($ops.'/backup.sh');
+    $inspector = (string) file_get_contents($ops.'/lib/tar-inspect.php');
+
+    expect($backup)
+        ->not->toContain("'--acls'")
+        ->not->toContain("'--xattrs'")
+        ->toContain('--format=gnu')
+        ->toContain('c2me_run "$C2ME_TAR_BIN"');
+
+    expect($inspector)
+        ->toContain('tar_assert_supported_format')
+        ->toContain('TAR_PAX_ALLOWED_KEYS')
+        ->toContain("['path', 'linkpath']")
+        ->toContain('en-tête PAX global g interdit')
+        ->toContain('clé PAX non autorisée')
+        ->toContain('format TAR non pris en charge')
+        ->toContain('en-tête PAX malformé')
+        ->toContain('métadonnées PAX et GNU contradictoires')
+        ->toContain('en-tête GNU K (lien long) refusé')
+        ->toContain('métadonnées TAR sans entrée cible');
+});
+
+test('les processus enfants sont terminés avant la suppression de la zone de travail et du verrou', function () use ($ops): void {
+    $common = (string) file_get_contents($ops.'/lib/common.sh');
+    $backup = (string) file_get_contents($ops.'/backup.sh');
+    $restore = (string) file_get_contents($ops.'/restore.sh');
+
+    expect($common)
+        ->toContain('C2ME_CHILD_PIDS')
+        ->toContain('c2me_run')
+        ->toContain('c2me_terminate_children')
+        ->toContain('c2me_descendant_pids')
+        ->toContain('kill -TERM')
+        ->toContain('kill -KILL');
+
+    $signalHandler = substr($common, (int) strpos($common, 'c2me_on_signal()'));
+
+    $terminatePosition = strpos($signalHandler, 'c2me_terminate_children');
+    $cleanupPosition = strpos($signalHandler, 'c2me_cleanup');
+
+    expect($terminatePosition)->not->toBeFalse();
+    expect($cleanupPosition)->not->toBeFalse();
+    expect($terminatePosition)->toBeLessThan($cleanupPosition);
+
+    expect($backup)->toContain('c2me_run "$C2ME_DB_DUMP_BIN"');
+
+    expect($restore)
+        ->toContain('c2me_run "$C2ME_MYSQL_BIN"')
+        ->toContain('c2me_run "$C2ME_TAR_BIN"');
+
+    expect($common)
+        ->toContain('c2me_run "$C2ME_AGE_BIN"')
+        ->toContain('c2me_run "$C2ME_ZSTD_BIN"')
+        ->toContain('c2me_run "$C2ME_GZIP_BIN"');
+});
+
+test('le verrou est associé à l hôte et refuse une libération distante', function () use ($root, $ops): void {
+    $common = (string) file_get_contents($ops.'/lib/common.sh');
+    $doc = (string) file_get_contents($root.'/docs/development/backup-restore.md');
+
+    expect($common)
+        ->toContain('lock_host')
+        ->toContain('verrou détenu par un autre hôte')
+        ->toContain('verrou sans hôte identifiable')
+        ->toContain("appartient à l'hôte");
+
+    expect($doc)
+        ->toContain('un PID distant ne constitue jamais une preuve de processus mort')
+        ->toContain('un verrou provenant d\'un autre hôte ne peut pas être libéré localement');
+});
+
 test('files.total_bytes ne somme que les fichiers réguliers', function () use ($ops): void {
     $contents = (string) file_get_contents($ops.'/backup.sh');
 

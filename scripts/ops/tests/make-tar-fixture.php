@@ -68,6 +68,27 @@ function end_of_archive(): string
     return str_repeat("\0", BLOCK * 2);
 }
 
+function pax_record(string $key, string $value): string
+{
+    $body = ' '.$key.'='.$value."\n";
+    $length = strlen($body) + 1;
+
+    while (true) {
+        $record = $length.$body;
+
+        if (strlen($record) === $length) {
+            return $record;
+        }
+
+        $length = strlen($record);
+    }
+}
+
+function meta_entry(string $type, string $data): string
+{
+    return write_header('././@Metadata', $type, strlen($data)).write_data($data);
+}
+
 $output = $argv[1] ?? '';
 $type = $argv[2] ?? '';
 
@@ -129,6 +150,62 @@ $archive = match ($type) {
     'truncated' => write_header('app/private/fichier.txt', '0', 64),
 
     'special-type' => write_header('app/private/fichier.txt', 'S', 0)
+        .end_of_archive(),
+
+    'pax-global' => meta_entry('g', pax_record('path', 'app/private/global.txt'))
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'pax-size' => meta_entry('x', pax_record('size', '999999'))
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'pax-sparse' => meta_entry('x', pax_record('GNU.sparse.offset', '0').pax_record('GNU.sparse.numbytes', '16'))
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'pax-xattr' => meta_entry('x', pax_record('SCHILY.xattr.user.test', 'valeur'))
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'pax-malformed' => meta_entry('x', '999 path=app/private/fichier.txt'."\n")
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'pax-empty' => meta_entry('x', '')
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'pax-contradictory' => meta_entry('L', 'app/private/premier.txt'."\0")
+        .meta_entry('x', pax_record('path', 'app/private/second.txt'))
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'pax-valid' => meta_entry('x', pax_record('path', 'app/private/pax.txt'))
+        .write_header('app/private/original.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'gnu-longname-malformed' => meta_entry('L', 'app/private/a.txt'."\0".'app/private/b.txt'."\0")
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'gnu-longlink-malformed' => meta_entry('K', 'cible'."\0")
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_of_archive(),
+
+    'gnu-longname-valid' => meta_entry('L', 'app/private/'.str_repeat('a', 120).'.txt'."\0")
+        .write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
         .end_of_archive(),
 
     default => null,

@@ -258,7 +258,13 @@ Règles complémentaires :
 ### 5.4 Interruptions et sauvegardes incomplètes
 
 - Le dump est écrit dans un fichier `.partial` en zone de travail `0700`.
-- Le piège `EXIT` assure le nettoyage en toutes circonstances. Les signaux `HUP`, `INT` et `TERM` sont traités par des gestionnaires dédiés qui exécutent le nettoyage puis terminent immédiatement le processus avec un code explicite : `129` (`HUP`), `130` (`INT`), `143` (`TERM`). Aucune opération ne reprend après le nettoyage.
+- Le piège `EXIT` assure le nettoyage en toutes circonstances. Les signaux `HUP`, `INT` et `TERM` sont traités par des gestionnaires dédiés qui, avant tout nettoyage :
+  1. identifient les processus enfants et descendants (PID suivis par les opérations critiques et arbre de processus) ;
+  2. envoient `TERM` aux processus concernés ;
+  3. attendent leur terminaison réelle, avec escalade `KILL` après un délai borné ;
+  4. seulement ensuite, suppriment la zone de travail et libèrent le verrou, puis terminent avec `129`, `130` ou `143`.
+- Les commandes critiques (`mariadb-dump`, `age`, `tar`, `zstd`/`gzip`, import `mariadb`) sont exécutées via `c2me_run`, qui suit le PID de l'enfant. Le verrou n'est jamais libéré tant qu'un processus enfant peut encore écrire.
+- Aucune opération ne reprend après le nettoyage.
 - Si le processus est tué par `SIGKILL`, aucun gestionnaire ne s'exécute : le verrou et le répertoire de travail peuvent subsister. La procédure de verrou orphelin (§10.4) s'applique ; le répertoire `incoming/` est examiné et jamais promu.
 - Aucun renommage final n'a lieu avant la vérification de compression, le chiffrement et le calcul du checksum.
 - Un artefact incomplet n'est jamais déplacé dans `sets/`. Le répertoire de travail est supprimé par le piège de sortie, y compris après un échec, car il peut contenir un dump en clair ; seul le journal d'exploitation conserve la trace. Aucun artefact incomplet n'est conservé.
@@ -292,7 +298,8 @@ Exclus :
 
 - `tar` en flux, avec une liste de chemins figée issue de l'inventaire A ;
 - `--no-recursion` : seules les entrées listées sont ajoutées, sans parcours implicite ;
-- `--numeric-owner`, `--acls`, `--xattrs`, `--one-file-system` ;
+- `--format=gnu` lorsque l'outil le permet, avec `--numeric-owner` et `--one-file-system` ;
+- **ni `--acls` ni `--xattrs`** : aucun besoin métier ne les justifie et ils introduisent des en-têtes PAX supplémentaires ; les permissions sont remappées à la restauration ;
 - **jamais `-h`** : les liens symboliques sont enregistrés comme liens, jamais suivis ;
 - compression (`zstd` si disponible, sinon `gzip`) puis chiffrement `age`.
 
@@ -515,10 +522,12 @@ Une interruption brutale (`SIGKILL`, arrêt du serveur, coupure) peut laisser le
 Règles :
 
 - un verrou existant n'est **jamais supprimé automatiquement** ;
-- le script vérifie si le PID enregistré est encore vivant (`kill -0`) ;
+- le champ `host` est lu et validé ; un verrou sans hôte identifiable, ou dont l'hôte diffère de l'hôte courant, est refusé : un PID distant ne constitue jamais une preuve de processus mort ;
+- sur l'hôte enregistré, le script vérifie si le PID est encore vivant (`kill -0`) ;
 - PID vivant : l'opération est refusée comme concurrente ; la libération est également refusée ;
-- PID absent, illisible ou mort : l'opération est refusée avec la mention « verrou orphelin » et la commande de récupération ;
+- PID absent, illisible ou mort sur le même hôte : l'opération est refusée avec la mention « verrou orphelin » et la commande de récupération ;
 - la récupération est explicite : `backup.sh unlock --env <env> --confirm-stale-lock` (ou `restore.sh unlock`), après vérification humaine qu'aucune sauvegarde ou restauration n'est en cours ;
+- un verrou provenant d'un autre hôte ne peut pas être libéré localement : la vérification doit être faite sur cet hôte, puis le verrou y est retiré après confirmation ; si l'hôte n'existe plus, la décision est prise par l'administrateur et consignée dans le ticket ;
 - avant libération, vérifier l'absence de processus `backup.sh`/`restore.sh` et l'état de `incoming/` ; un répertoire de travail résiduel est analysé puis supprimé manuellement, jamais promu dans `sets/` ;
 - un PID réutilisé par un autre processus est un cas de faux positif possible ; la confirmation humaine reste obligatoire.
 
@@ -573,7 +582,20 @@ Le script de restauration refuse notamment :
 - une cible qui ne correspond pas à l'environnement déclaré du jeu, sauf dérogation écrite documentée ;
 - un opérateur sans droits suffisants pour appliquer le remappage d'appartenance.
 
-Le contrôle des entrées est réalisé par [`scripts/ops/lib/tar-inspect.php`](../../scripts/ops/lib/tar-inspect.php), qui analyse les en-têtes TAR (nom, préfixe, type, taille, checksum, en-têtes GNU `L`/`K` et PAX `x`/`g`) **avant toute extraction**. Aucune extraction ne commence si une seule entrée est interdite.
+Le contrôle des entrées est réalisé par [`scripts/ops/lib/tar-inspect.php`](../../scripts/ops/lib/tar-inspect.php), qui analyse les en-têtes TAR (nom, préfixe, type, taille, checksum, en-têtes GNU `L` et PAX `x`) **avant toute extraction**. Aucune extraction ne commence si une seule entrée est interdite.
+
+Formats acceptés : **ustar POSIX** et **GNU**. Toute autre valeur de `magic`/`version` est refusée.
+
+Métadonnées acceptées :
+
+| Métadonnée | Traitement |
+| --- | --- |
+| `L` (nom long GNU) | Acceptée une seule fois, valeur unique sans octet nul interne, terminée par NUL, longueur bornée. Elle ne peut modifier ni le type ni la taille de l'entrée. |
+| `K` (lien long GNU) | **Refusée** : aucun lien n'est autorisé dans une archive de restauration. |
+| `x` (PAX étendu) | Acceptée une seule fois, clés limitées à `path` et `linkpath`. Toute autre clé est refusée. |
+| `g` (PAX global) | **Refusée** : format non nécessaire et insuffisamment borné. |
+
+Sont explicitement refusés, entre autres : `size`, `GNU.sparse.*`, `SCHILY.*`, les ACL, les attributs étendus, les clés dupliquées, les enregistrements PAX mal formés, les longueurs incohérentes, les métadonnées contradictoires ou redondantes, et les métadonnées sans entrée cible. Les tailles et positions sont calculées exactement comme GNU tar (blocs de 512 octets, taille déclarée dans l'en-tête, en-têtes de métadonnées exclus du décompte).
 
 ### 12.3 Procédure
 
@@ -770,8 +792,11 @@ Ces tests sont statiques : ils ne prouvent ni le comportement MariaDB 10.11, ni 
 - refus en présence d'un lien symbolique ;
 - refus si `age` est absent ;
 - interruption par `INT` et `TERM` : code retour 130/143, aucun jeu promu, verrou et zone de travail nettoyés ;
-- verrou orphelin : refus sans confirmation, refus si le PID est vivant, libération explicite ;
-- inspection d'archives malveillantes : symlink, hardlink, FIFO, `../`, chemin absolu, entrée hors périmètre, en-tête corrompu ;
+- interruption d'un processus enfant bloqué (`mariadb-dump`, `gzip`, `age`, `tar`) : enfant effectivement terminé avant la libération du verrou et la suppression de la zone de travail ;
+- verrou orphelin : refus sans confirmation, refus si le PID est vivant, refus si l'hôte diffère ou est absent, libération explicite sur le même hôte ;
+- inspection d'archives malveillantes : symlink, hardlink, FIFO, périphériques, `../`, chemin absolu, entrée hors périmètre, en-tête corrompu, archive tronquée ;
+- en-têtes PAX : global `g`, `size`, `GNU.sparse.*`, `SCHILY.xattr.*`, enregistrement mal formé, en-tête vide, métadonnées contradictoires, nom long GNU mal formé, lien long GNU refusé ;
+- PAX `path` autorisé et nom long GNU valide acceptés ;
 - refus d'une restauration dont l'archive contient une entrée interdite, sans création de la cible ;
 - détection d'un artefact altéré ;
 - refus d'une base de restauration préexistante ;

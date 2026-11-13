@@ -398,6 +398,10 @@ tar_create_files_archive() {
   local list="$C2ME_WORK_DIR/paths.A"
   local flags=(--create --no-recursion --numeric-owner)
 
+  if tar_feature_supported '--format'; then
+    flags+=(--format=gnu)
+  fi
+
   if tar_feature_supported '--verbatim-files-from'; then
     flags+=(--verbatim-files-from)
   fi
@@ -406,17 +410,9 @@ tar_create_files_archive() {
     flags+=(--one-file-system)
   fi
 
-  if tar_feature_supported '--acls'; then
-    flags+=(--acls)
-  fi
-
-  if tar_feature_supported '--xattrs'; then
-    flags+=(--xattrs)
-  fi
-
   flags+=(--file "$archive" --files-from "$list")
 
-  (cd "$C2ME_STORAGE_ROOT" && "$C2ME_TAR_BIN" "${flags[@]}")
+  (cd "$C2ME_STORAGE_ROOT" && c2me_run "$C2ME_TAR_BIN" "${flags[@]}")
 }
 
 seal_artifact() {
@@ -587,7 +583,7 @@ create_set() {
   local dump_plain="$C2ME_WORK_DIR/db.sql"
   c2me_register_cleanup "$dump_plain"
 
-  if ! "$C2ME_DB_DUMP_BIN" --defaults-extra-file="$C2ME_DB_DEFAULTS_FILE" \
+  if ! c2me_run "$C2ME_DB_DUMP_BIN" --defaults-extra-file="$C2ME_DB_DEFAULTS_FILE" \
     "${C2ME_DUMP_OPTIONS[@]}" "$C2ME_DB_NAME" >"$dump_plain"; then
     c2me_die 'échec du dump de la base.'
   fi

@@ -367,11 +367,10 @@ Un arrêt brutal (`SIGKILL`, arrêt du serveur, coupure) peut laisser `<BACKUP_R
    pgrep -af 'backup.sh|restore.sh' || echo 'aucun processus backup/restore'
    ```
 
-2. Lire les métadonnées du verrou :
+2. Vérifier l'hôte enregistré dans le verrou (il est déjà affiché par la commande précédente) :
 
-   ```bash
-   cat "$BACKUP_ROOT/.lock/pid" "$BACKUP_ROOT/.lock/started_at" "$BACKUP_ROOT/.lock/host"
-   ```
+   - hôte différent de l'hôte courant : **ne pas libérer localement**. Se connecter à l'hôte enregistré, y vérifier l'absence de processus, puis y retirer le verrou après confirmation. Si cet hôte n'existe plus, la décision revient à l'administrateur et doit être consignée.
+   - champ `host` absent : verrou ambigu, résolution manuelle obligatoire.
 
 3. Vérifier l'état du PID :
 

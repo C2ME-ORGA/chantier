@@ -389,7 +389,7 @@ restore_database() {
     || c2me_die "création de la base cible impossible : $target_db"
 
   c2me_info "import du dump."
-  "$C2ME_MYSQL_BIN" --defaults-extra-file="$C2ME_RESTORE_DB_DEFAULTS_FILE" \
+  c2me_run "$C2ME_MYSQL_BIN" --defaults-extra-file="$C2ME_RESTORE_DB_DEFAULTS_FILE" \
     --default-character-set=utf8mb4 "$target_db" <"$plain" \
     || c2me_die 'échec de l import du dump.'
 
@@ -495,7 +495,7 @@ restore_files() {
   chmod 2750 -- "$target_dir"
 
   c2me_info 'extraction sans conservation des UID/GID d origine.'
-  "$C2ME_TAR_BIN" --extract --file "$archive" --directory "$target_dir" \
+  c2me_run "$C2ME_TAR_BIN" --extract --file "$archive" --directory "$target_dir" \
     --no-same-owner --no-same-permissions \
     || c2me_die 'échec de l extraction de l archive.'
 

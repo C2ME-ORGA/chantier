@@ -136,23 +136,199 @@ c2me_cleanup() {
 
   for path in "${C2ME_CLEANUP_PATHS[@]:-}"; do
     if [[ -n "$path" && -e "$path" ]]; then
-      rm -rf -- "$path" 2>/dev/null || true
+      local attempt=0
+
+      while [[ -e "$path" && attempt -lt 20 ]]; do
+        rm -rf -- "$path" 2>/dev/null || true
+        attempt=$((attempt + 1))
+
+        if [[ -e "$path" ]]; then
+          sleep 0.25
+        fi
+      done
     fi
   done
 
   if [[ -n "${C2ME_LOCK_DIR:-}" && -d "${C2ME_LOCK_DIR:-}" ]]; then
-    rm -rf -- "$C2ME_LOCK_DIR" 2>/dev/null || true
+    local attempt=0
+
+    while [[ -d "$C2ME_LOCK_DIR" && attempt -lt 20 ]]; do
+      rm -rf -- "$C2ME_LOCK_DIR" 2>/dev/null || true
+      attempt=$((attempt + 1))
+
+      if [[ -d "$C2ME_LOCK_DIR" ]]; then
+        sleep 0.25
+      fi
+    done
   fi
 
   return 0
 }
 
-# Gestionnaire de signal : nettoie puis termine le processus avec un code
-# explicite. Aucune opération ne reprend après le nettoyage.
+C2ME_CHILD_PIDS=()
+
+c2me_track_child() {
+  C2ME_CHILD_PIDS+=("$1")
+}
+
+c2me_untrack_child() {
+  local target="$1"
+  local pid
+  local remaining=()
+
+  for pid in "${C2ME_CHILD_PIDS[@]:-}"; do
+    if [[ -n "$pid" && "$pid" != "$target" ]]; then
+      remaining+=("$pid")
+    fi
+  done
+
+  C2ME_CHILD_PIDS=()
+
+  if ((${#remaining[@]} > 0)); then
+    C2ME_CHILD_PIDS=("${remaining[@]}")
+  fi
+}
+
+c2me_child_pids_of() {
+  local parent="$1"
+
+  if command -v pgrep >/dev/null 2>&1; then
+    pgrep -P "$parent" 2>/dev/null || true
+
+    return 0
+  fi
+
+  if command -v ps >/dev/null 2>&1; then
+    ps -eo pid=,ppid= 2>/dev/null | awk -v parent="$parent" '$2 == parent {print $1}' || true
+  fi
+}
+
+# Liste récursivement les descendants d'un PID, dans l'ordre de découverte.
+# La liste des enfants est capturée avant traitement : aucune boucle ne doit
+# énumérer un processus d'aide encore vivant.
+c2me_descendant_pids() {
+  local root="$1"
+  local queue=("$root")
+  local current children child
+
+  while ((${#queue[@]} > 0)); do
+    current="${queue[0]}"
+    queue=("${queue[@]:1}")
+    children="$(c2me_child_pids_of "$current")"
+
+    if [[ -z "$children" ]]; then
+      continue
+    fi
+
+    while IFS= read -r child; do
+      [[ -n "$child" ]] || continue
+      printf '%s\n' "$child"
+      queue+=("$child")
+    done <<<"$children"
+  done
+}
+
+c2me_pid_alive() {
+  local pid="$1"
+
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null
+}
+
+# Termine les processus enfants critiques avant tout nettoyage. Le verrou
+# n'est libéré qu'après leur disparition effective.
+c2me_terminate_children() {
+  local pids=()
+  local listing
+  local pid
+  local unique=()
+  local attempt alive
+
+  listing="$(c2me_descendant_pids "$$")"
+
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    pids+=("$pid")
+  done <<<"$listing"
+
+  for pid in "${C2ME_CHILD_PIDS[@]:-}"; do
+    if [[ -n "$pid" ]]; then
+      pids+=("$pid")
+    fi
+  done
+
+  for pid in "${pids[@]:-}"; do
+    [[ -n "$pid" ]] || continue
+    if [[ " ${unique[*]:-} " != *" ${pid} "* ]]; then
+      unique+=("$pid")
+    fi
+  done
+
+  if ((${#unique[@]} == 0)); then
+    return 0
+  fi
+
+  for pid in "${unique[@]}"; do
+    kill -TERM "$pid" 2>/dev/null || true
+  done
+
+  for attempt in $(seq 1 50); do
+    alive=0
+
+    for pid in "${unique[@]}"; do
+      if c2me_pid_alive "$pid"; then
+        alive=1
+      fi
+    done
+
+    if ((alive == 0)); then
+      break
+    fi
+
+    sleep 0.1
+  done
+
+  for pid in "${unique[@]}"; do
+    if c2me_pid_alive "$pid"; then
+      kill -KILL "$pid" 2>/dev/null || true
+    fi
+  done
+
+  for pid in "${unique[@]}"; do
+    wait "$pid" 2>/dev/null || true
+  done
+
+  C2ME_CHILD_PIDS=()
+}
+
+# Exécute une commande externe critique en suivant son PID. Le signal reçu
+# pendant l'attente est traité par le gestionnaire, qui termine l'enfant.
+c2me_run() {
+  local pid
+  local status
+
+  "$@" <&0 &
+  pid=$!
+  c2me_track_child "$pid"
+
+  if wait "$pid"; then
+    status=0
+  else
+    status=$?
+  fi
+
+  c2me_untrack_child "$pid"
+
+  return "$status"
+}
+
+# Gestionnaire de signal : termine les enfants, nettoie puis termine le
+# processus avec un code explicite. Aucune opération ne reprend après.
 c2me_on_signal() {
   local code="$1"
 
   trap - EXIT HUP INT TERM
+  c2me_terminate_children
   c2me_cleanup
   exit "$code"
 }
@@ -168,15 +344,24 @@ c2me_acquire_lock() {
   local lock_dir="$1"
 
   if [[ -d "$lock_dir" ]]; then
-    local pid started_at
+    local pid started_at lock_host
     pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
     started_at="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
+    lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
+
+    if [[ -z "$lock_host" ]]; then
+      c2me_die "verrou sans hôte identifiable (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier manuellement l'absence de processus, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock' sur l'hôte concerné."
+    fi
+
+    if [[ "$lock_host" != "${C2ME_HOST_ID:-unknown}" ]]; then
+      c2me_die "verrou détenu par un autre hôte ($lock_host) : un PID distant ne prouve pas qu'un processus est mort. Libération locale refusée ; résoudre le verrou sur $lock_host après vérification manuelle."
+    fi
 
     if c2me_lock_pid_alive "$pid"; then
       c2me_die "une autre opération est déjà en cours (pid $pid, depuis ${started_at:-date inconnue}, verrou : $lock_dir)."
     fi
 
-    c2me_die "verrou orphelin détecté (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier qu'aucun processus n'est actif, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock'."
+    c2me_die "verrou orphelin détecté (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}, hôte $lock_host) : suppression automatique interdite. Vérifier qu'aucun processus n'est actif, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock'."
   fi
 
   if ! mkdir -- "$lock_dir" 2>/dev/null; then
@@ -199,16 +384,29 @@ c2me_release_stale_lock() {
     c2me_die "aucun verrou à libérer : $lock_dir"
   fi
 
-  local pid started_at
+  local pid started_at lock_host
   pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
   started_at="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
+  lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
+
+  if [[ -z "$lock_host" ]]; then
+    c2me_die "verrou sans hôte identifiable : libération refusée. Vérifier manuellement l'absence de processus sur l'hôte concerné."
+  fi
+
+  if [[ "$lock_host" != "${C2ME_HOST_ID:-unknown}" ]]; then
+    c2me_die "le verrou appartient à l'hôte $lock_host, pas à ${C2ME_HOST_ID:-unknown} : libération locale refusée. Résoudre le verrou sur $lock_host après vérification manuelle."
+  fi
+
+  if [[ ! "$pid" =~ ^[0-9]+$ ]]; then
+    c2me_die 'pid absent ou invalide dans le verrou : libération refusée, vérification manuelle requise.'
+  fi
 
   if c2me_lock_pid_alive "$pid"; then
     c2me_die "le verrou est actif (pid $pid depuis ${started_at:-date inconnue}) : libération refusée."
   fi
 
   rm -rf -- "$lock_dir"
-  c2me_info "verrou orphelin libéré explicitement (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue})."
+  c2me_info "verrou orphelin libéré explicitement (pid $pid, depuis ${started_at:-date inconnue}, hôte $lock_host)."
 }
 
 # Applique un mode. Sur les systèmes de test non POSIX (MSYS), chmod est sans
@@ -508,9 +706,9 @@ c2me_compress() {
   local destination="$2"
 
   if [[ "$C2ME_COMPRESSION_TOOL" == 'zstd' ]]; then
-    "$C2ME_ZSTD_BIN" -q -T0 -10 -o "$destination" -- "$source"
+    c2me_run "$C2ME_ZSTD_BIN" -q -T0 -10 -o "$destination" -- "$source"
   else
-    "$C2ME_GZIP_BIN" -9 -c -- "$source" >"$destination"
+    c2me_run "$C2ME_GZIP_BIN" -9 -c -- "$source" >"$destination"
   fi
 }
 
@@ -554,7 +752,7 @@ c2me_age_encrypt() {
   c2me_require_command "$C2ME_AGE_BIN" 'age'
   c2me_require_file "$recipient_file" 'fichier destinataire age'
 
-  if ! "$C2ME_AGE_BIN" --encrypt --recipients-file "$recipient_file" --output "$destination" -- "$source"; then
+  if ! c2me_run "$C2ME_AGE_BIN" --encrypt --recipients-file "$recipient_file" --output "$destination" -- "$source"; then
     c2me_die "échec du chiffrement age de $source."
   fi
 
@@ -569,7 +767,7 @@ c2me_age_decrypt() {
   c2me_require_command "$C2ME_AGE_BIN" 'age'
   c2me_require_file "$identity_file" 'clé privée age'
 
-  if ! "$C2ME_AGE_BIN" --decrypt --identity "$identity_file" --output "$destination" -- "$source"; then
+  if ! c2me_run "$C2ME_AGE_BIN" --decrypt --identity "$identity_file" --output "$destination" -- "$source"; then
     c2me_die "échec du déchiffrement de $source."
   fi
 

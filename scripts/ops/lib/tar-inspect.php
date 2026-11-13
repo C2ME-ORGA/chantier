@@ -22,7 +22,9 @@ const TAR_BLOCK_SIZE = 512;
 const TAR_MAX_ENTRIES = 1_000_000;
 const TAR_MAX_ENTRY_BYTES = 109_951_162_777_600; // 100 Tio
 const TAR_MAX_TOTAL_BYTES = 1_099_511_627_776_000; // 1 Pio
+const TAR_MAX_METADATA_BYTES = 4096;
 const TAR_METADATA_TYPES = ['L', 'K', 'x', 'g'];
+const TAR_PAX_ALLOWED_KEYS = ['path', 'linkpath'];
 
 /**
  * @return array{files:int,dirs:int,bytes:int,entries:int}
@@ -78,6 +80,10 @@ function tar_inspect(string $path): array
             $position += TAR_BLOCK_SIZE;
 
             if (trim($header, "\0") === '') {
+                if ($longName !== null || $paxPath !== null || $paxLink !== null) {
+                    throw new RuntimeException('métadonnées TAR sans entrée cible : archive refusée.');
+                }
+
                 $sawEnd = true;
                 $remainder = $size - $position;
 
@@ -94,6 +100,7 @@ function tar_inspect(string $path): array
             }
 
             tar_verify_checksum($header);
+            tar_assert_supported_format($header);
             $type = tar_type($header);
             $name = tar_name($header);
             $linkname = tar_linkname($header);
@@ -115,12 +122,32 @@ function tar_inspect(string $path): array
                 $data = $declaredSize > 0 ? fread($handle, $declaredSize) : '';
                 $data = $data === false ? '' : $data;
 
+                if ($declaredSize > TAR_MAX_METADATA_BYTES) {
+                    throw new RuntimeException('métadonnées TAR excessives.');
+                }
+
                 if ($type === 'L') {
-                    $longName = rtrim($data, "\0\n");
+                    if ($longName !== null || $paxPath !== null) {
+                        throw new RuntimeException('métadonnées de nom contradictoires ou redondantes : archive refusée.');
+                    }
+
+                    $longName = tar_metadata_value($data, 'nom long GNU');
                 } elseif ($type === 'K') {
-                    $longLink = rtrim($data, "\0\n");
+                    throw new RuntimeException('en-tête GNU K (lien long) refusé : aucun lien n est autorisé dans les archives.');
+                } elseif ($type === 'g') {
+                    throw new RuntimeException('en-tête PAX global g interdit : format non pris en charge.');
                 } elseif ($type === 'x') {
+                    if ($longName !== null || $longLink !== null) {
+                        throw new RuntimeException('métadonnées PAX et GNU contradictoires : archive refusée.');
+                    }
+
                     $pax = tar_parse_pax($data);
+
+                    foreach (array_keys($pax) as $key) {
+                        if (! in_array($key, TAR_PAX_ALLOWED_KEYS, true)) {
+                            throw new RuntimeException("clé PAX non autorisée : {$key}.");
+                        }
+                    }
 
                     if (isset($pax['path'])) {
                         $paxPath = $pax['path'];
@@ -134,6 +161,14 @@ function tar_inspect(string $path): array
                 $position = $dataPosition + $padded;
 
                 continue;
+            }
+
+            if ($longName !== null && $paxPath !== null) {
+                throw new RuntimeException('métadonnées de nom ambiguës : archive refusée.');
+            }
+
+            if ($longLink !== null && $paxLink !== null) {
+                throw new RuntimeException('métadonnées de lien ambiguës : archive refusée.');
             }
 
             $entries++;
@@ -298,37 +333,114 @@ function tar_verify_checksum(string $header): void
     }
 }
 
+function tar_assert_supported_format(string $header): void
+{
+    $magic = substr($header, 257, 6);
+    $version = substr($header, 263, 2);
+
+    $isPosixUstar = $magic === "ustar\0" && $version === '00';
+    $isGnu = $magic === 'ustar ' && $version === " \0";
+
+    if (! $isPosixUstar && ! $isGnu) {
+        throw new RuntimeException('format TAR non pris en charge : seuls ustar POSIX et GNU sont acceptés.');
+    }
+}
+
+function tar_metadata_value(string $data, string $label): string
+{
+    if ($data === '' || ! str_ends_with($data, "\0")) {
+        throw new RuntimeException("métadonnée {$label} invalide : terminaison absente.");
+    }
+
+    $value = substr($data, 0, -1);
+
+    if ($value === '' || str_contains($value, "\0") || str_contains($value, "\n")) {
+        throw new RuntimeException("métadonnée {$label} invalide : contenu ambigu.");
+    }
+
+    if (strlen($value) > TAR_MAX_METADATA_BYTES - 1) {
+        throw new RuntimeException("métadonnée {$label} excessive.");
+    }
+
+    return $value;
+}
+
 /**
+ * Analyse stricte des enregistrements PAX.
+ *
+ * Chaque enregistrement a la forme `<longueur> <clé>=<valeur>\n`, où la
+ * longueur couvre l'enregistrement entier. Toute incohérence est refusée.
+ *
  * @return array<string, string>
  */
 function tar_parse_pax(string $data): array
 {
+    $length = strlen($data);
+
+    if ($length === 0) {
+        throw new RuntimeException('en-tête PAX vide : archive refusée.');
+    }
+
+    if ($length > TAR_MAX_METADATA_BYTES) {
+        throw new RuntimeException('en-tête PAX excessif : archive refusée.');
+    }
+
     $records = [];
     $offset = 0;
-    $length = strlen($data);
 
     while ($offset < $length) {
         $space = strpos($data, ' ', $offset);
 
-        if ($space === false) {
-            break;
+        if ($space === false || $space === $offset) {
+            throw new RuntimeException('en-tête PAX malformé : longueur absente.');
         }
 
-        $recordLength = (int) substr($data, $offset, $space - $offset);
+        $lengthField = substr($data, $offset, $space - $offset);
 
-        if ($recordLength <= 0 || $offset + $recordLength > $length) {
-            throw new RuntimeException('en-tête PAX invalide.');
+        if (preg_match('/^[0-9]{1,9}$/', $lengthField) !== 1) {
+            throw new RuntimeException('en-tête PAX malformé : longueur non numérique.');
         }
 
-        $record = substr($data, $space + 1, $recordLength - ($space - $offset) - 2);
+        $recordLength = (int) $lengthField;
+
+        if ($recordLength < 5 || $offset + $recordLength > $length) {
+            throw new RuntimeException('en-tête PAX malformé : longueur incohérente.');
+        }
+
+        $lastByte = $data[$offset + $recordLength - 1] ?? '';
+
+        if ($lastByte !== "\n") {
+            throw new RuntimeException('en-tête PAX malformé : enregistrement sans fin de ligne.');
+        }
+
+        $record = substr($data, $space + 1, $offset + $recordLength - $space - 2);
         $separator = strpos($record, '=');
 
-        if ($separator !== false) {
-            $key = substr($record, 0, $separator);
-            $records[$key] = substr($record, $separator + 1);
+        if ($separator === false || $separator === 0) {
+            throw new RuntimeException('en-tête PAX malformé : clé ou séparateur absent.');
         }
 
+        $key = substr($record, 0, $separator);
+        $value = substr($record, $separator + 1);
+
+        if (preg_match('/^[A-Za-z0-9._-]+$/', $key) !== 1) {
+            throw new RuntimeException('en-tête PAX malformé : clé invalide.');
+        }
+
+        if (str_contains($value, "\0")) {
+            throw new RuntimeException('en-tête PAX malformé : octet nul dans une valeur.');
+        }
+
+        if (array_key_exists($key, $records)) {
+            throw new RuntimeException("en-tête PAX malformé : clé dupliquée {$key}.");
+        }
+
+        $records[$key] = $value;
         $offset += $recordLength;
+    }
+
+    if ($offset !== $length) {
+        throw new RuntimeException('en-tête PAX malformé : enregistrements incomplets.');
     }
 
     return $records;
