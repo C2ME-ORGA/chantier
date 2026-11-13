@@ -258,7 +258,8 @@ Règles complémentaires :
 ### 5.4 Interruptions et sauvegardes incomplètes
 
 - Le dump est écrit dans un fichier `.partial` en zone de travail `0700`.
-- Un `EXIT`, `HUP`, `INT` ou `TERM` supprime le `.partial` créé par l'exécution courante et journalise un statut `failed`.
+- Le piège `EXIT` assure le nettoyage en toutes circonstances. Les signaux `HUP`, `INT` et `TERM` sont traités par des gestionnaires dédiés qui exécutent le nettoyage puis terminent immédiatement le processus avec un code explicite : `129` (`HUP`), `130` (`INT`), `143` (`TERM`). Aucune opération ne reprend après le nettoyage.
+- Si le processus est tué par `SIGKILL`, aucun gestionnaire ne s'exécute : le verrou et le répertoire de travail peuvent subsister. La procédure de verrou orphelin (§10.4) s'applique ; le répertoire `incoming/` est examiné et jamais promu.
 - Aucun renommage final n'a lieu avant la vérification de compression, le chiffrement et le calcul du checksum.
 - Un artefact incomplet n'est jamais déplacé dans `sets/`. Le répertoire de travail est supprimé par le piège de sortie, y compris après un échec, car il peut contenir un dump en clair ; seul le journal d'exploitation conserve la trace. Aucun artefact incomplet n'est conservé.
 - Un échec du dump n'entraîne jamais la suppression d'un jeu antérieur.
@@ -427,8 +428,20 @@ Le manifeste est écrit **en dernier**, après tous les contrôles. Son propre S
 - Le déchiffrement n'a lieu que pendant une restauration, dans une zone de travail `0700` sous `/var/tmp/c2me-restore` ou en mémoire.
 - Aucune donnée déchiffrée n'est écrite dans une release, dans `public/`, dans `shared/storage/` ou dans la racine de sauvegarde.
 - Le script vérifie que le chemin résolu de la zone de travail ne se trouve sous aucune de ces racines avant d'écrire.
-- La zone de travail est supprimée à la fin, y compris après un échec, par un piège `EXIT`. Un résidu éventuel est signalé et jamais réutilisé.
+- La zone de travail est supprimée à la fin, y compris après un échec, par un piège `EXIT`, et par les gestionnaires `HUP`, `INT` et `TERM`. Un résidu éventuel est signalé et jamais réutilisé.
 - Les fichiers déchiffrés ne sont jamais copiés dans un répertoire accessible par le vhost.
+
+### 8.5 Détection d'une clé privée déposée par erreur
+
+Avant chaque sauvegarde, le script recherche des fichiers dont le **nom** correspond à `age-identity*`, `*.agekey` ou `keys.txt`, sous la racine applicative et sous la racine de sauvegarde, à l'exclusion de `keys/recipient.pub`. Une correspondance bloque l'opération.
+
+Ce contrôle est un **garde-fou heuristique, pas une preuve d'absence** :
+
+- il ne lit pas le contenu des fichiers et ne détecte pas une clé renommée, encodée, stockée dans une base, un fichier de configuration, une variable d'environnement, un historique de shell ou un autre système de fichiers ;
+- il ne couvre ni les volumes montés ailleurs, ni les sauvegardes externes, ni les postes des opérateurs ;
+- il ne remplace pas la règle absolue : la clé privée n'est jamais stockée sur le serveur, dans une release, `shared/`, la racine de sauvegarde ou le dépôt.
+
+L'absence de correspondance ne doit donc jamais être présentée comme une garantie. La conformité repose sur la procédure d'exploitation, la garde de la clé hors serveur et la revue des accès.
 
 ## 9. Contrôle d'intégrité
 
@@ -495,6 +508,20 @@ Chaque jour produit **un jeu complet** (base + fichiers). Il n'existe pas de jou
 - copie hors site (reportée) destinée à couvrir la suppression locale et la perte de serveur ;
 - revue périodique de la liste des jeux et des rapports de restauration.
 
+### 10.4 Verrou orphelin
+
+Une interruption brutale (`SIGKILL`, arrêt du serveur, coupure) peut laisser le répertoire `<BACKUP_ROOT>/.lock` sans que le piège de sortie ait pu s'exécuter. Le verrou contient le PID, l'horodatage de prise et l'hôte.
+
+Règles :
+
+- un verrou existant n'est **jamais supprimé automatiquement** ;
+- le script vérifie si le PID enregistré est encore vivant (`kill -0`) ;
+- PID vivant : l'opération est refusée comme concurrente ; la libération est également refusée ;
+- PID absent, illisible ou mort : l'opération est refusée avec la mention « verrou orphelin » et la commande de récupération ;
+- la récupération est explicite : `backup.sh unlock --env <env> --confirm-stale-lock` (ou `restore.sh unlock`), après vérification humaine qu'aucune sauvegarde ou restauration n'est en cours ;
+- avant libération, vérifier l'absence de processus `backup.sh`/`restore.sh` et l'état de `incoming/` ; un répertoire de travail résiduel est analysé puis supprimé manuellement, jamais promu dans `sets/` ;
+- un PID réutilisé par un autre processus est un cas de faux positif possible ; la confirmation humaine reste obligatoire.
+
 ## 11. RPO, RTO et fréquences
 
 Ces valeurs sont des **propositions à valider**, pas des engagements approuvés.
@@ -541,8 +568,12 @@ Le script de restauration refuse notamment :
 - une base cible égale à `chantier_production` ou `chantier_staging` ;
 - un répertoire cible préexistant, non vide, ou situé sous une racine applicative, une release, un répertoire public ou la racine de sauvegarde ;
 - une clé privée absente, lisible par le groupe ou les autres, ou située dans un emplacement interdit ;
+- une archive dont une entrée n'est pas un fichier régulier ou un répertoire sous `app/private` ou `app/public` : lien symbolique, lien physique, FIFO, socket, périphérique, entrée spéciale, chemin absolu, composant `.` ou `..`, nom avec barre oblique inverse ou hors périmètre ;
+- une archive dont l'en-tête est corrompu, tronqué, sans bloc de fin, ou dont le nombre de fichiers et le volume ne correspondent pas au manifeste ;
 - une cible qui ne correspond pas à l'environnement déclaré du jeu, sauf dérogation écrite documentée ;
 - un opérateur sans droits suffisants pour appliquer le remappage d'appartenance.
+
+Le contrôle des entrées est réalisé par [`scripts/ops/lib/tar-inspect.php`](../../scripts/ops/lib/tar-inspect.php), qui analyse les en-têtes TAR (nom, préfixe, type, taille, checksum, en-têtes GNU `L`/`K` et PAX `x`/`g`) **avant toute extraction**. Aucune extraction ne commence si une seule entrée est interdite.
 
 ### 12.3 Procédure
 
@@ -733,10 +764,15 @@ Ces tests sont statiques : ils ne prouvent ni le comportement MariaDB 10.11, ni 
 [`scripts/ops/tests/test-backup-restore.sh`](../../scripts/ops/tests/test-backup-restore.sh) exécute les scripts dans un bac à sable avec des outils simulés :
 
 - création d'un jeu complet et validation du manifeste ;
+- calcul de `files.total_bytes` sur les seuls fichiers réguliers, avec un jeu de tailles connues ;
 - refus sans mode maintenance ;
 - refus si un fichier change pendant l'opération ;
 - refus en présence d'un lien symbolique ;
 - refus si `age` est absent ;
+- interruption par `INT` et `TERM` : code retour 130/143, aucun jeu promu, verrou et zone de travail nettoyés ;
+- verrou orphelin : refus sans confirmation, refus si le PID est vivant, libération explicite ;
+- inspection d'archives malveillantes : symlink, hardlink, FIFO, `../`, chemin absolu, entrée hors périmètre, en-tête corrompu ;
+- refus d'une restauration dont l'archive contient une entrée interdite, sans création de la cible ;
 - détection d'un artefact altéré ;
 - refus d'une base de restauration préexistante ;
 - refus d'un répertoire cible préexistant ou interdit ;
@@ -744,7 +780,7 @@ Ces tests sont statiques : ils ne prouvent ni le comportement MariaDB 10.11, ni 
 - simulation de rotation sans suppression ;
 - génération et chaînage du rapport de restauration.
 
-Les outils `mariadb-dump`, `mariadb`, `age` et, si nécessaire, `zstd` sont remplacés par des doubles de test. Aucune connexion réelle n'est établie.
+Les fixtures TAR malveillantes sont générées par [`scripts/ops/tests/make-tar-fixture.php`](../../scripts/ops/tests/make-tar-fixture.php). Les outils `mariadb-dump`, `mariadb`, `age` et, si nécessaire, `zstd` sont remplacés par des doubles de test. Aucune connexion réelle n'est établie.
 
 ### 16.3 Contrôles manuels
 

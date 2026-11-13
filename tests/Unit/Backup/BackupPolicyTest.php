@@ -180,20 +180,94 @@ test('la restauration vérifie les permissions finales sans jamais utiliser 777'
     expect(preg_match('/chmod\s+(?:-R\s+)?0?777\b/', $contents))->toBe(0);
 });
 
-test('la restauration décompresse avant import et refuse les archives dangereuses', function () use ($ops): void {
+test('la restauration décompresse avant import et inspecte les archives', function () use ($ops): void {
     $contents = (string) file_get_contents($ops.'/restore.sh');
     $common = (string) file_get_contents($ops.'/lib/common.sh');
+    $inspector = (string) file_get_contents($ops.'/lib/tar-inspect.php');
 
     expect($common)->toContain('c2me_decompress');
 
     expect($contents)
         ->toContain('artifact_compression')
+        ->toContain('tar-inspect.php')
         ->toContain('assert_dump_safe')
         ->toContain('assert_archive_safe')
         ->toContain('assert_inventory_safe')
-        ->toContain('traversée de répertoire dans l archive')
-        ->toContain('hors du périmètre app/private ou app/public')
+        ->toContain('files.file_count')
+        ->toContain('files.total_bytes')
         ->toContain('CREATE|DROP)[[:space:]]+DATABASE');
+
+    expect($inspector)
+        ->toContain('lien symbolique')
+        ->toContain('lien physique')
+        ->toContain('FIFO')
+        ->toContain('périphérique')
+        ->toContain('traversée ou composant de chemin invalide')
+        ->toContain('app/(private|public)')
+        ->toContain('checksum d en-tête TAR invalide');
+
+    expect(is_file($ops.'/tests/make-tar-fixture.php'))->toBeTrue();
+});
+
+test('les signaux nettoient puis terminent le processus avec un code explicite', function () use ($ops): void {
+    $common = (string) file_get_contents($ops.'/lib/common.sh');
+
+    expect($common)
+        ->toContain('c2me_on_signal')
+        ->toContain('trap - EXIT HUP INT TERM')
+        ->toContain('exit "$code"');
+
+    foreach (['backup.sh', 'restore.sh'] as $script) {
+        $contents = (string) file_get_contents($ops.'/'.$script);
+
+        expect($contents)
+            ->toContain('trap c2me_cleanup EXIT')
+            ->toContain("trap 'c2me_on_signal 129' HUP")
+            ->toContain("trap 'c2me_on_signal 130' INT")
+            ->toContain("trap 'c2me_on_signal 143' TERM")
+            ->not->toContain('trap c2me_cleanup EXIT HUP INT TERM');
+    }
+});
+
+test('un verrou orphelin n est jamais supprimé automatiquement', function () use ($root, $ops): void {
+    $common = (string) file_get_contents($ops.'/lib/common.sh');
+    $backup = (string) file_get_contents($ops.'/backup.sh');
+    $restore = (string) file_get_contents($ops.'/restore.sh');
+    $doc = (string) file_get_contents($root.'/docs/development/backup-restore.md');
+    $runbook = (string) file_get_contents($root.'/docs/development/backup-restore-runbook.md');
+
+    expect($common)
+        ->toContain('c2me_lock_pid_alive')
+        ->toContain('kill -0')
+        ->toContain('verrou orphelin')
+        ->toContain('c2me_release_stale_lock');
+
+    expect($backup)->toContain('--confirm-stale-lock');
+    expect($restore)->toContain('--confirm-stale-lock');
+
+    expect($doc)->toContain('### 10.4 Verrou orphelin');
+    expect($runbook)->toContain('### 5.1 Verrou orphelin');
+});
+
+test('files.total_bytes ne somme que les fichiers réguliers', function () use ($ops): void {
+    $contents = (string) file_get_contents($ops.'/backup.sh');
+
+    expect($contents)->toContain('$2 == "f" {sum += $3}');
+});
+
+test('la détection des clés privées est documentée comme heuristique', function () use ($root, $ops): void {
+    $doc = (string) file_get_contents($root.'/docs/development/backup-restore.md');
+    $backup = (string) file_get_contents($ops.'/backup.sh');
+
+    expect($backup)
+        ->toContain('age-identity*')
+        ->toContain('*.agekey')
+        ->toContain('keys.txt');
+
+    expect($doc)
+        ->toContain('### 8.5 Détection d\'une clé privée déposée par erreur')
+        ->toContain('garde-fou heuristique, pas une preuve d\'absence')
+        ->toContain('ne lit pas le contenu des fichiers');
 });
 
 test('le rapport de restauration n est jamais présenté comme signé', function () use ($root, $ops): void {

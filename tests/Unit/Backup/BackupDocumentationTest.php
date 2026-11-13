@@ -114,6 +114,29 @@ test('le runbook opérateur existe et contient les étapes de sauvegarde et de r
         ->toContain('Ne jamais déclarer une restauration réussie sans manifeste, checksums, journaux et rapport.');
 });
 
+test('la documentation couvre les signaux, l inspection TAR et les verrous orphelins', function () use ($docPath): void {
+    $contents = (string) file_get_contents($docPath);
+
+    expect($contents)
+        ->toContain('### 8.5 Détection d\'une clé privée déposée par erreur')
+        ->toContain('### 10.4 Verrou orphelin')
+        ->toContain('`SIGKILL`')
+        ->toContain('tar-inspect.php')
+        ->toContain('lien physique')
+        ->toContain('FIFO')
+        ->toContain('garde-fou heuristique, pas une preuve d\'absence')
+        ->toContain('Aucune extraction ne commence si une seule entrée est interdite');
+});
+
+test('le runbook documente la récupération d un verrou orphelin', function () use ($runbookPath): void {
+    $contents = (string) file_get_contents($runbookPath);
+
+    expect($contents)
+        ->toContain('### 5.1 Verrou orphelin')
+        ->toContain('unlock --env "$ENV" --confirm-stale-lock')
+        ->toContain('Ne jamais supprimer `.lock` par un `rm -rf` improvisé');
+});
+
 test('la documentation est référencée depuis les documents existants', function () use ($root): void {
     $references = [
         $root.'/README.md',

@@ -123,7 +123,14 @@ c2me_register_cleanup() {
   C2ME_CLEANUP_PATHS+=("$1")
 }
 
+C2ME_CLEANUP_DONE=0
+
 c2me_cleanup() {
+  if ((C2ME_CLEANUP_DONE == 1)); then
+    return 0
+  fi
+
+  C2ME_CLEANUP_DONE=1
   local path
   set +e
 
@@ -136,19 +143,72 @@ c2me_cleanup() {
   if [[ -n "${C2ME_LOCK_DIR:-}" && -d "${C2ME_LOCK_DIR:-}" ]]; then
     rm -rf -- "$C2ME_LOCK_DIR" 2>/dev/null || true
   fi
+
+  return 0
+}
+
+# Gestionnaire de signal : nettoie puis termine le processus avec un code
+# explicite. Aucune opération ne reprend après le nettoyage.
+c2me_on_signal() {
+  local code="$1"
+
+  trap - EXIT HUP INT TERM
+  c2me_cleanup
+  exit "$code"
+}
+
+c2me_lock_pid_alive() {
+  local pid="$1"
+
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null
 }
 
 c2me_acquire_lock() {
   local lock_dir="$1"
 
+  if [[ -d "$lock_dir" ]]; then
+    local pid started_at
+    pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
+    started_at="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
+
+    if c2me_lock_pid_alive "$pid"; then
+      c2me_die "une autre opération est déjà en cours (pid $pid, depuis ${started_at:-date inconnue}, verrou : $lock_dir)."
+    fi
+
+    c2me_die "verrou orphelin détecté (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier qu'aucun processus n'est actif, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock'."
+  fi
+
   if ! mkdir -- "$lock_dir" 2>/dev/null; then
-    c2me_die "une autre opération est déjà en cours (verrou : $lock_dir)."
+    c2me_die "impossible de créer le verrou (course concurrente ?) : $lock_dir"
   fi
 
   C2ME_LOCK_DIR="$lock_dir"
   c2me_chmod 0700 -- "$lock_dir"
   printf '%s\n' "$$" >"$lock_dir/pid" 2>/dev/null || true
+  printf '%s\n' "$(c2me_iso_now)" >"$lock_dir/started_at" 2>/dev/null || true
+  printf '%s\n' "${C2ME_HOST_ID:-unknown}" >"$lock_dir/host" 2>/dev/null || true
   C2ME_CLEANUP_PATHS+=("$lock_dir")
+}
+
+# Récupération explicite d'un verrou orphelin. Refuse si le PID est vivant.
+c2me_release_stale_lock() {
+  local lock_dir="$1"
+
+  if [[ ! -d "$lock_dir" ]]; then
+    c2me_die "aucun verrou à libérer : $lock_dir"
+  fi
+
+  local pid started_at
+  pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
+  started_at="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
+
+  if c2me_lock_pid_alive "$pid"; then
+    c2me_die "le verrou est actif (pid $pid depuis ${started_at:-date inconnue}) : libération refusée."
+  fi
+
+  rm -rf -- "$lock_dir"
+  c2me_info "verrou orphelin libéré explicitement (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue})."
 }
 
 # Applique un mode. Sur les systèmes de test non POSIX (MSYS), chmod est sans

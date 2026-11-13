@@ -15,7 +15,10 @@ OPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$OPS_DIR/lib/common.sh"
 
-trap c2me_cleanup EXIT HUP INT TERM
+trap c2me_cleanup EXIT
+trap 'c2me_on_signal 129' HUP
+trap 'c2me_on_signal 130' INT
+trap 'c2me_on_signal 143' TERM
 
 usage() {
   cat <<'EOF'
@@ -29,6 +32,7 @@ Commandes :
   verify                 Vérifie l'intégrité d'un jeu existant
   list                   Liste les jeux et leur statut
   prune                  Applique la rétention (simulation par défaut)
+  unlock                 Libère explicitement un verrou orphelin
 
 Options :
   --env <env>                        Environnement cible (obligatoire)
@@ -38,6 +42,7 @@ Options :
   --confirm-scheduler-disabled       Déclaration : cron neutralisé et vérifié
   --confirm                          Applique réellement la rétention
   --delete-expired                   Supprime les jeux en quarantaine expirés
+  --confirm-stale-lock               Confirme la libération d'un verrou orphelin
   --dry-run                          Simulation (prune)
   -h, --help                         Affiche cette aide
 
@@ -69,6 +74,7 @@ confirm_scheduler=0
 confirm=0
 delete_expired=0
 dry_run=0
+confirm_stale_lock=0
 
 while (($#)); do
   case "$1" in
@@ -98,6 +104,10 @@ while (($#)); do
       ;;
     --delete-expired)
       delete_expired=1
+      shift
+      ;;
+    --confirm-stale-lock)
+      confirm_stale_lock=1
       shift
       ;;
     --dry-run)
@@ -614,7 +624,7 @@ create_set() {
     inventory_compare
 
     local total_bytes
-    total_bytes="$(awk -F'\t' '{sum += $3} END {print sum + 0}' "$C2ME_WORK_DIR/inventory.meta.A")"
+    total_bytes="$(awk -F'\t' '$2 == "f" {sum += $3} END {print sum + 0}' "$C2ME_WORK_DIR/inventory.meta.A")"
     [[ "$total_bytes" =~ ^[0-9]+$ ]] || total_bytes=0
 
     cp -- "$C2ME_WORK_DIR/inventory.sha256.A" "$C2ME_WORK_DIR/inventory.sha256"
@@ -879,6 +889,11 @@ case "$command" in
   prune)
     c2me_acquire_lock "$C2ME_BACKUP_ROOT/.lock"
     prune_sets
+    ;;
+  unlock)
+    ((confirm_stale_lock == 1)) \
+      || c2me_die 'la libération d un verrou exige --confirm-stale-lock après vérification manuelle.'
+    c2me_release_stale_lock "$C2ME_BACKUP_ROOT/.lock"
     ;;
   -h | --help | help)
     usage

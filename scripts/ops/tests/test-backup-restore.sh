@@ -133,6 +133,9 @@ if [[ "${1:-}" == "--version" ]]; then
   echo "mariadb-dump  Ver 10.11.14-MariaDB"
   exit 0
 fi
+if [[ -n "${FAKE_DUMP_SLEEP:-}" ]]; then
+  sleep "$FAKE_DUMP_SLEEP"
+fi
 echo "-- dump factice"
 echo "CREATE TABLE users (id int);"
 echo "INSERT INTO users VALUES (1);"
@@ -221,6 +224,9 @@ done
 
 [[ -n "$output" ]] || { echo 'age factice : --output manquant' >&2; exit 1; }
 [[ -n "$mode" ]] || { echo 'age factice : mode manquant' >&2; exit 1; }
+if [[ -n "${FAKE_AGE_SLEEP:-}" ]]; then
+  sleep "$FAKE_AGE_SLEEP"
+fi
 cp -- "$input" "$output"
 FAKE
 
@@ -306,6 +312,17 @@ if grep -Fq 'data.txt' "$backup_root/sets/$set_id/inventory.sha256"; then
   fail 'le cache framework ne doit pas être sauvegardé.'
 else
   pass
+fi
+
+expected_bytes=$(( $(wc -c <"$root/shared/storage/app/private/contrat.txt") \
+  + $(wc -c <"$root/shared/storage/app/private/sub/plan.pdf") \
+  + $(wc -c <"$root/shared/storage/app/public/photo.txt") ))
+manifest_bytes="$(php "$ops_dir/lib/manifest.php" summary "$manifest" files.total_bytes)"
+
+if [[ "$manifest_bytes" == "$expected_bytes" ]]; then
+  pass
+else
+  fail "files.total_bytes doit sommer uniquement les fichiers réguliers ($manifest_bytes != $expected_bytes)."
 fi
 
 assert_ok 'scope full dans le manifeste' bash -c "[[ \"\$(php '$ops_dir/lib/manifest.php' summary '$manifest' scope)\" == 'full' ]]"
@@ -725,6 +742,273 @@ if [[ -d "$backup_root/sets/$set_id" ]]; then
 else
   fail 'le jeu le plus récent ne doit jamais être supprimé par la rétention.'
 fi
+
+# ---------------------------------------------------------------------------
+# 13. Inspection des archives TAR
+# ---------------------------------------------------------------------------
+
+fixtures_dir="$work_dir/fixtures"
+mkdir -p "$fixtures_dir"
+
+inspector="$ops_dir/lib/tar-inspect.php"
+
+php "$project_root/scripts/ops/tests/make-tar-fixture.php" "$fixtures_dir/valid.tar" valid >/dev/null
+valid_output="$(php "$inspector" "$fixtures_dir/valid.tar" 2>&1)"
+assert_contains "$valid_output" 'files=1' 'archive valide acceptée'
+
+php "$project_root/scripts/ops/tests/make-tar-fixture.php" "$fixtures_dir/valid-multi.tar" valid-multi >/dev/null
+valid_multi_output="$(php "$inspector" "$fixtures_dir/valid-multi.tar" 2>&1)"
+assert_contains "$valid_multi_output" 'files=2 dirs=2' 'archive valide multi-entrées acceptée'
+
+for fixture_type in symlink hardlink fifo chardev blockdev traversal absolute outside dotdot corrupt-checksum truncated special-type; do
+  php "$project_root/scripts/ops/tests/make-tar-fixture.php" "$fixtures_dir/$fixture_type.tar" "$fixture_type" >/dev/null
+
+  if php "$inspector" "$fixtures_dir/$fixture_type.tar" >/dev/null 2>&1; then
+    fail "l archive malveillante '$fixture_type' doit être refusée."
+  else
+    pass
+  fi
+done
+
+# Intégration : une archive interdite ne doit jamais être extraite.
+malicious_id="set-staging-20261113T235958Z-deadbeef"
+cp -R "$backup_root/sets/$set_id" "$backup_root/sets/$malicious_id"
+malicious_dir="$backup_root/sets/$malicious_id"
+files_artifact="$(ls -1 "$malicious_dir" | grep '^files-' | head -n 1)"
+
+php "$project_root/scripts/ops/tests/make-tar-fixture.php" "$fixtures_dir/symlink.tar" symlink >/dev/null
+gzip -c "$fixtures_dir/symlink.tar" >"$malicious_dir/$files_artifact"
+
+php -r '
+    $manifestPath = $argv[1];
+    $artifactPath = $argv[2];
+    $manifest = json_decode(file_get_contents($manifestPath), true);
+    foreach ($manifest["artifacts"] as &$artifact) {
+        if ($artifact["kind"] === "files") {
+            $artifact["sha256"] = hash_file("sha256", $artifactPath);
+            $artifact["bytes"] = filesize($artifactPath);
+        }
+    }
+    unset($artifact);
+    file_put_contents($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+' "$malicious_dir/manifest.json" "$malicious_dir/$files_artifact"
+
+(
+  cd "$malicious_dir"
+  sha256sum db-* "$files_artifact" inventory.sha256 inventory.meta manifest.json >SHA256SUMS
+  sha256sum manifest.json >manifest.json.sha256
+)
+
+refused_target="$work_dir/restauration/refus-archive"
+output="$(run_restore files --env staging --set "$malicious_id" --target-dir "$refused_target" --owner "$owner" --identity "$work_dir/id.age")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'archive refusée' 'refus d une archive contenant un lien symbolique'
+else
+  fail 'une archive contenant un lien symbolique doit être refusée.'
+fi
+
+assert_dir_absent "$refused_target" 'aucune extraction vers la cible'
+
+# ---------------------------------------------------------------------------
+# 14. Signaux et nettoyage
+# ---------------------------------------------------------------------------
+
+signals_supported=0
+bash -c 'trap "exit 143" TERM; sleep 3' &
+probe_pid=$!
+sleep 0.5
+
+if kill -TERM "$probe_pid" 2>/dev/null; then
+  wait "$probe_pid" 2>/dev/null
+  if [[ "$?" == '143' ]]; then
+    signals_supported=1
+  fi
+else
+  wait "$probe_pid" 2>/dev/null || true
+fi
+
+wait_for_nonempty() {
+  local directory="$1"
+  local attempt
+
+  for attempt in $(seq 1 100); do
+    if [[ -n "$(ls -A "$directory" 2>/dev/null)" ]]; then
+      return 0
+    fi
+    sleep 0.1
+  done
+
+  return 1
+}
+
+run_with_signal() {
+  local signal="$1"
+  local expected_code="$2"
+  local label="$3"
+  local log="$work_dir/signal-${label}.log"
+  local sets_before sets_after pid status
+
+  sets_before="$(ls -1 "$backup_root/sets" | wc -l | tr -d ' ')"
+
+  FAKE_DUMP_SLEEP=10 bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+    --confirm-workers-stopped --confirm-scheduler-disabled >"$log" 2>&1 &
+  pid=$!
+
+  if wait_for_nonempty "$backup_root/incoming"; then
+    kill "-$signal" "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    status=$?
+
+    if [[ "$status" == "$expected_code" ]]; then
+      pass
+    else
+      fail "signal $signal : code retour $status au lieu de $expected_code."
+    fi
+
+    sets_after="$(ls -1 "$backup_root/sets" | wc -l | tr -d ' ')"
+
+    if [[ "$sets_before" == "$sets_after" ]]; then
+      pass
+    else
+      fail "signal $signal : un jeu incomplet a été promu."
+    fi
+
+    if [[ -z "$(ls -A "$backup_root/incoming" 2>/dev/null)" ]]; then
+      pass
+    else
+      fail "signal $signal : la zone de travail n'a pas été nettoyée."
+    fi
+
+    if [[ ! -e "$backup_root/.lock" ]]; then
+      pass
+    else
+      fail "signal $signal : le verrou n'a pas été nettoyé."
+    fi
+  else
+    fail "signal $signal : la sauvegarde n'a pas démarré."
+    kill -KILL "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    rm -rf "$backup_root/.lock"
+  fi
+}
+
+if ((signals_supported == 1)); then
+  set -m
+  run_with_signal TERM 143 'term'
+  run_with_signal INT 130 'int'
+  set +m
+else
+  skip 'les signaux ne peuvent pas être délivrés sur cette plateforme : tests TERM/INT non exécutés.'
+fi
+
+if ((signals_supported == 1)); then
+  restore_target="$work_dir/restauration/signal"
+  FAKE_AGE_SLEEP=10 bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
+    --target-dir "$restore_target" --owner "$owner" --identity "$work_dir/id.age" \
+    >"$work_dir/signal-restore.log" 2>&1 &
+  restore_pid=$!
+
+  if wait_for_nonempty "$work_dir/work"; then
+    kill -TERM "$restore_pid" 2>/dev/null
+    wait "$restore_pid" 2>/dev/null
+    restore_status=$?
+
+    if [[ "$restore_status" == '143' ]]; then
+      pass
+    else
+      fail "restauration interrompue : code $restore_status au lieu de 143."
+    fi
+
+    if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
+      pass
+    else
+      fail 'une interruption de restauration doit supprimer la zone de travail déchiffrée.'
+    fi
+
+    if [[ ! -e "$backup_root/.lock" ]]; then
+      pass
+    else
+      fail 'une interruption de restauration doit libérer le verrou.'
+    fi
+
+    assert_dir_absent "$restore_target" 'aucune cible créée par une restauration interrompue'
+  else
+    fail 'la restauration n a pas démarré pour le test de signal.'
+    kill -KILL "$restore_pid" 2>/dev/null || true
+    wait "$restore_pid" 2>/dev/null || true
+    rm -rf "$backup_root/.lock"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# 15. Verrou orphelin
+# ---------------------------------------------------------------------------
+
+sleep 0.1 &
+dead_pid=$!
+wait "$dead_pid" 2>/dev/null || true
+
+mkdir "$backup_root/.lock"
+printf '%s\n' "$dead_pid" >"$backup_root/.lock/pid"
+printf '2026-11-13T00:00:00Z\n' >"$backup_root/.lock/started_at"
+printf 'test-host\n' >"$backup_root/.lock/host"
+
+output="$(run_backup set --env staging --trigger manual --confirm-workers-stopped --confirm-scheduler-disabled)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'orphelin' 'verrou orphelin refusé sans libération'
+else
+  fail 'un verrou orphelin doit être refusé.'
+fi
+
+output="$(run_backup unlock --env staging)"
+status=$?
+
+if ((status != 0)); then
+  pass
+else
+  fail 'unlock sans --confirm-stale-lock doit être refusé.'
+fi
+
+output="$(run_backup unlock --env staging --confirm-stale-lock)"
+status=$?
+
+if [[ "$status" == '0' && ! -e "$backup_root/.lock" ]]; then
+  pass
+else
+  fail "unlock --confirm-stale-lock doit libérer le verrou orphelin. Sortie : $output"
+fi
+
+mkdir "$backup_root/.lock"
+printf '%s\n' "$$" >"$backup_root/.lock/pid"
+printf '2026-11-13T00:00:00Z\n' >"$backup_root/.lock/started_at"
+
+output="$(run_backup set --env staging --trigger manual --confirm-workers-stopped --confirm-scheduler-disabled)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'déjà en cours' 'verrou actif refusé'
+else
+  fail 'un verrou actif doit être refusé.'
+fi
+
+output="$(run_backup unlock --env staging --confirm-stale-lock)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'actif' 'libération d un verrou actif refusée'
+else
+  fail 'la libération d un verrou actif doit être refusée.'
+fi
+
+rm -rf "$backup_root/.lock"
 
 # ---------------------------------------------------------------------------
 # Bilan

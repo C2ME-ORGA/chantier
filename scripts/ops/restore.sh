@@ -14,7 +14,10 @@ OPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$OPS_DIR/lib/common.sh"
 
-trap c2me_cleanup EXIT HUP INT TERM
+trap c2me_cleanup EXIT
+trap 'c2me_on_signal 129' HUP
+trap 'c2me_on_signal 130' INT
+trap 'c2me_on_signal 143' TERM
 
 usage() {
   cat <<'EOF'
@@ -26,6 +29,7 @@ Commandes :
   files         Restaure les fichiers dans un répertoire neuf
   all           Restaure la base puis les fichiers
   report        Produit et chaîne le rapport de restauration
+  unlock        Libère explicitement un verrou orphelin
 
 Options :
   --env <env>                 Environnement du jeu (obligatoire)
@@ -35,6 +39,7 @@ Options :
   --owner <user:groupe>       Remappage d'appartenance (obligatoire pour files)
   --identity <fichier>        Clé privée age, 0600, hors emplacement interdit
   --notes <texte>             Notes du rapport
+  --confirm-stale-lock        Confirme la libération d'un verrou orphelin
   -h, --help                  Affiche cette aide
 
 Aucune donnée déchiffrée n'est conservée : la zone de travail est supprimée
@@ -56,6 +61,7 @@ target_dir=""
 owner=""
 identity=""
 notes=""
+confirm_stale_lock=0
 
 while (($#)); do
   case "$1" in
@@ -86,6 +92,10 @@ while (($#)); do
     --notes)
       notes="${2:-}"
       shift 2
+      ;;
+    --confirm-stale-lock)
+      confirm_stale_lock=1
+      shift
       ;;
     -h | --help)
       usage
@@ -264,18 +274,30 @@ state_set() {
 
 assert_archive_safe() {
   local archive="$1"
-  local entries
+  local output files dirs bytes expected_files expected_bytes
 
-  entries="$("$C2ME_TAR_BIN" -tf "$archive")" \
-    || c2me_die 'archive illisible : restauration refusée.'
-
-  if printf '%s\n' "$entries" | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
-    c2me_die 'chemin absolu ou traversée de répertoire dans l archive : restauration refusée.'
+  if ! output="$("$C2ME_PHP_BIN" "$OPS_DIR/lib/tar-inspect.php" "$archive" 2>&1)"; then
+    c2me_die "archive refusée : $output"
   fi
 
-  if printf '%s\n' "$entries" | grep -Evq '^(app/private|app/public)(/|$)'; then
-    c2me_die 'entrée hors du périmètre app/private ou app/public : restauration refusée.'
-  fi
+  files="$(printf '%s' "$output" | sed -n 's/.*files=\([0-9]*\).*/\1/p')"
+  dirs="$(printf '%s' "$output" | sed -n 's/.*dirs=\([0-9]*\).*/\1/p')"
+  bytes="$(printf '%s' "$output" | sed -n 's/.*bytes=\([0-9]*\).*/\1/p')"
+
+  [[ "$files" =~ ^[0-9]+$ && "$dirs" =~ ^[0-9]+$ && "$bytes" =~ ^[0-9]+$ ]] \
+    || c2me_die 'inspection de l archive illisible : restauration refusée.'
+
+  expected_files="$(c2me_manifest_summary "$C2ME_SET_DIR/manifest.json" files.file_count)"
+  expected_bytes="$(c2me_manifest_summary "$C2ME_SET_DIR/manifest.json" files.total_bytes)"
+
+  [[ "$files" == "$expected_files" ]] \
+    || c2me_die "incohérence archive/manifeste : $files fichiers dans l archive, $expected_files annoncés."
+
+  [[ "$bytes" == "$expected_bytes" ]] \
+    || c2me_die "incohérence archive/manifeste : $bytes octets de fichiers dans l archive, $expected_bytes annoncés."
+
+  C2ME_ARCHIVE_FILES="$files"
+  C2ME_ARCHIVE_BYTES="$bytes"
 }
 
 assert_inventory_safe() {
@@ -644,6 +666,11 @@ case "$command" in
   report)
     assert_set_valid
     write_report
+    ;;
+  unlock)
+    ((confirm_stale_lock == 1)) \
+      || c2me_die 'la libération d un verrou exige --confirm-stale-lock après vérification manuelle.'
+    c2me_release_stale_lock "$C2ME_BACKUP_ROOT/.lock"
     ;;
   -h | --help | help)
     usage

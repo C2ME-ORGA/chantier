@@ -357,6 +357,42 @@ bash scripts/ops/backup.sh prune --env "$ENV" --confirm --delete-expired
 
 Ne sont jamais supprimés : le jeu le plus récent, un jeu référencé par un rapport de restauration, un jeu `pre-migration` non clos.
 
+### 5.1 Verrou orphelin
+
+Un arrêt brutal (`SIGKILL`, arrêt du serveur, coupure) peut laisser `<BACKUP_ROOT>/.lock`. Le verrou n'est jamais supprimé automatiquement.
+
+1. Vérifier qu'aucune opération n'est en cours :
+
+   ```bash
+   pgrep -af 'backup.sh|restore.sh' || echo 'aucun processus backup/restore'
+   ```
+
+2. Lire les métadonnées du verrou :
+
+   ```bash
+   cat "$BACKUP_ROOT/.lock/pid" "$BACKUP_ROOT/.lock/started_at" "$BACKUP_ROOT/.lock/host"
+   ```
+
+3. Vérifier l'état du PID :
+
+   ```bash
+   ps -p "$(cat "$BACKUP_ROOT/.lock/pid")" -o pid,etime,cmd
+   ```
+
+   Si le processus existe encore, **ne rien libérer** : attendre ou analyser.
+
+4. Vérifier `incoming/` : un répertoire de travail résiduel est analysé puis supprimé manuellement, jamais promu dans `sets/`.
+
+5. Libérer explicitement le verrou orphelin :
+
+   ```bash
+   bash scripts/ops/backup.sh unlock --env "$ENV" --confirm-stale-lock
+   ```
+
+   `restore.sh unlock --env "$ENV" --confirm-stale-lock` existe pour le même verrou.
+
+6. Ne jamais supprimer `.lock` par un `rm -rf` improvisé : le script refuse un verrou dont le PID est vivant et conserve la trace.
+
 ## 6. Checklist d'exécution
 
 ### Sauvegarde
@@ -394,7 +430,9 @@ Ne sont jamais supprimés : le jeu le plus récent, un jeu référencé par un r
 
 | Situation | Action |
 | --- | --- |
-| Sauvegarde interrompue | Ne pas promouvoir le jeu ; vérifier `failed/`, relancer après diagnostic |
+| Sauvegarde interrompue par `INT` ou `TERM` | Code retour 130 ou 143 attendu ; vérifier que `incoming/` et `.lock` sont absents ; aucun jeu n'est promu |
+| Arrêt brutal (`SIGKILL`, serveur) | Verrou et zone de travail possibles ; appliquer §5.1, ne jamais promouvoir le jeu incomplet |
+| Sauvegarde interrompue | Ne pas promouvoir le jeu ; vérifier `incoming/`, relancer après diagnostic |
 | Fichier modifié pendant l'opération | Invalider le jeu, vérifier l'arrêt réel des workers et du cron, recommencer |
 | Checksum différent | Invalider le jeu, conserver les artefacts, analyser le support et le transfert |
 | Restauration interrompue | Ne pas réutiliser la cible, analyser les journaux, recréer une cible neuve |
