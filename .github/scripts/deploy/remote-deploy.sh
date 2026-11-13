@@ -15,6 +15,11 @@ readonly PRODUCTION_ROOT='/www/wwwroot/chantier'
 readonly STAGING_USER='c2me-deploy-staging'
 readonly PRODUCTION_USER='c2me-deploy-production'
 
+# Marqueur de propriété écrit dans tout répertoire créé par l'exécution
+# courante. Le nettoyage ne supprime un répertoire que si ce marqueur contient
+# le jeton unique de l'exécution : un nom de chemin prévisible ne suffit jamais.
+readonly OWNER_MARKER='.c2me-deploy-owner'
+
 environment=""
 release_id=""
 version=""
@@ -41,6 +46,7 @@ activated=0
 log_ready=0
 entries_file=""
 verbose_file=""
+run_token=""
 
 usage() {
   cat <<'USAGE'
@@ -67,8 +73,26 @@ log() {
   printf '[%s] %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"
 }
 
+# Ligne JSON du journal. Ne reçoit et n'écrit que des valeurs déjà validées par
+# le script ; aucun contenu de fichier n'y est injecté.
+deployment_log_line() {
+  local status="$1"
+
+  printf '{"timestamp":"%s","environment":"%s","release":"%s","version":"%s","commit":"%s","artifact_id":"%s","sha256":"%s","status":"%s","user":"%s"}\n' \
+    "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    "$environment" \
+    "$release_id" \
+    "$version" \
+    "$commit_sha" \
+    "$artifact_id" \
+    "$expected_sha" \
+    "$status" \
+    "$(id -un)"
+}
+
 # Journalise uniquement si le chemin de journal a été jugé sûr par
-# prepare_logging(). N'écrit jamais dans .env ni dans storage.
+# prepare_logging(). N'écrit jamais dans .env ni dans storage et ne suit jamais
+# un lien symbolique.
 deployment_log() {
   local status="$1"
 
@@ -78,25 +102,36 @@ deployment_log() {
 
   local log_file="$shared/deployment.log"
 
+  if [[ -L "$log_file" ]]; then
+    printf 'ERREUR: journal symbolique détecté, écriture refusée : %s\n' "$log_file" >&2
+    return 1
+  fi
+
+  if [[ -e "$log_file" && ! -f "$log_file" ]]; then
+    printf 'ERREUR: journal non régulier, écriture refusée : %s\n' "$log_file" >&2
+    return 1
+  fi
+
   (
     umask 077
-    printf '{"timestamp":"%s","environment":"%s","release":"%s","version":"%s","commit":"%s","artifact_id":"%s","sha256":"%s","status":"%s","user":"%s"}\n' \
-      "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
-      "$environment" \
-      "$release_id" \
-      "$version" \
-      "$commit_sha" \
-      "$artifact_id" \
-      "$expected_sha" \
-      "$status" \
-      "$(id -un)"
-  ) >> "$log_file"
+
+    if [[ -e "$log_file" ]]; then
+      deployment_log_line "$status" >> "$log_file"
+    else
+      # noclobber empêche de créer le journal à travers un lien apparu entre
+      # le contrôle de prepare_logging() et cette écriture.
+      set -C
+      deployment_log_line "$status" > "$log_file"
+    fi
+  )
 }
 
 prepare_logging() {
   [[ -n "$root" ]] || return 0
 
-  if [[ ! -e "$shared" ]]; then
+  # Pré-déploiement : `shared` n'a pas encore été provisionné, le déploiement
+  # échouera plus loin faute de stockage partagé. Aucun journal n'est exigé.
+  if [[ ! -e "$shared" && ! -L "$shared" ]]; then
     return 0
   fi
 
@@ -104,8 +139,14 @@ prepare_logging() {
     die "racine de déploiement invalide ou symbolique : $root"
   fi
 
-  if [[ ! -d "$shared" || -L "$shared" ]]; then
-    die "répertoire shared invalide ou symbolique : $shared"
+  # `shared` existe (y compris sous forme de lien cassé) : il doit s'agir d'un
+  # répertoire réel. La journalisation devient obligatoire.
+  if [[ -L "$shared" ]]; then
+    die "répertoire shared symbolique interdit : journalisation impossible"
+  fi
+
+  if [[ ! -d "$shared" ]]; then
+    die "répertoire shared invalide : journalisation impossible"
   fi
 
   if [[ ! -w "$shared" ]]; then
@@ -114,11 +155,11 @@ prepare_logging() {
 
   local log_file="$shared/deployment.log"
 
-  if [[ -e "$log_file" || -L "$log_file" ]]; then
-    if [[ -L "$log_file" ]]; then
-      die "journal symbolique interdit : $log_file"
-    fi
+  if [[ -L "$log_file" ]]; then
+    die "journal symbolique interdit : $log_file"
+  fi
 
+  if [[ -e "$log_file" ]]; then
     if [[ ! -f "$log_file" ]]; then
       die "journal non régulier : $log_file"
     fi
@@ -129,6 +170,13 @@ prepare_logging() {
   fi
 
   log_ready=1
+
+  # Une écriture réelle prouve que le journal est utilisable (permissions,
+  # espace disque, système de fichiers non figé) avant toute action métier.
+  if ! deployment_log "start"; then
+    log_ready=0
+    die "journal de déploiement inutilisable : $log_file"
+  fi
 }
 
 # Politique de permissions de shared/.env :
@@ -143,26 +191,107 @@ env_mode_is_secure() {
   (( (8#$mode & 8#0020) == 0 && (8#$mode & 8#0007) == 0 ))
 }
 
-# Ne supprime que les répertoires créés par l'exécution courante. Une release
-# préexistante, une release active, `current` et `shared/` ne sont jamais
-# supprimés.
+# Jeton unique de l'exécution. Il est écrit dans chaque répertoire créé pour
+# prouver la propriété de création sans se fier au nom du chemin.
+init_run_token() {
+  [[ -n "$run_token" ]] && return 0
+
+  local random=""
+
+  random="$(od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"
+
+  [[ -n "$random" ]] || random="$$-${RANDOM}-${RANDOM}-$(date -u '+%s')"
+
+  run_token="c2me-${release_id:-unknown}-$$-${random}"
+}
+
+# Écrit le marqueur de propriété dans un répertoire fraîchement créé. Le
+# marqueur est créé sans écrasement (noclobber) et n'est jamais un lien.
+claim_created_directory() {
+  local directory="$1"
+  local marker="$directory/$OWNER_MARKER"
+
+  [[ -n "$run_token" ]] || return 1
+  [[ -d "$directory" && ! -L "$directory" ]] || return 1
+
+  if ! ( set -C; printf '%s\n' "$run_token" > "$marker" ) 2>/dev/null; then
+    return 1
+  fi
+
+  chmod 0600 "$marker" 2>/dev/null || true
+}
+
+# Vérifie que le répertoire a bien été créé par cette exécution : marqueur
+# régulier, non symbolique, dont le contenu correspond au jeton courant.
+directory_owned_by_run() {
+  local directory="$1"
+  local marker="$directory/$OWNER_MARKER"
+  local recorded=""
+
+  [[ -n "$run_token" ]] || return 1
+  [[ -d "$directory" && ! -L "$directory" ]] || return 1
+  [[ -f "$marker" && ! -L "$marker" ]] || return 1
+
+  recorded="$(cat -- "$marker" 2>/dev/null || true)"
+
+  [[ "$recorded" == "$run_token" ]]
+}
+
+# Conserve un résidu plutôt que de risquer une suppression destructive.
+retain_residue() {
+  local directory="$1"
+
+  printf 'AVERTISSEMENT: résidu conservé, suppression non sûre : %s\n' "$directory" >&2
+  deployment_log "incomplete-retained" || true
+}
+
+# Ne supprime que les répertoires dont cette exécution prouve la propriété.
+# Une release préexistante, une release active, `current` et `shared/` ne sont
+# jamais supprimés. Une interruption entre la création et le positionnement de
+# l'indicateur en mémoire reste couverte : la décision repose sur le marqueur
+# de propriété, pas sur l'indicateur seul.
 cleanup_incomplete() {
-  if [[ "$incoming_created" -eq 1 && -n "$incoming_dir" && -d "$incoming_dir" ]]; then
+  local active=""
+
+  if [[ -n "$incoming_dir" && -d "$incoming_dir" && ! -L "$incoming_dir" ]]; then
     case "$incoming_dir" in
-      "$root/releases/.incoming-"*) rm -rf -- "$incoming_dir" ;;
+      "$root/releases/.incoming-"*)
+        if directory_owned_by_run "$incoming_dir"; then
+          rm -rf -- "$incoming_dir" || retain_residue "$incoming_dir"
+        elif [[ "$incoming_created" -eq 1 ]]; then
+          retain_residue "$incoming_dir"
+        fi
+        ;;
+      *)
+        if [[ "$incoming_created" -eq 1 ]]; then
+          retain_residue "$incoming_dir"
+        fi
+        ;;
     esac
   fi
 
-  if [[ "$release_created" -eq 1 && "$activated" -eq 0 && -n "$release_dir" && -d "$release_dir" ]]; then
-    local active
-    active="$(readlink -f "$root/current" 2>/dev/null || true)"
+  if [[ "$activated" -eq 0 && -n "$release_dir" && -d "$release_dir" && ! -L "$release_dir" ]]; then
+    case "$release_dir" in
+      "$root/releases/"*)
+        if directory_owned_by_run "$release_dir"; then
+          active="$(readlink -f "$root/current" 2>/dev/null || true)"
 
-    if [[ "$active" != "$(readlink -f "$release_dir" 2>/dev/null || true)" ]]; then
-      case "$release_dir" in
-        "$root/releases/"*) rm -rf -- "$release_dir" ;;
-      esac
-    fi
+          if [[ "$active" != "$(readlink -f "$release_dir" 2>/dev/null || true)" ]]; then
+            rm -rf -- "$release_dir" || retain_residue "$release_dir"
+          fi
+        elif [[ "$release_created" -eq 1 ]]; then
+          retain_residue "$release_dir"
+        fi
+        ;;
+      *)
+        if [[ "$release_created" -eq 1 ]]; then
+          retain_residue "$release_dir"
+        fi
+        ;;
+    esac
   fi
+
+  return 0
 }
 
 on_exit() {
@@ -396,7 +525,9 @@ main() {
   [[ ! -e "$release_dir" ]] || die "la release existe déjà : $release_id"
 
   # Répertoire unique créé par mktemp : une collision ne peut pas désigner un
-  # répertoire préexistant ou appartenant à une autre exécution.
+  # répertoire préexistant ou appartenant à une autre exécution. Les signaux
+  # sont ignorés pendant la création et le marquage de propriété.
+  init_run_token
   mask_signals
 
   if ! incoming_dir="$(mktemp -d "$root/releases/.incoming-${release_id}-XXXXXX")"; then
@@ -405,6 +536,12 @@ main() {
   fi
 
   incoming_created=1
+
+  if ! claim_created_directory "$incoming_dir"; then
+    unmask_signals
+    die "marquage de propriété du répertoire d'extraction impossible"
+  fi
+
   unmask_signals
 
   [[ -d "$incoming_dir" && ! -L "$incoming_dir" ]] || die "répertoire d'extraction invalide : $incoming_dir"
@@ -413,6 +550,11 @@ main() {
   tar -xzf "$package_real" -C "$incoming_dir" --no-same-owner --no-same-permissions
 
   verify_extraction "$incoming_dir"
+
+  # Le paquet ne doit pas avoir remplacé le marqueur de propriété créé par
+  # cette exécution. Un marqueur altéré interdit la publication.
+  directory_owned_by_run "$incoming_dir" \
+    || die "marqueur de propriété du répertoire d'extraction invalide"
 
   [[ -f "$incoming_dir/artisan" ]] || die "release incomplète : artisan absent"
   [[ -f "$incoming_dir/vendor/autoload.php" ]] || die "release incomplète : vendor absent"
@@ -492,6 +634,12 @@ JSON
 
   activated=1
   unmask_signals
+
+  # Le marqueur de propriété ne fait pas partie du contenu applicatif de la
+  # release activée. Son retrait n'est pas critique : en cas d'échec, un
+  # fichier caché inoffensif reste présent et la release active est conservée.
+  rm -f -- "$release_dir/$OWNER_MARKER" \
+    || log "avertissement: marqueur de propriété non supprimé : $release_dir/$OWNER_MARKER"
 
   deployment_log "success"
   log "release $release_id activée pour $environment"

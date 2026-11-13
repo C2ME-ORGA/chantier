@@ -73,11 +73,20 @@ if [[ -d vendor/bin ]]; then
   vendor_bin_symlinks="$(find vendor/bin -type l | wc -l)"
 fi
 
-printf 'Liens symboliques dans vendor/bin : %s\n' "$vendor_bin_symlinks"
+printf 'Liens symboliques Composer dans vendor/bin : %s\n' "$vendor_bin_symlinks"
 
-if [[ "$vendor_bin_symlinks" -eq 0 ]]; then
-  printf 'AVERTISSEMENT: aucun lien vendor/bin détecté ; le test reste valide.\n'
-fi
+# Les dépendances de production de cette application n'ont pas forcément de
+# binaire Composer. Un lien de contrôle est ajouté pour exercer réellement
+# l'exclusion de vendor/bin ; le paquet de production reste celui de Composer.
+mkdir -p vendor/bin
+ln -s ../autoload.php vendor/bin/control-link
+printf 'Lien symbolique de contrôle ajouté dans vendor/bin.\n'
+
+# Toutes les dépendances installées doivent rester présentes : chaque paquet
+# Composer conserve son manifeste, hors vendor/bin et hors fichiers de test ou
+# de documentation déjà exclus par l'assembleur.
+vendor_package_manifests="$out_dir/vendor-packages.txt"
+find vendor -mindepth 2 -maxdepth 2 -type f -name composer.json | sort > "$vendor_package_manifests"
 
 tag='v0.0.0-rc.1'
 archive="$out_dir/chantier-${tag}.tar.gz"
@@ -95,8 +104,42 @@ if grep -Eq '^\./vendor/bin/' "$work_dir/entries.txt"; then
   fail "vendor/bin est présent dans l'archive"
 fi
 
+if grep -Eq '^\./vendor/bin' "$work_dir/entries.txt"; then
+  fail "vendor/bin est présent dans l'archive (entrée de répertoire incluse)"
+fi
+
 grep -Fqx -- './vendor/autoload.php' "$work_dir/entries.txt" \
   || fail "vendor/autoload.php absent de l'archive"
+
+grep -Fqx -- './vendor/composer/autoload_real.php' "$work_dir/entries.txt" \
+  || fail "autoload_real.php absent de l'archive"
+
+grep -Fqx -- './vendor/composer/autoload_static.php' "$work_dir/entries.txt" \
+  || fail "autoload_static.php absent de l'archive"
+
+grep -Fqx -- './vendor/composer/installed.php' "$work_dir/entries.txt" \
+  || fail "installed.php absent de l'archive"
+
+grep -Fqx -- './vendor/laravel/framework/src/Illuminate/Foundation/Application.php' "$work_dir/entries.txt" \
+  || fail "dépendance laravel/framework absente de l'archive"
+
+# Chaque paquet installé par Composer doit avoir son manifeste dans l'archive.
+# Une exclusion trop large (tests, docs, certificats) ne doit jamais retirer un
+# paquet entier ni son autoloader.
+missing_packages=0
+
+while IFS= read -r manifest; do
+  [[ -n "$manifest" ]] || continue
+
+  if ! grep -Fqx -- "./$manifest" "$work_dir/entries.txt"; then
+    printf "Paquet Composer absent de l'archive : %s\n" "$manifest" >&2
+    missing_packages=$((missing_packages + 1))
+  fi
+done < "$vendor_package_manifests"
+
+if [[ "$missing_packages" -ne 0 ]]; then
+  fail "$missing_packages paquet(s) Composer absent(s) de l'archive"
+fi
 
 grep -Fqx -- './artisan' "$work_dir/entries.txt" \
   || fail "artisan absent de l'archive"
@@ -123,6 +166,15 @@ fi
 
 mkdir -p "$work_dir/extract"
 tar -xzf "$archive" -C "$work_dir/extract"
+
+php -r '
+$loader = require $argv[1];
+if (! $loader->findFile("Illuminate\\Foundation\\Application")) {
+    fwrite(STDERR, "autoload Laravel inutilisable\n");
+    exit(1);
+}
+' "$work_dir/extract/vendor/autoload.php" \
+  || fail "autoloader Composer inutilisable dans l'archive extraite"
 
 if grep -RIlE 'BEGIN (RSA |OPENSSH |EC |DSA )?PRIVATE KEY|APP_KEY=base64:|DB_PASSWORD=|SSH_PRIVATE_KEY' \
   "$work_dir/extract" >/dev/null 2>&1; then

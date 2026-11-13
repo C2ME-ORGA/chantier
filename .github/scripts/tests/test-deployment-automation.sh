@@ -6,7 +6,7 @@
 # Les fonctions des scripts serveur sont sourcées dynamiquement pour tester le
 # nettoyage et les permissions ; les variables consommées par ces fonctions
 # sont donc volontairement définies dans les sous-shells de test.
-# shellcheck disable=SC1090,SC2034,SC2154
+# shellcheck disable=SC1090,SC1091,SC2015,SC2034,SC2154
 
 set -euo pipefail
 
@@ -943,11 +943,14 @@ logging_case="$work_dir/log-absent"
 rm -rf "$logging_case"
 mkdir -p "$logging_case"
 if prepare_logging_check "$logging_case" 0; then pass; else fail "shared absent : pré-déploiement attendu."; fi
+[[ ! -e "$logging_case/shared/deployment.log" ]] && pass || fail "shared absent : un journal a été créé."
 
 logging_case="$work_dir/log-no-file"
 rm -rf "$logging_case"
 mkdir -p "$logging_case/shared"
 if prepare_logging_check "$logging_case" 1; then pass; else fail "journal absent avec shared inscriptible : journalisation attendue."; fi
+if [[ -f "$logging_case/shared/deployment.log" ]]; then pass; else fail "journal absent : le journal n'a pas été créé."; fi
+assert_contains "$logging_case/shared/deployment.log" '"status":"start"' "Journalisation d'ouverture"
 
 logging_case="$work_dir/log-writable"
 rm -rf "$logging_case"
@@ -955,12 +958,19 @@ mkdir -p "$logging_case/shared"
 printf 'log\n' > "$logging_case/shared/deployment.log"
 chmod 600 "$logging_case/shared/deployment.log"
 if prepare_logging_check "$logging_case" 1; then pass; else fail "journal inscriptible refusé."; fi
+assert_contains "$logging_case/shared/deployment.log" '"status":"start"' "Journalisation d'ouverture"
 
 logging_case="$work_dir/log-symlink"
 rm -rf "$logging_case"
 mkdir -p "$logging_case/shared"
 MSYS=winsymlinks:nativestrict ln -s /etc/passwd "$logging_case/shared/deployment.log"
 if prepare_logging_check "$logging_case" 1; then fail "journal symbolique accepté."; else pass; fi
+
+logging_case="$work_dir/log-dangling-symlink"
+rm -rf "$logging_case"
+mkdir -p "$logging_case/shared"
+MSYS=winsymlinks:nativestrict ln -s "$logging_case/missing-log" "$logging_case/shared/deployment.log"
+if prepare_logging_check "$logging_case" 1; then fail "journal symbolique cassé accepté."; else pass; fi
 
 logging_case="$work_dir/log-directory"
 rm -rf "$logging_case"
@@ -976,6 +986,18 @@ if [[ -w "$logging_case/shared/deployment.log" ]]; then
   skip "journal non inscriptible non simulable sur ce système."
 else
   if prepare_logging_check "$logging_case" 1; then fail "journal non inscriptible accepté."; else pass; fi
+fi
+chmod 600 "$logging_case/shared/deployment.log" 2>/dev/null || true
+
+logging_case="$work_dir/log-unwritable-directory"
+rm -rf "$logging_case"
+mkdir -p "$logging_case/shared"
+printf 'log\n' > "$logging_case/shared/deployment.log"
+chmod 000 "$logging_case/shared/deployment.log"
+if [[ -w "$logging_case/shared/deployment.log" ]]; then
+  skip "journal sans permission non simulable sur ce système."
+else
+  if prepare_logging_check "$logging_case" 1; then fail "journal sans permission accepté."; else pass; fi
 fi
 chmod 600 "$logging_case/shared/deployment.log" 2>/dev/null || true
 
@@ -996,14 +1018,36 @@ mkdir -p "$logging_case/real-shared"
 MSYS=winsymlinks:nativestrict ln -s "$logging_case/real-shared" "$logging_case/shared"
 if prepare_logging_check "$logging_case" 1; then fail "shared symbolique accepté."; else pass; fi
 
+logging_case="$work_dir/shared-dangling-symlink"
+rm -rf "$logging_case"
+mkdir -p "$logging_case"
+MSYS=winsymlinks:nativestrict ln -s "$logging_case/missing-shared" "$logging_case/shared"
+if prepare_logging_check "$logging_case" 0; then fail "shared symbolique cassé accepté."; else pass; fi
+
 logging_case="$work_dir/shared-file"
 rm -rf "$logging_case"
 mkdir -p "$logging_case"
 printf 'not a directory\n' > "$logging_case/shared"
 if prepare_logging_check "$logging_case" 0; then fail "shared fichier accepté."; else pass; fi
 
-# 6.4 Nettoyage sécurisé : seuls les répertoires créés par l'exécution courante
-# peuvent être supprimés.
+# La journalisation ne touche ni .env ni storage.
+logging_case="$work_dir/log-preserves-secrets"
+rm -rf "$logging_case"
+mkdir -p "$logging_case/shared/storage/app"
+printf 'APP_ENV=staging\nAPP_KEY=base64:test\n' > "$logging_case/shared/.env"
+printf 'donnée\n' > "$logging_case/shared/storage/app/keep.txt"
+chmod 600 "$logging_case/shared/.env"
+env_before="$(sha256_of "$logging_case/shared/.env")"
+storage_before="$(sha256_of "$logging_case/shared/storage/app/keep.txt")"
+if prepare_logging_check "$logging_case" 1; then pass; else fail "journalisation avec shared valide refusée."; fi
+[[ "$(sha256_of "$logging_case/shared/.env")" == "$env_before" ]] \
+  && pass || fail ".env modifié par la journalisation."
+[[ "$(sha256_of "$logging_case/shared/storage/app/keep.txt")" == "$storage_before" ]] \
+  && pass || fail "storage modifié par la journalisation."
+
+# 6.4 Nettoyage sécurisé : seuls les répertoires dont cette exécution prouve la
+# propriété peuvent être supprimés. Le marqueur de propriété contient le jeton
+# unique de l'exécution, jamais un simple nom de chemin.
 cleanup_case="$work_dir/cleanup-inactive"
 rm -rf "$cleanup_case"
 mkdir -p "$cleanup_case/releases/old" "$cleanup_case/releases/other" "$cleanup_case/shared"
@@ -1055,11 +1099,60 @@ mkdir -p "$cleanup_case/releases/.incoming-created" "$cleanup_case/shared"
   source "$remote_deploy"
   root="$cleanup_case"
   shared="$cleanup_case/shared"
+  run_token="cleanup-token"
+  claim_created_directory "$cleanup_case/releases/.incoming-created"
   incoming_dir="$cleanup_case/releases/.incoming-created"
   incoming_created=1
   cleanup_incomplete
 )
 [[ ! -d "$cleanup_case/releases/.incoming-created" ]] && pass || fail "Le répertoire .incoming créé n'a pas été nettoyé."
+
+# Fenêtre entre création et positionnement de l'indicateur : le marqueur suffit.
+cleanup_case="$work_dir/cleanup-incoming-window"
+rm -rf "$cleanup_case"
+mkdir -p "$cleanup_case/releases/.incoming-window" "$cleanup_case/shared"
+(
+  source "$remote_deploy"
+  root="$cleanup_case"
+  shared="$cleanup_case/shared"
+  run_token="window-token"
+  claim_created_directory "$cleanup_case/releases/.incoming-window"
+  incoming_dir="$cleanup_case/releases/.incoming-window"
+  incoming_created=0
+  cleanup_incomplete
+)
+[[ ! -d "$cleanup_case/releases/.incoming-window" ]] \
+  && pass || fail "Le répertoire créé dans la fenêtre d'indicateur n'a pas été nettoyé."
+
+# Marqueur absent ou étranger : jamais de suppression, résidu journalisé.
+cleanup_case="$work_dir/cleanup-incoming-unowned"
+rm -rf "$cleanup_case"
+mkdir -p "$cleanup_case/releases/.incoming-unowned" "$cleanup_case/shared"
+(
+  source "$remote_deploy"
+  root="$cleanup_case"
+  shared="$cleanup_case/shared"
+  incoming_dir="$cleanup_case/releases/.incoming-unowned"
+  incoming_created=1
+  cleanup_incomplete
+) > "$work_dir/cleanup-unowned.err" 2>&1
+[[ -d "$cleanup_case/releases/.incoming-unowned" ]] && pass || fail "Un répertoire non prouvé a été supprimé."
+assert_contains "$work_dir/cleanup-unowned.err" "résidu conservé" "Résidu non prouvé journalisé"
+
+cleanup_case="$work_dir/cleanup-incoming-foreign"
+rm -rf "$cleanup_case"
+mkdir -p "$cleanup_case/releases/.incoming-foreign" "$cleanup_case/shared"
+printf 'autre-exécution\n' > "$cleanup_case/releases/.incoming-foreign/.c2me-deploy-owner"
+(
+  source "$remote_deploy"
+  root="$cleanup_case"
+  shared="$cleanup_case/shared"
+  run_token="cleanup-token"
+  incoming_dir="$cleanup_case/releases/.incoming-foreign"
+  incoming_created=1
+  cleanup_incomplete
+)
+[[ -d "$cleanup_case/releases/.incoming-foreign" ]] && pass || fail "Un répertoire d'une autre exécution a été supprimé."
 
 cleanup_case="$work_dir/cleanup-release-created"
 rm -rf "$cleanup_case"
@@ -1069,6 +1162,8 @@ MSYS=winsymlinks:nativestrict ln -s "$cleanup_case/releases/active" "$cleanup_ca
   source "$remote_deploy"
   root="$cleanup_case"
   shared="$cleanup_case/shared"
+  run_token="cleanup-token"
+  claim_created_directory "$cleanup_case/releases/new"
   release_dir="$cleanup_case/releases/new"
   release_created=1
   activated=0
@@ -1085,12 +1180,30 @@ MSYS=winsymlinks:nativestrict ln -s "$cleanup_case/releases/new" "$cleanup_case/
   source "$remote_deploy"
   root="$cleanup_case"
   shared="$cleanup_case/shared"
+  run_token="cleanup-token"
+  claim_created_directory "$cleanup_case/releases/new"
   release_dir="$cleanup_case/releases/new"
   release_created=1
   activated=1
   cleanup_incomplete
 )
 [[ -d "$cleanup_case/releases/new" ]] && pass || fail "La release activée a été supprimée."
+
+cleanup_case="$work_dir/cleanup-release-foreign"
+rm -rf "$cleanup_case"
+mkdir -p "$cleanup_case/releases/new" "$cleanup_case/shared"
+printf 'autre-exécution\n' > "$cleanup_case/releases/new/.c2me-deploy-owner"
+(
+  source "$remote_deploy"
+  root="$cleanup_case"
+  shared="$cleanup_case/shared"
+  run_token="cleanup-token"
+  release_dir="$cleanup_case/releases/new"
+  release_created=1
+  activated=0
+  cleanup_incomplete
+)
+[[ -d "$cleanup_case/releases/new" ]] && pass || fail "Une release d'une autre exécution a été supprimée."
 
 # 6.5 Interruptions : les traps nettoient uniquement les répertoires créés.
 signal_case="$work_dir/signal-term"
@@ -1101,8 +1214,10 @@ signal_status=0
   source "$remote_deploy"
   root="$signal_case"
   shared="$signal_case/shared"
+  run_token="signal-token"
   incoming_dir="$signal_case/releases/.incoming-signal"
   mkdir -p "$incoming_dir"
+  claim_created_directory "$incoming_dir"
   incoming_created=1
   install_traps
   kill -TERM "$BASHPID"
@@ -1134,8 +1249,10 @@ for signal_name in HUP INT; do
     source "$remote_deploy"
     root="$signal_case"
     shared="$signal_case/shared"
+    run_token="signal-token"
     incoming_dir="$signal_case/releases/.incoming-signal"
     mkdir -p "$incoming_dir"
+    claim_created_directory "$incoming_dir"
     incoming_created=1
     install_traps
     kill -"$signal_name" "$BASHPID"
@@ -1209,10 +1326,91 @@ printf 'secret\n' > "$source_dir/store.pfx"
 printf 'secret\n' > "$source_dir/store.jks"
 printf 'secret\n' > "$source_dir/server.crt"
 
-mkdir -p "$source_dir/resources/views" "$source_dir/vendor/bin"
+# Fichiers applicatifs légitimes qui ne doivent jamais être confondus avec les
+# motifs sensibles (noms ou répertoires contenant « key », « secret », etc.).
+mkdir -p \
+  "$source_dir/config" \
+  "$source_dir/database/migrations" \
+  "$source_dir/resources/views/secrets" \
+  "$source_dir/vendor/laravel/framework/src/Illuminate/Encryption" \
+  "$source_dir/vendor/acme/certificates" \
+  "$source_dir/public/build/assets"
+printf '<?php\n' > "$source_dir/config/keys.php"
+printf '<?php\n' > "$source_dir/database/migrations/2026_01_01_000000_create_keys_table.php"
+printf 'view\n' > "$source_dir/resources/views/secrets/index.blade.php"
+printf '<?php\n' > "$source_dir/vendor/laravel/framework/src/Illuminate/Encryption/Encrypter.php"
+printf 'readme\n' > "$source_dir/vendor/acme/certificates/certinfo.txt"
+printf 'console.log("keyboard")\n' > "$source_dir/public/build/assets/keyboard-abc.js"
+
+mkdir -p "$source_dir/resources/views" "$source_dir/vendor/bin" "$source_dir/vendor/composer"
 printf 'view\n' > "$source_dir/resources/views/welcome.blade.php"
 printf 'bin\n' > "$source_dir/vendor/bin/tool"
+printf '<?php\n' > "$source_dir/vendor/composer/autoload_real.php"
+printf '<?php\n' > "$source_dir/vendor/composer/autoload_static.php"
+printf '{}\n' > "$source_dir/vendor/composer/installed.php"
 MSYS=winsymlinks:nativestrict ln -s ../autoload.php "$source_dir/vendor/bin/tool-link"
+
+# Contrôles post-assemblage testés directement sur des listes d'entrées : un
+# fichier `server.pem` doit être refusé, pas seulement un fichier nommé `.pem`.
+postcheck_entries="$work_dir/postcheck-entries.txt"
+
+assert_sensitive_rejected() {
+  local entry="$1"
+  local label="$2"
+
+  printf '%s\n' "$entry" > "$postcheck_entries"
+
+  if ( source "$assemble"; assert_no_sensitive_entries "$postcheck_entries" ) >/dev/null 2>&1; then
+    fail "$label : '$entry' aurait dû être refusé."
+  else
+    pass
+  fi
+}
+
+assert_local_rejected() {
+  local entry="$1"
+  local label="$2"
+
+  printf '%s\n' "$entry" > "$postcheck_entries"
+
+  if ( source "$assemble"; assert_no_local_entries "$postcheck_entries" ) >/dev/null 2>&1; then
+    fail "$label : '$entry' aurait dû être refusé."
+  else
+    pass
+  fi
+}
+
+assert_sensitive_rejected "./.envrc" "Fichier d'environnement local"
+assert_sensitive_rejected "./secrets.json" "Fichier de secrets"
+assert_sensitive_rejected "./server.pem" "Certificat PEM"
+assert_sensitive_rejected "./resources/views/server.pem" "Certificat PEM imbriqué"
+assert_sensitive_rejected "./app.key" "Clé applicative"
+assert_sensitive_rejected "./vendor/acme/app.key" "Clé imbriquée"
+assert_sensitive_rejected "./id_rsa" "Clé SSH RSA"
+assert_sensitive_rejected "./keys/id_rsa.pub" "Clé SSH RSA imbriquée"
+assert_sensitive_rejected "./id_ed25519" "Clé SSH Ed25519"
+assert_sensitive_rejected "./keys/id_ed25519.pub" "Clé SSH Ed25519 imbriquée"
+assert_sensitive_rejected "./store.p12" "Keystore PKCS12"
+assert_sensitive_rejected "./store.pfx" "Keystore PFX"
+assert_sensitive_rejected "./store.jks" "Keystore JKS"
+assert_sensitive_rejected "./server.crt" "Certificat CRT"
+assert_local_rejected "./.idea/workspace.xml" "Répertoire IDE"
+
+for allowed in \
+  './config/keys.php' \
+  './database/migrations/2026_01_01_000000_create_keys_table.php' \
+  './resources/views/secrets/index.blade.php' \
+  './vendor/laravel/framework/src/Illuminate/Encryption/Encrypter.php' \
+  './vendor/acme/certificates/certinfo.txt' \
+  './public/build/assets/keyboard-abc.js'; do
+  printf '%s\n' "$allowed" > "$postcheck_entries"
+
+  if ( source "$assemble"; assert_no_sensitive_entries "$postcheck_entries" ) >/dev/null 2>&1; then
+    pass
+  else
+    fail "Fichier applicatif légitime refusé par le contrôle sensible : $allowed"
+  fi
+done
 
 assemble_output="$work_dir/assemble-output"
 bash "$assemble" --source "$source_dir" --output-dir "$assemble_output" --tag v0.2.0-rc.1 > "$assemble_output.stdout"
@@ -1267,6 +1465,15 @@ assert_not_contains "$entries_file" "./server.crt" "Exclusion certificat"
 assert_not_contains "$entries_file" "./vendor/bin/" "Exclusion binaires Composer"
 assert_contains "$entries_file" "./resources/views/welcome.blade.php" "Fichier applicatif conservé"
 assert_contains "$entries_file" "./vendor/autoload.php" "Autoload Composer conservé"
+assert_contains "$entries_file" "./vendor/composer/autoload_real.php" "Autoloader Composer conservé"
+assert_contains "$entries_file" "./vendor/composer/autoload_static.php" "Autoloader Composer conservé"
+assert_contains "$entries_file" "./vendor/composer/installed.php" "Inventaire Composer conservé"
+assert_contains "$entries_file" "./config/keys.php" "Fichier applicatif « key » conservé"
+assert_contains "$entries_file" "./database/migrations/2026_01_01_000000_create_keys_table.php" "Migration « keys » conservée"
+assert_contains "$entries_file" "./resources/views/secrets/index.blade.php" "Vue « secrets » conservée"
+assert_contains "$entries_file" "./vendor/laravel/framework/src/Illuminate/Encryption/Encrypter.php" "Dépendance Laravel conservée"
+assert_contains "$entries_file" "./vendor/acme/certificates/certinfo.txt" "Répertoire « certificates » conservé"
+assert_contains "$entries_file" "./public/build/assets/keyboard-abc.js" "Asset Vite conservé"
 
 # Les liens sont refusés dès l'assemblage.
 if MSYS=winsymlinks:nativestrict ln -s /etc/passwd "$source_dir/link-escape" 2>/dev/null; then
