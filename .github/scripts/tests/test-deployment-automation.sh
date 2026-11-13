@@ -1045,6 +1045,394 @@ if prepare_logging_check "$logging_case" 1; then pass; else fail "journalisation
 [[ "$(sha256_of "$logging_case/shared/storage/app/keep.txt")" == "$storage_before" ]] \
   && pass || fail "storage modifié par la journalisation."
 
+# 6.3ter Redémarrage des workers : uniquement après activation de current.
+queue_php_mock="$work_dir/php-queue-mock"
+cat > "$queue_php_mock" <<'QUEUE_PHP'
+#!/usr/bin/env bash
+printf '%s|%s\n' "$(pwd -P)" "$*" >> "$QUEUE_PHP_LOG"
+exit "${QUEUE_PHP_EXIT:-0}"
+QUEUE_PHP
+chmod +x "$queue_php_mock"
+
+queue_success_case="$work_dir/queue-success"
+rm -rf "$queue_success_case"
+mkdir -p "$queue_success_case/releases/new" "$queue_success_case/shared"
+MSYS=winsymlinks:nativestrict ln -s "$queue_success_case/releases/new" "$queue_success_case/current"
+queue_success_log="$work_dir/queue-success-php.log"
+: > "$queue_success_log"
+
+if (
+  source "$remote_deploy"
+  root="$queue_success_case"
+  shared="$queue_success_case/shared"
+  release_id="queue-success"
+  release_dir="$queue_success_case/releases/new"
+  activated=1
+  queue_restart="true"
+  php_bin="$queue_php_mock"
+  export QUEUE_PHP_LOG="$queue_success_log"
+  restart_workers_after_activation
+) >/dev/null 2>&1; then
+  pass
+else
+  fail "queue:restart aurait dû réussir après activation."
+fi
+
+queue_success_calls="$(wc -l < "$queue_success_log" | tr -d ' ')"
+if [[ "$queue_success_calls" -eq 1 ]]; then pass; else fail "queue:restart doit être appelé exactement une fois (appels : $queue_success_calls)."; fi
+
+queue_success_expected_cwd="$(cd "$queue_success_case/releases/new" && pwd -P)"
+queue_success_line="$(cat "$queue_success_log")"
+if [[ "$queue_success_line" == "$queue_success_expected_cwd|artisan queue:restart" ]]; then
+  pass
+else
+  fail "queue:restart doit être exécuté depuis la nouvelle release (obtenu : $queue_success_line)."
+fi
+
+# Avant activation, aucun appel ne doit partir même si current pointe déjà.
+queue_before_case="$work_dir/queue-before-activation"
+rm -rf "$queue_before_case"
+mkdir -p "$queue_before_case/releases/new" "$queue_before_case/shared"
+MSYS=winsymlinks:nativestrict ln -s "$queue_before_case/releases/new" "$queue_before_case/current"
+queue_before_log="$work_dir/queue-before-php.log"
+: > "$queue_before_log"
+
+if (
+  source "$remote_deploy"
+  root="$queue_before_case"
+  shared="$queue_before_case/shared"
+  release_id="queue-before"
+  release_dir="$queue_before_case/releases/new"
+  activated=0
+  queue_restart="true"
+  php_bin="$queue_php_mock"
+  export QUEUE_PHP_LOG="$queue_before_log"
+  restart_workers_after_activation
+) >/dev/null 2>&1; then
+  fail "queue:restart a été accepté avant activation."
+else
+  pass
+fi
+
+if [[ -s "$queue_before_log" ]]; then fail "queue:restart a été exécuté avant activation."; else pass; fi
+
+# Activation revendiquée mais current encore sur l'ancienne release : refus.
+queue_mismatch_case="$work_dir/queue-current-mismatch"
+rm -rf "$queue_mismatch_case"
+mkdir -p "$queue_mismatch_case/releases/new" "$queue_mismatch_case/releases/old" "$queue_mismatch_case/shared"
+MSYS=winsymlinks:nativestrict ln -s "$queue_mismatch_case/releases/old" "$queue_mismatch_case/current"
+queue_mismatch_log="$work_dir/queue-mismatch-php.log"
+: > "$queue_mismatch_log"
+
+if (
+  source "$remote_deploy"
+  root="$queue_mismatch_case"
+  shared="$queue_mismatch_case/shared"
+  release_id="queue-mismatch"
+  release_dir="$queue_mismatch_case/releases/new"
+  activated=1
+  queue_restart="true"
+  php_bin="$queue_php_mock"
+  export QUEUE_PHP_LOG="$queue_mismatch_log"
+  restart_workers_after_activation
+) >/dev/null 2>&1; then
+  fail "queue:restart a été accepté alors que current ne pointe pas vers la nouvelle release."
+else
+  pass
+fi
+
+if [[ -s "$queue_mismatch_log" ]]; then fail "queue:restart a été exécuté depuis une release non active."; else pass; fi
+
+# DEPLOY_QUEUE_RESTART=false : aucun appel.
+queue_disabled_case="$work_dir/queue-disabled"
+rm -rf "$queue_disabled_case"
+mkdir -p "$queue_disabled_case/releases/new" "$queue_disabled_case/shared"
+MSYS=winsymlinks:nativestrict ln -s "$queue_disabled_case/releases/new" "$queue_disabled_case/current"
+queue_disabled_log="$work_dir/queue-disabled-php.log"
+: > "$queue_disabled_log"
+
+if (
+  source "$remote_deploy"
+  root="$queue_disabled_case"
+  shared="$queue_disabled_case/shared"
+  release_id="queue-disabled"
+  release_dir="$queue_disabled_case/releases/new"
+  activated=1
+  queue_restart="false"
+  php_bin="$queue_php_mock"
+  export QUEUE_PHP_LOG="$queue_disabled_log"
+  restart_workers_after_activation
+) >/dev/null 2>&1; then
+  pass
+else
+  fail "queue:restart désactivé ne doit pas échouer."
+fi
+
+if [[ -s "$queue_disabled_log" ]]; then fail "queue:restart a été exécuté alors que DEPLOY_QUEUE_RESTART=false."; else pass; fi
+
+# Le point d'appel de production doit rester situé après le passage à
+# `activated=1` : la fonction vérifie ensuite que current pointe vers la
+# nouvelle release, donc les deux protections sont complémentaires.
+activation_line="$(grep -n '^  activated=1$' "$remote_deploy" | head -n 1 | cut -d: -f1)"
+restart_call_line="$(grep -n '^  restart_workers_after_activation$' "$remote_deploy" | head -n 1 | cut -d: -f1)"
+
+if [[ -n "$activation_line" && -n "$restart_call_line" && "$restart_call_line" -gt "$activation_line" ]]; then
+  pass
+else
+  fail "L'appel à queue:restart doit être placé après activated=1 dans le script."
+fi
+
+# Échec après activation : code non nul, journal distinct, release conservée.
+queue_failure_case="$work_dir/queue-failure"
+rm -rf "$queue_failure_case"
+mkdir -p "$queue_failure_case/releases/new" "$queue_failure_case/shared"
+MSYS=winsymlinks:nativestrict ln -s "$queue_failure_case/releases/new" "$queue_failure_case/current"
+queue_failure_log="$work_dir/queue-failure-php.log"
+: > "$queue_failure_log"
+queue_failure_status=0
+
+(
+  source "$remote_deploy"
+  root="$queue_failure_case"
+  shared="$queue_failure_case/shared"
+  release_id="queue-failure"
+  release_dir="$queue_failure_case/releases/new"
+  activated=1
+  queue_restart="true"
+  php_bin="$queue_php_mock"
+  export QUEUE_PHP_LOG="$queue_failure_log"
+  export QUEUE_PHP_EXIT=1
+  install_traps
+  prepare_logging
+  restart_workers_after_activation
+) > "$work_dir/queue-failure.out" 2>&1 || queue_failure_status=$?
+
+if [[ "$queue_failure_status" -ne 0 ]]; then pass; else fail "Un échec de queue:restart doit retourner un code non nul."; fi
+
+if [[ -d "$queue_failure_case/releases/new" ]]; then pass; else fail "La release activée a été supprimée après un échec de queue:restart."; fi
+if [[ "$(readlink -f "$queue_failure_case/current")" == "$(readlink -f "$queue_failure_case/releases/new")" ]]; then
+  pass
+else
+  fail "current ne pointe plus vers la release activée après un échec de queue:restart."
+fi
+
+queue_failure_calls="$(wc -l < "$queue_failure_log" | tr -d ' ')"
+if [[ "$queue_failure_calls" -eq 1 ]]; then pass; else fail "queue:restart doit être tenté une seule fois en cas d'échec (tentatives : $queue_failure_calls)."; fi
+
+if [[ -f "$queue_failure_case/shared/deployment.log" ]]; then pass; else fail "L'échec de queue:restart doit être journalisé."; fi
+assert_contains "$queue_failure_case/shared/deployment.log" '"status":"activated-queue-restart-failed"' "Statut d'échec de redémarrage"
+assert_contains "$queue_failure_case/shared/deployment.log" '"status":"start"' "Journalisation d'ouverture après activation"
+assert_not_contains "$queue_failure_case/shared/deployment.log" '"status":"success"' "Absence de succès lorsque le redémarrage échoue"
+
+# 6.3quater Intégration : préparation finale, publication, activation,
+# redémarrage et journalisation exécutés par la fonction réelle du script.
+integration_php_mock="$work_dir/php-integration-mock"
+cat > "$integration_php_mock" <<'INTEGRATION_PHP'
+#!/usr/bin/env bash
+printf '%s|%s|%s\n' \
+  "$(pwd -P)" \
+  "$*" \
+  "$(readlink -f "$INTEGRATION_ROOT/current" 2>/dev/null || true)" \
+  >> "$INTEGRATION_PHP_LOG"
+
+case "$*" in
+  *"queue:restart"*) exit "${INTEGRATION_QUEUE_EXIT:-0}" ;;
+  *) exit 0 ;;
+esac
+INTEGRATION_PHP
+chmod +x "$integration_php_mock"
+
+setup_integration_case() {
+  local case_dir="$1"
+  local incoming="$case_dir/root/releases/.incoming-integration"
+
+  rm -rf "$case_dir"
+  mkdir -p \
+    "$incoming/vendor" \
+    "$incoming/public" \
+    "$incoming/bootstrap/cache" \
+    "$case_dir/root/releases/old" \
+    "$case_dir/root/shared/storage/app/public"
+
+  printf '<?php\n' > "$incoming/artisan"
+  printf '<?php\n' > "$incoming/vendor/autoload.php"
+  printf '<?php\n' > "$incoming/public/index.php"
+  printf 'APP_ENV=staging\nAPP_KEY=base64:test\n' > "$case_dir/root/shared/.env"
+  printf 'donnée\n' > "$case_dir/root/shared/storage/app/keep.txt"
+
+  MSYS=winsymlinks:nativestrict ln -s "$case_dir/root/shared/.env" "$incoming/.env"
+  MSYS=winsymlinks:nativestrict ln -s "$case_dir/root/shared/storage" "$incoming/storage"
+  MSYS=winsymlinks:nativestrict ln -s ../storage/app/public "$incoming/public/storage"
+  MSYS=winsymlinks:nativestrict ln -s "$case_dir/root/releases/old" "$case_dir/root/current"
+}
+
+run_integration_case() {
+  local case_dir="$1"
+  local queue_exit="$2"
+  local restart_enabled="$3"
+  local php_log="$4"
+  local state_file="$5"
+
+  (
+    source "$remote_deploy"
+
+    root="$case_dir/root"
+    shared="$case_dir/root/shared"
+    environment="staging"
+    release_id="integration-$(basename "$case_dir")"
+    version="v0.2.0-rc.1"
+    commit_sha="$(fake_sha a)"
+    tree_sha="$(fake_sha b)"
+    artifact_id="456"
+    expected_sha="$(fake_sha256 c)"
+    route_cache="true"
+    queue_restart="$restart_enabled"
+    php_bin="$integration_php_mock"
+    php_version="8.4.27"
+
+    incoming_dir="$case_dir/root/releases/.incoming-integration"
+    incoming_created=1
+    release_created=0
+    activated=0
+    release_dir="$case_dir/root/releases/new"
+    run_token="integration-token-$(basename "$case_dir")"
+
+    claim_created_directory "$incoming_dir"
+    install_traps
+    prepare_logging
+
+    export INTEGRATION_ROOT="$case_dir/root"
+    export INTEGRATION_PHP_LOG="$php_log"
+    export INTEGRATION_QUEUE_EXIT="$queue_exit"
+
+    prepare_and_activate_release
+
+    printf 'activated=%s\nrelease_created=%s\nincoming_created=%s\n' \
+      "$activated" "$release_created" "$incoming_created" > "$state_file"
+  )
+}
+
+# 6.3quater.1 Succès complet avec DEPLOY_QUEUE_RESTART=true.
+integration_success_case="$work_dir/integration-success"
+setup_integration_case "$integration_success_case"
+integration_success_log="$work_dir/integration-success-php.log"
+integration_success_state="$work_dir/integration-success-state"
+: > "$integration_success_log"
+rm -f "$integration_success_state"
+
+integration_success_incoming="$(realpath "$integration_success_case/root/releases/.incoming-integration")"
+integration_success_old="$(realpath "$integration_success_case/root/releases/old")"
+
+integration_success_status=0
+run_integration_case "$integration_success_case" 0 "true" "$integration_success_log" "$integration_success_state" \
+  > "$work_dir/integration-success.out" 2>&1 || integration_success_status=$?
+
+if [[ "$integration_success_status" -eq 0 ]]; then pass; else fail "Le déploiement d'intégration avec queue:restart=true doit réussir."; fi
+
+integration_success_release="$(realpath "$integration_success_case/root/releases/new" 2>/dev/null || true)"
+
+if [[ -f "$integration_success_state" ]]; then pass; else fail "L'état final du déploiement d'intégration est absent."; fi
+assert_contains "$integration_success_state" "activated=1" "Activation finale"
+assert_contains "$integration_success_state" "release_created=1" "Publication finale"
+assert_contains "$integration_success_state" "incoming_created=0" "Répertoire incoming publié"
+
+if [[ -d "$integration_success_release" ]]; then pass; else fail "La release publiée est absente."; fi
+if [[ ! -e "$integration_success_case/root/releases/.incoming-integration" ]]; then pass; else fail "Le répertoire incoming existe encore après publication."; fi
+if [[ "$(readlink -f "$integration_success_case/root/current")" == "$integration_success_release" ]]; then
+  pass
+else
+  fail "current ne pointe pas vers la nouvelle release après activation."
+fi
+if [[ -f "$integration_success_release/release.json" ]]; then pass; else fail "release.json est absent de la release publiée."; fi
+assert_contains "$integration_success_release/release.json" "\"release\": \"integration-integration-success\"" "Métadonnées de release"
+if [[ ! -e "$integration_success_release/.c2me-deploy-owner" ]]; then pass; else fail "Le marqueur de propriété n'a pas été retiré de la release active."; fi
+
+integration_success_calls="$(grep -c '|artisan queue:restart|' "$integration_success_log" || true)"
+if [[ "$integration_success_calls" -eq 1 ]]; then pass; else fail "queue:restart doit être appelé une seule fois (appels : $integration_success_calls)."; fi
+
+integration_success_queue_line="$(grep -F '|artisan queue:restart|' "$integration_success_log" || true)"
+if [[ "$integration_success_queue_line" == "$integration_success_release|artisan queue:restart|$integration_success_release" ]]; then
+  pass
+else
+  fail "queue:restart doit partir de la nouvelle release et current doit la cibler (obtenu : $integration_success_queue_line)."
+fi
+
+if grep -Fq "$integration_success_incoming|artisan config:cache|$integration_success_old" "$integration_success_log"; then pass; else fail "config:cache doit être exécuté dans incoming avant activation."; fi
+if grep -Fq "$integration_success_incoming|artisan view:cache|$integration_success_old" "$integration_success_log"; then pass; else fail "view:cache doit être exécuté dans incoming avant activation."; fi
+if grep -Fq "$integration_success_incoming|artisan route:cache|$integration_success_old" "$integration_success_log"; then pass; else fail "route:cache doit être exécuté dans incoming avant activation."; fi
+
+integration_queue_line="$(grep -n -F '|artisan queue:restart|' "$integration_success_log" | cut -d: -f1)"
+integration_last_cache_line="$(grep -n -E '\|artisan (config|view|route):cache\|' "$integration_success_log" | tail -n 1 | cut -d: -f1)"
+if [[ -n "$integration_queue_line" && -n "$integration_last_cache_line" && "$integration_queue_line" -gt "$integration_last_cache_line" ]]; then
+  pass
+else
+  fail "queue:restart doit être exécuté après les caches et la publication."
+fi
+
+assert_contains "$integration_success_case/root/shared/deployment.log" '"status":"success"' "Journalisation du succès"
+assert_not_contains "$integration_success_case/root/shared/deployment.log" 'queue-restart-failed' "Absence d'échec de redémarrage"
+assert_contains "$integration_success_case/root/shared/storage/app/keep.txt" "donnée" "Stockage partagé préservé"
+
+# 6.3quater.2 DEPLOY_QUEUE_RESTART=false : aucun appel dans le flux réel.
+integration_disabled_case="$work_dir/integration-disabled"
+setup_integration_case "$integration_disabled_case"
+integration_disabled_log="$work_dir/integration-disabled-php.log"
+integration_disabled_state="$work_dir/integration-disabled-state"
+: > "$integration_disabled_log"
+rm -f "$integration_disabled_state"
+
+integration_disabled_status=0
+run_integration_case "$integration_disabled_case" 0 "false" "$integration_disabled_log" "$integration_disabled_state" \
+  > "$work_dir/integration-disabled.out" 2>&1 || integration_disabled_status=$?
+
+if [[ "$integration_disabled_status" -eq 0 ]]; then pass; else fail "Le déploiement avec queue:restart=false doit réussir."; fi
+if [[ "$(grep -c '|artisan queue:restart|' "$integration_disabled_log" || true)" -eq 0 ]]; then pass; else fail "queue:restart a été exécuté alors que DEPLOY_QUEUE_RESTART=false."; fi
+assert_contains "$integration_disabled_state" "activated=1" "Activation finale sans redémarrage"
+assert_contains "$integration_disabled_case/root/shared/deployment.log" '"status":"success"' "Journalisation du succès sans redémarrage"
+
+# 6.3quater.3 Échec de queue:restart après activation.
+integration_failure_case="$work_dir/integration-failure"
+setup_integration_case "$integration_failure_case"
+integration_failure_log="$work_dir/integration-failure-php.log"
+integration_failure_state="$work_dir/integration-failure-state"
+: > "$integration_failure_log"
+rm -f "$integration_failure_state"
+
+integration_failure_release="$(realpath -m "$integration_failure_case/root/releases/new")"
+integration_failure_old="$(realpath "$integration_failure_case/root/releases/old")"
+integration_failure_incoming="$(realpath "$integration_failure_case/root/releases/.incoming-integration")"
+integration_failure_status=0
+
+run_integration_case "$integration_failure_case" 1 "true" "$integration_failure_log" "$integration_failure_state" \
+  > "$work_dir/integration-failure.out" 2>&1 || integration_failure_status=$?
+
+if [[ "$integration_failure_status" -ne 0 ]]; then pass; else fail "Un échec de queue:restart doit faire échouer le déploiement d'intégration."; fi
+if [[ ! -f "$integration_failure_state" ]]; then pass; else fail "L'état final ne doit pas être écrit en cas d'échec."; fi
+if [[ -d "$integration_failure_release" ]]; then pass; else fail "La release activée a été supprimée après un échec de queue:restart."; fi
+if [[ -d "$integration_failure_old" ]]; then pass; else fail "L'ancienne release a été supprimée après un échec de queue:restart."; fi
+if [[ "$(readlink -f "$integration_failure_case/root/current")" == "$integration_failure_release" ]]; then
+  pass
+else
+  fail "current ne pointe plus vers la nouvelle release après un échec de queue:restart."
+fi
+if [[ -f "$integration_failure_release/release.json" ]]; then pass; else fail "release.json a disparu après un échec de queue:restart."; fi
+
+integration_failure_calls="$(grep -c '|artisan queue:restart|' "$integration_failure_log" || true)"
+if [[ "$integration_failure_calls" -eq 1 ]]; then pass; else fail "queue:restart doit être tenté une seule fois en cas d'échec (tentatives : $integration_failure_calls)."; fi
+
+integration_failure_queue_line="$(grep -F '|artisan queue:restart|' "$integration_failure_log" || true)"
+if [[ "$integration_failure_queue_line" == "$integration_failure_release|artisan queue:restart|$integration_failure_release" ]]; then
+  pass
+else
+  fail "L'échec doit survenir après activation depuis la nouvelle release (obtenu : $integration_failure_queue_line)."
+fi
+if grep -Fq "$integration_failure_incoming|artisan config:cache|$integration_failure_old" "$integration_failure_log"; then pass; else fail "Les caches doivent être exécutés avant l'échec de queue:restart."; fi
+
+assert_contains "$integration_failure_case/root/shared/deployment.log" '"status":"start"' "Journalisation d'ouverture de l'échec"
+assert_contains "$integration_failure_case/root/shared/deployment.log" '"status":"activated-queue-restart-failed"' "Statut d'échec de redémarrage"
+assert_not_contains "$integration_failure_case/root/shared/deployment.log" '"status":"success"' "Absence de succès après échec de redémarrage"
+assert_contains "$integration_failure_case/root/shared/storage/app/keep.txt" "donnée" "Stockage partagé préservé après échec"
+
 # 6.4 Nettoyage sécurisé : seuls les répertoires dont cette exécution prouve la
 # propriété peuvent être supprimés. Le marqueur de propriété contient le jeton
 # unique de l'exécution, jamais un simple nom de chemin.

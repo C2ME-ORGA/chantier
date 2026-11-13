@@ -44,6 +44,7 @@ incoming_created=0
 release_created=0
 activated=0
 log_ready=0
+deployment_failure_status="failure"
 entries_file=""
 verbose_file=""
 run_token=""
@@ -301,7 +302,7 @@ on_exit() {
   rm -f -- "${entries_file:-}" "${verbose_file:-}" 2>/dev/null || true
 
   if [[ "$status" -ne 0 ]]; then
-    deployment_log "failure" || true
+    deployment_log "${deployment_failure_status:-failure}" || true
   fi
 
   exit "$status"
@@ -349,6 +350,37 @@ assert_php_version() {
   fi
 
   php_version="$reported"
+}
+
+# Envoie le signal de redémarrage aux workers uniquement après l'activation.
+# La fonction vérifie elle-même que `current` pointe vers la nouvelle release :
+# une erreur de séquencement ne peut donc pas redémarrer les workers sur
+# l'ancien code. Un échec de la commande est journalisé avec un statut distinct
+# et la release déjà activée est conservée.
+restart_workers_after_activation() {
+  [[ "$queue_restart" == "true" ]] || return 0
+
+  if [[ "$activated" -ne 1 ]]; then
+    die "queue:restart refusé : la release n'est pas encore activée"
+  fi
+
+  local active_release
+  local target_release
+
+  active_release="$(readlink -f "$root/current" 2>/dev/null || true)"
+  target_release="$(readlink -f "$release_dir" 2>/dev/null || true)"
+
+  if [[ -z "$active_release" || "$active_release" != "$target_release" ]]; then
+    die "queue:restart refusé : current ne pointe pas vers la release $release_id"
+  fi
+
+  if ! (
+    cd "$release_dir" || exit 1
+    "$php_bin" artisan queue:restart
+  ); then
+    deployment_failure_status="activated-queue-restart-failed"
+    die "redémarrage des workers impossible après activation de $release_id"
+  fi
 }
 
 # Contrôle les types d'entrées avant toute extraction : les liens symboliques,
@@ -407,6 +439,82 @@ verify_extraction() {
       *) die "extraction hors du répertoire de release : $path" ;;
     esac
   done < <(find "$directory" -mindepth 1 -print0)
+}
+
+# Prépare les caches de la nouvelle release, la publie, bascule `current`,
+# puis envoie le signal de redémarrage des workers. Appelée par main() après
+# l'extraction et la préparation du répertoire incoming.
+prepare_and_activate_release() {
+  local tmp_link
+
+  log "PHP $php_version"
+
+  (
+    cd "$incoming_dir"
+
+    "$php_bin" artisan config:cache
+    "$php_bin" artisan view:cache
+
+    if [[ "$route_cache" == "true" ]]; then
+      "$php_bin" artisan route:cache
+    fi
+  )
+
+  cat > "$incoming_dir/release.json" <<JSON
+{
+    "environment": "$environment",
+    "release": "$release_id",
+    "version": "$version",
+    "commit_sha": "$commit_sha",
+    "tree_sha": "$tree_sha",
+    "artifact_id": "$artifact_id",
+    "sha256": "$expected_sha",
+    "deployed_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+}
+JSON
+
+  chmod 0644 "$incoming_dir/release.json"
+
+  # Publication atomique du répertoire de release, puis activation du lien.
+  mask_signals
+
+  if ! mv -T -- "$incoming_dir" "$release_dir"; then
+    unmask_signals
+    die "publication de la release impossible : $release_id"
+  fi
+
+  release_created=1
+  incoming_created=0
+  incoming_dir=""
+
+  tmp_link="$root/.current.$$"
+
+  if ! ln -sfn "$release_dir" "$tmp_link"; then
+    unmask_signals
+    die "création du lien temporaire current impossible"
+  fi
+
+  if ! mv -Tf "$tmp_link" "$root/current"; then
+    rm -f -- "$tmp_link"
+    unmask_signals
+    die "activation de la release impossible : $release_id"
+  fi
+
+  activated=1
+  unmask_signals
+
+  # Le marqueur de propriété ne fait pas partie du contenu applicatif de la
+  # release activée. Son retrait n'est pas critique : en cas d'échec, un
+  # fichier caché inoffensif reste présent et la release active est conservée.
+  rm -f -- "$release_dir/$OWNER_MARKER" \
+    || log "avertissement: marqueur de propriété non supprimé : $release_dir/$OWNER_MARKER"
+
+  # Le redémarrage des workers intervient après l'activation : `current` pointe
+  # déjà vers la nouvelle release, et un échec conserve cette release active.
+  restart_workers_after_activation
+
+  deployment_log "success"
+  log "release $release_id activée pour $environment"
 }
 
 main() {
@@ -575,74 +683,7 @@ main() {
   resolve_php_bin
   assert_php_version
 
-  log "PHP $php_version"
-
-  (
-    cd "$incoming_dir"
-
-    "$php_bin" artisan config:cache
-    "$php_bin" artisan view:cache
-
-    if [[ "$route_cache" == "true" ]]; then
-      "$php_bin" artisan route:cache
-    fi
-
-    if [[ "$queue_restart" == "true" ]]; then
-      "$php_bin" artisan queue:restart
-    fi
-  )
-
-  cat > "$incoming_dir/release.json" <<JSON
-{
-    "environment": "$environment",
-    "release": "$release_id",
-    "version": "$version",
-    "commit_sha": "$commit_sha",
-    "tree_sha": "$tree_sha",
-    "artifact_id": "$artifact_id",
-    "sha256": "$expected_sha",
-    "deployed_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-}
-JSON
-
-  chmod 0644 "$incoming_dir/release.json"
-
-  # Publication atomique du répertoire de release, puis activation du lien.
-  mask_signals
-
-  if ! mv -T -- "$incoming_dir" "$release_dir"; then
-    unmask_signals
-    die "publication de la release impossible : $release_id"
-  fi
-
-  release_created=1
-  incoming_created=0
-  incoming_dir=""
-
-  tmp_link="$root/.current.$$"
-
-  if ! ln -sfn "$release_dir" "$tmp_link"; then
-    unmask_signals
-    die "création du lien temporaire current impossible"
-  fi
-
-  if ! mv -Tf "$tmp_link" "$root/current"; then
-    rm -f -- "$tmp_link"
-    unmask_signals
-    die "activation de la release impossible : $release_id"
-  fi
-
-  activated=1
-  unmask_signals
-
-  # Le marqueur de propriété ne fait pas partie du contenu applicatif de la
-  # release activée. Son retrait n'est pas critique : en cas d'échec, un
-  # fichier caché inoffensif reste présent et la release active est conservée.
-  rm -f -- "$release_dir/$OWNER_MARKER" \
-    || log "avertissement: marqueur de propriété non supprimé : $release_dir/$OWNER_MARKER"
-
-  deployment_log "success"
-  log "release $release_id activée pour $environment"
+  prepare_and_activate_release
 }
 
 if [[ -z "${BASH_SOURCE[0]:-}" || "${BASH_SOURCE[0]}" == "$0" ]]; then
