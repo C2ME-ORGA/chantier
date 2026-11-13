@@ -97,7 +97,7 @@ Depuis CHAN-97, deux workflows automatisent les déploiements :
 - `deploy-staging` : déclenché par un tag `vX.Y.Z-rc.N` sur `develop`, il construit le paquet, publie l'artefact immuable et le déploie en recette ;
 - `deploy-production` : déclenché par la publication d'une release stable, il réutilise **exactement** l'artefact validé en staging, sans reconstruire l'application.
 
-Le paquet contient `vendor/` et les assets Vite, jamais `.env`, `node_modules` ni `storage`. Le déploiement serveur utilise des releases versionnées, un lien `current` et un stockage partagé, sans migration automatique ni rollback automatisé (CHAN-98). Les environnements GitHub et leurs secrets doivent être configurés manuellement. La procédure complète, les limites et les vérifications sont décrites dans [`docs/development/deployment-process.md`](docs/development/deployment-process.md).
+Le paquet contient `vendor/` et les assets Vite, jamais `.env`, `node_modules` ni `storage`. Le déploiement serveur utilise des releases versionnées, un lien `current` et un stockage partagé, sans migration automatique ni rollback automatisé. Les environnements GitHub et leurs secrets doivent être configurés manuellement. La procédure complète, les limites et les vérifications sont décrites dans [`docs/development/deployment-process.md`](docs/development/deployment-process.md). La stratégie de migrations, la compatibilité N/N-1 et la politique de rollback sont définies dans [`docs/development/database-migrations.md`](docs/development/database-migrations.md).
 
 ## Suivi
 

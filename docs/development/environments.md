@@ -6,7 +6,7 @@ Ce document prépare l'architecture, la séparation et les protections des envir
 - Ticket parent : CHAN-92 – Définir le workflow Git, les releases et les déploiements.
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : architecture des environnements, séparation des données et des secrets, GitHub Environments, données de recette, accès, sauvegardes et contrôles.
-- Hors portée : recette fonctionnelle, migrations et rollback (CHAN-98). Les déploiements automatisés sont définis dans [`deployment-process.md`](deployment-process.md) (CHAN-97).
+- Hors portée : recette fonctionnelle, migrations et rollback (CHAN-98). La stratégie de migrations et de compatibilité N/N-1 est définie dans [`database-migrations.md`](database-migrations.md) (lot 1 de CHAN-98). Les déploiements automatisés sont définis dans [`deployment-process.md`](deployment-process.md) (CHAN-97).
 
 Ce document est préparatoire. Il ne crée aucun environnement, ne configure aucun serveur, ne crée aucune base de données, aucun sous-domaine, aucun secret et ne déclenche aucun déploiement.
 
@@ -17,6 +17,7 @@ Ce document est préparatoire. Il ne crée aucun environnement, ne configure auc
 | Environnements et protections | Ce document |
 | Branches, commits et Pull Requests | [`git-workflow.md`](git-workflow.md) |
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
+| Migrations, compatibilité N/N-1 et rollback applicatif | [`database-migrations.md`](database-migrations.md) |
 | Contrôle d'intégration continue | [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) |
 | Workflow de release | [`.github/workflows/release.yml`](../../.github/workflows/release.yml) |
 | Règles impératives pour les agents et contributeurs | [`AGENTS.md`](../../AGENTS.md) |
@@ -542,7 +543,7 @@ Les contrôles suivants doivent être exécutés lors de la mise en place des en
 - Confirmer l'identifiant du compte GitHub personnel de l'approbateur unique de production.
 - Relever et renseigner `DEPLOY_PHP_BIN` pour chaque environnement.
 - Vérifier l'empreinte SSH hors bande et renseigner `SSH_KNOWN_HOSTS`.
-- Définir la politique de sauvegarde, de rétention et de test de restauration (CHAN-98).
+- Définir la politique de sauvegarde, de rétention et de test de restauration (CHAN-98, lot 2).
 - Définir la méthode de protection HTTP du staging.
 - Décider si Redis est utilisé et, le cas échéant, attribuer les bases et préfixes.
 - Décrire la procédure d'anonymisation des données de recette.

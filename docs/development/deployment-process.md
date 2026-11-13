@@ -6,7 +6,7 @@ Ce document décrit l'automatisation des déploiements **staging** et **producti
 - Ticket parent : CHAN-92 – Définir le workflow Git, les releases et les déploiements.
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : construction des paquets, publication des artefacts, promotion d'une release candidate vers la production, workflows GitHub Actions, comptes SSH, contrôles post-déploiement et procédure initiale de configuration serveur.
-- Hors portée : recette fonctionnelle, stratégie détaillée des migrations, sauvegardes et rollback (CHAN-98).
+- Hors portée : recette fonctionnelle, sauvegardes et restauration, automatisation du rollback (lot 2 de CHAN-98). La stratégie de migrations, la politique de rollback applicatif et les règles de compatibilité N/N-1 sont définies dans [`database-migrations.md`](database-migrations.md) (lot 1 de CHAN-98).
 
 Ce document décrit une automatisation **préparée mais non exécutée depuis ce dépôt** : aucun déploiement réel n'a été déclenché. Les comptes SSH, groupes Linux et racines aaPanel existent déjà et sont documentés ici ; aucune de leurs propriétés n'a été modifiée par cette correction. Les sections « configuration manuelle » restent à réaliser ou à vérifier.
 
@@ -15,6 +15,7 @@ Ce document décrit une automatisation **préparée mais non exécutée depuis c
 | Sujet | Référence |
 | --- | --- |
 | Déploiements, artefacts et promotion | Ce document |
+| Migrations, compatibilité N/N-1 et rollback applicatif | [`database-migrations.md`](database-migrations.md) |
 | Environnements, isolation et protections | [`environments.md`](environments.md) |
 | Branches, commits et Pull Requests | [`git-workflow.md`](git-workflow.md) |
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
@@ -33,7 +34,7 @@ Ce document décrit une automatisation **préparée mais non exécutée depuis c
 - Un artefact est **immuable** : un tag publié n'est jamais déplacé et l'artefact associé n'est jamais remplacé.
 - Les deux environnements sont strictement indépendants : comptes SSH, chemins, secrets, bases, stockage, journaux, workers et tâches planifiées distincts.
 - Le serveur reste l'autorité. Le workflow ne transmet jamais un chemin arbitraire : le chemin cible est déduit d'une table fixe dans le script serveur et comparé à la variable d'environnement.
-- Aucune migration n'est exécutée par un déploiement. Aucune stratégie de rollback n'est implémentée dans CHAN-97.
+- Aucune migration n'est exécutée par un déploiement. Aucune stratégie de rollback n'est implémentée dans CHAN-97. La stratégie de migrations et les règles de compatibilité N/N-1 sont définies dans [`database-migrations.md`](database-migrations.md).
 - Aucune commande n'est exécutée avec une élévation de privilèges : les scripts serveur tournent avec les comptes techniques dédiés.
 
 ## Architecture serveur
@@ -542,6 +543,33 @@ Si le health check échoue après l'activation de `current`, le déploiement est
 - Aucun `optimize:clear` global n'est exécuté.
 - Une commande manuelle `config:clear` ou `optimize:clear` supprime la configuration compilée : l'application tenterait alors de relire `.env` et échouerait avec un `.env` en `0600`. Après une telle commande, recompiler avec le compte de déploiement (`<php-8.4> artisan config:cache`) ou redéployer.
 
+### Migrations de base de données
+
+La stratégie complète, les conventions de rédaction, les exemples et les procédures d'échec sont définis dans [`database-migrations.md`](database-migrations.md). Les règles essentielles applicables à un déploiement sont les suivantes.
+
+- **Aucune migration n'est exécutée par `deploy-staging`, `deploy-production`, `release`, `remote-deploy.sh` ou `remote-check.sh`.** Aucun hook de migration n'est ajouté au mécanisme CHAN-97.
+- Une migration est une opération d'exploitation **manuelle, explicite et tracée**, exécutée depuis le répertoire `current` avec le compte technique de l'environnement et le binaire PHP 8.4.
+- La base est partagée par toutes les releases. **Un rollback applicatif ne restaure jamais la base de données.** Un retour à la release N-1 n'est autorisé que si le schéma N reste compatible avec N-1.
+- Toute évolution suit **Expand → Migrate → Contract**. Une suppression ou un renommage n'est jamais livré avec l'ajout qui le remplace.
+- Une migration dont l'absence empêche le démarrage de la nouvelle release doit être livrée dans la release **précédente**, puis appliquée avant le déploiement de la nouvelle release.
+- Les opérations destructrices (`DROP`, `RENAME`, `TRUNCATE`, rétrécissement de type) sont interdites hors Contract validé, après expiration de la fenêtre de rollback et vérification d'une sauvegarde restaurable.
+- `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `db:wipe` et `migrate:rollback` sont interdits en staging et en production.
+- `php artisan migrate --force` n'est utilisé qu'après validation, avec un périmètre vérifié ; il n'est jamais une étape générique de déploiement.
+- La commande de contrôle `migrate:status` et la table `migrations` sont la source de vérité de l'état appliqué. Le résultat est consigné dans le ticket d'exploitation.
+- Une migration sensible est répétée en staging sur MariaDB 10.11 avant la production. Une base SQLite de test ne constitue pas une preuve.
+- Un échec de migration ne déclenche ni rollback automatique ni modification manuelle silencieuse de la table `migrations`.
+
+Séquence recommandée pour une release N :
+
+1. répéter la migration en staging ;
+2. appliquer l'Expand selon la règle de compatibilité (dans N-1 si N ne peut pas démarrer sans lui, sinon juste après l'activation de N) ;
+3. déployer et activer N selon la procédure CHAN-97 ;
+4. appliquer les transformations bornées, puis les traitements longs via une commande dédiée ;
+5. vérifier `migrate:status`, la structure, les invariants, `/up`, les journaux et les files ;
+6. planifier le Contract dans une release ultérieure, après la fenêtre de rollback.
+
+Le détail des commandes, des verrous MariaDB, des transactions DDL et des procédures d'échec figure dans [`database-migrations.md`](database-migrations.md).
+
 ### Workers et planificateur
 
 - `queue:restart` n'est exécuté que si `DEPLOY_QUEUE_RESTART` vaut `true`.
@@ -627,9 +655,10 @@ En l'état, une release stable publiée peut donc être rejouée, y compris une 
 - Un changement d'appartenance de groupe n'est pris en compte qu'après rechargement des processus PHP-FPM et Nginx ; cette opération est manuelle.
 - La procédure de contrôle des permissions documentée n'a pas été exécutée sur le serveur.
 - Aucune migration de base de données n'est exécutée par un déploiement.
-- Aucun rollback automatique n'est implémenté : une release précédente reste disponible dans `releases/`, mais son activation relève d'une décision et d'une procédure CHAN-98.
+- La stratégie de migrations et de compatibilité N/N-1 est documentée dans [`database-migrations.md`](database-migrations.md) (lot 1 de CHAN-98). Aucun script de migration ou de rollback n'est ajouté par ce lot.
+- Aucun rollback automatique n'est implémenté : une release précédente reste disponible dans `releases/`, mais son activation relève d'une décision et d'une procédure manuelle. Un rollback applicatif ne restaure jamais la base de données.
 - En cas d'échec avant activation, le répertoire incomplet est nettoyé sans toucher à la release active ni à `shared/`.
-- En cas d'échec du health check après activation, la nouvelle release reste active et le déploiement est signalé en échec ; aucune restauration automatique n'est effectuée (CHAN-98).
+- En cas d'échec du health check après activation, la nouvelle release reste active et le déploiement est signalé en échec ; aucune restauration automatique n'est effectuée.
 - Le mode maintenance n'est pas activé automatiquement.
 - Le superviseur des workers et les entrées cron doivent être confirmés sur le serveur.
 - La politique `.env` en `0600` dépend de la présence de `bootstrap/cache/config.php` dans la release active. Une commande manuelle `config:clear` ou `optimize:clear` casse ce fonctionnement jusqu'à recompilation ou redéploiement.
@@ -639,7 +668,8 @@ En l'état, une release stable publiée peut donc être rejouée, y compris une 
 
 ### Dépendances
 
-- **CHAN-98** : recette, stratégie détaillée des migrations et rollback. Les points d'intégration sont le marqueur `release.json`, le répertoire `releases/` et le lien `current`.
+- **CHAN-98, lot 1** : stratégie de migrations, compatibilité N/N-1, conventions et politique de rollback, documentées dans [`database-migrations.md`](database-migrations.md). Les points d'intégration sont le marqueur `release.json`, le répertoire `releases/` et le lien `current`.
+- **CHAN-98, lot 2** : sauvegarde, restauration et automatisation du rollback. Ce lot est requis avant toute migration destructive en production.
 - **CHAN-99** : dépendance de suivi mentionnée par le ticket parent. Son périmètre n'est pas décrit dans ce dépôt à la date de rédaction ; aucun élément de CHAN-99 n'est intégré ici.
 
 ## Vérifications locales
@@ -650,7 +680,8 @@ bash .github/scripts/tests/test-deployment-automation.sh
 bash .github/scripts/tests/test-release-automation.sh
 shellcheck .github/scripts/deploy/*.sh .github/scripts/tests/*.sh
 actionlint
+php artisan test tests/Unit/Migrations tests/Unit/Documentation
 composer ci:check
 ```
 
-Les tests couvrent la validation des tags (y compris l'avancée de branche et les tags divergents), le refus des préreleases, l'absence de candidate staging, les artefacts expirés, manquants ou ambigus, la pagination de l'API, le schéma strict des manifestes, les empreintes incorrectes, la provenance, la comparaison des arbres Git, les environnements et chemins interdits (dont les chemins aaPanel exacts et le refus des anciens chemins), les archives malveillantes (liens symboliques et physiques), le nettoyage sécurisé (release préexistante, release active, `.incoming` préexistant, signaux, masquage des sections critiques), les permissions de `.env` (`0600` recommandé, `0640` accepté, `0660`/`0664`/`0644` refusés), le modèle de permissions des racines, de `shared/`, du stockage et de `bootstrap/cache` (setgid, écriture de groupe, absence de `777` et de droits pour les autres), l'absence d'appel `env()` hors de `config/`, la présence obligatoire de `bootstrap/cache/config.php`, l'échec avant activation, les scénarios de journalisation (`shared` absent, non inscriptible, journal absent/inscriptible/non inscriptible/symbolique/répertoire, `shared` symbolique), les exclusions locales et sensibles, les tags malveillants à l'assemblage, l'exclusion de `vendor/bin`, le refus des liens hors `vendor/bin`, le contrôle PHP 8.4, l'absence de migration automatique et l'absence de fuite de secrets. Un job `package-linux` exécute le build Ubuntu réel décrit ci-dessus.
+Les tests couvrent la validation des tags (y compris l'avancée de branche et les tags divergents), le refus des préreleases, l'absence de candidate staging, les artefacts expirés, manquants ou ambigus, la pagination de l'API, le schéma strict des manifestes, les empreintes incorrectes, la provenance, la comparaison des arbres Git, les environnements et chemins interdits (dont les chemins aaPanel exacts et le refus des anciens chemins), les archives malveillantes (liens symboliques et physiques), le nettoyage sécurisé (release préexistante, release active, `.incoming` préexistant, signaux, masquage des sections critiques), les permissions de `.env` (`0600` recommandé, `0640` accepté, `0660`/`0664`/`0644` refusés), le modèle de permissions des racines, de `shared/`, du stockage et de `bootstrap/cache` (setgid, écriture de groupe, absence de `777` et de droits pour les autres), l'absence d'appel `env()` hors de `config/`, la présence obligatoire de `bootstrap/cache/config.php`, l'échec avant activation, les scénarios de journalisation (`shared` absent, non inscriptible, journal absent/inscriptible/non inscriptible/symbolique/répertoire, `shared` symbolique), les exclusions locales et sensibles, les tags malveillants à l'assemblage, l'exclusion de `vendor/bin`, le refus des liens hors `vendor/bin`, le contrôle PHP 8.4, l'absence de migration automatique et l'absence de fuite de secrets. Les tests de politique de migration contrôlent en plus les conventions de rédaction, l'absence d'opération destructrice non annotée, la présence de la documentation et son lien depuis ce document. Un job `package-linux` exécute le build Ubuntu réel décrit ci-dessus.
