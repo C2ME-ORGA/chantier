@@ -8,7 +8,7 @@ Ce document décrit l'automatisation des déploiements **staging** et **producti
 - Portée : construction des paquets, publication des artefacts, promotion d'une release candidate vers la production, workflows GitHub Actions, comptes SSH, contrôles post-déploiement et procédure initiale de configuration serveur.
 - Hors portée : recette fonctionnelle, stratégie détaillée des migrations, sauvegardes et rollback (CHAN-98).
 
-Ce document décrit une automatisation **préparée mais non exécutée** : aucun serveur, compte Linux, environnement GitHub, secret ou déploiement réel n'a été créé ou modifié dans CHAN-97. Les sections « configuration manuelle » restent à réaliser.
+Ce document décrit une automatisation **préparée mais non exécutée depuis ce dépôt** : aucun déploiement réel n'a été déclenché. Les comptes SSH, groupes Linux et racines aaPanel existent déjà et sont documentés ici ; aucune de leurs propriétés n'a été modifiée par cette correction. Les sections « configuration manuelle » restent à réaliser ou à vérifier.
 
 ## Sources de vérité
 
@@ -40,42 +40,66 @@ Ce document décrit une automatisation **préparée mais non exécutée** : aucu
 
 | Élément | Staging | Production |
 | --- | --- | --- |
-| Serveur | Ubuntu 24.04, aaPanel, `164.132.192.216`, port SSH `5679` | Identique |
+| Serveur | Ubuntu 24.04.5 LTS, aaPanel, PHP-FPM 8.4, MariaDB 10.11, `164.132.192.216`, port SSH `5679` | Identique |
 | Compte de déploiement | `c2me-deploy-staging` | `c2me-deploy-production` |
-| Racine | `/www/wwwroot/chantier-staging` | `/www/wwwroot/chantier` |
+| Groupe Linux | `c2me-staging` | `c2me-production` |
+| Racine | `/www/wwwroot/chantier-staging.c2me.ovh` | `/www/wwwroot/chantier.c2me.fr` |
 | URL | `https://chantier-staging.c2me.ovh` | `https://chantier.c2me.fr` |
 | Base | `chantier_staging` | `chantier_production` |
 | GitHub Environment | `staging` | `production` |
 
 Le compte `ubuntu` est réservé à l'administration initiale. Les workflows utilisent exclusivement les deux comptes techniques.
 
+Les anciens chemins `/www/wwwroot/chantier-staging` et `/www/wwwroot/chantier` sont refusés par les scripts et les workflows, même avec le bon compte ou le bon environnement. Les deux sites aaPanel existent déjà et conservent leurs répertoires actuels.
+
 ### Structure des installations
 
 ```text
-<DEPLOY_PATH>/
-├── releases/
-│   ├── <release-id>/
+<DEPLOY_PATH>/                     2770  compte:groupe-environnement
+├── releases/                      2770
+│   ├── <release-id>/              2750
 │   │   ├── artisan
-│   │   ├── bootstrap/cache/
-│   │   ├── public/            # dont le lien public/storage
-│   │   ├── release.json       # marqueur non public
+│   │   ├── bootstrap/cache/       2770  (PHP-FPM écrit)
+│   │   ├── public/                # dont le lien public/storage
+│   │   ├── release.json           # marqueur non public
 │   │   ├── .env -> ../../shared/.env
 │   │   └── storage -> ../../shared/storage
 │   └── ...
-├── shared/
-│   ├── .env                   # jamais écrasé
-│   ├── storage/               # jamais déplacé
-│   └── deployment.log         # journal des déploiements
+├── shared/                        2770
+│   ├── .env                       0600  (recommandé, jamais écrasé)
+│   ├── storage/                   2770  (jamais déplacé)
+│   └── deployment.log             0600  (journal des déploiements)
 └── current -> releases/<release-id>
 ```
 
 Le DocumentRoot du vhost aaPanel doit pointer vers `<DEPLOY_PATH>/current/public`, ce qui suit automatiquement la release active.
+
+### Permissions
+
+Le modèle complet est décrit dans [`environments.md`](environments.md). Points appliqués par le déploiement :
+
+- `umask 027` avant l'extraction : fichiers `0640`/`0750`, lisibles par le groupe seulement ;
+- répertoire de release en `2750` : le groupe PHP-FPM lit et traverse, sans pouvoir modifier le code ;
+- `bootstrap/cache` en `2770` : PHP-FPM écrit ses caches d'exécution ;
+- vérification que la racine, `releases/`, `shared/` et `shared/storage/` n'accordent aucun droit aux autres utilisateurs ;
+- vérification que `shared/.env` n'accorde aucune écriture de groupe ni aucun accès aux autres utilisateurs (`0600` recommandé, `0640` accepté) ;
+- vérification de la présence et de la lisibilité par le groupe de `bootstrap/cache/config.php`, qui porte la configuration à l'exécution ;
+- vérification que `shared/storage/` et `bootstrap/cache` sont inscriptibles par le groupe ;
+- vérification ciblée que `artisan` et `public/index.php` sont lisibles par le groupe.
+
+Le fichier `.env` peut être en `0600` : `config:cache` est exécuté pendant le déploiement par le compte technique, propriétaire du fichier, et Laravel ne recharge pas `.env` lorsque la configuration est en cache. `bootstrap/cache/config.php` doit donc être présent dans la release activée et lisible par le groupe. Le déploiement échoue avant publication si cette configuration compilée est absente. Aucun appel `env()` n'existe hors de `config/` dans l'application ; les valeurs d'exécution proviennent de `config()` et du cache compilé.
+
+Le déploiement ne modifie ni le propriétaire, ni le groupe, et n'utilise jamais `sudo` : les changements de propriété et d'appartenance relèvent de l'administrateur. Les racines sont actuellement en `2770` ; le déploiement accepte également `2750` sur `<ROOT>`, `releases/` et `shared/`, ce qui retire l'écriture de groupe non nécessaire au code déployé, au lien `current` et au journal. `shared/storage/` et `bootstrap/cache` doivent rester inscriptibles par le groupe.
+
+Le compte `www`, qui exécute PHP-FPM 8.4 et Nginx, appartient aux deux groupes. L'isolation des comptes SSH est réelle, mais **le pool PHP-FPM est commun aux deux sites** : l'isolation de l'exécution PHP n'est donc pas complète. Cette limite est documentée dans [`environments.md`](environments.md) ; aucune configuration PHP-FPM n'est modifiée par cette correction.
 
 ### Séparation des environnements
 
 - Les deux racines sont distinctes et ne partagent aucun lien symbolique.
 - Un script lancé pour `staging` refuse le chemin de `production`, et inversement.
 - Chaque compte technique n'a accès qu'à sa racine ; aucun privilège global n'est accordé.
+- Chaque racine appartient au compte de déploiement et au groupe de son environnement (`2770`). Les comptes de déploiement n'ont aucun accès à l'autre racine.
+- Le compte `www` (PHP-FPM et Nginx) appartient aux deux groupes pour servir les deux sites. L'isolation des comptes SSH est réelle, mais le pool PHP-FPM commun ne permet pas une isolation complète de l'exécution PHP. Cette limite est assumée et documentée dans [`environments.md`](environments.md).
 - Les fichiers `.env` et `shared/storage` ne sont jamais copiés, écrasés ni remplacés par un déploiement.
 
 ## Déclencheurs
@@ -290,7 +314,7 @@ Les environnements GitHub ne sont **pas créés**. La configuration suivante doi
 | Variable | `staging` | `production` |
 | --- | --- | --- |
 | `DEPLOY_ENVIRONMENT` | `staging` | `production` |
-| `DEPLOY_PATH` | `/www/wwwroot/chantier-staging` | `/www/wwwroot/chantier` |
+| `DEPLOY_PATH` | `/www/wwwroot/chantier-staging.c2me.ovh` | `/www/wwwroot/chantier.c2me.fr` |
 | `APP_URL` | `https://chantier-staging.c2me.ovh` | `https://chantier.c2me.fr` |
 | `DEPLOY_PHP_BIN` | Chemin du binaire PHP 8.4 à relever sur le serveur | Idem |
 | `DEPLOY_ROUTE_CACHE` | `true` ou `false` | `true` ou `false` |
@@ -359,28 +383,108 @@ Les workflows utilisent `StrictHostKeyChecking=yes`, `BatchMode=yes`, `Identitie
 - Aucun `sudo` général n'est accordé aux comptes techniques.
 - Les comptes ne peuvent écrire que dans leur racine et n'ont aucun accès à l'autre environnement.
 - Les scripts serveur refusent un utilisateur qui ne correspond pas à l'environnement.
+- Les fichiers déployés restent au propriétaire du compte technique et au groupe de l'environnement ; le déploiement ne change ni propriétaire ni groupe.
+- `www` n'est jamais un compte de connexion SSH et ne dispose d'aucun accès interactif.
 
 ## Procédure initiale d'administration
 
-Cette procédure est à exécuter **manuellement** par l'administrateur, avec un accès autorisé. Aucune commande n'a été exécutée dans CHAN-97.
+Cette procédure est à exécuter **manuellement** par l'administrateur, avec un accès autorisé. Aucune commande n'a été exécutée pour produire cette documentation.
 
-1. **Créer les comptes techniques** (si absents) et interdire leur connexion interactive par mot de passe.
-2. **Créer les racines** `/www/wwwroot/chantier-staging` et `/www/wwwroot/chantier`, puis `releases/`, `shared/` et `shared/storage/` dans chacune.
-3. **Créer `shared/.env`** pour chaque environnement à partir de la matrice de [`environments.md`](environments.md), avec `APP_ENV` et `APP_URL` corrects, puis appliquer des permissions restrictives : propriétaire = compte technique, groupe = serveur web en lecture seule. Le mode `640` ou `600` est attendu ; `660` et `770` sont refusés par le déploiement.
-4. **Créer l'arborescence de stockage** : `shared/storage/app/public`, `shared/storage/app/private`, `shared/storage/framework/cache`, `shared/storage/framework/sessions`, `shared/storage/framework/views`, `shared/storage/logs`, accessibles en écriture au compte technique et lisibles par le serveur web.
-5. **Configurer les vhosts aaPanel** : DocumentRoot `/www/wwwroot/chantier-staging/current/public` et `/www/wwwroot/chantier/current/public`, certificats TLS actifs.
-6. **Rattacher les clés publiques** aux comptes techniques, restreindre les sources si possible.
-7. **Relever le binaire PHP 8.4** et le renseigner dans `DEPLOY_PHP_BIN`.
-8. **Créer une entrée cron `schedule:run` par environnement**, exécutée par le compte technique depuis `current` :
+Les commandes ci-dessous utilisent `$ENV`, `$ROOT`, `$USER` et `$GROUP` pour éviter toute duplication. Les chemins et les comptes définitifs figurent dans le tableau d'architecture. Les chemins `/www/wwwroot/chantier-staging` et `/www/wwwroot/chantier` ne doivent plus être utilisés.
 
-   ```text
-   * * * * * cd /www/wwwroot/chantier-staging/current && <php-8.4> artisan schedule:run >> /www/wwwroot/chantier-staging/shared/storage/logs/scheduler.log 2>&1
-   * * * * * cd /www/wwwroot/chantier/current && <php-8.4> artisan schedule:run >> /www/wwwroot/chantier/shared/storage/logs/scheduler.log 2>&1
+1. **Créer les comptes techniques** (si absents) et interdire leur connexion interactive par mot de passe. Ne pas accorder de `sudo`.
+2. **Créer ou conserver les racines aaPanel** `/www/wwwroot/chantier-staging.c2me.ovh` et `/www/wwwroot/chantier.c2me.fr`. Les sites existent déjà : ne pas renommer les répertoires.
+3. **Créer `releases/` et `shared/`** dans chaque racine, puis appliquer les modes attendus :
+
+   ```bash
+   # Staging (adapter les quatre variables pour la production)
+   ENV=staging
+   ROOT=/www/wwwroot/chantier-staging.c2me.ovh
+   USER=c2me-deploy-staging
+   GROUP=c2me-staging
+
+   install -d -m 2770 -o "$USER" -g "$GROUP" "$ROOT" "$ROOT/releases" "$ROOT/shared"
+   install -d -m 2770 -o "$USER" -g "$GROUP" "$ROOT/shared/storage"
+   chmod 2770 "$ROOT" "$ROOT/releases" "$ROOT/shared" "$ROOT/shared/storage"
    ```
 
-9. **Configurer les workers** dans aaPanel/Supervisor si l'application en utilise. Chaque environnement doit avoir un programme distinct, un répertoire `current`, et redémarrer via `queue:restart` uniquement après activation.
-10. **Vérifier les droits** : le compte technique écrit dans `shared/` et `bootstrap/cache`, le serveur web lit `public/`, et aucun autre utilisateur n'accède à `.env`.
-11. **Ne pas exécuter de migration** dans cette procédure : la stratégie de migration relève de CHAN-98.
+4. **Créer `shared/.env`** pour chaque environnement à partir de la matrice de [`environments.md`](environments.md), avec `APP_ENV` et `APP_URL` corrects, puis appliquer les permissions suivantes :
+
+   ```bash
+   chown "$USER:$GROUP" "$ROOT/shared/.env"
+   chmod 0600 "$ROOT/shared/.env"
+   ```
+
+   Le mode `0600` est recommandé : `config:cache` est exécuté par le compte technique, qui lit le fichier pendant le déploiement. À l'exécution, Laravel utilise la configuration compilée et PHP-FPM n'a pas besoin de lire `.env`. Le mode `0640` reste accepté mais n'est pas nécessaire. Les modes `660`, `664`, `644` et tout accès des autres utilisateurs sont refusés.
+5. **Créer l'arborescence de stockage** : `shared/storage/app/public`, `shared/storage/app/private`, `shared/storage/framework/cache`, `shared/storage/framework/sessions`, `shared/storage/framework/views`, `shared/storage/logs`. Ces répertoires appartiennent au compte technique, ont le groupe de l'environnement et sont en `2770`, afin que PHP-FPM puisse y écrire.
+
+   ```bash
+   install -d -m 2770 -o "$USER" -g "$GROUP" \
+     "$ROOT/shared/storage/app/public" \
+     "$ROOT/shared/storage/app/private" \
+     "$ROOT/shared/storage/framework/cache" \
+     "$ROOT/shared/storage/framework/sessions" \
+     "$ROOT/shared/storage/framework/views" \
+     "$ROOT/shared/storage/logs"
+   ```
+
+6. **Configurer les vhosts aaPanel** : DocumentRoot `/www/wwwroot/chantier-staging.c2me.ovh/current/public` et `/www/wwwroot/chantier.c2me.fr/current/public`, certificats TLS actifs.
+7. **Vérifier l'appartenance de `www` aux deux groupes** (`id www`). `www` exécute PHP-FPM et Nginx. Si l'appartenance vient d'être ajoutée, recharger PHP-FPM et Nginx : les processus déjà lancés ne prennent pas en compte un nouveau groupe.
+8. **Rattacher les clés publiques** aux comptes techniques, restreindre les sources si possible.
+9. **Relever le binaire PHP 8.4** et le renseigner dans `DEPLOY_PHP_BIN`.
+10. **Créer une entrée cron `schedule:run` par environnement**, exécutée par le compte technique depuis `current` :
+
+   ```text
+   * * * * * cd /www/wwwroot/chantier-staging.c2me.ovh/current && <php-8.4> artisan schedule:run >> /www/wwwroot/chantier-staging.c2me.ovh/shared/storage/logs/scheduler.log 2>&1
+   * * * * * cd /www/wwwroot/chantier.c2me.fr/current && <php-8.4> artisan schedule:run >> /www/wwwroot/chantier.c2me.fr/shared/storage/logs/scheduler.log 2>&1
+   ```
+
+11. **Configurer les workers** dans aaPanel/Supervisor si l'application en utilise. Chaque environnement doit avoir un programme distinct, un répertoire `current`, et redémarrer via `queue:restart` uniquement après activation.
+12. **Vérifier les droits** avec les commandes de contrôle ci-dessous : aucun `777`, aucun `.env` lisible par les autres utilisateurs ni par le groupe (`0600`), `www` peut écrire dans `shared/storage` et lire `bootstrap/cache/config.php`, et les comptes de déploiement ne peuvent pas accéder à l'autre racine.
+13. **Ne pas exécuter de migration** dans cette procédure : la stratégie de migration relève de CHAN-98.
+
+### Commandes de contrôle des permissions
+
+À exécuter manuellement par l'administrateur après la configuration initiale et après tout changement de groupe :
+
+```bash
+# Modes et propriétaires attendus
+stat -c '%U:%G %a %n' \
+  /www/wwwroot/chantier-staging.c2me.ovh \
+  /www/wwwroot/chantier-staging.c2me.ovh/releases \
+  /www/wwwroot/chantier-staging.c2me.ovh/shared \
+  /www/wwwroot/chantier-staging.c2me.ovh/shared/.env \
+  /www/wwwroot/chantier-staging.c2me.ovh/shared/storage
+
+# Mêmes contrôles pour la production
+stat -c '%U:%G %a %n' \
+  /www/wwwroot/chantier.c2me.fr \
+  /www/wwwroot/chantier.c2me.fr/releases \
+  /www/wwwroot/chantier.c2me.fr/shared \
+  /www/wwwroot/chantier.c2me.fr/shared/.env \
+  /www/wwwroot/chantier.c2me.fr/shared/storage
+
+# PHP-FPM ne lit pas .env : il lit la configuration compilée et écrit dans le stockage
+# (contrôles de current à exécuter après le premier déploiement)
+sudo -u www test -w /www/wwwroot/chantier-staging.c2me.ovh/shared/storage && echo 'staging storage inscriptible'
+sudo -u www test -r /www/wwwroot/chantier-staging.c2me.ovh/current/bootstrap/cache/config.php && echo 'staging config compilée lisible'
+sudo -u www test -w /www/wwwroot/chantier.c2me.fr/shared/storage && echo 'production storage inscriptible'
+sudo -u www test -r /www/wwwroot/chantier.c2me.fr/current/bootstrap/cache/config.php && echo 'production config compilée lisible'
+
+# Avec .env en 0600, www ne doit pas pouvoir le lire (les deux commandes doivent échouer)
+sudo -u www test -r /www/wwwroot/chantier-staging.c2me.ovh/shared/.env && echo 'ANOMALIE: .env staging lisible par www'
+sudo -u www test -r /www/wwwroot/chantier.c2me.fr/shared/.env && echo 'ANOMALIE: .env production lisible par www'
+
+# Isolation des comptes SSH (les deux commandes doivent échouer)
+sudo -u c2me-deploy-staging test -r /www/wwwroot/chantier.c2me.fr && echo 'ANOMALIE: accès croisé staging -> production'
+sudo -u c2me-deploy-production test -r /www/wwwroot/chantier-staging.c2me.ovh && echo 'ANOMALIE: accès croisé production -> staging'
+
+# Aucun 777 ni écriture pour les autres utilisateurs
+find /www/wwwroot/chantier-staging.c2me.ovh /www/wwwroot/chantier.c2me.fr \
+  ! -type l -perm -0002 -print
+```
+
+Ces commandes sont fournies à titre de procédure : elles n'ont pas été exécutées dans le cadre de cette correction.
 
 ## Processus de déploiement serveur
 
@@ -395,9 +499,9 @@ Le script [`remote-deploy.sh`](../../.github/scripts/deploy/remote-deploy.sh) es
 7. refus si la release existe déjà ;
 8. extraction dans un répertoire temporaire créé par `mktemp -d` sous `releases/.incoming-*`, avec vérification du type, de l'absence de lien et de l'appartenance à l'utilisateur courant, puis contrôle qu'aucune entrée ne sort de ce répertoire ;
 9. liaison de `.env` et `storage` vers `shared/`, et `public/storage` vers le stockage partagé ;
-10. contrôle des permissions : écriture de groupe et tout accès des autres utilisateurs interdits sur `.env` ;
+10. application des permissions de la release (`2750`) et de `bootstrap/cache` (`2770`), puis contrôle de la racine, de `releases/`, de `shared/`, du stockage et de `.env` (`0600` ou `0640`, aucune écriture de groupe, aucun accès des autres) ;
 11. vérification explicite du binaire PHP 8.4 avant toute commande Artisan ;
-12. `config:cache`, `view:cache`, puis `route:cache` si activé ;
+12. `config:cache`, `view:cache`, puis `route:cache` si activé ; un échec de cache interrompt le déploiement **avant** publication ;
 13. `queue:restart` si activé ;
 14. écriture du marqueur `release.json` ;
 15. publication atomique du répertoire de release, puis activation atomique de `current` ;
@@ -432,14 +536,17 @@ Si le health check échoue après l'activation de `current`, le déploiement est
 ### Cache Laravel
 
 - `config:cache` et `view:cache` sont exécutés systématiquement.
+- `config:cache` est **obligatoire** : il produit `bootstrap/cache/config.php`, seule source de configuration à l'exécution lorsque `.env` est en `0600`. Le déploiement échoue avant publication si ce fichier est absent ou n'est pas lisible par le groupe.
 - `route:cache` est contrôlé par `DEPLOY_ROUTE_CACHE`. L'application actuelle n'utilise que des routes et des vues compatibles, mais toute évolution doit être revérifiée avant de conserver l'option.
 - Aucun cache n'est partagé entre staging et production : ils restent dans la release et le stockage de l'environnement.
 - Aucun `optimize:clear` global n'est exécuté.
+- Une commande manuelle `config:clear` ou `optimize:clear` supprime la configuration compilée : l'application tenterait alors de relire `.env` et échouerait avec un `.env` en `0600`. Après une telle commande, recompiler avec le compte de déploiement (`<php-8.4> artisan config:cache`) ou redéployer.
 
 ### Workers et planificateur
 
 - `queue:restart` n'est exécuté que si `DEPLOY_QUEUE_RESTART` vaut `true`.
 - Le superviseur réellement utilisé n'est pas supposé : il doit être configuré par l'administrateur (aaPanel/Supervisor).
+- Le cron `schedule:run` et les workers sont exécutés avec le compte de déploiement de l'environnement, depuis `current`. Ils utilisent la configuration compilée ; aucun ne doit dépendre d'une lecture directe de `.env`.
 - Une seule entrée cron `schedule:run` existe par environnement ; le déploiement n'en crée aucune.
 
 ## Contrôles post-déploiement
@@ -448,7 +555,7 @@ Si le health check échoue après l'activation de `current`, le déploiement est
 2. **Intégrité du package** : empreinte SHA-256 revérifiée avant transfert et côté serveur.
 3. **Release active** : `current` pointe sur `releases/<release-id>`.
 4. **Liens symboliques** : `.env`, `storage` et `public/storage` pointent vers le stockage de l'environnement.
-5. **Permissions** : `.env` non lisible par les autres utilisateurs, stockage et `bootstrap/cache` accessibles en écriture.
+5. **Permissions** : `.env` non lisible par le groupe ni par les autres utilisateurs (`0600` recommandé), `bootstrap/cache/config.php` lisible par le groupe, stockage et `bootstrap/cache` accessibles en écriture au groupe, release non inscriptible par le groupe.
 6. **Disponibilité HTTP** : appel de `APP_URL/up`, code 200 attendu.
 7. **Version et commit** : vérifiés via `release.json` en SSH, jamais exposés publiquement.
 
@@ -514,12 +621,18 @@ En l'état, une release stable publiée peut donc être rejouée, y compris une 
 - Aucun serveur n'a été configuré, aucun compte Linux créé, aucun vhost modifié.
 - Aucun environnement GitHub, variable ou secret n'a été créé.
 - Aucun déploiement réel n'a été exécuté.
+- Aucune configuration PHP-FPM, Nginx ou aaPanel n'a été modifiée.
+- Les propriétaires et groupes des racines, de `shared/` et du stockage partagé restent configurés manuellement ; le déploiement les vérifie mais ne les modifie pas. Seuls les modes de la release qu'il crée et de son `bootstrap/cache` sont appliqués automatiquement.
+- Le pool PHP-FPM `www` reste **commun aux deux environnements**. L'isolation des comptes SSH, des secrets et des racines est effective ; l'isolation complète de l'exécution PHP ne l'est pas. Une séparation en deux pools par environnement reste à évaluer.
+- Un changement d'appartenance de groupe n'est pris en compte qu'après rechargement des processus PHP-FPM et Nginx ; cette opération est manuelle.
+- La procédure de contrôle des permissions documentée n'a pas été exécutée sur le serveur.
 - Aucune migration de base de données n'est exécutée par un déploiement.
 - Aucun rollback automatique n'est implémenté : une release précédente reste disponible dans `releases/`, mais son activation relève d'une décision et d'une procédure CHAN-98.
 - En cas d'échec avant activation, le répertoire incomplet est nettoyé sans toucher à la release active ni à `shared/`.
 - En cas d'échec du health check après activation, la nouvelle release reste active et le déploiement est signalé en échec ; aucune restauration automatique n'est effectuée (CHAN-98).
 - Le mode maintenance n'est pas activé automatiquement.
 - Le superviseur des workers et les entrées cron doivent être confirmés sur le serveur.
+- La politique `.env` en `0600` dépend de la présence de `bootstrap/cache/config.php` dans la release active. Une commande manuelle `config:clear` ou `optimize:clear` casse ce fonctionnement jusqu'à recompilation ou redéploiement.
 - `DEPLOY_PHP_BIN`, les empreintes SSH et les protections GitHub restent à relever ou configurer manuellement.
 - Les 90 jours de rétention dépendent des limites du dépôt.
 - Aucun contrôle anti-rétrogradation n'est implémenté (recommandation documentée ci-dessus).
@@ -535,8 +648,9 @@ En l'état, une release stable publiée peut donc être rejouée, y compris une 
 php .github/scripts/tests/validate-workflows.php
 bash .github/scripts/tests/test-deployment-automation.sh
 bash .github/scripts/tests/test-release-automation.sh
+shellcheck .github/scripts/deploy/*.sh .github/scripts/tests/*.sh
 actionlint
 composer ci:check
 ```
 
-Les tests couvrent la validation des tags (y compris l'avancée de branche et les tags divergents), le refus des préreleases, l'absence de candidate staging, les artefacts expirés, manquants ou ambigus, la pagination de l'API, le schéma strict des manifestes, les empreintes incorrectes, la provenance, la comparaison des arbres Git, les environnements et chemins interdits, les archives malveillantes (liens symboliques et physiques), le nettoyage sécurisé (release préexistante, release active, `.incoming` préexistant, signaux, masquage des sections critiques), les permissions de `.env` (600, 640, 660, 700, 750, 770), les scénarios de journalisation (`shared` absent, non inscriptible, journal absent/inscriptible/non inscriptible/symbolique/répertoire, `shared` symbolique), les exclusions locales et sensibles, les tags malveillants à l'assemblage, l'exclusion de `vendor/bin`, le refus des liens hors `vendor/bin`, le contrôle PHP 8.4, l'absence de migration automatique et l'absence de fuite de secrets. Un job `package-linux` exécute le build Ubuntu réel décrit ci-dessus.
+Les tests couvrent la validation des tags (y compris l'avancée de branche et les tags divergents), le refus des préreleases, l'absence de candidate staging, les artefacts expirés, manquants ou ambigus, la pagination de l'API, le schéma strict des manifestes, les empreintes incorrectes, la provenance, la comparaison des arbres Git, les environnements et chemins interdits (dont les chemins aaPanel exacts et le refus des anciens chemins), les archives malveillantes (liens symboliques et physiques), le nettoyage sécurisé (release préexistante, release active, `.incoming` préexistant, signaux, masquage des sections critiques), les permissions de `.env` (`0600` recommandé, `0640` accepté, `0660`/`0664`/`0644` refusés), le modèle de permissions des racines, de `shared/`, du stockage et de `bootstrap/cache` (setgid, écriture de groupe, absence de `777` et de droits pour les autres), l'absence d'appel `env()` hors de `config/`, la présence obligatoire de `bootstrap/cache/config.php`, l'échec avant activation, les scénarios de journalisation (`shared` absent, non inscriptible, journal absent/inscriptible/non inscriptible/symbolique/répertoire, `shared` symbolique), les exclusions locales et sensibles, les tags malveillants à l'assemblage, l'exclusion de `vendor/bin`, le refus des liens hors `vendor/bin`, le contrôle PHP 8.4, l'absence de migration automatique et l'absence de fuite de secrets. Un job `package-linux` exécute le build Ubuntu réel décrit ci-dessus.

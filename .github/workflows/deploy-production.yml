@@ -123,8 +123,14 @@ jobs:
       - name: Validate environment configuration
         run: |
           expected_environment='production'
-          expected_path='/www/wwwroot/chantier'
+          expected_path='/www/wwwroot/chantier.c2me.fr'
+          legacy_path='/www/wwwroot/chantier'
           expected_url='https://chantier.c2me.fr'
+
+          if [[ "$DEPLOY_PATH" == "$legacy_path" ]]; then
+            echo "DEPLOY_PATH utilise un chemin obsolète : $DEPLOY_PATH" >&2
+            exit 1
+          fi
 
           if [[ "$DEPLOY_ENVIRONMENT" != "$expected_environment" ]]; then
             echo "DEPLOY_ENVIRONMENT incohérent pour ce workflow." >&2

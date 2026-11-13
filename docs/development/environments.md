@@ -38,7 +38,7 @@ Aucune connexion au serveur, à aaPanel, à MySQL ou aux environnements GitHub n
 
 Les documents `AGENTS.md`, `README.md`, `docs/development/git-workflow.md`, `docs/development/release-process.md`, `.env.example`, `.github/workflows/tests.yml` et `.github/workflows/release.yml` ont été examinés lors de CHAN-96.
 
-> **Domaine de production :** il est fourni par le ticket CHAN-97 : `https://chantier.c2me.fr`. Il doit néanmoins être confirmé dans aaPanel avant la configuration du vhost et du certificat TLS.
+> **Domaines et chemins :** les deux sites aaPanel existent déjà. Les chemins définitifs sont `/www/wwwroot/chantier-staging.c2me.ovh` et `/www/wwwroot/chantier.c2me.fr` ; ils sont imposés par les scripts et workflows de déploiement. Les anciens chemins `/www/wwwroot/chantier-staging` et `/www/wwwroot/chantier` sont refusés.
 
 ## Architecture cible
 
@@ -47,12 +47,12 @@ Un seul serveur **Ubuntu 24.04** administré avec **aaPanel** héberge deux inst
 ```text
 Serveur Ubuntu 24.04 / aaPanel
 ├── chantier-staging.c2me.ovh
-│   ├── /www/wwwroot/chantier-staging
+│   ├── /www/wwwroot/chantier-staging.c2me.ovh
 │   ├── base chantier_staging
 │   ├── utilisateur MySQL dédié
 │   └── .env, stockage, logs, workers et tâches planifiées dédiés
 └── chantier.c2me.fr
-    ├── /www/wwwroot/chantier
+    ├── /www/wwwroot/chantier.c2me.fr
     ├── base chantier_production
     ├── utilisateur MySQL dédié
     └── .env, stockage, logs, workers et tâches planifiées dédiés
@@ -67,24 +67,109 @@ Les deux environnements partagent le serveur physique, mais aucun élément d'ex
 - aucun accès SQL croisé ;
 - aucun lien symbolique entre les deux répertoires.
 
+Le serveur est un Ubuntu 24.04.5 LTS avec aaPanel, PHP-FPM 8.4 (pool `www`, socket `/tmp/php-cgi-84.sock`) et MariaDB 10.11. Les deux sites aaPanel existent et conservent leurs répertoires actuels.
+
 ## Domaines, répertoires et données
 
 | Élément | Staging | Production |
 | --- | --- | --- |
 | Rôle | Validation fonctionnelle et recette. | Exploitation réelle. |
 | URL | `https://chantier-staging.c2me.ovh` | `https://chantier.c2me.fr` |
-| Répertoire cible | `/www/wwwroot/chantier-staging` | `/www/wwwroot/chantier` |
-| DocumentRoot aaPanel | `/www/wwwroot/chantier-staging/current/public` | `/www/wwwroot/chantier/current/public` |
+| Répertoire cible | `/www/wwwroot/chantier-staging.c2me.ovh` | `/www/wwwroot/chantier.c2me.fr` |
+| DocumentRoot aaPanel | `/www/wwwroot/chantier-staging.c2me.ovh/current/public` | `/www/wwwroot/chantier.c2me.fr/current/public` |
 | Base de données | `chantier_staging` | `chantier_production` |
 | Utilisateur MySQL | Dédié au staging, distinct. | Dédié à la production, distinct. |
-| Fichier `.env` | `/www/wwwroot/chantier-staging/shared/.env` | `/www/wwwroot/chantier/shared/.env` |
-| Stockage applicatif | `/www/wwwroot/chantier-staging/shared/storage` | `/www/wwwroot/chantier/shared/storage` |
-| Journaux | `/www/wwwroot/chantier-staging/shared/storage/logs` | `/www/wwwroot/chantier/shared/storage/logs` |
+| Fichier `.env` | `/www/wwwroot/chantier-staging.c2me.ovh/shared/.env` | `/www/wwwroot/chantier.c2me.fr/shared/.env` |
+| Stockage applicatif | `/www/wwwroot/chantier-staging.c2me.ovh/shared/storage` | `/www/wwwroot/chantier.c2me.fr/shared/storage` |
+| Journaux | `/www/wwwroot/chantier-staging.c2me.ovh/shared/storage/logs` | `/www/wwwroot/chantier.c2me.fr/shared/storage/logs` |
 | Données | Fictives ou anonymisées. | Données réelles. |
 | Accès HTTP | Réservé à l'équipe C2ME. | Application publique, administration protégée. |
 | GitHub Environment | `staging` | `production` |
 
-Les répertoires et le domaine de production restent à confirmer dans aaPanel avant la création du site. Le répertoire cible Laravel est la racine de l'installation ; le DocumentRoot du site aaPanel pointe vers `current/public`, jamais vers la racine Laravel. Depuis CHAN-97, l'installation suit la structure `releases/`, `shared/` et `current` décrite dans [`deployment-process.md`](deployment-process.md).
+Le répertoire cible Laravel est la racine de l'installation ; le DocumentRoot du site aaPanel pointe vers `<ROOT>/current/public`, jamais vers la racine Laravel. L'installation suit la structure `releases/`, `shared/` et `current` décrite dans [`deployment-process.md`](deployment-process.md).
+
+## Comptes système, groupes et permissions
+
+### Comptes et groupes
+
+| Élément | Staging | Production |
+| --- | --- | --- |
+| Compte SSH de déploiement | `c2me-deploy-staging` | `c2me-deploy-production` |
+| Groupe principal du compte | `c2me-staging` | `c2me-production` |
+| Racine aaPanel | `/www/wwwroot/chantier-staging.c2me.ovh` | `/www/wwwroot/chantier.c2me.fr` |
+| Processus PHP-FPM et Nginx | `www:www`, pool commun | `www:www`, pool commun |
+
+- Les deux comptes de déploiement sont dédiés, sans connexion interactive par mot de passe et **sans privilège `sudo`**.
+- Les racines appartiennent au compte de déploiement de leur environnement, avec le groupe de l'environnement, en mode `2770` : le compte écrit, le groupe lit et traverse, les autres utilisateurs n'ont aucun droit.
+- Le compte `www` exécute PHP-FPM 8.4 et Nginx. Il appartient actuellement aux deux groupes afin de servir les deux sites.
+- `www` n'est jamais utilisé comme compte SSH de déploiement.
+
+### Modèle de permissions
+
+Les modes ci-dessous sont le modèle attendu. Le déploiement vérifie les répertoires créés manuellement et applique lui-même les modes de la release qu'il prépare.
+
+| Chemin | Propriétaire | Groupe | Mode | Justification |
+| --- | --- | --- | --- | --- |
+| `<ROOT>` | compte de déploiement | groupe de l'environnement | `2770` | écriture du déploiement, traversée du groupe PHP-FPM. |
+| `<ROOT>/releases` | compte de déploiement | groupe de l'environnement | `2770` | création et publication des releases. |
+| `<ROOT>/releases/<release>` | compte de déploiement | groupe de l'environnement | `2750` | code en lecture seule pour le groupe : PHP-FPM lit, ne modifie pas. |
+| `<ROOT>/releases/<release>/bootstrap/cache` | compte de déploiement | groupe de l'environnement | `2770` | PHP-FPM écrit les caches de compilation et de paquets. |
+| `<ROOT>/shared` | compte de déploiement | groupe de l'environnement | `2770` | journal, liens `.env` et `storage`. |
+| `<ROOT>/shared/.env` | compte de déploiement | groupe de l'environnement | `0600` (recommandé) ou `0640` | secrets non lisibles par les autres ; `0600` retire aussi la lecture au groupe, inutile à l'exécution. |
+| `<ROOT>/shared/storage` | compte de déploiement | groupe de l'environnement | `2770` | logs, sessions, caches et vues écrits par PHP-FPM. |
+| `<ROOT>/shared/deployment.log` | compte de déploiement | groupe de l'environnement | `0600` | journal du déploiement non lisible par le groupe ni par les autres. |
+| `<ROOT>/current` | compte de déploiement | groupe de l'environnement | lien symbolique | pointe vers `<ROOT>/releases/<release>`. |
+
+Le bit setgid (`2`) sur les répertoires garantit que les fichiers créés héritent du groupe de l'environnement, y compris ceux écrits par PHP-FPM dans `storage/`.
+
+L'état actuel du serveur utilise `2770` sur les racines. L'écriture de groupe n'est pas nécessaire à PHP-FPM sur `<ROOT>`, `releases/` et `shared/` : un passage à `2750` (lecture et traversée du groupe, aucune écriture) durcit l'intégrité du code déployé, du lien `current` et du journal. Le déploiement accepte les deux modes ; toute modification reste manuelle et hors de cette correction. `shared/storage` et `bootstrap/cache` doivent en revanche conserver l'écriture de groupe.
+
+Le déploiement force `umask 027` avant l'extraction : les fichiers du paquet sont créés en `0640` ou `0750` et restent lisibles par le groupe sans être accessibles aux autres utilisateurs.
+
+Règles absolues :
+
+- aucun mode `777` ni aucune écriture pour les autres utilisateurs ;
+- aucun `.env` lisible ou modifiable par les autres utilisateurs ;
+- aucun `.env` modifiable par le groupe ;
+- aucun accès croisé entre les comptes de déploiement ;
+- aucun mode `660` ou `664` sur `.env` ;
+- le mode `0600` est recommandé : il retire une lecture de groupe dont PHP-FPM n'a pas besoin ;
+- le mode `0640` reste accepté pour compatibilité, mais n'est pas nécessaire.
+
+### `.env`, `config:cache` et exécution PHP
+
+Le déploiement exécute `config:cache` avec le compte technique, propriétaire du `.env`. Laravel compile alors toute la configuration dans `bootstrap/cache/config.php`. Le framework ne charge `.env` que lorsque cette configuration n'est pas en cache (`LoadEnvironmentVariables` sort immédiatement si `configurationIsCached()` est vrai). L'application est servie avec la configuration compilée : PHP-FPM n'a donc **pas besoin de lire `shared/.env`**.
+
+Le code applicatif ne contient aucun appel `env()` hors de `config/` ; les valeurs sont lues via `config()`, donc depuis le cache compilé. Les commandes Artisan exécutées par le cron (`schedule:run`) et les workers de file d'attente reposent sur la même configuration compilée.
+
+Conséquences :
+
+- `.env` peut rester en `0600`, propriété du compte de déploiement ;
+- `bootstrap/cache/config.php` doit exister dans chaque release activée et rester lisible par le groupe (`0640`), car PHP-FPM le lit ;
+- si `config:cache` est annulé manuellement (`config:clear`, `optimize:clear`), l'application retombe sur la lecture de `.env` et cesse de fonctionner avec un `.env` en `0600` ; il faut alors recompiler la configuration avec le compte de déploiement, ou redéployer ;
+- le déploiement vérifie l'existence de la configuration compilée avant et après activation.
+
+### Rôle de `www` et limite d'isolation PHP
+
+Le pool PHP-FPM `www` est **commun aux deux sites** et le compte `www` appartient actuellement aux deux groupes. Conséquences :
+
+- chaque site peut être servi correctement : `www` traverse la release (`2750`) et lit le code, écrit dans son `storage/` (`2770`) et dans `bootstrap/cache/` (`2770`) ;
+- `www` ne lit pas `shared/.env` lorsque celui-ci est en `0600` ; avec le mode `0640`, il le lirait ;
+- l'isolation au niveau de l'exécution PHP n'est **pas complète** : un processus PHP compromis sur staging peut accéder, via les appartenances de groupe du compte `www`, au `storage/` de production (écriture de groupe) et aux fichiers de code lisibles par le groupe ;
+- l'isolation réellement garantie porte sur les comptes SSH de déploiement, les racines, les secrets `.env`, les bases et les vhosts.
+
+Deux évolutions sont possibles :
+
+1. **Conserver le pool commun** et accepter la limite d'isolation ci-dessus. C'est la situation actuelle, documentée ici.
+2. **Créer un pool PHP-FPM par environnement**, chacun avec son propre utilisateur et son propre socket, puis associer chaque vhost à son pool dans aaPanel. Cette évolution n'est pas réalisée : elle doit être évaluée avec l'impact sur les autres sites hébergés sur le serveur.
+
+Aucune configuration PHP-FPM n'est modifiée par cette correction.
+
+Un changement de groupe n'est pris en compte que par les nouveaux processus : après toute modification des groupes de `www`, un rechargement ou redémarrage de PHP-FPM et de Nginx est nécessaire. Cette opération reste manuelle et hors du périmètre du déploiement.
+
+### Chemins refusés
+
+Les anciens chemins `/www/wwwroot/chantier-staging` et `/www/wwwroot/chantier` sont refusés par les scripts serveur et par les workflows, y compris lorsque l'environnement ou le compte correspondent. Les chemins définitifs sont ceux du tableau des domaines.
 
 ## Séparation MySQL
 
@@ -115,8 +200,8 @@ Une restauration de sauvegarde de production vers staging est interdite sans ano
 
 Chaque installation dispose de son propre fichier `.env`, dans son répertoire `shared/` :
 
-- `/www/wwwroot/chantier-staging/shared/.env` ;
-- `/www/wwwroot/chantier/shared/.env`.
+- `/www/wwwroot/chantier-staging.c2me.ovh/shared/.env` ;
+- `/www/wwwroot/chantier.c2me.fr/shared/.env`.
 
 Chaque release active y accède par un lien symbolique interne. Le fichier partagé n'est jamais remplacé par un déploiement.
 
@@ -125,7 +210,7 @@ Règles :
 - les fichiers `.env` ne sont jamais versionnés dans le dépôt ;
 - ils ne sont jamais copiés d'un environnement à l'autre ;
 - ils ne sont jamais échangés par lien symbolique ;
-- ils sont lisibles uniquement par l'utilisateur du site et l'administrateur, avec des permissions restrictives ; l'écriture par le groupe et tout accès des autres utilisateurs sont interdits (`600` ou `640`) ;
+- ils sont lisibles uniquement par l'utilisateur du site et l'administrateur ; l'écriture par le groupe et tout accès des autres utilisateurs sont interdits. Le mode recommandé est `0600` (propriétaire = compte de déploiement) ; `0640` reste accepté mais n'est pas nécessaire, la configuration étant compilée par le déploiement ;
 - chaque environnement possède une `APP_KEY` distincte ;
 - les secrets de production ne sont jamais utilisés pour staging et inversement ;
 - un déploiement ne doit pas écraser ni afficher le contenu du `.env` ;
@@ -175,8 +260,8 @@ Les cookies de session sont limités au domaine de l'environnement et configuré
 Chaque environnement possède sa propre entrée cron pour Laravel :
 
 ```text
-* * * * * cd /www/wwwroot/chantier-staging/current && <php> artisan schedule:run >> /www/wwwroot/chantier-staging/shared/storage/logs/scheduler.log 2>&1
-* * * * * cd /www/wwwroot/chantier/current && <php> artisan schedule:run >> /www/wwwroot/chantier/shared/storage/logs/scheduler.log 2>&1
+* * * * * cd /www/wwwroot/chantier-staging.c2me.ovh/current && <php> artisan schedule:run >> /www/wwwroot/chantier-staging.c2me.ovh/shared/storage/logs/scheduler.log 2>&1
+* * * * * cd /www/wwwroot/chantier.c2me.fr/current && <php> artisan schedule:run >> /www/wwwroot/chantier.c2me.fr/shared/storage/logs/scheduler.log 2>&1
 ```
 
 `<php>` doit être remplacé par le binaire PHP 8.4 validé sur le serveur. La commande doit s'exécuter avec l'utilisateur du site concerné et depuis le bon répertoire.
@@ -261,7 +346,7 @@ Variables non sensibles, définies par environnement :
 | Variable | Staging | Production | Fonction |
 | --- | --- | --- | --- |
 | `DEPLOY_ENVIRONMENT` | `staging` | `production` | Environnement ciblé par le workflow. |
-| `DEPLOY_PATH` | `/www/wwwroot/chantier-staging` | `/www/wwwroot/chantier` | Répertoire de l'installation. |
+| `DEPLOY_PATH` | `/www/wwwroot/chantier-staging.c2me.ovh` | `/www/wwwroot/chantier.c2me.fr` | Répertoire de l'installation. |
 | `APP_URL` | `https://chantier-staging.c2me.ovh` | `https://chantier.c2me.fr` | URL publique de contrôle. |
 | `DEPLOY_PHP_BIN` | Binaire PHP 8.4 à relever et confirmer sur le serveur. | Binaire PHP 8.4 à relever et confirmer sur le serveur. | Interpréteur des commandes Artisan. |
 | `DEPLOY_ROUTE_CACHE` | `true` ou `false`. | `true` ou `false`. | Active `route:cache` après vérification de compatibilité. |
@@ -408,6 +493,12 @@ Les contrôles suivants doivent être exécutés lors de la mise en place des en
 - [ ] Les privilèges MySQL sont limités à la base de l'environnement.
 - [ ] Aucun accès SQL croisé entre staging et production n'est possible.
 - [ ] Les répertoires `storage`, `bootstrap/cache` et `storage/logs` sont séparés et accessibles en écriture au bon utilisateur.
+- [ ] Les racines sont en `2770` avec le compte et le groupe de leur environnement.
+- [ ] `shared/.env` est en `0600` (recommandé) ou `0640` : aucune écriture de groupe, aucun accès des autres utilisateurs.
+- [ ] `shared/storage` et `bootstrap/cache` sont inscriptibles par le groupe PHP-FPM (`2770`).
+- [ ] `bootstrap/cache/config.php` existe dans la release active et reste lisible par le groupe (`0640`).
+- [ ] Aucun répertoire ni fichier déployé n'est en `777` ou accessible en écriture aux autres utilisateurs.
+- [ ] Aucun compte de déploiement ne dispose de `sudo` et `www` n'est pas un compte SSH.
 - [ ] Le lien `public/storage` de chaque site pointe vers son propre stockage.
 - [ ] Les workers de queue sont séparés et supervisés.
 - [ ] Un seul cron `schedule:run` existe par environnement.
@@ -443,8 +534,10 @@ Les contrôles suivants doivent être exécutés lors de la mise en place des en
 
 ## Points à finaliser
 
-- Confirmer le domaine de production `chantier.c2me.fr` et les certificats TLS dans aaPanel.
-- Confirmer les chemins définitifs, les utilisateurs système et les permissions.
+- Vérifier dans aaPanel que les deux vhosts pointent vers `<ROOT>/current/public` et que les certificats TLS sont actifs.
+- Appliquer et vérifier les permissions du modèle ci-dessus sur les racines, `releases/`, `shared/`, `shared/.env` et `shared/storage` (commandes proposées dans [`deployment-process.md`](deployment-process.md)).
+- Vérifier que `www` est bien membre des deux groupes et que les processus PHP-FPM et Nginx ont été rechargés depuis l'ajout au groupe.
+- Arbitrer l'évolution vers deux pools PHP-FPM séparés, avec analyse d'impact sur les autres sites hébergés.
 - Créer les environnements GitHub `staging` et `production`, y définir les variables et secrets, et configurer les protections.
 - Confirmer l'identifiant du compte GitHub personnel de l'approbateur unique de production.
 - Relever et renseigner `DEPLOY_PHP_BIN` pour chaque environnement.

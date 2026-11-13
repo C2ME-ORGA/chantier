@@ -53,8 +53,14 @@ jobs:
       - name: Validate environment configuration
         run: |
           expected_environment='staging'
-          expected_path='/www/wwwroot/chantier-staging'
+          expected_path='/www/wwwroot/chantier-staging.c2me.ovh'
+          legacy_path='/www/wwwroot/chantier-staging'
           expected_url='https://chantier-staging.c2me.ovh'
+
+          if [[ "$DEPLOY_PATH" == "$legacy_path" ]]; then
+            echo "DEPLOY_PATH utilise un chemin obsolète : $DEPLOY_PATH" >&2
+            exit 1
+          fi
 
           if [[ "$DEPLOY_ENVIRONMENT" != "$expected_environment" ]]; then
             echo "DEPLOY_ENVIRONMENT incohérent pour ce workflow." >&2

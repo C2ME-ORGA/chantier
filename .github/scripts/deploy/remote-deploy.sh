@@ -10,10 +10,23 @@
 # Il ne modifie jamais `shared/.env`, ne déplace jamais `shared/storage`,
 # n'exécute aucune migration et n'active pas le mode maintenance.
 
-readonly STAGING_ROOT='/www/wwwroot/chantier-staging'
-readonly PRODUCTION_ROOT='/www/wwwroot/chantier'
+readonly STAGING_ROOT='/www/wwwroot/chantier-staging.c2me.ovh'
+readonly PRODUCTION_ROOT='/www/wwwroot/chantier.c2me.fr'
 readonly STAGING_USER='c2me-deploy-staging'
 readonly PRODUCTION_USER='c2me-deploy-production'
+
+# Anciens chemins documentés avant l'adaptation à aaPanel. Ils ne doivent plus
+# jamais être acceptés : un site aaPanel utilise le nom de domaine comme
+# répertoire racine.
+readonly LEGACY_STAGING_ROOT='/www/wwwroot/chantier-staging'
+readonly LEGACY_PRODUCTION_ROOT='/www/wwwroot/chantier'
+
+# Modèle de permissions décrit dans docs/development/environments.md :
+# - release : 2750 (lecture et traversée du groupe, aucune écriture) ;
+# - bootstrap/cache : 2770 (PHP-FPM écrit ses caches) ;
+# - fichiers extraits : umask 027 (lecture du groupe seulement).
+readonly RELEASE_MODE='2750'
+readonly BOOTSTRAP_CACHE_MODE='2770'
 
 # Marqueur de propriété écrit dans tout répertoire créé par l'exécution
 # courante. Le nettoyage ne supprime un répertoire que si ce marqueur contient
@@ -182,14 +195,136 @@ prepare_logging() {
 
 # Politique de permissions de shared/.env :
 # - écriture de groupe interdite ;
-# - écriture, lecture ou exécution par les autres interdites ;
-# - lecture de groupe autorisée (600, 640, 700, 750).
+# - écriture, lecture ou exécution par les autres utilisateurs interdites ;
+# - lecture de groupe tolérée mais inutile (600 recommandé, 640 accepté).
+#
+# Le déploiement exécute `config:cache` avec le compte technique : la
+# configuration compilée (bootstrap/cache/config.php) contient les valeurs
+# nécessaires. Laravel ne charge pas `.env` lorsque la configuration est en
+# cache, donc PHP-FPM n'a pas besoin de lire ce fichier à l'exécution.
 env_mode_is_secure() {
   local mode="${1:-}"
 
   [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
 
   (( (8#$mode & 8#0020) == 0 && (8#$mode & 8#0007) == 0 ))
+}
+
+# Aucun droit pour les autres utilisateurs : un mode 777 ou 775 est refusé.
+mode_denies_access_to_others() {
+  local mode="${1:-}"
+
+  [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
+
+  (( (8#$mode & 8#0007) == 0 ))
+}
+
+# Le groupe de l'environnement doit pouvoir lire et traverser le répertoire :
+# c'est le groupe du processus PHP-FPM (www).
+mode_grants_group_access() {
+  local mode="${1:-}"
+
+  [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
+
+  (( (8#$mode & 8#0050) == 8#0050 ))
+}
+
+# Écriture de groupe nécessaire pour PHP-FPM (storage, bootstrap/cache).
+mode_is_group_writable() {
+  local mode="${1:-}"
+
+  [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
+
+  (( (8#$mode & 8#0020) == 8#0020 ))
+}
+
+# Un ancien chemin ne doit jamais être accepté, même s'il ne correspond pas au
+# chemin de l'environnement courant : le message d'erreur reste explicite.
+path_is_legacy() {
+  local candidate="${1:-}"
+
+  [[ "$candidate" == "$LEGACY_STAGING_ROOT" || "$candidate" == "$LEGACY_PRODUCTION_ROOT" ]]
+}
+
+# Contrôle les permissions des répertoires créés manuellement lors de la
+# préparation du serveur. Aucun changement de groupe n'est effectué ici : le
+# déploiement ne dispose d'aucun privilège d'élévation.
+verify_shared_layout_permissions() {
+  local mode
+
+  mode="$(stat -c '%a' "$root")"
+  mode_denies_access_to_others "$mode" \
+    || die "racine accessible aux autres utilisateurs (mode $mode) : 2770 attendu pour $root"
+  mode_grants_group_access "$mode" \
+    || die "racine non accessible au groupe PHP-FPM (mode $mode) : 2770 attendu pour $root"
+
+  mode="$(stat -c '%a' "$root/releases")"
+  mode_denies_access_to_others "$mode" \
+    || die "releases accessible aux autres utilisateurs (mode $mode) : 2770 attendu pour $root/releases"
+
+  mode="$(stat -c '%a' "$shared")"
+  mode_denies_access_to_others "$mode" \
+    || die "shared accessible aux autres utilisateurs (mode $mode) : 2770 attendu pour $shared"
+  mode_grants_group_access "$mode" \
+    || die "shared non accessible au groupe PHP-FPM (mode $mode) : lecture et traversée attendues"
+
+  mode="$(stat -c '%a' "$shared/storage")"
+  mode_denies_access_to_others "$mode" \
+    || die "stockage partagé accessible aux autres utilisateurs (mode $mode) : 2770 attendu pour $shared/storage"
+  mode_grants_group_access "$mode" \
+    || die "stockage partagé non accessible au groupe PHP-FPM (mode $mode)"
+  mode_is_group_writable "$mode" \
+    || die "stockage partagé non inscriptible par le groupe PHP-FPM (mode $mode) : 2770 attendu"
+
+  [[ ! -L "$shared/.env" ]] || die "fichier .env partagé symbolique interdit : $shared/.env"
+
+  mode="$(stat -c '%a' "$shared/.env")"
+
+  env_mode_is_secure "$mode" \
+    || die "permissions du .env trop permissives (mode $mode) : écriture de groupe et accès des autres utilisateurs interdits (600 recommandé, 640 accepté)"
+}
+
+# Modèle de permissions d'une release : le groupe de l'environnement lit le code
+# et traverse le répertoire, mais ne peut pas modifier les fichiers déployés.
+# Seul bootstrap/cache est inscriptible par le groupe, pour PHP-FPM.
+apply_release_permissions() {
+  local directory="$1"
+
+  mkdir -p "$directory/bootstrap/cache" || die "création de bootstrap/cache impossible : $directory"
+
+  chmod "$BOOTSTRAP_CACHE_MODE" "$directory/bootstrap/cache" \
+    || die "permissions de bootstrap/cache impossibles : $directory/bootstrap/cache"
+
+  chmod "$RELEASE_MODE" "$directory" \
+    || die "permissions du répertoire de release impossibles : $directory"
+}
+
+verify_release_permissions() {
+  local directory="$1"
+  local mode
+  local entry
+
+  [[ -d "$directory" && ! -L "$directory" ]] || die "répertoire de release invalide : $directory"
+
+  mode="$(stat -c '%a' "$directory")"
+  mode_denies_access_to_others "$mode" \
+    || die "release accessible aux autres utilisateurs (mode $mode) : $RELEASE_MODE attendu"
+  mode_grants_group_access "$mode" \
+    || die "release non lisible par le groupe PHP-FPM (mode $mode) : $RELEASE_MODE attendu"
+
+  mode="$(stat -c '%a' "$directory/bootstrap/cache")"
+  mode_denies_access_to_others "$mode" \
+    || die "bootstrap/cache accessible aux autres utilisateurs (mode $mode) : $BOOTSTRAP_CACHE_MODE attendu"
+  mode_is_group_writable "$mode" \
+    || die "bootstrap/cache non inscriptible par le groupe PHP-FPM (mode $mode) : $BOOTSTRAP_CACHE_MODE attendu"
+
+  # Contrôle ciblé de deux points d'entrée lus à chaque requête HTTP : un
+  # fichier non lisible par le groupe rendrait le site indisponible.
+  for entry in artisan public/index.php; do
+    mode="$(stat -c '%a' "$directory/$entry")"
+    (( (8#$mode & 8#0040) == 8#0040 )) \
+      || die "$entry non lisible par le groupe PHP-FPM (mode $mode)"
+  done
 }
 
 # Jeton unique de l'exécution. Il est écrit dans chaque répertoire créé pour
@@ -446,10 +581,12 @@ verify_extraction() {
 # l'extraction et la préparation du répertoire incoming.
 prepare_and_activate_release() {
   local tmp_link
+  local mode
 
   log "PHP $php_version"
 
   (
+    set -e
     cd "$incoming_dir"
 
     "$php_bin" artisan config:cache
@@ -458,7 +595,22 @@ prepare_and_activate_release() {
     if [[ "$route_cache" == "true" ]]; then
       "$php_bin" artisan route:cache
     fi
-  )
+  ) || die "préparation des caches de la release impossible : $release_id"
+
+  # La politique .env 600 suppose une configuration compilée : sans elle,
+  # Laravel tenterait de charger `.env` à l'exécution sous PHP-FPM, qui n'a pas
+  # le droit de le lire. Le fichier doit aussi rester lisible par le groupe.
+  [[ -f "$incoming_dir/bootstrap/cache/config.php" ]] \
+    || die "configuration compilée absente après config:cache"
+
+  mode="$(stat -c '%a' "$incoming_dir/bootstrap/cache/config.php")"
+
+  mode_denies_access_to_others "$mode" \
+    || die "configuration compilée accessible aux autres utilisateurs (mode $mode)"
+  (( (8#$mode & 8#0020) == 0 )) \
+    || die "configuration compilée modifiable par le groupe (mode $mode)"
+  (( (8#$mode & 8#0040) == 8#0040 )) \
+    || die "configuration compilée non lisible par le groupe PHP-FPM (mode $mode)"
 
   cat > "$incoming_dir/release.json" <<JSON
 {
@@ -473,7 +625,7 @@ prepare_and_activate_release() {
 }
 JSON
 
-  chmod 0644 "$incoming_dir/release.json"
+  chmod 0640 "$incoming_dir/release.json"
 
   # Publication atomique du répertoire de release, puis activation du lien.
   mask_signals
@@ -520,6 +672,11 @@ JSON
 main() {
   set -euo pipefail
 
+  # Les fichiers extraits restent lisibles par le groupe de l'environnement
+  # (PHP-FPM) sans être accessibles aux autres utilisateurs. Le journal utilise
+  # un umask plus restrictif dans son propre sous-shell.
+  umask 027
+
   install_traps
 
   while [[ $# -gt 0 ]]; do
@@ -558,6 +715,10 @@ main() {
   esac
 
   shared="$root/shared"
+
+  if path_is_legacy "$expected_path"; then
+    die "chemin obsolète refusé pour $environment : $expected_path (chemin aaPanel attendu : $root)"
+  fi
 
   [[ "$expected_path" == "$root" ]] || die "chemin cible refusé pour $environment : chemin attendu $root"
 
@@ -624,9 +785,7 @@ main() {
 
   [[ "$app_env" == "$environment" ]] || die "APP_ENV du .env ne correspond pas à l'environnement attendu"
 
-  env_mode="$(stat -c '%a' "$shared/.env")"
-
-  env_mode_is_secure "$env_mode" || die "permissions du .env trop permissives (mode $env_mode) : écriture de groupe et accès des autres utilisateurs interdits"
+  verify_shared_layout_permissions
 
   release_dir="$root/releases/$release_id"
 
@@ -674,11 +833,11 @@ main() {
 
   [[ -d "$incoming_dir/storage" ]] || die "lien storage invalide"
   [[ -w "$incoming_dir/storage" ]] || die "stockage partagé non accessible en écriture"
-  [[ -d "$incoming_dir/bootstrap/cache" ]] || die "répertoire bootstrap/cache absent"
 
-  mkdir -p "$incoming_dir/bootstrap/cache"
-
-  [[ -w "$incoming_dir/bootstrap/cache" ]] || die "bootstrap/cache non accessible en écriture"
+  # Le groupe de l'environnement doit pouvoir lire la release et écrire dans
+  # bootstrap/cache : sans cela, PHP-FPM ne peut pas servir le site.
+  apply_release_permissions "$incoming_dir"
+  verify_release_permissions "$incoming_dir"
 
   resolve_php_bin
   assert_php_version

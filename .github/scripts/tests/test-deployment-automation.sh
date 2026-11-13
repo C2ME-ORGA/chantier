@@ -5,13 +5,16 @@
 #
 # Les fonctions des scripts serveur sont sourcées dynamiquement pour tester le
 # nettoyage et les permissions ; les variables consommées par ces fonctions
-# sont donc volontairement définies dans les sous-shells de test.
-# shellcheck disable=SC1090,SC1091,SC2015,SC2034,SC2154
+# sont donc volontairement définies dans les sous-shells de test. SC2016
+# (littéraux mono-quotés), SC2030 et SC2031 (exports locaux aux sous-shells)
+# sont attendus dans ce fichier.
+# shellcheck disable=SC1090,SC1091,SC2015,SC2016,SC2030,SC2031,SC2034,SC2154
 
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 project_root="$(cd "$script_dir/../.." && pwd)"
+workflows_dir="$project_root/.github/workflows"
 work_dir="$(mktemp -d)"
 fake_bin="$work_dir/bin"
 
@@ -176,6 +179,17 @@ fake_sha256() {
 }
 
 mkdir -p "$fake_bin"
+
+# Certains environnements de développement (montages Windows) n'appliquent pas
+# les modes POSIX. Les assertions de permissions sont alors ignorées, jamais
+# contournées.
+posix_modes_supported=0
+mode_probe="$work_dir/mode-probe"
+printf 'sonde\n' > "$mode_probe"
+
+if chmod 640 "$mode_probe" 2>/dev/null && [[ "$(stat -c '%a' "$mode_probe" 2>/dev/null || true)" == '640' ]]; then
+  posix_modes_supported=1
+fi
 
 # ---------------------------------------------------------------------------
 # 1. Formats de version
@@ -805,43 +819,94 @@ run_deploy() {
     --dry-run >/dev/null
 }
 
-run_deploy staging /www/wwwroot/chantier-staging "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
+run_deploy staging /www/wwwroot/chantier-staging.c2me.ovh "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
 pass
 
 run_fails "Environnement incorrect refusé" \
   bash "$remote_deploy" --environment testing --release-id "v0.2.0-rc.1-1-1" \
     --version v0.2.0-rc.1 --commit "$deploy_commit" --tree "$deploy_tree" \
     --artifact-id 456 --sha256 "$deploy_sha" --package "$work_dir/deploy-pkg/package.tar.gz" \
-    --expected-path /www/wwwroot/chantier-staging --dry-run
+    --expected-path /www/wwwroot/chantier-staging.c2me.ovh --dry-run
 
 run_fails "Chemin de production refusé en staging" \
-  run_deploy staging /www/wwwroot/chantier "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
+  run_deploy staging /www/wwwroot/chantier.c2me.fr "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
 
 run_fails "Chemin de staging refusé en production" \
-  run_deploy production /www/wwwroot/chantier-staging "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
+  run_deploy production /www/wwwroot/chantier-staging.c2me.ovh "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
 
 run_fails "Empreinte incorrecte refusée" \
-  run_deploy staging /www/wwwroot/chantier-staging "$(fake_sha256 c)" "$work_dir/deploy-pkg/package.tar.gz"
+  run_deploy staging /www/wwwroot/chantier-staging.c2me.ovh "$(fake_sha256 c)" "$work_dir/deploy-pkg/package.tar.gz"
 
 run_fails "Identifiant de release interdit refusé" \
   bash "$remote_deploy" --environment staging --release-id "../production" \
     --version v0.2.0-rc.1 --commit "$deploy_commit" --tree "$deploy_tree" \
     --artifact-id 456 --sha256 "$deploy_sha" --package "$work_dir/deploy-pkg/package.tar.gz" \
-    --expected-path /www/wwwroot/chantier-staging --dry-run
+    --expected-path /www/wwwroot/chantier-staging.c2me.ovh --dry-run
 
 env_sha="$(build_deploy_package "$work_dir/deploy-env" yes)"
 run_fails "Paquet contenant un .env refusé" \
-  run_deploy staging /www/wwwroot/chantier-staging "$env_sha" "$work_dir/deploy-env/package.tar.gz"
+  run_deploy staging /www/wwwroot/chantier-staging.c2me.ovh "$env_sha" "$work_dir/deploy-env/package.tar.gz"
 
 run_fails "Contrôle post-déploiement avec chemin interdit" \
   bash "$remote_check" --environment staging --release-id "v0.2.0-rc.1-123-1" \
     --version v0.2.0-rc.1 --commit "$deploy_commit" --sha256 "$deploy_sha" \
-    --expected-path /www/wwwroot/chantier --dry-run
+    --expected-path /www/wwwroot/chantier.c2me.fr --dry-run
 
 bash "$remote_check" --environment production --release-id "v0.2.0-123-1" \
   --version v0.2.0 --commit "$deploy_commit" --sha256 "$deploy_sha" \
-  --expected-path /www/wwwroot/chantier --dry-run >/dev/null
+  --expected-path /www/wwwroot/chantier.c2me.fr --dry-run >/dev/null
 pass
+
+# 6.0 Chemins aaPanel validés et refus des anciens chemins.
+assert_contains "$remote_deploy" "readonly STAGING_ROOT='/www/wwwroot/chantier-staging.c2me.ovh'" "Chemin staging exact"
+assert_contains "$remote_deploy" "readonly PRODUCTION_ROOT='/www/wwwroot/chantier.c2me.fr'" "Chemin production exact"
+assert_contains "$remote_check" "readonly STAGING_ROOT='/www/wwwroot/chantier-staging.c2me.ovh'" "Chemin staging exact (contrôle)"
+assert_contains "$remote_check" "readonly PRODUCTION_ROOT='/www/wwwroot/chantier.c2me.fr'" "Chemin production exact (contrôle)"
+assert_contains "$workflows_dir/deploy-staging.yml" "expected_path='/www/wwwroot/chantier-staging.c2me.ovh'" "Chemin staging du workflow"
+assert_contains "$workflows_dir/deploy-production.yml" "expected_path='/www/wwwroot/chantier.c2me.fr'" "Chemin production du workflow"
+assert_not_contains "$workflows_dir/deploy-staging.yml" "expected_path='/www/wwwroot/chantier-staging'" "Ancien chemin staging absent du workflow"
+assert_not_contains "$workflows_dir/deploy-production.yml" "expected_path='/www/wwwroot/chantier'" "Ancien chemin production absent du workflow"
+assert_not_contains "$remote_deploy" "readonly STAGING_ROOT='/www/wwwroot/chantier-staging'" "Ancien chemin staging absent du script"
+assert_not_contains "$remote_deploy" "readonly PRODUCTION_ROOT='/www/wwwroot/chantier'" "Ancien chemin production absent du script"
+
+run_fails_with_message "Ancien chemin staging refusé" "chemin obsolète refusé" \
+  run_deploy staging /www/wwwroot/chantier-staging "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
+
+run_fails_with_message "Ancien chemin production refusé" "chemin obsolète refusé" \
+  run_deploy production /www/wwwroot/chantier "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
+
+run_fails_with_message "Ancien chemin production refusé en staging" "chemin obsolète refusé" \
+  run_deploy staging /www/wwwroot/chantier "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
+
+run_fails_with_message "Ancien chemin staging refusé en production" "chemin obsolète refusé" \
+  run_deploy production /www/wwwroot/chantier-staging "$deploy_sha" "$work_dir/deploy-pkg/package.tar.gz"
+
+run_fails_with_message "Contrôle post-déploiement : ancien chemin refusé" "chemin obsolète refusé" \
+  bash "$remote_check" --environment staging --release-id "v0.2.0-rc.1-123-1" \
+    --version v0.2.0-rc.1 --commit "$deploy_commit" --sha256 "$deploy_sha" \
+    --expected-path /www/wwwroot/chantier-staging --dry-run
+
+run_fails_with_message "Contrôle post-déploiement : chemin croisé refusé" "chemin cible refusé" \
+  bash "$remote_check" --environment production --release-id "v0.2.0-123-1" \
+    --version v0.2.0 --commit "$deploy_commit" --sha256 "$deploy_sha" \
+    --expected-path /www/wwwroot/chantier-staging.c2me.ovh --dry-run
+
+# 6.0bis Isolation des comptes SSH : hors dry-run, un compte qui ne correspond
+# pas à l'environnement est refusé avant toute écriture.
+run_fails_with_message "Compte non autorisé refusé en staging" "utilisateur refusé pour staging" \
+  bash "$remote_deploy" --environment staging \
+    --expected-path /www/wwwroot/chantier-staging.c2me.ovh
+
+run_fails_with_message "Compte non autorisé refusé en production" "utilisateur refusé pour production" \
+  bash "$remote_deploy" --environment production \
+    --expected-path /www/wwwroot/chantier.c2me.fr
+
+if grep -Fq '[[ "$actual_user" == "$expected_user" ]]' "$remote_deploy" \
+  && grep -Fq '[[ "$actual_user" == "$expected_user" ]]' "$remote_check"; then
+  pass
+else
+  fail "Les deux scripts doivent contrôler l'identité du compte de déploiement."
+fi
 
 # 6.1 Contrôle du binaire PHP 8.4.
 fake_php_dir="$work_dir/php"
@@ -852,18 +917,18 @@ printf '#!/usr/bin/env bash\necho 8.3.9\n' > "$fake_php_dir/php83"
 chmod +x "$fake_php_dir/php84" "$fake_php_dir/php83"
 
 DEPLOY_PHP_BIN="$fake_php_dir/php84" bash "$remote_deploy" \
-  --environment staging --expected-path /www/wwwroot/chantier-staging --preflight \
+  --environment staging --expected-path /www/wwwroot/chantier-staging.c2me.ovh --preflight \
   > "$work_dir/preflight.out" 2>&1
 pass
 assert_contains "$work_dir/preflight.out" "php-version=8.4.27" "Contrôle PHP 8.4"
 
 run_fails_with_message "PHP 8.3 refusé" "PHP 8.4 requis" \
   env DEPLOY_PHP_BIN="$fake_php_dir/php83" bash "$remote_deploy" \
-  --environment production --expected-path /www/wwwroot/chantier --preflight
+  --environment production --expected-path /www/wwwroot/chantier.c2me.fr --preflight
 
 run_fails_with_message "Préflight avec chemin interdit refusé" "chemin cible refusé" \
   env DEPLOY_PHP_BIN="$fake_php_dir/php84" bash "$remote_deploy" \
-  --environment staging --expected-path /www/wwwroot/chantier --preflight
+  --environment staging --expected-path /www/wwwroot/chantier.c2me.fr --preflight
 
 # 6.2 Archives malveillantes.
 archive_fixture="$script_dir/tests/create-archive-fixture.php"
@@ -881,28 +946,28 @@ symlink_sha="$(build_fixture_archive "$work_dir/evil-symlink.tar.gz" \
   "symlink:./evil:/etc/passwd")"
 
 run_fails_with_message "Archive avec lien symbolique refusée" "lien symbolique" \
-  run_deploy staging /www/wwwroot/chantier-staging "$symlink_sha" "$work_dir/evil-symlink.tar.gz"
+  run_deploy staging /www/wwwroot/chantier-staging.c2me.ovh "$symlink_sha" "$work_dir/evil-symlink.tar.gz"
 
 hardlink_sha="$(build_fixture_archive "$work_dir/evil-hardlink.tar.gz" \
   "file:./artisan" "file:./vendor/autoload.php" "file:./public/index.php" \
   "hardlink:./hardlink:./artisan")"
 
 run_fails_with_message "Archive avec lien physique refusée" "lien physique" \
-  run_deploy staging /www/wwwroot/chantier-staging "$hardlink_sha" "$work_dir/evil-hardlink.tar.gz"
+  run_deploy staging /www/wwwroot/chantier-staging.c2me.ovh "$hardlink_sha" "$work_dir/evil-hardlink.tar.gz"
 
 absolute_sha="$(build_fixture_archive "$work_dir/evil-absolute.tar.gz" \
   "file:./artisan" "file:./vendor/autoload.php" "file:./public/index.php" \
   "file:/etc/passwd")"
 
 run_fails_with_message "Archive avec chemin absolu refusée" "chemin absolu" \
-  run_deploy staging /www/wwwroot/chantier-staging "$absolute_sha" "$work_dir/evil-absolute.tar.gz"
+  run_deploy staging /www/wwwroot/chantier-staging.c2me.ovh "$absolute_sha" "$work_dir/evil-absolute.tar.gz"
 
 traversal_sha="$(build_fixture_archive "$work_dir/evil-traversal.tar.gz" \
   "file:./artisan" "file:./vendor/autoload.php" "file:./public/index.php" \
   "file:../evil")"
 
 run_fails_with_message "Archive avec traversée de répertoire refusée" "traversée" \
-  run_deploy staging /www/wwwroot/chantier-staging "$traversal_sha" "$work_dir/evil-traversal.tar.gz"
+  run_deploy staging /www/wwwroot/chantier-staging.c2me.ovh "$traversal_sha" "$work_dir/evil-traversal.tar.gz"
 
 # 6.3 Politique de permissions de shared/.env.
 for mode in 600 640 700 750; do
@@ -924,6 +989,79 @@ done
 if ( source "$remote_check"; env_mode_is_secure 640 ); then pass; else fail "remote-check : mode 640 devrait être accepté."; fi
 if ( source "$remote_check"; env_mode_is_secure 660 ); then fail "remote-check : mode 660 devrait être refusé."; else pass; fi
 if ( source "$remote_deploy"; env_mode_is_secure "abc" ); then fail "mode invalide : devrait être refusé."; else pass; fi
+
+# 6.3.1 Politique .env : 600 recommandé (PHP-FPM lit la configuration
+# compilée), 640 toléré, écriture de groupe et accès des autres refusés.
+for script in "$remote_deploy" "$remote_check"; do
+  for mode in 600 640; do
+    if ( source "$script"; env_mode_is_secure "$mode" ); then
+      pass
+    else
+      fail "$(basename "$script") : le mode $mode doit être accepté."
+    fi
+  done
+
+  for mode in 660 664 604 0770; do
+    if ( source "$script"; env_mode_is_secure "$mode" ); then
+      fail "$(basename "$script") : le mode $mode doit être refusé."
+    else
+      pass
+    fi
+  done
+done
+
+assert_mode_helper() {
+  local function="$1"
+  local mode="$2"
+  local expectation="$3"
+  local label="$4"
+
+  if ( source "$remote_deploy"; "$function" "$mode" ); then
+    if [[ "$expectation" == "accept" ]]; then pass; else fail "$label : mode $mode aurait dû être refusé."; fi
+  else
+    if [[ "$expectation" == "reject" ]]; then pass; else fail "$label : mode $mode aurait dû être accepté."; fi
+  fi
+}
+
+assert_mode_helper mode_denies_access_to_others 2770 accept "Aucun accès des autres"
+assert_mode_helper mode_denies_access_to_others 2750 accept "Aucun accès des autres"
+assert_mode_helper mode_denies_access_to_others 777 reject "Aucun accès des autres"
+assert_mode_helper mode_denies_access_to_others 775 reject "Aucun accès des autres"
+assert_mode_helper mode_denies_access_to_others 2777 reject "Aucun accès des autres"
+assert_mode_helper mode_grants_group_access 2750 accept "Lecture et traversée du groupe"
+assert_mode_helper mode_grants_group_access 2770 accept "Lecture et traversée du groupe"
+assert_mode_helper mode_grants_group_access 700 reject "Lecture et traversée du groupe"
+assert_mode_helper mode_grants_group_access 705 reject "Lecture et traversée du groupe"
+assert_mode_helper mode_is_group_writable 2770 accept "Écriture du groupe"
+assert_mode_helper mode_is_group_writable 2750 reject "Écriture du groupe"
+assert_mode_helper mode_is_group_writable 700 reject "Écriture du groupe"
+assert_mode_helper mode_is_group_writable "abc" reject "Mode invalide"
+
+for legacy in /www/wwwroot/chantier-staging /www/wwwroot/chantier; do
+  if ( source "$remote_deploy"; path_is_legacy "$legacy" ); then
+    pass
+  else
+    fail "Chemin obsolète non reconnu : $legacy"
+  fi
+
+  if ( source "$remote_check"; path_is_legacy "$legacy" ); then
+    pass
+  else
+    fail "Chemin obsolète non reconnu par le contrôle : $legacy"
+  fi
+done
+
+if ( source "$remote_deploy"; path_is_legacy /www/wwwroot/chantier-staging.c2me.ovh ); then
+  fail "Le chemin aaPanel staging ne doit pas être considéré comme obsolète."
+else
+  pass
+fi
+
+if ( source "$remote_deploy"; path_is_legacy /www/wwwroot/chantier.c2me.fr ); then
+  fail "Le chemin aaPanel production ne doit pas être considéré comme obsolète."
+else
+  pass
+fi
 
 # 6.3bis Journalisation obligatoire dès que shared existe.
 prepare_logging_check() {
@@ -1236,9 +1374,17 @@ printf '%s|%s|%s\n' \
   >> "$INTEGRATION_PHP_LOG"
 
 case "$*" in
-  *"queue:restart"*) exit "${INTEGRATION_QUEUE_EXIT:-0}" ;;
-  *) exit 0 ;;
+  *"queue:restart"*) status="${INTEGRATION_QUEUE_EXIT:-0}" ;;
+  *":cache"*) status="${INTEGRATION_CACHE_EXIT:-0}" ;;
+  *) status=0 ;;
 esac
+
+if [[ "$status" -eq 0 && "$*" == *"config:cache"* && "${INTEGRATION_SKIP_CONFIG_CACHE:-0}" != "1" ]]; then
+  printf '<?php return [];\n' > "$(pwd -P)/bootstrap/cache/config.php"
+  chmod "${INTEGRATION_CONFIG_MODE:-0640}" "$(pwd -P)/bootstrap/cache/config.php" 2>/dev/null || true
+fi
+
+exit "$status"
 INTEGRATION_PHP
 chmod +x "$integration_php_mock"
 
@@ -1264,6 +1410,11 @@ setup_integration_case() {
   MSYS=winsymlinks:nativestrict ln -s "$case_dir/root/shared/storage" "$incoming/storage"
   MSYS=winsymlinks:nativestrict ln -s ../storage/app/public "$incoming/public/storage"
   MSYS=winsymlinks:nativestrict ln -s "$case_dir/root/releases/old" "$case_dir/root/current"
+
+  if [[ "$posix_modes_supported" -eq 1 ]]; then
+    chmod 600 "$case_dir/root/shared/.env"
+    ( source "$remote_deploy"; apply_release_permissions "$incoming" )
+  fi
 }
 
 run_integration_case() {
@@ -1272,6 +1423,9 @@ run_integration_case() {
   local restart_enabled="$3"
   local php_log="$4"
   local state_file="$5"
+  local cache_exit="${6:-0}"
+  local skip_config_cache="${7:-0}"
+  local config_mode="${8:-0640}"
 
   (
     source "$remote_deploy"
@@ -1304,6 +1458,9 @@ run_integration_case() {
     export INTEGRATION_ROOT="$case_dir/root"
     export INTEGRATION_PHP_LOG="$php_log"
     export INTEGRATION_QUEUE_EXIT="$queue_exit"
+    export INTEGRATION_CACHE_EXIT="$cache_exit"
+    export INTEGRATION_SKIP_CONFIG_CACHE="$skip_config_cache"
+    export INTEGRATION_CONFIG_MODE="$config_mode"
 
     prepare_and_activate_release
 
@@ -1322,6 +1479,8 @@ rm -f "$integration_success_state"
 
 integration_success_incoming="$(realpath "$integration_success_case/root/releases/.incoming-integration")"
 integration_success_old="$(realpath "$integration_success_case/root/releases/old")"
+integration_success_env_sha="$(sha256_of "$integration_success_case/root/shared/.env")"
+integration_success_storage_sha="$(sha256_of "$integration_success_case/root/shared/storage/app/keep.txt")"
 
 integration_success_status=0
 run_integration_case "$integration_success_case" 0 "true" "$integration_success_log" "$integration_success_state" \
@@ -1372,6 +1531,57 @@ fi
 assert_contains "$integration_success_case/root/shared/deployment.log" '"status":"success"' "Journalisation du succès"
 assert_not_contains "$integration_success_case/root/shared/deployment.log" 'queue-restart-failed' "Absence d'échec de redémarrage"
 assert_contains "$integration_success_case/root/shared/storage/app/keep.txt" "donnée" "Stockage partagé préservé"
+
+if [[ "$(sha256_of "$integration_success_case/root/shared/.env")" == "$integration_success_env_sha" ]]; then
+  pass
+else
+  fail "Le déploiement ne doit jamais modifier shared/.env."
+fi
+
+if [[ "$(sha256_of "$integration_success_case/root/shared/storage/app/keep.txt")" == "$integration_success_storage_sha" ]]; then
+  pass
+else
+  fail "Le déploiement ne doit jamais remplacer le stockage partagé."
+fi
+
+if [[ "$posix_modes_supported" -eq 1 ]]; then
+  if [[ "$(stat -c '%a' "$integration_success_release")" == '2750' ]]; then
+    pass
+  else
+    fail "La release publiée doit conserver le mode 2750 (obtenu : $(stat -c '%a' "$integration_success_release"))."
+  fi
+
+  if [[ "$(stat -c '%a' "$integration_success_release/bootstrap/cache")" == '2770' ]]; then
+    pass
+  else
+    fail "bootstrap/cache de la release publiée doit rester en 2770."
+  fi
+
+  if [[ -z "$(find "$integration_success_case/root" ! -type l -perm -0002 -print -quit)" ]]; then
+    pass
+  else
+    fail "Aucun élément déployé ne doit être accessible en écriture aux autres."
+  fi
+
+  # La release reste non modifiable par PHP-FPM, hors bootstrap/cache.
+  if [[ -z "$(find "$integration_success_release" ! -path '*/bootstrap/cache' ! -path '*/bootstrap/cache/*' ! -type l -perm -0020 -print -quit)" ]]; then
+    pass
+  else
+    fail "Aucun élément de la release hors bootstrap/cache ne doit être inscriptible par le groupe."
+  fi
+
+  if [[ -f "$integration_success_release/bootstrap/cache/config.php" ]]; then
+    pass
+  else
+    fail "La configuration compilée doit être présente dans la release activée (politique .env 600)."
+  fi
+
+  if [[ "$(stat -c '%a' "$integration_success_release/bootstrap/cache/config.php")" == '640' ]]; then
+    pass
+  else
+    fail "La configuration compilée doit rester lisible par le groupe (0640)."
+  fi
+fi
 
 # 6.3quater.2 DEPLOY_QUEUE_RESTART=false : aucun appel dans le flux réel.
 integration_disabled_case="$work_dir/integration-disabled"
@@ -1432,6 +1642,323 @@ assert_contains "$integration_failure_case/root/shared/deployment.log" '"status"
 assert_contains "$integration_failure_case/root/shared/deployment.log" '"status":"activated-queue-restart-failed"' "Statut d'échec de redémarrage"
 assert_not_contains "$integration_failure_case/root/shared/deployment.log" '"status":"success"' "Absence de succès après échec de redémarrage"
 assert_contains "$integration_failure_case/root/shared/storage/app/keep.txt" "donnée" "Stockage partagé préservé après échec"
+
+# 6.3quater.4 Échec avant activation (config:cache) : aucune release publiée,
+# current inchangé, répertoire incomplet nettoyé, échec journalisé.
+integration_pre_case="$work_dir/integration-cache-failure"
+setup_integration_case "$integration_pre_case"
+integration_pre_log="$work_dir/integration-cache-failure-php.log"
+integration_pre_state="$work_dir/integration-cache-failure-state"
+: > "$integration_pre_log"
+rm -f "$integration_pre_state"
+
+integration_pre_old="$(realpath "$integration_pre_case/root/releases/old")"
+integration_pre_status=0
+
+run_integration_case "$integration_pre_case" 0 "true" "$integration_pre_log" "$integration_pre_state" 1 \
+  > "$work_dir/integration-cache-failure.out" 2>&1 || integration_pre_status=$?
+
+if [[ "$integration_pre_status" -ne 0 ]]; then pass; else fail "Un échec de config:cache doit faire échouer le déploiement."; fi
+if [[ ! -f "$integration_pre_state" ]]; then pass; else fail "L'état final ne doit pas être écrit après un échec avant activation."; fi
+if [[ ! -e "$integration_pre_case/root/releases/new" ]]; then pass; else fail "Aucune release ne doit être publiée après un échec avant activation."; fi
+if [[ ! -e "$integration_pre_case/root/releases/.incoming-integration" ]]; then pass; else fail "Le répertoire incomplet doit être nettoyé après un échec avant activation."; fi
+if [[ "$(readlink -f "$integration_pre_case/root/current")" == "$integration_pre_old" ]]; then
+  pass
+else
+  fail "current doit rester sur l'ancienne release après un échec avant activation."
+fi
+if [[ "$(grep -c '|artisan queue:restart|' "$integration_pre_log" || true)" -eq 0 ]]; then
+  pass
+else
+  fail "queue:restart ne doit pas être exécuté après un échec avant activation."
+fi
+assert_contains "$integration_pre_case/root/shared/deployment.log" '"status":"failure"' "Échec avant activation journalisé"
+assert_not_contains "$integration_pre_case/root/shared/deployment.log" '"status":"success"' "Absence de succès après échec avant activation"
+assert_contains "$integration_pre_case/root/shared/storage/app/keep.txt" "donnée" "Stockage partagé préservé après échec avant activation"
+
+# 6.3quater.5 config:cache réussit mais ne produit aucune configuration
+# compilée : la politique .env 600 ne peut pas être garantie, le déploiement
+# doit échouer avant publication.
+integration_nocache_case="$work_dir/integration-no-config-cache"
+setup_integration_case "$integration_nocache_case"
+integration_nocache_log="$work_dir/integration-no-config-cache-php.log"
+integration_nocache_state="$work_dir/integration-no-config-cache-state"
+: > "$integration_nocache_log"
+rm -f "$integration_nocache_state"
+
+integration_nocache_old="$(realpath "$integration_nocache_case/root/releases/old")"
+integration_nocache_status=0
+
+run_integration_case "$integration_nocache_case" 0 "false" "$integration_nocache_log" "$integration_nocache_state" 0 1 \
+  > "$work_dir/integration-no-config-cache.out" 2>&1 || integration_nocache_status=$?
+
+if [[ "$integration_nocache_status" -ne 0 ]]; then pass; else fail "Une configuration compilée absente doit faire échouer le déploiement."; fi
+if [[ ! -e "$integration_nocache_case/root/releases/new" ]]; then pass; else fail "Aucune release ne doit être publiée sans configuration compilée."; fi
+if [[ ! -e "$integration_nocache_case/root/releases/.incoming-integration" ]]; then pass; else fail "Le répertoire incomplet doit être nettoyé si la configuration compilée manque."; fi
+if [[ "$(readlink -f "$integration_nocache_case/root/current")" == "$integration_nocache_old" ]]; then
+  pass
+else
+  fail "current doit rester sur l'ancienne release si la configuration compilée manque."
+fi
+assert_contains "$work_dir/integration-no-config-cache.out" "configuration compilée absente" "Message de configuration compilée absente"
+assert_not_contains "$integration_nocache_case/root/shared/deployment.log" '"status":"success"' "Absence de succès sans configuration compilée"
+
+# 6.3quater.6 Configuration compilée trop permissive (0644) : elle contient des
+# secrets, le déploiement doit échouer avant publication.
+integration_config_mode_case="$work_dir/integration-config-mode"
+setup_integration_case "$integration_config_mode_case"
+integration_config_mode_log="$work_dir/integration-config-mode-php.log"
+integration_config_mode_state="$work_dir/integration-config-mode-state"
+: > "$integration_config_mode_log"
+rm -f "$integration_config_mode_state"
+
+integration_config_mode_old="$(realpath "$integration_config_mode_case/root/releases/old")"
+integration_config_mode_status=0
+
+run_integration_case "$integration_config_mode_case" 0 "false" "$integration_config_mode_log" "$integration_config_mode_state" 0 0 0644 \
+  > "$work_dir/integration-config-mode.out" 2>&1 || integration_config_mode_status=$?
+
+if [[ "$integration_config_mode_status" -ne 0 ]]; then pass; else fail "Une configuration compilée en 0644 doit faire échouer le déploiement."; fi
+if [[ ! -e "$integration_config_mode_case/root/releases/new" ]]; then pass; else fail "Aucune release ne doit être publiée avec une configuration compilée trop permissive."; fi
+if [[ "$(readlink -f "$integration_config_mode_case/root/current")" == "$integration_config_mode_old" ]]; then
+  pass
+else
+  fail "current doit rester sur l'ancienne release si la configuration compilée est trop permissive."
+fi
+assert_contains "$work_dir/integration-config-mode.out" "configuration compilée accessible aux autres" "Message de configuration compilée trop permissive"
+
+# 6.3quinquies Modèle de permissions aaPanel : racines, shared, storage,
+# bootstrap/cache et release. Les modes ne sont vérifiés que si le système de
+# fichiers applique réellement les permissions POSIX.
+setup_permissions_layout() {
+  local base="$1"
+
+  rm -rf "$base"
+  mkdir -p "$base/releases" "$base/shared/storage/app/public"
+  printf 'APP_ENV=staging\nAPP_KEY=base64:test\n' > "$base/shared/.env"
+  chmod 2770 "$base" "$base/releases" "$base/shared" "$base/shared/storage"
+  chmod 600 "$base/shared/.env"
+}
+
+verify_layout_case() {
+  local base="$1"
+
+  (
+    source "$remote_deploy"
+    root="$base"
+    shared="$base/shared"
+    verify_shared_layout_permissions
+  )
+}
+
+setup_release_case() {
+  local base="$1"
+
+  rm -rf "$base"
+  mkdir -p "$base/public"
+  printf '<?php\n' > "$base/artisan"
+  printf '<?php\n' > "$base/public/index.php"
+  chmod 750 "$base"
+  chmod 640 "$base/artisan" "$base/public/index.php"
+}
+
+layout_supported=1
+if [[ "$posix_modes_supported" -ne 1 ]]; then
+  layout_supported=0
+fi
+
+permissions_layout="$work_dir/permissions-layout"
+setup_permissions_layout "$permissions_layout"
+
+if [[ "$(stat -c '%a' "$permissions_layout" 2>/dev/null || true)" != '2770' ]]; then
+  layout_supported=0
+fi
+
+if [[ "$layout_supported" -ne 1 ]]; then
+  skip "Modes POSIX non appliqués par ce système de fichiers : assertions de permissions ignorées."
+else
+  if verify_layout_case "$permissions_layout" >/dev/null 2>&1; then
+    pass
+  else
+    fail "Une arborescence conforme (2770, .env 600) doit être acceptée."
+  fi
+
+  run_fails_with_message "Racine accessible aux autres refusée" "racine accessible aux autres" \
+    env BASE="$permissions_layout" bash -c '
+      source "$1"
+      root="$BASE"; shared="$BASE/shared"
+      chmod 2777 "$BASE"
+      verify_shared_layout_permissions
+    ' bash "$remote_deploy"
+
+  chmod 2770 "$permissions_layout"
+
+  run_fails_with_message "Releases accessibles aux autres refusées" "releases accessible aux autres" \
+    env BASE="$permissions_layout" bash -c '
+      source "$1"
+      root="$BASE"; shared="$BASE/shared"
+      chmod 2775 "$BASE/releases"
+      verify_shared_layout_permissions
+    ' bash "$remote_deploy"
+
+  chmod 2770 "$permissions_layout/releases"
+
+  run_fails_with_message "Shared non accessible au groupe refusé" "shared non accessible au groupe" \
+    env BASE="$permissions_layout" bash -c '
+      source "$1"
+      root="$BASE"; shared="$BASE/shared"
+      chmod 2700 "$BASE/shared"
+      verify_shared_layout_permissions
+    ' bash "$remote_deploy"
+
+  chmod 2770 "$permissions_layout/shared"
+  chmod 2770 "$permissions_layout/shared/storage"
+  chmod 2770 "$permissions_layout/releases"
+
+  if [[ "$(stat -c '%a' "$permissions_layout/shared/storage")" == '2770' ]]; then
+    pass
+  else
+    fail "Le stockage partagé doit conserver le setgid et l'écriture de groupe (2770)."
+  fi
+
+  run_fails_with_message "Stockage non inscriptible par le groupe refusé" "non inscriptible par le groupe" \
+    env BASE="$permissions_layout" bash -c '
+      source "$1"
+      root="$BASE"; shared="$BASE/shared"
+      chmod 2750 "$BASE/shared/storage"
+      verify_shared_layout_permissions
+    ' bash "$remote_deploy"
+
+  chmod 2770 "$permissions_layout/shared/storage"
+
+  # Les fichiers créés dans le stockage héritent du groupe (setgid) et d'un mode
+  # lisible par le groupe seulement (umask 027).
+  storage_probe="$permissions_layout/shared/storage/group-probe.txt"
+  ( umask 027; printf 'sonde\n' > "$storage_probe" )
+  storage_dir_group="$(stat -c '%g' "$permissions_layout/shared/storage")"
+  storage_file_group="$(stat -c '%g' "$storage_probe")"
+  storage_file_mode="$(stat -c '%a' "$storage_probe")"
+
+  if [[ "$storage_file_group" == "$storage_dir_group" ]]; then
+    pass
+  else
+    fail "Un fichier créé dans storage doit hériter du groupe du répertoire (setgid)."
+  fi
+
+  if [[ "$storage_file_mode" == '640' ]]; then
+    pass
+  else
+    fail "Un fichier créé avec umask 027 dans storage doit être en 0640 (obtenu : $storage_file_mode)."
+  fi
+
+  rm -f "$storage_probe"
+
+  if verify_layout_case "$permissions_layout" >/dev/null 2>&1; then
+    pass
+  else
+    fail "Un .env en 600 doit être accepté (configuration compilée)."
+  fi
+
+  chmod 640 "$permissions_layout/shared/.env"
+
+  if verify_layout_case "$permissions_layout" >/dev/null 2>&1; then
+    pass
+  else
+    fail "Un .env en 640 doit rester accepté."
+  fi
+
+  run_fails_with_message ".env en 660 refusé (écriture de groupe)" "trop permissives" \
+    env BASE="$permissions_layout" bash -c '
+      source "$1"
+      root="$BASE"; shared="$BASE/shared"
+      chmod 660 "$BASE/shared/.env"
+      verify_shared_layout_permissions
+    ' bash "$remote_deploy"
+
+  run_fails_with_message ".env en 664 refusé (accès des autres)" "trop permissives" \
+    env BASE="$permissions_layout" bash -c '
+      source "$1"
+      root="$BASE"; shared="$BASE/shared"
+      chmod 664 "$BASE/shared/.env"
+      verify_shared_layout_permissions
+    ' bash "$remote_deploy"
+
+  run_fails_with_message ".env accessible aux autres refusé" "trop permissives" \
+    env BASE="$permissions_layout" bash -c '
+      source "$1"
+      root="$BASE"; shared="$BASE/shared"
+      chmod 644 "$BASE/shared/.env"
+      verify_shared_layout_permissions
+    ' bash "$remote_deploy"
+
+  chmod 600 "$permissions_layout/shared/.env"
+
+  MSYS=winsymlinks:nativestrict ln -s "$permissions_layout/shared/.env" "$permissions_layout/shared/.env.link" 2>/dev/null || true
+
+  if [[ -L "$permissions_layout/shared/.env.link" ]]; then
+    rm -f "$permissions_layout/shared/.env"
+    mv "$permissions_layout/shared/.env.link" "$permissions_layout/shared/.env"
+
+    run_fails_with_message ".env symbolique refusé" "symbolique interdit" \
+      verify_layout_case "$permissions_layout"
+
+    rm -f "$permissions_layout/shared/.env"
+    printf 'APP_ENV=staging\n' > "$permissions_layout/shared/.env"
+    chmod 600 "$permissions_layout/shared/.env"
+  else
+    skip "Liens symboliques non disponibles : contrôle .env symbolique ignoré."
+  fi
+
+  permissions_release="$work_dir/permissions-release"
+  setup_release_case "$permissions_release"
+
+  if (
+    source "$remote_deploy"
+    apply_release_permissions "$permissions_release"
+    verify_release_permissions "$permissions_release"
+  ) >/dev/null 2>&1; then
+    pass
+  else
+    fail "Les permissions de release appliquées doivent être acceptées."
+  fi
+
+  if [[ "$(stat -c '%a' "$permissions_release")" == '2750' ]]; then
+    pass
+  else
+    fail "Le répertoire de release doit être en 2750 (obtenu : $(stat -c '%a' "$permissions_release"))."
+  fi
+
+  if [[ "$(stat -c '%a' "$permissions_release/bootstrap/cache")" == '2770' ]]; then
+    pass
+  else
+    fail "bootstrap/cache doit être en 2770 (obtenu : $(stat -c '%a' "$permissions_release/bootstrap/cache"))."
+  fi
+
+  if [[ -z "$(find "$permissions_release" ! -type l -perm -0002 -print -quit)" ]]; then
+    pass
+  else
+    fail "Aucun élément de la release ne doit être accessible en écriture aux autres."
+  fi
+
+  chmod 0750 "$permissions_release/bootstrap/cache"
+
+  run_fails_with_message "bootstrap/cache non inscriptible par le groupe refusé" "non inscriptible par le groupe" \
+    env RELEASE="$permissions_release" bash -c '
+      source "$1"
+      verify_release_permissions "$RELEASE"
+    ' bash "$remote_deploy"
+
+  chmod 2770 "$permissions_release/bootstrap/cache"
+  chmod 0600 "$permissions_release/artisan"
+
+  run_fails_with_message "artisan illisible par le groupe refusé" "artisan non lisible par le groupe" \
+    env RELEASE="$permissions_release" bash -c '
+      source "$1"
+      verify_release_permissions "$RELEASE"
+    ' bash "$remote_deploy"
+
+  chmod 0640 "$permissions_release/artisan"
+fi
 
 # 6.4 Nettoyage sécurisé : seuls les répertoires dont cette exécution prouve la
 # propriété peuvent être supprimés. Le marqueur de propriété contient le jeton
@@ -1970,6 +2497,26 @@ if grep -rEq '(^|[[:space:]])sudo([[:space:]]|$)' \
   fail "Les scripts serveur ne doivent pas utiliser sudo."
 else
   pass
+fi
+
+# Politique .env 600 : la configuration doit être compilée par le déploiement
+# et aucun code applicatif ne doit lire env() à l'exécution.
+if grep -Fq 'artisan config:cache' "$scripts_dir/deploy/remote-deploy.sh"; then
+  pass
+else
+  fail "Le déploiement doit compiler la configuration avant activation."
+fi
+
+env_calls="$(
+  grep -rEl '\benv\(' \
+    "$project_root/app" "$project_root/bootstrap" "$project_root/routes" \
+    "$project_root/database" 2>/dev/null || true
+)"
+
+if [[ -z "$env_calls" ]]; then
+  pass
+else
+  fail "Aucun appel env() ne doit subsister hors de config/ : $env_calls"
 fi
 
 if grep -rEq 'echo[[:space:]]+"?\$\{?SSH_PRIVATE_KEY|set[[:space:]]+-x' "$workflows_dir"; then
