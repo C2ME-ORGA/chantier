@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/C2ME-ORGA/chantier/scripts/ops/schema/backup-manifest.schema.json",
+  "title": "Manifeste de sauvegarde C2ME Chantier",
+  "description": "Schéma du manifeste produit par scripts/ops/backup.sh. Un manifeste ne contient aucun secret, aucune clé privée et aucun mot de passe.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "backup_set_id",
+    "environment",
+    "scope",
+    "restorable_as_complete",
+    "status",
+    "created_at",
+    "completed_at",
+    "trigger",
+    "consistency",
+    "release",
+    "database",
+    "files",
+    "artifacts",
+    "retention",
+    "host"
+  ],
+  "propertyNames": {
+    "not": {
+      "pattern": "(?i)password|secret|private|identity|passphrase|token|credential"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "backup_set_id": {
+      "type": "string",
+      "pattern": "^set-(staging|production)-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$"
+    },
+    "environment": {
+      "enum": ["staging", "production"]
+    },
+    "scope": {
+      "enum": ["full", "database-only"]
+    },
+    "restorable_as_complete": {
+      "type": "boolean"
+    },
+    "status": {
+      "enum": ["complete", "incomplete"]
+    },
+    "created_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "completed_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "trigger": {
+      "enum": ["scheduled", "pre-migration", "manual", "pre-restore"]
+    },
+    "consistency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "maintenance_marker",
+        "workers_verified",
+        "scheduler_verified",
+        "file_changes_detected",
+        "started_at",
+        "finished_at",
+        "downtime_seconds"
+      ],
+      "properties": {
+        "mode": {
+          "const": "maintenance"
+        },
+        "maintenance_marker": {
+          "const": true
+        },
+        "workers_verified": {
+          "const": true
+        },
+        "scheduler_verified": {
+          "const": true
+        },
+        "file_changes_detected": {
+          "const": false
+        },
+        "started_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "finished_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "downtime_seconds": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "commit_sha", "tree_sha"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^(v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-rc\\.[1-9][0-9]*)?|unknown)$"
+        },
+        "commit_sha": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{40}|unknown)$"
+        },
+        "tree_sha": {
+          "type": ["string", "null"],
+          "pattern": "^([0-9a-f]{40}|unknown)$"
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "server_version",
+        "tool",
+        "tool_version",
+        "options_sha256",
+        "tables",
+        "rows",
+        "non_innodb_tables"
+      ],
+      "properties": {
+        "name": {
+          "enum": ["chantier_staging", "chantier_production"]
+        },
+        "server_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tool": {
+          "enum": ["mariadb-dump"]
+        },
+        "tool_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tables": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "non_innodb_tables": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "files": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["included_roots", "exclusions", "file_count", "total_bytes", "inventory_sha256"],
+      "properties": {
+        "included_roots": {
+          "type": "array",
+          "items": {
+            "enum": ["app/private", "app/public"]
+          }
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inventory_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "name", "bytes", "sha256", "compression", "encryption"],
+        "properties": {
+          "kind": {
+            "enum": ["database", "files"]
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^(db|files)-(staging|production)-[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9._-]+-(unknown|[0-9a-f]{7})-(scheduled|pre-migration|manual|pre-restore)\\.(sql|tar)\\.(zst|gz)\\.age$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "compression": {
+            "enum": ["zstd", "gzip"]
+          },
+          "encryption": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["tool", "recipient"],
+            "properties": {
+              "tool": {
+                "const": "age"
+              },
+              "recipient": {
+                "type": "string",
+                "pattern": "^age1[0-9a-z]{20,}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "delete_after"],
+      "properties": {
+        "class": {
+          "enum": ["daily", "monthly", "pre-migration", "manual"]
+        },
+        "delete_after": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "operator"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "operator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "const": "full"
+          }
+        },
+        "required": ["scope"]
+      },
+      "then": {
+        "properties": {
+          "restorable_as_complete": {
+            "const": true
+          },
+          "files": {
+            "type": "object"
+          },
+          "artifacts": {
+            "allOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "required": ["kind"],
+                  "properties": {
+                    "kind": {
+                      "const": "database"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": ["kind"],
+                  "properties": {
+                    "kind": {
+                      "const": "files"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "const": "database-only"
+          }
+        },
+        "required": ["scope"]
+      },
+      "then": {
+        "properties": {
+          "restorable_as_complete": {
+            "const": false
+          },
+          "files": {
+            "type": "null"
+          },
+          "artifacts": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "required": ["kind"],
+                "properties": {
+                  "kind": {
+                    "const": "files"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}
