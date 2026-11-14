@@ -969,9 +969,11 @@ Les tests [`tests/Unit/Migrations/MigrationPolicyTest.php`](../../tests/Unit/Mig
 
 Les tests [`tests/Unit/Documentation/MigrationDocumentationTest.php`](../../tests/Unit/Documentation/MigrationDocumentationTest.php) vérifient la présence de ce document, de ses sections obligatoires et du lien depuis [`deployment-process.md`](deployment-process.md).
 
-Les tests [`tests/MariaDb`](../../tests/MariaDb) s'exécutent uniquement avec [`phpunit.mariadb.xml`](../../phpunit.mariadb.xml) sur la base isolée `chantier_test`. Ils vérifient le moteur MariaDB 10.11, l'état des migrations, les types natifs, les index, les contraintes et les opérations CRUD présentes dans l'application.
+Les tests [`tests/MariaDb`](../../tests/MariaDb) s'exécutent avec [`phpunit.mariadb.xml`](../../phpunit.mariadb.xml) sur la base isolée `chantier_test`. Ils vérifient le moteur MariaDB 10.11, l'état des migrations, les types natifs, les index, les contraintes, les opérations CRUD présentes dans l'application et le démarrage des routes `/` et `/up` via `tests/MariaDb/ApplicationTest.php`.
 
-Ces tests statiques ne prouvent pas le comportement MariaDB ; la suite dédiée fournit cette couverture sur un service éphémère.
+Les tests [`tests/Feature`](../../tests/Feature) restent la suite HTTP rapide exécutée sur SQLite. Ils ne sont pas rejoués tels quels sur MariaDB afin de ne pas modifier le bootstrap ni la configuration PHPUnit MariaDB ; le test applicatif MariaDB couvre le démarrage de l'application et ses routes sur le moteur réel, sans dupliquer la logique métier.
+
+Ces tests statiques ne prouvent pas le comportement MariaDB ; la suite `tests/MariaDb` fournit cette couverture sur un service éphémère.
 
 ### 13.2 Contrôles manuels
 
@@ -998,8 +1000,9 @@ bash .github/scripts/tests/test-deployment-automation.sh
 
 ### 13.3 Limites des tests
 
-- La suite rapide utilise SQLite en mémoire (`phpunit.xml`) et reste la référence de `composer test`.
-- La suite `tests/MariaDb` (`phpunit.mariadb.xml`) se connecte à MariaDB 10.11 et vérifie les migrations, les types, les index, les contraintes et les opérations CRUD existantes.
+- La suite rapide utilise SQLite en mémoire (`phpunit.xml`) et reste la référence de `composer test` pour `tests/Unit` et `tests/Feature`.
+- La suite `tests/MariaDb` (`phpunit.mariadb.xml`) se connecte à MariaDB 10.11 et vérifie les migrations, les types, les index, les contraintes, les opérations CRUD existantes et les routes applicatives `/` et `/up`.
+- Les tests `tests/Feature` ne sont pas rejoués sur MariaDB : le bootstrap et la configuration PHPUnit MariaDB sont volontairement stables. Le test `tests/MariaDb/ApplicationTest.php` couvre le démarrage applicatif sur le moteur réel.
 - Elle n'exécute pas `migrate:fresh` elle-même : la CI migre une base `chantier_test` éphémère avant les tests, qui s'exécutent sous transaction annulée.
 - Elle ne prouve ni le verrouillage concurrent, ni les performances, ni le comportement de staging ou de production.
 - Aucun test n'exécute de migration sur une base réelle.
