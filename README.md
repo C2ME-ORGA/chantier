@@ -2,114 +2,139 @@
 
 Application de gestion opérationnelle des chantiers de SARL C2ME.
 
-> **État du dépôt :** initialisation technique. Le socle Laravel doit être généré localement avant l'ajout des dépendances applicatives.
+## Stack technique
 
-## Stack cible
+| Composant | Version / choix |
+|---|---|
+| PHP | 8.4 (contrainte Composer actuelle : `^8.3`) |
+| Laravel | 13 (`^13.17`) |
+| Livewire | 4 (`^4.1`) |
+| Filament | 5 — installation/configuration à finaliser dans CHAN-22 |
+| Front-end | Vite + Tailwind CSS 4 |
+| Base de données | MariaDB / MySQL ; SQLite pour les tests automatisés |
+| Tests | Pest 5 |
+| Qualité | Laravel Pint, Larastan |
 
-- PHP 8.4
-- Laravel 13
-- Livewire 4
-- Filament 5
-- Bootstrap 5
-- Vite
-- MySQL / MariaDB
-- Redis (cache, files et sessions selon configuration)
-- Pest, Laravel Pint et Larastan
+Le dépôt contient déjà l'application Laravel. Ne pas exécuter `composer create-project` dans ce dépôt.
 
-## Initialisation locale
+## Prérequis
 
-Prérequis : PHP 8.4, Composer, Node.js/npm et une base MySQL ou MariaDB disponibles dans l'environnement local.
+- PHP 8.4 et les extensions requises par Laravel 13 ;
+- Composer 2 ;
+- Node.js et npm ;
+- SQLite pour les tests ;
+- MariaDB/MySQL pour l'environnement applicatif.
 
-Depuis le répertoire parent du projet :
-
-```powershell
-composer create-project laravel/laravel chantier "^13.0"
-cd chantier
-```
-
-Si le dépôt Git est déjà cloné dans le répertoire cible, générer le projet Laravel dans un répertoire temporaire puis transférer les fichiers générés dans le dépôt, sans écraser `.git/`.
-
-Installer ensuite les dépendances applicatives une fois les contraintes de versions confirmées :
-
-```powershell
-composer require livewire/livewire
-composer require filament/filament
-npm install
-npm install bootstrap @popperjs/core
-```
-
-Les commandes ci-dessus installent les dernières versions compatibles déclarées par Composer/npm ; vérifier explicitement les versions majeures attendues avant de valider le socle. La configuration Filament, Livewire et Bootstrap sera réalisée dans les tickets Jira dédiés.
-
-## Vérifications initiales
+Vérifier les versions :
 
 ```powershell
 php -v
 composer --version
 node --version
 npm --version
-php artisan --version
-php artisan test
-npm run build
 ```
 
-Configurer ensuite le fichier `.env` local, créer la base de données, puis exécuter :
+## Installation locale
 
 ```powershell
+git clone https://github.com/C2ME-ORGA/chantier.git
+cd chantier
+composer install
+npm ci
+Copy-Item .env.example .env
 php artisan key:generate
+```
+
+Configurer ensuite les paramètres locaux dans `.env`. Ne jamais placer de secrets réels dans `.env.example`.
+
+### SQLite (développement léger et tests)
+
+Le fichier `.env.example` et `phpunit.xml` prévoient SQLite. Pour une base locale persistante :
+
+```powershell
+New-Item -ItemType File -Force database/database.sqlite
 php artisan migrate
 ```
 
-Ne jamais versionner `.env`, secrets, clés privées, exports de base de données ou fichiers contenant des données réelles.
+### MariaDB / MySQL
 
-## Organisation cible
+Configurer dans le fichier `.env` local les paramètres d'une base de développement dédiée :
 
-Le projet suivra une architecture **Modular Monolith**. Les domaines métier seront isolés dans `modules/`, avec des contrats explicites et des règles de dépendance documentées. Le répertoire `app/` conservera le bootstrap Laravel et les éléments transverses nécessaires.
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=chantier
+DB_USERNAME=chantier
+DB_PASSWORD=
+```
+
+Créer préalablement la base et son utilisateur, puis exécuter :
+
+```powershell
+php artisan config:clear
+php artisan migrate
+```
+
+La validation spécifique MariaDB (migrations, contraintes, types, transactions et tests automatisés sur le moteur réel) reste à réaliser dans CHAN-21. La configuration SQLite des tests ne prouve pas la compatibilité MariaDB.
+
+### Assets front-end
+
+Le projet utilise Tailwind CSS 4 via `@tailwindcss/vite`. La configuration est CSS-first dans `resources/css/app.css` ; aucun fichier `tailwind.config.js` n'est requis par la configuration actuelle.
+
+```powershell
+npm run build
+npm run dev
+```
+
+### Vérifications
+
+```powershell
+php artisan --version
+php artisan test
+composer lint:check
+composer types:check
+npm run build
+```
+
+Ces commandes doivent être exécutées après installation ; leur présence ici ne signifie pas qu'elles ont déjà été validées sur chaque environnement.
+
+## Livewire et Filament
+
+Livewire 4 est déclaré dans `composer.json` et verrouillé dans `composer.lock`.
+
+L'installation complète de Filament 5, la création du panel d'administration et les vérifications associées sont suivies dans [CHAN-22](https://sarlc2me.atlassian.net/browse/CHAN-22). Ne pas considérer le panel Filament comme opérationnel tant que cette étape et ses tests ne sont pas réalisés.
+
+## Architecture cible
+
+Le projet suivra une architecture **Modular Monolith**. Les domaines métier seront isolés dans `modules/`, avec des contrats explicites et des règles de dépendance documentées. Le répertoire `app/` conservera le bootstrap Laravel et les éléments transverses nécessaires. La mise en place de cette architecture est suivie séparément dans Jira.
 
 ## Workflow Git
 
 Le projet utilise deux branches permanentes et des branches temporaires rattachées à un ticket Jira :
 
-- `main` : branche de référence des versions de production.
-- `develop` : branche d'intégration continue.
-- `feature/CHAN-123-description` : nouvelles fonctionnalités, créées depuis `develop`.
-- `bugfix/CHAN-123-description` : corrections non urgentes, créées depuis `develop`.
+- `main` : branche de référence des versions de production ;
+- `develop` : branche d'intégration ;
+- `feature/CHAN-123-description` : nouvelles fonctionnalités, créées depuis `develop` ;
+- `bugfix/CHAN-123-description` : corrections non urgentes, créées depuis `develop` ;
 - `hotfix/CHAN-123-description` : correctifs urgents, créés depuis `main`.
 
-Les commits suivent les [Conventional Commits](https://www.conventionalcommits.org/) (`feat`, `fix`, `docs`, etc.). Les Pull Requests sont obligatoires vers `main` et vers `develop`, et le contrôle GitHub Actions `ci` doit être vert avant toute fusion.
+Les commits suivent les [Conventional Commits](https://www.conventionalcommits.org/) (`feat`, `fix`, `docs`, etc.). Les Pull Requests sont obligatoires vers `main` et `develop`, et le contrôle GitHub Actions `ci` doit être vert avant toute fusion.
 
-Les protections `protect-main` et `protect-develop` sont actives : les pushes directs, le force-push et la suppression des branches protégées sont bloqués, sans bypass.
+Les protections `protect-main` et `protect-develop` sont documentées comme actives. Les conventions détaillées sont décrites dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md).
 
-Les conventions détaillées (nommage, cycle de vie des branches, commits, Pull Requests et livraison) sont documentées dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md). Le versionnement Semantic Versioning, les tags (`vX.Y.Z` et `vX.Y.Z-rc.N`), les notes de version et le processus de publication sont définis dans [`docs/development/release-process.md`](docs/development/release-process.md). Les environnements de recette et de production, leur séparation et leurs protections sont décrits dans [`docs/development/environments.md`](docs/development/environments.md). Les déploiements automatisés sont décrits dans [`docs/development/deployment-process.md`](docs/development/deployment-process.md).
+## Environnements et opérations
 
-## Environnements
+Les procédures relatives aux environnements, releases, déploiements, migrations, sauvegardes/restaurations et rollback sont documentées dans `docs/development/`. Leur documentation ne constitue pas, à elle seule, la preuve qu'une opération réelle a été exécutée.
 
-Le projet prévoit deux environnements sur un même serveur Ubuntu 24.04 / aaPanel :
+Aucune sauvegarde/restauration réelle ni copie hors site ne doit être considérée comme validée sans preuve d'exécution et de contrôle.
 
-- `staging` : recette, données fictives ou anonymisées, accès réservé à l'équipe C2ME.
-- `production` : données réelles et application publique.
+## Sécurité
 
-Leur architecture, leur isolation, les variables et secrets attendus, les protections GitHub et les contrôles de validation sont documentés dans [`docs/development/environments.md`](docs/development/environments.md). Aucun workflow de déploiement n'est défini dans CHAN-96.
-
-## Déploiements
-
-Depuis CHAN-97, deux workflows automatisent les déploiements :
-
-- `deploy-staging` : déclenché par un tag `vX.Y.Z-rc.N` sur `develop`, il construit le paquet, publie l'artefact immuable et le déploie en recette ;
-- `deploy-production` : déclenché par la publication d'une release stable, il réutilise **exactement** l'artefact validé en staging, sans reconstruire l'application.
-
-Le paquet contient `vendor/` et les assets Vite, jamais `.env`, `node_modules` ni `storage`. Le déploiement serveur utilise des releases versionnées, un lien `current` et un stockage partagé, sans migration automatique ni rollback automatisé. Les environnements GitHub et leurs secrets doivent être configurés manuellement. La procédure complète, les limites et les vérifications sont décrites dans [`docs/development/deployment-process.md`](docs/development/deployment-process.md). La stratégie de migrations, la compatibilité N/N-1 et la politique de rollback sont définies dans [`docs/development/database-migrations.md`](docs/development/database-migrations.md).
-
-## Sauvegardes et restauration
-
-La stratégie de sauvegarde, d'intégrité et de restauration isolée est définie dans [`docs/development/backup-restore.md`](docs/development/backup-restore.md), avec la procédure opérateur dans [`docs/development/backup-restore-runbook.md`](docs/development/backup-restore-runbook.md). Un jeu de sauvegarde de référence contient toujours la base et les fichiers d'une même opération ; un dump de base seul n'est jamais une sauvegarde complète. La clé privée de déchiffrement n'est jamais stockée sur le serveur.
-
-Aucune sauvegarde réelle n'a été produite et aucune restauration réelle n'a été démontrée à ce stade. Les scripts [`scripts/ops`](scripts/ops) sont livrés avec des tests locaux à outils simulés ; ils ne sont pas planifiés automatiquement. La perte complète du serveur reste un **NO-GO** tant qu'aucune copie hors site n'existe.
-
-## Rollback applicatif
-
-Le rollback applicatif manuel est défini dans [`docs/development/application-rollback.md`](docs/development/application-rollback.md) et sa procédure opérateur dans [`docs/development/application-rollback-runbook.md`](docs/development/application-rollback-runbook.md). Il réactive une release antérieure en basculant atomiquement `current`, après vérification de la release, attestation de compatibilité N/N-1 et confirmation de l'arrêt des workers et de la pause des files.
-
-Il n'est jamais déclenché automatiquement, n'exécute aucune migration, ne restaure pas la base de données et ne modifie ni `.env`, ni `shared/storage`, ni les jobs, le cron, Supervisor ou PHP-FPM. Il est outillé par [`scripts/ops/rollback.sh`](scripts/ops/rollback.sh).
+- Ne jamais versionner `.env`, des secrets, clés privées, exports de base de données ou données réelles.
+- Conserver `.env.example` sans identifiants ni secrets.
+- Utiliser des comptes et bases dédiés aux environnements de développement et de test.
+- Ne pas exécuter de migration destructive sur une base contenant des données réelles.
 
 ## Suivi
 
