@@ -2478,27 +2478,108 @@ assert_contains "$notes_file" "sera refusé" "Arbre différent non référencé"
 scripts_dir="$script_dir"
 workflows_dir="$project_root/.github/workflows"
 
-# CHAN-21 lot 2 : le job MariaDB éphémère de tests.yml exécute migrate:fresh
-# sur la base isolée chantier_test. Les workflows et scripts de déploiement
-# restent soumis à l'interdiction.
-migration_hits="$(grep -rEl 'artisan[[:space:]]+migrate|migrate[[:space:]]+--force' \
-  "$scripts_dir/lib" "$scripts_dir/deploy" "$scripts_dir/package" "$workflows_dir" 2>/dev/null \
-  | grep -vF "$workflows_dir/tests.yml" || true)"
+# CHAN-21 lot 2 : seul le job mariadb de tests.yml peut exécuter les
+# commandes de migration autorisées. Les scripts et workflows de déploiement
+# restent soumis à l'interdiction, y compris pour les commandes chaînées.
+migration_checker="$project_root/scripts/ci/check-workflow-migrations.php"
+
+migration_hits="$(grep -rEli 'artisan[[:space:]]+migrate|artisan[[:space:]]+db:wipe|migrate:(fresh|refresh|reset|rollback)|db:wipe|migrate[[:space:]]+--force' \
+  "$scripts_dir/lib" "$scripts_dir/deploy" "$scripts_dir/package" 2>/dev/null || true)"
 
 if [ -n "$migration_hits" ]; then
-  fail "Aucune migration automatique ne doit être déclenchée hors du job MariaDB isolé."
+  fail "Aucune migration automatique ne doit être déclenchée dans les scripts de déploiement ou de packaging : $migration_hits"
 else
   pass
 fi
 
-unexpected_test_migrations="$(grep -nE 'artisan[[:space:]]+migrate|migrate[[:space:]]+--force' \
-  "$workflows_dir/tests.yml" 2>/dev/null \
-  | grep -vE 'php artisan migrate:fresh --force --no-interaction|php artisan migrate:status --no-ansi' || true)"
+for workflow in "$workflows_dir"/*.yml; do
+  allowed_job=""
+  if [ "$(basename "$workflow")" = "tests.yml" ]; then
+    allowed_job="mariadb"
+  fi
 
-if [ -n "$unexpected_test_migrations" ]; then
-  fail "Le workflow de tests ne doit exécuter que les migrations MariaDB isolées attendues."
-else
+  checker_args=("$migration_checker" "$workflow")
+  if [ -n "$allowed_job" ]; then
+    checker_args+=("$allowed_job")
+  fi
+
+  if php "${checker_args[@]}" >/dev/null 2>&1; then
+    pass
+  else
+    fail "Migration non autorisée dans $(basename "$workflow")."
+  fi
+done
+
+migration_fixtures="$work_dir/migration-workflows"
+mkdir -p "$migration_fixtures"
+
+write_migration_fixture() {
+  local name="$1"
+  local job="$2"
+  local command="$3"
+
+  cat > "$migration_fixtures/$name.yml" <<YAML
+jobs:
+  $job:
+    steps:
+      - run: '$command'
+YAML
+}
+
+assert_migration_fixture_fails() {
+  local name="$1"
+  local allowed_job="${2-mariadb}"
+  local description="$3"
+  local checker_args=("$migration_checker" "$migration_fixtures/$name.yml")
+
+  if [ -n "$allowed_job" ]; then
+    checker_args+=("$allowed_job")
+  fi
+
+  if php "${checker_args[@]}" >/dev/null 2>&1; then
+    fail "Le contrôle des migrations devait refuser : ${description}."
+  else
+    pass
+  fi
+}
+
+write_migration_fixture "db-wipe-ci" "ci" "php artisan db:wipe"
+assert_migration_fixture_fails "db-wipe-ci" "mariadb" "db:wipe dans le job ci"
+
+write_migration_fixture "fresh-package-linux" "package-linux" "php artisan migrate:fresh --force"
+assert_migration_fixture_fails "fresh-package-linux" "mariadb" "migrate:fresh dans package-linux"
+
+write_migration_fixture "refresh-mariadb" "mariadb" "php artisan migrate:refresh"
+assert_migration_fixture_fails "refresh-mariadb" "mariadb" "migrate:refresh dans mariadb"
+
+write_migration_fixture "reset-mariadb" "mariadb" "php artisan migrate:reset"
+assert_migration_fixture_fails "reset-mariadb" "mariadb" "migrate:reset dans mariadb"
+
+write_migration_fixture "rollback-mariadb" "mariadb" "php artisan migrate:rollback"
+assert_migration_fixture_fails "rollback-mariadb" "mariadb" "migrate:rollback dans mariadb"
+
+write_migration_fixture "artisan-migrate-ci" "ci" "php artisan migrate"
+assert_migration_fixture_fails "artisan-migrate-ci" "mariadb" "artisan migrate dans le job ci"
+
+write_migration_fixture "chained-mariadb" "mariadb" "php artisan migrate:fresh --force --no-interaction && php artisan migrate:reset"
+assert_migration_fixture_fails "chained-mariadb" "mariadb" "commande autorisée suivie d'une commande interdite"
+
+write_migration_fixture "other-workflow" "deploy" "php artisan migrate --force"
+assert_migration_fixture_fails "other-workflow" "" "migration dans un autre workflow"
+
+cat > "$migration_fixtures/allowed-mariadb.yml" <<'YAML'
+jobs:
+  mariadb:
+    steps:
+      - run: 'php artisan migrate:fresh --force --no-interaction'
+      - run: 'php artisan migrate:status --no-ansi'
+      - run: 'php scripts/ci/verify-mariadb-migrations.php'
+YAML
+
+if php "$migration_checker" "$migration_fixtures/allowed-mariadb.yml" mariadb >/dev/null 2>&1; then
   pass
+else
+  fail "Les trois commandes autorisées dans le job mariadb doivent être acceptées."
 fi
 
 if grep -rEl 'artisan[[:space:]]+down|maintenance:activate' \

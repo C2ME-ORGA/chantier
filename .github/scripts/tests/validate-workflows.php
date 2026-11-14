@@ -15,6 +15,7 @@ use Symfony\Component\Yaml\Yaml;
 require dirname(__DIR__, 3).'/vendor/autoload.php';
 
 $projectRoot = dirname(__DIR__, 3);
+require_once $projectRoot.'/scripts/ci/lib/workflow-migrations.php';
 $failures = [];
 $checks = 0;
 
@@ -133,6 +134,21 @@ foreach ($workflowPaths as $path) {
     if ($documents[$name] === []) {
         continue;
     }
+
+    $migrationViolations = c2me_workflow_migration_violations(
+        $documents[$name],
+        $name === 'tests.yml' ? 'mariadb' : null
+    );
+
+    $migrationDetails = array_map(
+        static fn (array $violation): string => "job {$violation['job']} : {$violation['line']}",
+        $migrationViolations
+    );
+
+    check(
+        $migrationViolations === [],
+        "{$name} : commande de migration non autorisée (".implode(' | ', $migrationDetails).').'
+    );
 
     check(isset($documents[$name]['jobs']) && is_array($documents[$name]['jobs']), "{$name} doit déclarer des jobs.");
 
@@ -331,31 +347,6 @@ if ($tests !== []) {
     check(
         runs_exact_command($mariadbScripts, 'vendor/bin/pest --configuration=phpunit.mariadb.xml --colors=never'),
         'Le job mariadb doit exécuter la suite Pest MariaDB dédiée.'
-    );
-
-    $destructiveMigrations = [];
-
-    foreach ($jobs as $jobName => $job) {
-        if ($jobName === 'mariadb' || ! is_array($job)) {
-            continue;
-        }
-
-        foreach (job_run_scripts($job) as $script) {
-            foreach (preg_split('/\R/', $script) ?: [] as $line) {
-                if (str_starts_with(trim($line), '#')) {
-                    continue;
-                }
-
-                if (preg_match('/\b(?:migrate:(?:fresh|refresh|reset|rollback)|db:wipe)\b/', $line) === 1) {
-                    $destructiveMigrations[] = (string) $jobName;
-                }
-            }
-        }
-    }
-
-    check(
-        $destructiveMigrations === [],
-        'Aucune migration destructive ne doit être exécutée hors du job mariadb : '.implode(', ', array_unique($destructiveMigrations))
     );
 
     $phpunit = (string) file_get_contents($projectRoot.'/phpunit.xml');
