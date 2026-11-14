@@ -47,6 +47,14 @@ c2me_env_group() {
   esac
 }
 
+c2me_env_url() {
+  case "$1" in
+    staging) printf '%s\n' 'https://chantier-staging.c2me.ovh' ;;
+    production) printf '%s\n' 'https://chantier.c2me.fr' ;;
+    *) return 1 ;;
+  esac
+}
+
 c2me_env_backup_root() {
   case "$1" in
     staging | production) printf '%s\n' "/var/backups/c2me/$1" ;;
@@ -198,8 +206,26 @@ c2me_child_pids_of() {
     return 0
   fi
 
-  if command -v ps >/dev/null 2>&1; then
+  if command -v ps >/dev/null 2>&1 && ps -eo pid=,ppid= >/dev/null 2>&1; then
     ps -eo pid=,ppid= 2>/dev/null | awk -v parent="$parent" '$2 == parent {print $1}' || true
+
+    return 0
+  fi
+
+  # Repli sans ps ni pgrep : lecture directe de /proc sur Linux.
+  if [[ -d /proc ]]; then
+    local status_file pid ppid
+
+    for status_file in /proc/[0-9]*/status; do
+      [[ -r "$status_file" ]] || continue
+      pid="${status_file#/proc/}"
+      pid="${pid%/status}"
+      ppid="$(awk '/^PPid:/ {print $2; exit}' "$status_file" 2>/dev/null || true)"
+
+      if [[ "$ppid" == "$parent" ]]; then
+        printf '%s\n' "$pid"
+      fi
+    done
   fi
 }
 
@@ -627,7 +653,7 @@ c2me_resolve_environment() {
       ;;
   esac
 
-  C2ME_PHP_BIN="${C2ME_PHP_BIN:-php}"
+  C2ME_PHP_BIN="${C2ME_PHP_BIN:-$(command -v php || true)}"
   C2ME_MYSQL_BIN="${C2ME_MYSQL_BIN:-$(command -v mariadb || command -v mysql || true)}"
   C2ME_DB_DUMP_BIN="${C2ME_DB_DUMP_BIN:-$(command -v mariadb-dump || command -v mysqldump || true)}"
   C2ME_AGE_BIN="${C2ME_AGE_BIN:-$(command -v age || true)}"

@@ -105,6 +105,12 @@ La stratégie de sauvegarde, d'intégrité et de restauration isolée est défin
 
 Aucune sauvegarde réelle n'a été produite et aucune restauration réelle n'a été démontrée à ce stade. Les scripts [`scripts/ops`](scripts/ops) sont livrés avec des tests locaux à outils simulés ; ils ne sont pas planifiés automatiquement. La perte complète du serveur reste un **NO-GO** tant qu'aucune copie hors site n'existe.
 
+## Rollback applicatif
+
+Le rollback applicatif manuel est défini dans [`docs/development/application-rollback.md`](docs/development/application-rollback.md) et sa procédure opérateur dans [`docs/development/application-rollback-runbook.md`](docs/development/application-rollback-runbook.md). Il réactive une release antérieure en basculant atomiquement `current`, après vérification de la release, attestation de compatibilité N/N-1 et confirmation de l'arrêt des workers et de la pause des files.
+
+Il n'est jamais déclenché automatiquement, n'exécute aucune migration, ne restaure pas la base de données et ne modifie ni `.env`, ni `shared/storage`, ni les jobs, le cron, Supervisor ou PHP-FPM. Il est outillé par [`scripts/ops/rollback.sh`](scripts/ops/rollback.sh).
+
 ## Suivi
 
 Le backlog et les décisions projet sont suivis dans [Jira – C2ME Chantier](https://sarlc2me.atlassian.net/jira/software/projects/CHAN).

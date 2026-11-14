@@ -675,6 +675,8 @@ Cette liste est cumulative. Un rollback automatique est toujours exclu. Un rollb
 
 Cette procédure est **manuelle**, exécutée par l'administrateur avec le compte technique de l'environnement. Elle ne modifie pas le workflow CHAN-97 et ne restaure pas la base.
 
+Depuis le lot 3, elle est outillée par [`scripts/ops/rollback.sh`](../../scripts/ops/rollback.sh), décrit dans [`application-rollback.md`](application-rollback.md) et [`application-rollback-runbook.md`](application-rollback-runbook.md). Le script applique les mêmes règles, exige une attestation de compatibilité N/N-1 et refuse toute opération non vérifiée. Il ne restaure pas la base et n'exécute aucune migration.
+
 1. **Décider** : qualifier l'incident, choisir la release cible, vérifier qu'elle existe et que `release.json` est lisible.
 2. **Geler** : mettre les files en pause et arrêter les workers supervisés. Activer le mode maintenance uniquement si l'incohérence entre code et données l'exige.
 3. **Vérifier la compatibilité** : appliquer la checklist 6.3, contrôler `migrate:status` et la structure réelle.
@@ -940,7 +942,7 @@ Un seul critère manquant interdit la migration destructive de structure. Une su
 - Une release dont le code n'est pas compatible avec le schéma courant n'est pas une cible valide.
 - Une release dont les fichiers de migration seraient réexécutés ne doit pas être activée sans contrôle de `migrate:status`.
 - Une release N-1 peut être conservée dans `releases/` sans être une cible de rollback ; la décision doit être écrite.
-- La procédure automatisée de rollback et l'automatisation des sauvegardes restent hors périmètre. La sauvegarde et la restauration sont définies dans [`backup-restore.md`](backup-restore.md) ; la procédure manuelle de la section 6.8 reste une règle d'exploitation à répéter en staging avant toute utilisation en production.
+- Le rollback applicatif est outillé par [`scripts/ops/rollback.sh`](../../scripts/ops/rollback.sh) (lot 3) : manuel, fail-closed, sans migration ni restauration de base. L'automatisation d'un rollback reste exclue. La sauvegarde et la restauration sont définies dans [`backup-restore.md`](backup-restore.md) ; la procédure manuelle de la section 6.8 reste une règle d'exploitation à répéter en staging avant toute utilisation en production.
 
 ### 12.5 Limites assumées de ce lot
 
@@ -1017,6 +1019,8 @@ bash .github/scripts/tests/test-deployment-automation.sh
 - [`deployment-process.md`](deployment-process.md) — releases, activation et limites CHAN-97.
 - [`backup-restore.md`](backup-restore.md) — sauvegarde, intégrité et restauration.
 - [`backup-restore-runbook.md`](backup-restore-runbook.md) — procédure opérateur.
+- [`application-rollback.md`](application-rollback.md) — rollback applicatif outillé.
+- [`application-rollback-runbook.md`](application-rollback-runbook.md) — procédure de rollback.
 - [`environments.md`](environments.md) — environnements, isolation, base et sauvegardes.
 - [`release-process.md`](release-process.md) — versionnement, tags et releases.
 - [`git-workflow.md`](git-workflow.md) — branches, commits et Pull Requests.

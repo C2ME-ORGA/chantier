@@ -17,6 +17,7 @@ Ce document décrit une automatisation **préparée mais non exécutée depuis c
 | Déploiements, artefacts et promotion | Ce document |
 | Migrations, compatibilité N/N-1 et rollback applicatif | [`database-migrations.md`](database-migrations.md) |
 | Sauvegarde, intégrité et restauration | [`backup-restore.md`](backup-restore.md) |
+| Rollback applicatif manuel | [`application-rollback.md`](application-rollback.md) |
 | Environnements, isolation et protections | [`environments.md`](environments.md) |
 | Branches, commits et Pull Requests | [`git-workflow.md`](git-workflow.md) |
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
@@ -35,7 +36,7 @@ Ce document décrit une automatisation **préparée mais non exécutée depuis c
 - Un artefact est **immuable** : un tag publié n'est jamais déplacé et l'artefact associé n'est jamais remplacé.
 - Les deux environnements sont strictement indépendants : comptes SSH, chemins, secrets, bases, stockage, journaux, workers et tâches planifiées distincts.
 - Le serveur reste l'autorité. Le workflow ne transmet jamais un chemin arbitraire : le chemin cible est déduit d'une table fixe dans le script serveur et comparé à la variable d'environnement.
-- Aucune migration n'est exécutée par un déploiement. Aucune stratégie de rollback n'est implémentée dans CHAN-97. La stratégie de migrations et les règles de compatibilité N/N-1 sont définies dans [`database-migrations.md`](database-migrations.md).
+- Aucune migration n'est exécutée par un déploiement. Le rollback applicatif est manuel et outillé depuis le lot 3 ([`application-rollback.md`](application-rollback.md)) ; il n'est jamais déclenché par un workflow, un déploiement ou un health check. La stratégie de migrations et les règles de compatibilité N/N-1 restent définies dans [`database-migrations.md`](database-migrations.md).
 - Aucune commande n'est exécutée avec une élévation de privilèges : les scripts serveur tournent avec les comptes techniques dédiés.
 
 ## Architecture serveur
@@ -529,11 +530,11 @@ Le script [`remote-check.sh`](../../.github/scripts/deploy/remote-check.sh) rev�
 - Toute erreur avant l'activation (extraction, contrôle, permissions, caches Artisan) supprime uniquement le répertoire temporaire et la release créés par l'exécution courante.
 - Une release préexistante, une release active, `current` et `shared/` ne sont jamais supprimés, y compris lors d'un signal `HUP`, `TERM` ou `INT`.
 - `shared/.env` et `shared/storage` ne sont jamais supprimés ni déplacés.
-- Aucune stratégie de rollback n'est implémentée : le rollback relève de CHAN-98.
+- Le rollback applicatif est **manuel et outillé** depuis le lot 3 ([`application-rollback.md`](application-rollback.md)) : il bascule `current` vers une release antérieure après contrôles, attestation N/N-1 et confirmations. Il n'est jamais déclenché par un workflow, un déploiement ou un health check, et ne restaure jamais la base.
 
 ### Échec du contrôle HTTP après activation
 
-Si le health check échoue après l'activation de `current`, le déploiement est signalé en échec mais **aucun rollback automatique** n'est exécuté. La nouvelle release reste active, l'ancienne reste disponible dans `releases/`, et une décision manuelle est nécessaire. Ce comportement est volontaire pour ne pas masquer un incident et sera complété par la procédure de rollback de CHAN-98.
+Si le health check échoue après l'activation de `current`, le déploiement est signalé en échec mais **aucun rollback automatique** n'est exécuté. La nouvelle release reste active, l'ancienne reste disponible dans `releases/`, et une décision manuelle est nécessaire. Ce comportement est volontaire pour ne pas masquer un incident. Le retour manuel est outillé par [`application-rollback.md`](application-rollback.md) ; il exige une attestation de compatibilité N/N-1 et ne restaure jamais la base.
 
 ### Cache Laravel
 
@@ -657,7 +658,7 @@ En l'état, une release stable publiée peut donc être rejouée, y compris une 
 - La procédure de contrôle des permissions documentée n'a pas été exécutée sur le serveur.
 - Aucune migration de base de données n'est exécutée par un déploiement.
 - La stratégie de migrations et de compatibilité N/N-1 est documentée dans [`database-migrations.md`](database-migrations.md) (lot 1 de CHAN-98). Aucun script de migration ou de rollback n'est ajouté par ce lot.
-- Aucun rollback automatique n'est implémenté : une release précédente reste disponible dans `releases/`, mais son activation relève d'une décision et d'une procédure manuelle. Un rollback applicatif ne restaure jamais la base de données.
+- Aucun rollback automatique n'est implémenté : une release précédente reste disponible dans `releases/`, et son activation relève d'une décision et de la procédure manuelle outillée du lot 3 ([`application-rollback.md`](application-rollback.md)). Un rollback applicatif ne restaure jamais la base de données.
 - En cas d'échec avant activation, le répertoire incomplet est nettoyé sans toucher à la release active ni à `shared/`.
 - En cas d'échec du health check après activation, la nouvelle release reste active et le déploiement est signalé en échec ; aucune restauration automatique n'est effectuée.
 - Le mode maintenance n'est pas activé automatiquement.

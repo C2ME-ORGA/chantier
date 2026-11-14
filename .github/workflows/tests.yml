@@ -48,6 +48,9 @@ jobs:
       - name: Run backup and restore script tests
         run: bash scripts/ops/tests/test-backup-restore.sh
 
+      - name: Run application rollback tests
+        run: bash scripts/ops/tests/test-rollback.sh
+
       - name: Prepare environment
         run: |
           cp .env.example .env
