@@ -173,10 +173,22 @@ c2me_guard_enter() {
 
   if [[ -z "$flock_bin" || ! -x "$flock_bin" ]]; then
     if [[ "${C2ME_ALLOW_MISSING_FLOCK:-0}" -eq 1 ]]; then
-      C2ME_GUARD_FD=""
-      c2me_warn 'mode de test explicite : flock absent, garde de verrou non appliqué.'
+      case "${C2ME_ENV:-}" in
+        production)
+          C2ME_GUARD_FD=""
+          c2me_die 'flock est requis en production : le contournement C2ME_ALLOW_MISSING_FLOCK est interdit.'
+          ;;
+        '')
+          C2ME_GUARD_FD=""
+          c2me_die 'flock absent et C2ME_ENV non déterminé : contournement de test refusé.'
+          ;;
+        *)
+          C2ME_GUARD_FD=""
+          c2me_warn 'mode de test explicite : flock absent, garde de verrou non appliqué.'
 
-      return 0
+          return 0
+          ;;
+      esac
     fi
 
     C2ME_GUARD_FD=""

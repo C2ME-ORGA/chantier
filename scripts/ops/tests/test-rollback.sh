@@ -1202,6 +1202,7 @@ status=0
   source "$ops_dir/lib/common.sh"
   C2ME_FLOCK_BIN="$CASE_DIR/flock-absent"
   C2ME_ALLOW_MISSING_FLOCK=1
+  C2ME_ENV=staging
   c2me_guard_enter "$CASE_DIR/lock-test"
 ) >/dev/null 2>&1 || status=$?
 

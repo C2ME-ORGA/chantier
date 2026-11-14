@@ -139,6 +139,7 @@ test('la libération du verrou vérifie le jeton d appartenance', function () us
         ->toContain('flock_bin')
         ->toContain('-x -w')
         ->toContain('C2ME_ALLOW_MISSING_FLOCK')
+        ->toContain('flock est requis en production')
         ->toContain('c2me_guard_validate_fd')
         ->toContain('/proc/self/fd/')
         ->toContain('c2me_lock_write_metadata')
