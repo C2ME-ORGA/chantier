@@ -24,6 +24,7 @@ ROLLBACK_LOCK_NAME='.release-operation.lock'
 C2ME_CURL_BIN="${C2ME_CURL_BIN:-$(command -v curl || true)}"
 
 environment=""
+command="apply"
 target_release=""
 from_release=""
 reason=""
@@ -32,6 +33,7 @@ max_attestation_age="${C2ME_ATTESTATION_MAX_AGE_SECONDS:-86400}"
 confirm_workers=0
 confirm_queues=0
 confirm_jobs=0
+confirm_stale_lock=0
 dry_run=0
 
 root=""
@@ -66,6 +68,8 @@ Usage : rollback.sh --env <staging|production> --to <release-id> --reason <texte
           --confirm-workers-stopped --confirm-queues-paused --confirm-jobs-triaged \
           [--from <release-id>] [--max-attestation-age <secondes>] [--dry-run]
 
+       rollback.sh unlock --env <staging|production> --confirm-stale-lock
+
 Réactive manuellement une release antérieure en basculant atomiquement
 `current`. Aucune migration, aucune restauration de base, aucune modification
 de `.env`, `shared/storage`, des jobs, du cron ou des services.
@@ -81,6 +85,7 @@ Options :
   --confirm-queues-paused   Files vérifiées en pause
   --confirm-jobs-triaged    Jobs en attente traités ou conservés selon la procédure
   --dry-run                 Contrôles uniquement, aucune bascule
+  --confirm-stale-lock      Libère explicitement un verrou orphelin (commande unlock)
   -h, --help                Affiche cette aide
 
 Le script refuse toute cible hors de releases/, toute release incomplète,
@@ -527,6 +532,11 @@ health_check() {
 # ---------------------------------------------------------------------------
 
 main() {
+  if [[ "${1:-}" == 'unlock' ]]; then
+    command='unlock'
+    shift
+  fi
+
   while (($#)); do
     case "$1" in
       --env | --environment)
@@ -569,6 +579,10 @@ main() {
         dry_run=1
         shift
         ;;
+      --confirm-stale-lock)
+        confirm_stale_lock=1
+        shift
+        ;;
       -h | --help)
         usage
         exit 0
@@ -581,12 +595,27 @@ main() {
   done
 
   [[ -n "$environment" ]] || c2me_die 'l option --env est obligatoire.'
+
+  if [[ "$command" == 'unlock' ]]; then
+    ((confirm_stale_lock == 1)) \
+      || c2me_die 'la libération d un verrou orphelin exige --confirm-stale-lock après vérification manuelle.'
+
+    c2me_resolve_environment "$environment"
+    root="$C2ME_ROOT"
+
+    c2me_release_stale_lock "$C2ME_ROOT/shared/$ROLLBACK_LOCK_NAME"
+    printf 'UNLOCK=ok\n'
+
+    return 0
+  fi
+
   [[ -n "$target_release" ]] || c2me_die 'l option --to est obligatoire.'
   [[ -n "$attestation_file" ]] || c2me_die "l option --schema-attestation est obligatoire."
   [[ -n "$reason" ]] || c2me_die "l option --reason est obligatoire."
 
   c2me_resolve_environment "$environment"
   root="$C2ME_ROOT"
+  C2ME_UNLOCK_HINT="scripts/ops/rollback.sh unlock --env $environment --confirm-stale-lock"
   operation_id="rollback-$environment-$(c2me_iso_compact)-$(c2me_random_hex8)"
 
   if [[ -n "$from_release" ]]; then

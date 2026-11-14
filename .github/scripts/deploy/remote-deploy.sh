@@ -390,7 +390,7 @@ acquire_operation_lock() {
       die "opération concurrente en cours (${lock_operation:-inconnue}, pid $lock_pid, depuis ${lock_started:-date inconnue}) : déploiement refusé."
     fi
 
-    die "verrou orphelin détecté (${lock_operation:-inconnue}, pid ${lock_pid:-inconnu}) : suppression automatique interdite. Vérifier l'absence de processus, puis libérer explicitement depuis scripts/ops/rollback.sh unlock."
+    die "verrou orphelin détecté (${lock_operation:-inconnue}, pid ${lock_pid:-inconnu}) : suppression automatique interdite. Vérifier l'absence de processus, puis exécuter 'scripts/ops/rollback.sh unlock --env ${environment:-<env>} --confirm-stale-lock' sur cet hôte."
   fi
 
   if ! mkdir -- "$lock_dir" 2>/dev/null; then

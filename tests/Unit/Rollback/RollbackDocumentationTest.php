@@ -79,7 +79,8 @@ test('le runbook de rollback contient la procédure opérateur complète', funct
         ->toContain('Ne jamais utiliser `migrate:rollback`')
         ->toContain('--confirm-workers-stopped')
         ->toContain('--confirm-queues-paused')
-        ->toContain('--confirm-jobs-triaged');
+        ->toContain('--confirm-jobs-triaged')
+        ->toContain('rollback.sh unlock --env "$ENV" --confirm-stale-lock');
 });
 
 test('le rollback est référencé depuis les documents existants', function () use ($root): void {

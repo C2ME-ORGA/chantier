@@ -188,14 +188,14 @@ Le journal `shared/rollback.log` est en ajout seul, au format JSONL. Chaque lign
 - résultat et erreur éventuelle ;
 - indicateur `dry_run`.
 
-Aucun secret, contenu de `.env` ou donnée métier n'y est écrit. Le mode `--dry-run` n'écrit ni journal, ni verrou, ni fichier temporaire. Une opération interrompue par un signal produit une entrée `interrupted` puis libère le verrou. Après un `SIGKILL` ou un arrêt brutal, une entrée `started` sans entrée finale signale une opération à analyser ; le verrou éventuel relève de la procédure de verrou orphelin de [`backup-restore-runbook.md`](backup-restore-runbook.md).
+Aucun secret, contenu de `.env` ou donnée métier n'y est écrit. Le mode `--dry-run` n'écrit ni journal, ni verrou, ni fichier temporaire. Une opération interrompue par un signal produit une entrée `interrupted` puis libère le verrou. Après un `SIGKILL` ou un arrêt brutal, une entrée `started` sans entrée finale signale une opération à analyser ; le verrou orphelin `shared/.release-operation.lock` se libère uniquement par `rollback.sh unlock --env <env> --confirm-stale-lock`, après vérification de l'hôte et du PID (§10).
 
 ## 10. Interruptions et concurrence
 
 - Les signaux `HUP`, `INT` et `TERM` sont traités : journalisation `interrupted`, arrêt des enfants suivis, nettoyage du fichier temporaire et du verrou, puis sortie avec `129`, `130` ou `143`.
 - La bascule de `current` est protégée par un masquage court des signaux, comme dans CHAN-97.
 - Le verrou `shared/.release-operation.lock` est **partagé avec le déploiement** (`remote-deploy.sh`). Les deux opérations utilisent le même mécanisme (répertoire créé atomiquement, PID, hôte, horodatage, opération, jeton) et la même section critique : publication d'une release et activation de `current`. Un seul déploiement ou rollback peut détenir ce verrou.
-- Le verrou est acquis avant la création du répertoire `.incoming-*` côté déploiement et avant la bascule côté rollback ; il est conservé jusqu'à la fin de l'opération et libéré sur succès, erreur ou signal. Un verrou orphelin n'est jamais supprimé automatiquement.
+- Le verrou est acquis avant la création du répertoire `.incoming-*` côté déploiement et avant la bascule côté rollback ; il est conservé jusqu'à la fin de l'opération et libéré sur succès, erreur ou signal. Un jeton d'appartenance est vérifié avant toute suppression ; un verrou orphelin n'est jamais supprimé automatiquement et se libère par `rollback.sh unlock --env <env> --confirm-stale-lock`, après contrôle de l'hôte et du PID.
 - Un répertoire `releases/.incoming-*` interdit le rollback pendant un déploiement ; cette vérification reste un diagnostic, l'exclusion mutuelle étant assurée par le verrou partagé.
 - `current` est revérifié juste avant la bascule ; tout changement interrompt l'opération.
 

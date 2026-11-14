@@ -272,6 +272,44 @@ current_target() {
   printf '%s\n' "$CASE_ROOT/releases/$1"
 }
 
+BLOCKED_PID=""
+BLOCKED_CURL_PID_FILE=""
+BLOCKED_CURL_STOP_FILE=""
+
+# Démarre un rollback bloqué dans le health check, donc après acquisition du
+# verrou et bascule de current.
+start_blocked_rollback() {
+  local label="$1"
+
+  BLOCKED_CURL_PID_FILE="$work_dir/$label-curl.pid"
+  BLOCKED_CURL_STOP_FILE="$work_dir/$label-curl.stop"
+  rm -f "$BLOCKED_CURL_PID_FILE" "$BLOCKED_CURL_STOP_FILE"
+
+  FAKE_CURL_SLEEP=30 FAKE_CURL_PID="$BLOCKED_CURL_PID_FILE" FAKE_CURL_STOP="$BLOCKED_CURL_STOP_FILE" \
+    bash "$ops_dir/rollback.sh" --env staging --to "$TARGET_ID" \
+    --reason "test verrou $label" --schema-attestation "$ATTESTATION" \
+    --confirm-workers-stopped --confirm-queues-paused --confirm-jobs-triaged \
+    >"$CASE_DIR/$label.log" 2>&1 &
+  BLOCKED_PID=$!
+
+  for attempt in $(seq 1 150); do
+    [[ -s "$BLOCKED_CURL_PID_FILE" ]] && return 0
+    sleep 0.1
+  done
+
+  return 1
+}
+
+stop_blocked_rollback() {
+  local status
+
+  kill -TERM "$BLOCKED_PID" 2>/dev/null
+  wait "$BLOCKED_PID" 2>/dev/null
+  status=$?
+
+  return "$status"
+}
+
 # ---------------------------------------------------------------------------
 # 1. Rollback nominal staging
 # ---------------------------------------------------------------------------
@@ -292,6 +330,12 @@ status=$?
 assert_status 0 "$status" 'rollback nominal staging'
 assert_contains "$output" 'ROLLBACK=ok' 'confirmation du rollback'
 assert_status "$TARGET_ID" "$(current_id)" 'current pointe vers la cible'
+
+if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'le verrou subsiste après un rollback réussi.'
+fi
 
 env_hash_after="$(sha256sum "$CASE_ROOT/shared/.env" | awk '{print $1}')"
 storage_hash_after="$(find "$CASE_ROOT/shared/storage" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
@@ -614,9 +658,10 @@ mkdir "$CASE_ROOT/shared/.release-operation.lock"
 printf '%s\n' "$$" >"$CASE_ROOT/shared/.release-operation.lock/pid"
 printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$CASE_ROOT/shared/.release-operation.lock/started_at"
 printf 'test-host\n' >"$CASE_ROOT/shared/.release-operation.lock/host"
+printf 'deploy\n' >"$CASE_ROOT/shared/.release-operation.lock/operation"
+printf 'jeton-detenu-ailleurs\n' >"$CASE_ROOT/shared/.release-operation.lock/token"
 output="$(run_rollback staging "$TARGET_ID")"
 status=$?
-rm -rf "$CASE_ROOT/shared/.release-operation.lock"
 
 if ((status != 0)); then
   pass
@@ -624,6 +669,14 @@ if ((status != 0)); then
 else
   fail 'une opération concurrente doit être refusée.'
 fi
+
+if [[ -f "$CASE_ROOT/shared/.release-operation.lock/token" && "$(cat "$CASE_ROOT/shared/.release-operation.lock/token")" == 'jeton-detenu-ailleurs' ]]; then
+  pass
+else
+  fail 'le verrou d un autre processus a été modifié ou supprimé.'
+fi
+
+rm -rf "$CASE_ROOT/shared/.release-operation.lock"
 
 # Verrou partagé : un verrou de déploiement bloque le rollback et n'est pas
 # supprimé par le refus.
@@ -791,6 +844,170 @@ else
   wait "$first_pid" 2>/dev/null || true
 fi
 
+# Libération sûre : un jeton remplacé, absent ou illisible interdit toute
+# suppression du verrou par le processus initial.
+for token_case in remplace absent repertoire; do
+  setup_case "verrou-token-$token_case" staging
+  lock_dir="$CASE_ROOT/shared/.release-operation.lock"
+
+  if start_blocked_rollback "token-$token_case"; then
+    case "$token_case" in
+      remplace)
+        printf 'jeton-remplace-par-un-autre-processus\n' >"$lock_dir/token"
+        ;;
+      absent)
+        rm -f "$lock_dir/token"
+        ;;
+      repertoire)
+        rm -f "$lock_dir/token"
+        mkdir "$lock_dir/token"
+        ;;
+    esac
+
+    stop_blocked_rollback
+    token_status=$?
+    assert_status 143 "$token_status" "verrou $token_case : interruption propre"
+
+    if [[ -d "$lock_dir" ]]; then
+      pass
+    else
+      fail "verrou $token_case : le verrou a été supprimé malgré un jeton non détenu."
+    fi
+
+    case "$token_case" in
+      remplace)
+        if [[ -f "$lock_dir/token" && "$(cat "$lock_dir/token")" == 'jeton-remplace-par-un-autre-processus' ]]; then
+          pass
+        else
+          fail 'verrou remplacé : le jeton étranger a été modifié ou supprimé.'
+        fi
+        ;;
+      absent)
+        if [[ ! -e "$lock_dir/token" ]]; then
+          pass
+        else
+          fail 'verrou sans jeton : un jeton a été recréé ou le verrou modifié.'
+        fi
+        ;;
+      repertoire)
+        if [[ -d "$lock_dir/token" ]]; then
+          pass
+        else
+          fail 'verrou avec jeton non régulier : le chemin du jeton a été modifié.'
+        fi
+        ;;
+    esac
+
+    rm -rf "$lock_dir"
+  else
+    fail "verrou $token_case : le rollback bloqué n a pas démarré."
+    kill -KILL "$BLOCKED_PID" 2>/dev/null || true
+    wait "$BLOCKED_PID" 2>/dev/null || true
+  fi
+done
+
+# Récupération explicite du verrou orphelin : confirmation obligatoire,
+# refus d'un verrou actif, libération contrôlée d'un verrou mort.
+setup_case 'unlock-orphelin' staging
+sleep 0.1 &
+dead_pid=$!
+wait "$dead_pid" 2>/dev/null || true
+mkdir "$CASE_ROOT/shared/.release-operation.lock"
+printf '%s\n' "$dead_pid" >"$CASE_ROOT/shared/.release-operation.lock/pid"
+printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$CASE_ROOT/shared/.release-operation.lock/started_at"
+printf 'test-host\n' >"$CASE_ROOT/shared/.release-operation.lock/host"
+printf 'deploy\n' >"$CASE_ROOT/shared/.release-operation.lock/operation"
+printf 'jeton-etranger\n' >"$CASE_ROOT/shared/.release-operation.lock/token"
+
+output="$(bash "$ops_dir/rollback.sh" unlock --env staging 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'confirm-stale-lock' 'unlock sans confirmation refusé'
+else
+  fail 'unlock sans --confirm-stale-lock doit être refusé.'
+fi
+
+if [[ -d "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'unlock sans confirmation a supprimé le verrou.'
+fi
+
+output="$(bash "$ops_dir/rollback.sh" unlock --env staging --confirm-stale-lock 2>&1)"
+status=$?
+
+if ((status == 0)) && [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+  assert_contains "$output" 'UNLOCK=ok' 'unlock orphelin confirmé'
+else
+  fail "unlock confirmé doit libérer le verrou orphelin. Sortie : $output"
+fi
+
+setup_case 'unlock-actif' staging
+mkdir "$CASE_ROOT/shared/.release-operation.lock"
+printf '%s\n' "$$" >"$CASE_ROOT/shared/.release-operation.lock/pid"
+printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$CASE_ROOT/shared/.release-operation.lock/started_at"
+printf 'test-host\n' >"$CASE_ROOT/shared/.release-operation.lock/host"
+printf 'rollback\n' >"$CASE_ROOT/shared/.release-operation.lock/operation"
+printf 'jeton-actif\n' >"$CASE_ROOT/shared/.release-operation.lock/token"
+output="$(bash "$ops_dir/rollback.sh" unlock --env staging --confirm-stale-lock 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'actif' 'unlock refuse un verrou actif'
+else
+  fail 'unlock ne doit pas libérer un verrou actif.'
+fi
+
+if [[ -d "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'unlock a supprimé un verrou actif.'
+fi
+
+rm -rf "$CASE_ROOT/shared/.release-operation.lock"
+
+# Le message du déploiement doit indiquer la commande réellement disponible.
+setup_case 'deploiement-message-unlock' staging
+sleep 0.1 &
+dead_pid=$!
+wait "$dead_pid" 2>/dev/null || true
+live_host="$(hostname -s 2>/dev/null || hostname)"
+mkdir "$CASE_ROOT/shared/.release-operation.lock"
+printf '%s\n' "$dead_pid" >"$CASE_ROOT/shared/.release-operation.lock/pid"
+printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$CASE_ROOT/shared/.release-operation.lock/started_at"
+printf '%s\n' "$live_host" >"$CASE_ROOT/shared/.release-operation.lock/host"
+printf 'rollback\n' >"$CASE_ROOT/shared/.release-operation.lock/operation"
+printf 'jeton-orphan\n' >"$CASE_ROOT/shared/.release-operation.lock/token"
+deploy_output="$(
+  (
+    source "$project_root/.github/scripts/deploy/remote-deploy.sh"
+    shared="$CASE_ROOT/shared"
+    environment="staging"
+    current_host="$live_host"
+    acquire_operation_lock
+  ) 2>&1
+)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$deploy_output" "scripts/ops/rollback.sh unlock --env staging --confirm-stale-lock" 'message de déploiement avec commande unlock réelle'
+else
+  fail 'le déploiement doit refuser un verrou orphelin.'
+fi
+
+if [[ -d "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'le déploiement a supprimé un verrou orphelin.'
+fi
+
+rm -rf "$CASE_ROOT/shared/.release-operation.lock"
+
 # Mode dry-run : sortie exacte et aucun état modifié.
 setup_case 'dry-run' staging
 dry_link_before="$(readlink -f "$CASE_ROOT/current")"
@@ -869,6 +1086,12 @@ fi
 assert_status "$TARGET_ID" "$(current_id)" 'current reste sur la cible après échec du health check (aucun retour automatique)'
 assert_contains "$(cat "$CASE_ROOT/shared/rollback.log")" '"result":"failed"' 'échec journalisé'
 assert_contains "$output" 'Retour manuel possible' 'procédure de retour manuel indiquée'
+
+if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'le verrou subsiste après un échec de health check.'
+fi
 
 setup_case 'health-invalide' staging
 output="$(FAKE_CURL_RESULT=invalid run_rollback staging "$TARGET_ID")"

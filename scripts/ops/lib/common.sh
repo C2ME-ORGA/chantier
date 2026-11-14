@@ -132,6 +132,8 @@ c2me_register_cleanup() {
 }
 
 C2ME_CLEANUP_DONE=0
+C2ME_LOCK_TOKEN=""
+C2ME_LOCK_OWNED=0
 
 c2me_cleanup() {
   if ((C2ME_CLEANUP_DONE == 1)); then
@@ -158,16 +160,7 @@ c2me_cleanup() {
   done
 
   if [[ -n "${C2ME_LOCK_DIR:-}" && -d "${C2ME_LOCK_DIR:-}" ]]; then
-    local attempt=0
-
-    while [[ -d "$C2ME_LOCK_DIR" && attempt -lt 20 ]]; do
-      rm -rf -- "$C2ME_LOCK_DIR" 2>/dev/null || true
-      attempt=$((attempt + 1))
-
-      if [[ -d "$C2ME_LOCK_DIR" ]]; then
-        sleep 0.25
-      fi
-    done
+    c2me_release_lock
   fi
 
   return 0
@@ -373,6 +366,7 @@ c2me_lock_pid_alive() {
 
 c2me_acquire_lock() {
   local lock_dir="$1"
+  local unlock_hint="${C2ME_UNLOCK_HINT:-scripts/ops/backup.sh unlock --env <env> --confirm-stale-lock}"
 
   if [[ -z "$C2ME_HOST_ID" ]]; then
     c2me_die "identité d'hôte non déterminable : définir un hostname stable ou C2ME_HOST_ID. Prise de verrou refusée."
@@ -385,7 +379,7 @@ c2me_acquire_lock() {
     lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
 
     if [[ -z "$lock_host" || "${lock_host,,}" == 'unknown' ]]; then
-      c2me_die "verrou sans hôte fiable (absent, vide ou unknown ; pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier manuellement l'absence de processus, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock' sur l'hôte concerné."
+      c2me_die "verrou sans hôte fiable (absent, vide ou unknown ; pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier manuellement l'absence de processus, puis exécuter '${unlock_hint}' sur l'hôte concerné."
     fi
 
     if [[ "$lock_host" != "$C2ME_HOST_ID" ]]; then
@@ -396,7 +390,7 @@ c2me_acquire_lock() {
       c2me_die "une autre opération est déjà en cours (pid $pid, depuis ${started_at:-date inconnue}, verrou : $lock_dir)."
     fi
 
-    c2me_die "verrou orphelin détecté (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}, hôte $lock_host) : suppression automatique interdite. Vérifier qu'aucun processus n'est actif, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock'."
+    c2me_die "verrou orphelin détecté (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}, hôte $lock_host) : suppression automatique interdite. Vérifier qu'aucun processus n'est actif, puis exécuter '${unlock_hint}'."
   fi
 
   if ! mkdir -- "$lock_dir" 2>/dev/null; then
@@ -405,10 +399,62 @@ c2me_acquire_lock() {
 
   C2ME_LOCK_DIR="$lock_dir"
   c2me_chmod 0700 -- "$lock_dir"
+
+  local random=""
+  random="$(od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"
+  [[ -n "$random" ]] || random="$$-${RANDOM}-${RANDOM}-$(date -u '+%s')"
+  C2ME_LOCK_TOKEN="lock-$$-${random}"
+
   printf '%s\n' "$$" >"$lock_dir/pid" 2>/dev/null || true
   printf '%s\n' "$(c2me_iso_now)" >"$lock_dir/started_at" 2>/dev/null || true
   printf '%s\n' "$C2ME_HOST_ID" >"$lock_dir/host" 2>/dev/null || true
-  C2ME_CLEANUP_PATHS+=("$lock_dir")
+  printf '%s\n' "$C2ME_LOCK_TOKEN" >"$lock_dir/token" 2>/dev/null || true
+  c2me_chmod 0600 -- "$lock_dir/token" 2>/dev/null || true
+  c2me_chmod 0640 -- "$lock_dir/pid" "$lock_dir/started_at" "$lock_dir/host" 2>/dev/null || true
+
+  C2ME_LOCK_OWNED=1
+}
+
+# Libère uniquement un verrou dont le jeton correspond à celui créé par ce
+# processus. Un jeton absent, illisible ou différent interdit toute suppression.
+c2me_release_lock() {
+  local lock_dir="${C2ME_LOCK_DIR:-}"
+
+  [[ "$C2ME_LOCK_OWNED" -eq 1 && -n "$lock_dir" ]] || {
+    C2ME_LOCK_OWNED=0
+    C2ME_LOCK_TOKEN=""
+
+    return 0
+  }
+
+  if [[ -L "$lock_dir" || ! -d "$lock_dir" ]]; then
+    C2ME_LOCK_OWNED=0
+    C2ME_LOCK_TOKEN=""
+
+    return 0
+  fi
+
+  local recorded=""
+  recorded="$(cat "$lock_dir/token" 2>/dev/null || true)"
+
+  if [[ -n "$recorded" && "$recorded" == "$C2ME_LOCK_TOKEN" ]]; then
+    local attempt=0
+
+    while [[ -d "$lock_dir" && attempt -lt 20 ]]; do
+      rm -rf -- "$lock_dir" 2>/dev/null || true
+      attempt=$((attempt + 1))
+
+      if [[ -d "$lock_dir" ]]; then
+        sleep 0.25
+      fi
+    done
+  else
+    printf 'AVERTISSEMENT: verrou non libéré (jeton absent ou différent) : %s\n' "$lock_dir" >&2
+  fi
+
+  C2ME_LOCK_OWNED=0
+  C2ME_LOCK_TOKEN=""
+  C2ME_LOCK_DIR=""
 }
 
 # Récupération explicite d'un verrou orphelin. Refuse si le PID est vivant.

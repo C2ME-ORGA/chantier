@@ -115,11 +115,31 @@ test('le verrou est partagé avec le déploiement', function () use ($root, $ops
         ->toContain('acquire_operation_lock')
         ->toContain('release_operation_lock')
         ->toContain('mkdir -- "$lock_dir"')
-        ->toContain('jeton différent');
+        ->toContain('jeton différent')
+        ->toContain('rollback.sh unlock --env')
+        ->toContain('--confirm-stale-lock');
 
     expect($doc)
         ->toContain('partagé avec le déploiement')
         ->toContain('shared/.release-operation.lock');
+});
+
+test('la libération du verrou vérifie le jeton d appartenance', function () use ($ops): void {
+    $common = (string) file_get_contents($ops.'/lib/common.sh');
+    $rollback = (string) file_get_contents($ops.'/rollback.sh');
+
+    expect($common)
+        ->toContain('C2ME_LOCK_TOKEN')
+        ->toContain('C2ME_LOCK_OWNED')
+        ->toContain('c2me_release_lock')
+        ->toContain('jeton absent ou différent')
+        ->toContain('lock_dir/token')
+        ->not->toContain('C2ME_CLEANUP_PATHS+=("$lock_dir")');
+
+    expect($rollback)
+        ->toContain('unlock')
+        ->toContain('--confirm-stale-lock')
+        ->toContain('c2me_release_stale_lock');
 });
 
 test('la preuve migrate:status est vérifiée par empreinte', function () use ($root, $ops): void {

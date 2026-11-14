@@ -212,7 +212,11 @@ La release cible reste active, le journal indique `failed`, et le script affiche
 - `INT`/`TERM` : le script journalise `interrupted`, termine ses enfants, supprime le fichier temporaire de health check, libère le verrou et sort avec `130`/`143`.
 - Vérifier `readlink -f "$ROOT/current"` : la bascule peut avoir eu lieu avant l'interruption.
 - Le journal permet de savoir si l'opération était avant ou après la bascule.
-- Un `SIGKILL` peut laisser le verrou et une entrée `started` sans fin : appliquer la procédure de verrou orphelin de [`backup-restore-runbook.md`](backup-restore-runbook.md), puis analyser le journal avant de recommencer.
+- Un `SIGKILL` peut laisser le verrou `shared/.release-operation.lock` et une entrée `started` sans fin. Vérifier qu'aucun processus `rollback.sh` ou `remote-deploy.sh` n'est actif, contrôler l'hôte et le PID enregistrés, puis libérer explicitement :
+  ```bash
+  bash scripts/ops/rollback.sh unlock --env "$ENV" --confirm-stale-lock
+  ```
+  La commande refuse un verrou actif, un hôte différent, un hôte absent ou réservé, et un PID invalide. Analyser ensuite le journal avant de recommencer. Ne jamais supprimer le répertoire du verrou par un `rm -rf` improvisé.
 
 ## 9. Refus fréquents
 
