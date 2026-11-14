@@ -15,6 +15,7 @@ use Symfony\Component\Yaml\Yaml;
 require dirname(__DIR__, 3).'/vendor/autoload.php';
 
 $projectRoot = dirname(__DIR__, 3);
+require_once $projectRoot.'/scripts/ci/lib/workflow-migrations.php';
 $failures = [];
 $checks = 0;
 
@@ -133,6 +134,21 @@ foreach ($workflowPaths as $path) {
     if ($documents[$name] === []) {
         continue;
     }
+
+    $migrationViolations = c2me_workflow_migration_violations(
+        $documents[$name],
+        $name === 'tests.yml' ? 'mariadb' : null
+    );
+
+    $migrationDetails = array_map(
+        static fn (array $violation): string => "job {$violation['job']} : {$violation['line']}",
+        $migrationViolations
+    );
+
+    check(
+        $migrationViolations === [],
+        "{$name} : commande de migration non autorisée (".implode(' | ', $migrationDetails).').'
+    );
 
     check(isset($documents[$name]['jobs']) && is_array($documents[$name]['jobs']), "{$name} doit déclarer des jobs.");
 
@@ -310,10 +326,57 @@ if ($tests !== []) {
     check((string) ($phpWith['php-version'] ?? '') === '8.4', 'Le job mariadb doit utiliser PHP 8.4.');
     check(in_array('pdo_mysql', $extensions, true), 'Le job mariadb doit installer l\'extension pdo_mysql.');
 
+    $mariadbScripts = job_run_scripts($mariadbJob);
+
     check(
-        runs_exact_command(job_run_scripts($mariadbJob), 'php scripts/ci/verify-mariadb.php'),
+        runs_exact_command($mariadbScripts, 'php scripts/ci/verify-mariadb.php'),
         'Le job mariadb doit exécuter scripts/ci/verify-mariadb.php dans une étape run.'
     );
+    check(
+        runs_exact_command($mariadbScripts, 'php artisan migrate:fresh --force --no-interaction'),
+        'Le job mariadb doit exécuter les migrations sur la base isolée.'
+    );
+    check(
+        runs_exact_command($mariadbScripts, 'php artisan migrate:status --no-ansi'),
+        'Le job mariadb doit afficher l\'état des migrations.'
+    );
+    check(
+        runs_exact_command($mariadbScripts, 'php scripts/ci/verify-mariadb-migrations.php'),
+        'Le job mariadb doit vérifier que toutes les migrations sont appliquées.'
+    );
+    check(
+        runs_exact_command($mariadbScripts, 'vendor/bin/pest --configuration=phpunit.mariadb.xml --colors=never'),
+        'Le job mariadb doit exécuter la suite Pest MariaDB dédiée.'
+    );
+
+    $phpunit = (string) file_get_contents($projectRoot.'/phpunit.xml');
+    check(str_contains($phpunit, '<env name="DB_CONNECTION" value="sqlite"/>'), 'phpunit.xml doit conserver SQLite pour les tests rapides.');
+
+    $mariaDbConfigPath = $projectRoot.'/phpunit.mariadb.xml';
+    check(is_file($mariaDbConfigPath), 'phpunit.mariadb.xml doit exister pour la suite MariaDB.');
+
+    if (is_file($mariaDbConfigPath)) {
+        $mariaDbConfig = (string) file_get_contents($mariaDbConfigPath);
+        $mariaDbBootstrap = $projectRoot.'/tests/bootstrap-mariadb.php';
+
+        check(
+            str_contains($mariaDbConfig, '<env name="DB_CONNECTION" value="mariadb" force="true"/>'),
+            'phpunit.mariadb.xml doit forcer la connexion mariadb.'
+        );
+        check(
+            str_contains($mariaDbConfig, 'bootstrap="tests/bootstrap-mariadb.php"'),
+            'phpunit.mariadb.xml doit utiliser le bootstrap MariaDB dédié.'
+        );
+        check(is_file($mariaDbBootstrap), 'tests/bootstrap-mariadb.php doit exister.');
+
+        if (is_file($mariaDbBootstrap)) {
+            $bootstrap = (string) file_get_contents($mariaDbBootstrap);
+            check(
+                str_contains($bootstrap, "'DB_CONNECTION' => 'mariadb'"),
+                'tests/bootstrap-mariadb.php doit forcer DB_CONNECTION=mariadb.'
+            );
+        }
+    }
 }
 
 foreach ($failures as $failure) {

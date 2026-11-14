@@ -104,9 +104,23 @@ Ces commandes doivent être exécutées après installation ; leur présence ici
 Le workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) sépare deux environnements :
 
 - le job `ci` conserve les contrôles existants sur SQLite en mémoire, conformément à `phpunit.xml` : tests de l'automatisation des releases et des déploiements, validation des workflows (dont la configuration MariaDB), tests des scripts de sauvegarde/restauration et de rollback, Pint, Larastan/PHPStan, Pest et build frontend ;
-- le job `mariadb-10.11` démarre un service éphémère `mariadb:10.11` et vérifie réellement la connexion Laravel avec `DB_CONNECTION=mariadb`, puis identifie le serveur et exige MariaDB 10.11.
+- le job `mariadb-10.11` démarre un service éphémère `mariadb:10.11`, vérifie réellement la connexion Laravel avec `DB_CONNECTION=mariadb`, exécute `migrate:fresh` sur la base isolée `chantier_test`, vérifie que toutes les migrations sont appliquées avec `scripts/ci/verify-mariadb-migrations.php`, puis exécute la suite dédiée `tests/MariaDb` via `phpunit.mariadb.xml`.
 
-Le job MariaDB n'utilise que des identifiants jetables propres à la CI et n'accède à aucun serveur C2ME. Il ne modifie ni `.env.example` ni `phpunit.xml` et n'exécute pas encore les migrations ni la suite de tests : cette validation relève du lot 2 de CHAN-21.
+Le job MariaDB n'utilise que des identifiants jetables propres à la CI et n'accède à aucun serveur C2ME. Les tests MariaDB ne sont pas exécutés par `php artisan test` par défaut et ne remplacent pas SQLite. Pour les exécuter localement sur une instance MariaDB 10.11 isolée :
+
+```powershell
+$env:DB_CONNECTION='mariadb'
+$env:DB_HOST='127.0.0.1'
+$env:DB_PORT='3306'
+$env:DB_DATABASE='chantier_test'
+$env:DB_USERNAME='chantier_test'
+$env:DB_PASSWORD='<mot-de-passe-local>'
+php artisan config:clear
+php artisan migrate --force
+vendor\bin\pest --configuration=phpunit.mariadb.xml
+```
+
+Ne jamais exécuter `migrate:fresh` sur une base locale, de staging ou de production non explicitement isolée.
 
 ## Livewire et Filament
 

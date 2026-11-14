@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\MariaDbTestCase;
 use Tests\TestCase;
 
 /*
@@ -17,6 +18,18 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+/*
+|--------------------------------------------------------------------------
+| MariaDB Test Case
+|--------------------------------------------------------------------------
+|
+| La suite MariaDB est exécutée uniquement avec phpunit.mariadb.xml. Elle
+| utilise une base déjà migrée et une transaction annulée après chaque test.
+|
+*/
+
+pest()->extend(MariaDbTestCase::class)->in('MariaDb');
 
 /*
 |--------------------------------------------------------------------------
