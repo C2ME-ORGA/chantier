@@ -8,7 +8,7 @@ Ce document définit la stratégie de migrations, les règles de compatibilité 
 - Portée : audit du schéma existant, stratégie Expand / Migrate / Contract, compatibilité N/N-1, politique d'exécution, conventions de rédaction, validation manuelle, rollback applicatif et procédures d'échec.
 - Hors portée : sauvegarde et restauration opérationnelles (traitées par le lot 2 dans [`backup-restore.md`](backup-restore.md)), recette fonctionnelle, automatisation des migrations dans les workflows et exécution réelle sur staging ou production.
 
-> **Statut de ce lot.** Aucune migration n'a été exécutée sur une base réelle, aucune base n'a été modifiée et aucun workflow de déploiement n'a été changé. Les seules vérifications exécutées sont des tests statiques et la suite de tests locale sur SQLite en mémoire. Les procédures de ce document sont des règles à appliquer ; elles ne constituent pas une preuve d'exécution.
+> **Statut.** Aucune migration n'a été exécutée sur une base de staging ou de production, aucune base de ces environnements n'a été modifiée et aucun workflow de déploiement n'a été changé. Depuis CHAN-21 lot 2, la CI exécute les migrations et une suite applicative sur un service MariaDB 10.11 éphémère. Les procédures de ce document restent des règles à appliquer en staging et en production ; elles ne constituent pas une preuve d'exécution sur ces environnements.
 
 ## Sources de vérité
 
@@ -125,9 +125,9 @@ L'application utilise `CACHE_STORE=database`, `SESSION_DRIVER=database` et `QUEU
 | A-04 | `sessions.user_id` est indexé mais non contraint. Une future clé étrangère devra être ajoutée selon la phase Migrate, pas dans la création initiale. | Moyen |
 | A-05 | Les files d'attente sont en base. Un job sérialisé peut référencer une classe, un modèle ou une colonne qui n'existe plus après un rollback. | Élevé |
 | A-06 | Le cache et les sessions sont en base. Un DDL sur ces tables peut interrompre l'authentification ou les verrous. | Moyen |
-| A-07 | `composer test` et la CI utilisent SQLite en mémoire. Aucun test automatisé n'exécute les migrations sur MariaDB 10.11. | Élevé |
+| A-07 | `composer test` utilise SQLite en mémoire. Depuis CHAN-21 lot 2, la CI exécute aussi les migrations et une suite applicative dédiée sur MariaDB 10.11 dans un service éphémère ; la répétition en staging reste nécessaire. | Moyen |
 | A-08 | Les migrations sont incluses dans le paquet de déploiement (seuls `tests/` et `docs/` sont exclus). Elles sont donc disponibles dans chaque release, mais aucune étape ne les exécute. | Faible, par conception |
-| A-09 | Aucun workflow, script de déploiement ou script de paquet ne contient `artisan migrate`. Le test de déploiement et la validation des workflows le vérifient déjà. | Faible |
+| A-09 | Aucun workflow de déploiement ni script de paquet ne contient `artisan migrate`. Depuis CHAN-21 lot 2, seul le job CI MariaDB éphémère exécute `migrate:fresh` sur `chantier_test`. | Faible, par conception |
 | A-10 | L'utilisateur MySQL de l'application dispose des privilèges nécessaires aux migrations. Ces mêmes identifiants sont présents dans la configuration compilée lue à l'exécution. | Moyen |
 | A-11 | `database/database.sqlite` n'est pas versionné ; les tests utilisent `:memory:`. Aucune base locale de référence n'est partagée. | Faible |
 | A-12 | Aucun mécanisme ne relie une release à l'état du schéma. `release.json` ne contient ni lot de migrations ni empreinte du schéma. | Moyen |
@@ -430,7 +430,7 @@ Un index unique ajouté sur des données non contrôlées est une migration inco
 
 ### 5.2 Automatique, manuel et interdit
 
-- **Automatique en local et en CI** : `migrate` sur une base éphémère SQLite en mémoire. Cela vérifie la syntaxe et l'ordre des migrations, pas le comportement MariaDB.
+- **Automatique en local et en CI** : `migrate` sur une base éphémère SQLite en mémoire, et depuis CHAN-21 lot 2 `migrate:fresh` sur le service MariaDB 10.11 éphémère de la CI, suivi de la suite `tests/MariaDb`. Cela valide le DDL et les contraintes MariaDB sans prouver le comportement de staging.
 - **Automatique en déploiement** : aucune migration, sans exception dans ce lot. Les workflows `deploy-staging`, `deploy-production`, `release` et les scripts serveur ne contiennent aucune commande de migration.
 - **Manuel avec validation** : toute migration A, B ou C sur staging puis production, avec preuve de répétition en staging.
 - **Manuel avec validation renforcée** : toute migration D, avec sauvegarde vérifiée ; pour une suppression de structure, après expiration de la fenêtre de rollback.
@@ -948,9 +948,9 @@ Un seul critère manquant interdit la migration destructive de structure. Une su
 
 - Aucun hook de migration n'est ajouté au déploiement.
 - Aucun script de rollback n'est créé.
-- Aucune migration réelle n'a été exécutée.
+- Aucune migration n'est exécutée en staging ou en production par un déploiement.
 - Aucun environnement GitHub, secret ou serveur n'a été modifié.
-- Aucune preuve d'exécution MariaDB n'est fournie.
+- CHAN-21 lot 2 fournit une exécution automatisée des migrations et des tests sur MariaDB 10.11, mais aucune preuve sur staging ou production.
 
 ## 13. Tests et contrôles
 
@@ -965,11 +965,13 @@ Les tests [`tests/Unit/Migrations/MigrationPolicyTest.php`](../../tests/Unit/Mig
 - l'absence de suppression de lignes dans `up()` sans annotation `@destructive` ;
 - la classification `@phase` des migrations créées après l'entrée en vigueur de cette politique ;
 - l'absence de modèle Eloquent et d'`env()` dans les migrations ;
-- l'absence de commande de migration dans les workflows et scripts de déploiement.
+- l'absence de commande de migration dans les workflows de déploiement et les scripts de déploiement, hors job MariaDB éphémère de `tests.yml` ;
 
 Les tests [`tests/Unit/Documentation/MigrationDocumentationTest.php`](../../tests/Unit/Documentation/MigrationDocumentationTest.php) vérifient la présence de ce document, de ses sections obligatoires et du lien depuis [`deployment-process.md`](deployment-process.md).
 
-Ces tests sont statiques : ils ne prouvent pas le comportement MariaDB.
+Les tests [`tests/MariaDb`](../../tests/MariaDb) s'exécutent uniquement avec [`phpunit.mariadb.xml`](../../phpunit.mariadb.xml) sur la base isolée `chantier_test`. Ils vérifient le moteur MariaDB 10.11, l'état des migrations, les types natifs, les index, les contraintes et les opérations CRUD présentes dans l'application.
+
+Ces tests statiques ne prouvent pas le comportement MariaDB ; la suite dédiée fournit cette couverture sur un service éphémère.
 
 ### 13.2 Contrôles manuels
 
@@ -983,6 +985,12 @@ composer test
 composer lint:check
 composer types:check
 
+# Suite MariaDB dédiée (base isolée déjà migrée)
+vendor/bin/pest --configuration=phpunit.mariadb.xml
+
+# Vérification de l'état des migrations MariaDB
+php scripts/ci/verify-mariadb-migrations.php
+
 # Workflows et scripts de déploiement
 php .github/scripts/tests/validate-workflows.php
 bash .github/scripts/tests/test-deployment-automation.sh
@@ -990,8 +998,10 @@ bash .github/scripts/tests/test-deployment-automation.sh
 
 ### 13.3 Limites des tests
 
-- La suite applicative utilise SQLite en mémoire (`phpunit.xml`). Elle ne détecte pas les différences de DDL, de verrouillage, de collation ou d'index MariaDB.
-- Aucun test ne se connecte à MariaDB 10.11.
+- La suite rapide utilise SQLite en mémoire (`phpunit.xml`) et reste la référence de `composer test`.
+- La suite `tests/MariaDb` (`phpunit.mariadb.xml`) se connecte à MariaDB 10.11 et vérifie les migrations, les types, les index, les contraintes et les opérations CRUD existantes.
+- Elle n'exécute pas `migrate:fresh` elle-même : la CI migre une base `chantier_test` éphémère avant les tests, qui s'exécutent sous transaction annulée.
+- Elle ne prouve ni le verrouillage concurrent, ni les performances, ni le comportement de staging ou de production.
 - Aucun test n'exécute de migration sur une base réelle.
 - Aucun test ne prouve la restaurabilité d'une sauvegarde.
 - Un test vert ne remplace pas une répétition en staging.
@@ -1003,7 +1013,7 @@ bash .github/scripts/tests/test-deployment-automation.sh
 | D-01 | Durée et critères exacts de la fenêtre de rollback | Détermine le moment autorisé du Contract |
 | D-02 | Rôles et personnes habilitées à approuver les niveaux 1, 2 et 3 | Détermine la validation manuelle |
 | D-03 | Utilisateur MySQL dédié aux migrations, distinct de l'utilisateur d'exécution | Réduit le privilège DDL disponible à l'application |
-| D-04 | Environnement de répétition MariaDB 10.11 (CI ou staging dédié) | Réduit le risque DDL non testé |
+| D-04 | Environnement de répétition MariaDB 10.11 (CI ou staging dédié) | **Partiellement tranché** : suite CI éphémère livrée par CHAN-21 lot 2 ; répétition staging toujours requise pour les migrations sensibles. |
 | D-05 | Procédure de sauvegarde, rétention, chiffrement et test de restauration | **Tranchée** : [`backup-restore.md`](backup-restore.md) et [`backup-restore-runbook.md`](backup-restore-runbook.md). Les comptes, clés et racines restent à créer par l'administrateur. |
 | D-06 | Ajout de métadonnées de schéma dans `release.json` ou dans un journal séparé | Améliore la traçabilité release/schéma |
 | D-07 | Seuils précis des migrations longues et fenêtres d'exécution | Détermine le mode opératoire |

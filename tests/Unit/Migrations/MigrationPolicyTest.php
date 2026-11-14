@@ -217,7 +217,7 @@ test('les migrations restent autonomes et ne lisent pas la configuration d envir
     expect($violations)->toBe([]);
 });
 
-test('aucun workflow ni script de deploiement n execute de migration', function (): void {
+test('aucun workflow de deploiement ni script de deploiement n execute de migration', function (): void {
     $root = dirname(__DIR__, 3);
 
     $directories = [
@@ -239,6 +239,19 @@ test('aucun workflow ni script de deploiement n execute de migration', function 
     foreach ($directories as $directory) {
         foreach (chan98ProjectFiles($directory, ['yml', 'yaml', 'sh', 'php']) as $file) {
             $contents = (string) file_get_contents($file);
+
+            if (basename($file) === 'tests.yml') {
+                // CHAN-21 lot 2 autorise ces commandes dans le seul job
+                // MariaDB éphémère. Les autres workflows et scripts restent
+                // soumis à l'interdiction, y compris le job SQLite.
+                $contents = (string) preg_replace(
+                    '/^.*(?:php artisan migrate:fresh --force --no-interaction|php artisan migrate:status --no-ansi|php scripts\/ci\/verify-mariadb-migrations\.php).*$/m',
+                    '',
+                    $contents
+                );
+            }
+
+            $contents = (string) preg_replace('/^\s*#.*$/m', '', $contents);
 
             foreach ($patterns as $pattern => $label) {
                 if (preg_match($pattern, $contents) === 1) {

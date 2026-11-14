@@ -121,9 +121,21 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+          php artisan config:clear
 
       - name: Verify Laravel MariaDB connection
         run: php scripts/ci/verify-mariadb.php
+
+      - name: Run MariaDB migrations
+        run: php artisan migrate:fresh --force --no-interaction
+
+      - name: Verify MariaDB migration status
+        run: |
+          php artisan migrate:status --no-ansi
+          php scripts/ci/verify-mariadb-migrations.php
+
+      - name: Run MariaDB test suite
+        run: vendor/bin/pest --configuration=phpunit.mariadb.xml --colors=never
 
   package-linux:
     name: package-linux

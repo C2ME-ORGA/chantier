@@ -879,7 +879,7 @@ La démonstration réelle relève du runbook, sur un environnement isolé, avec 
 - Aucune automatisation planifiée n'est fournie ; le RPO de 24 h reste une cible non garantie.
 - Aucune copie hors site ; la perte complète du serveur reste un NO-GO.
 - Aucun RTO démontré.
-- Aucun test sur MariaDB 10.11 dans la CI.
+- Depuis CHAN-21 lot 2, des tests applicatifs MariaDB 10.11 existent en CI ; ils ne couvrent pas les scripts de sauvegarde/restauration.
 - Aucun test de chiffrement réel : `age` est simulé dans les tests locaux.
 - Aucune vérification de cohérence métier fine tant qu'aucune table de pièces jointes n'existe.
 - La restauration sur le même serveur ne prouve pas la reprise après sinistre.

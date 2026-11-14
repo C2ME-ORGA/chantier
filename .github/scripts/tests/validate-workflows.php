@@ -310,10 +310,82 @@ if ($tests !== []) {
     check((string) ($phpWith['php-version'] ?? '') === '8.4', 'Le job mariadb doit utiliser PHP 8.4.');
     check(in_array('pdo_mysql', $extensions, true), 'Le job mariadb doit installer l\'extension pdo_mysql.');
 
+    $mariadbScripts = job_run_scripts($mariadbJob);
+
     check(
-        runs_exact_command(job_run_scripts($mariadbJob), 'php scripts/ci/verify-mariadb.php'),
+        runs_exact_command($mariadbScripts, 'php scripts/ci/verify-mariadb.php'),
         'Le job mariadb doit exécuter scripts/ci/verify-mariadb.php dans une étape run.'
     );
+    check(
+        runs_exact_command($mariadbScripts, 'php artisan migrate:fresh --force --no-interaction'),
+        'Le job mariadb doit exécuter les migrations sur la base isolée.'
+    );
+    check(
+        runs_exact_command($mariadbScripts, 'php artisan migrate:status --no-ansi'),
+        'Le job mariadb doit afficher l\'état des migrations.'
+    );
+    check(
+        runs_exact_command($mariadbScripts, 'php scripts/ci/verify-mariadb-migrations.php'),
+        'Le job mariadb doit vérifier que toutes les migrations sont appliquées.'
+    );
+    check(
+        runs_exact_command($mariadbScripts, 'vendor/bin/pest --configuration=phpunit.mariadb.xml --colors=never'),
+        'Le job mariadb doit exécuter la suite Pest MariaDB dédiée.'
+    );
+
+    $destructiveMigrations = [];
+
+    foreach ($jobs as $jobName => $job) {
+        if ($jobName === 'mariadb' || ! is_array($job)) {
+            continue;
+        }
+
+        foreach (job_run_scripts($job) as $script) {
+            foreach (preg_split('/\R/', $script) ?: [] as $line) {
+                if (str_starts_with(trim($line), '#')) {
+                    continue;
+                }
+
+                if (preg_match('/\b(?:migrate:(?:fresh|refresh|reset|rollback)|db:wipe)\b/', $line) === 1) {
+                    $destructiveMigrations[] = (string) $jobName;
+                }
+            }
+        }
+    }
+
+    check(
+        $destructiveMigrations === [],
+        'Aucune migration destructive ne doit être exécutée hors du job mariadb : '.implode(', ', array_unique($destructiveMigrations))
+    );
+
+    $phpunit = (string) file_get_contents($projectRoot.'/phpunit.xml');
+    check(str_contains($phpunit, '<env name="DB_CONNECTION" value="sqlite"/>'), 'phpunit.xml doit conserver SQLite pour les tests rapides.');
+
+    $mariaDbConfigPath = $projectRoot.'/phpunit.mariadb.xml';
+    check(is_file($mariaDbConfigPath), 'phpunit.mariadb.xml doit exister pour la suite MariaDB.');
+
+    if (is_file($mariaDbConfigPath)) {
+        $mariaDbConfig = (string) file_get_contents($mariaDbConfigPath);
+        $mariaDbBootstrap = $projectRoot.'/tests/bootstrap-mariadb.php';
+
+        check(
+            str_contains($mariaDbConfig, '<env name="DB_CONNECTION" value="mariadb" force="true"/>'),
+            'phpunit.mariadb.xml doit forcer la connexion mariadb.'
+        );
+        check(
+            str_contains($mariaDbConfig, 'bootstrap="tests/bootstrap-mariadb.php"'),
+            'phpunit.mariadb.xml doit utiliser le bootstrap MariaDB dédié.'
+        );
+        check(is_file($mariaDbBootstrap), 'tests/bootstrap-mariadb.php doit exister.');
+
+        if (is_file($mariaDbBootstrap)) {
+            $bootstrap = (string) file_get_contents($mariaDbBootstrap);
+            check(
+                str_contains($bootstrap, "'DB_CONNECTION' => 'mariadb'"),
+                'tests/bootstrap-mariadb.php doit forcer DB_CONNECTION=mariadb.'
+            );
+        }
+    }
 }
 
 foreach ($failures as $failure) {
