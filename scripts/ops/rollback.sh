@@ -20,7 +20,7 @@ OPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$OPS_DIR/lib/common.sh"
 
 ATTESTATION_TOOL="$OPS_DIR/lib/rollback-attestation.php"
-ROLLBACK_LOCK_NAME='.rollback.lock'
+ROLLBACK_LOCK_NAME='.release-operation.lock'
 C2ME_CURL_BIN="${C2ME_CURL_BIN:-$(command -v curl || true)}"
 
 environment=""
@@ -595,7 +595,11 @@ main() {
 
   assert_reason
   assert_root_layout
-  prepare_logging
+
+  if ((dry_run == 0)); then
+    prepare_logging
+  fi
+
   assert_no_incoming_release
 
   c2me_require_command "$C2ME_CURL_BIN" 'curl (health check obligatoire)'
@@ -620,13 +624,19 @@ main() {
   assert_jobs_triaged
 
   if ((dry_run == 1)); then
-    rollback_log_event 'planned' 'planned' ''
-    printf 'PLAN=ok\nENVIRONMENT=%s\nSOURCE=%s\nTARGET=%s\nCURRENT_BEFORE=%s\n' \
-      "$environment" "$source_release" "$target_release" "$current_before"    printf 'Aucune modification effectuée (--dry-run).\n'
+    printf 'PLAN=ok\n'
+    printf 'MODE=dry-run\n'
+    printf 'ENVIRONMENT=%s\n' "$environment"
+    printf 'SOURCE=%s\n' "$source_release"
+    printf 'TARGET=%s\n' "$target_release"
+    printf 'CURRENT_BEFORE=%s\n' "$current_before"
+    printf 'VALIDATION=ok\n'
+    printf 'Aucune modification effectuée (--dry-run).\n'
     return 0
   fi
 
   c2me_acquire_lock "$shared/$ROLLBACK_LOCK_NAME"
+  printf 'rollback\n' >"$C2ME_LOCK_DIR/operation" 2>/dev/null || true
 
   assert_no_incoming_release
   assert_current_unchanged

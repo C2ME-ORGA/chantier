@@ -4,6 +4,7 @@
  * Gardes statiques du rollback applicatif CHAN-98, lot 3.
  */
 $root = dirname(__DIR__, 3);
+$ops = $root.'/scripts/ops';
 $scriptPath = $root.'/scripts/ops/rollback.sh';
 $attestationPath = $root.'/scripts/ops/lib/rollback-attestation.php';
 
@@ -97,6 +98,64 @@ test('le rollback vérifie la concurrence et l état des workers', function () u
         ->toContain('queue:work|queue:listen|horizon')
         ->toContain('C2ME_SUPERVISOR_PROGRAM')
         ->toContain('assert_current_unchanged');
+});
+
+test('le verrou est partagé avec le déploiement', function () use ($root, $ops): void {
+    $rollback = (string) file_get_contents($ops.'/rollback.sh');
+    $deploy = (string) file_get_contents($root.'/.github/scripts/deploy/remote-deploy.sh');
+    $doc = (string) file_get_contents($root.'/docs/development/application-rollback.md');
+
+    foreach ([$rollback, $deploy] as $contents) {
+        expect($contents)
+            ->toContain('.release-operation.lock')
+            ->toContain('operation');
+    }
+
+    expect($deploy)
+        ->toContain('acquire_operation_lock')
+        ->toContain('release_operation_lock')
+        ->toContain('mkdir -- "$lock_dir"')
+        ->toContain('jeton différent');
+
+    expect($doc)
+        ->toContain('partagé avec le déploiement')
+        ->toContain('shared/.release-operation.lock');
+});
+
+test('la preuve migrate:status est vérifiée par empreinte', function () use ($root, $ops): void {
+    $validator = (string) file_get_contents($ops.'/lib/rollback-attestation.php');
+    $runbook = (string) file_get_contents($root.'/docs/development/application-rollback-runbook.md');
+
+    expect($validator)
+        ->toContain('.migrate-status.txt')
+        ->toContain('hash_equals')
+        ->toContain('rollback_attestation_validate_proof')
+        ->toContain('Preuve migrate:status absente')
+        ->toContain('environnement incohérent')
+        ->toContain('release incohérente')
+        ->toContain('base incohérente')
+        ->toContain('captured_at');
+
+    expect($runbook)
+        ->toContain('C2ME-MIGRATE-STATUS-PROOF')
+        ->toContain('.migrate-status.txt')
+        ->toContain('sha256sum "$PROOF"');
+});
+
+test('le dry-run ne modifie aucun état et sa sortie est séparée', function () use ($root, $ops): void {
+    $contents = (string) file_get_contents($ops.'/rollback.sh');
+    $doc = (string) file_get_contents($root.'/docs/development/application-rollback.md');
+
+    expect($contents)
+        ->toContain("printf 'PLAN=ok\\n'")
+        ->toContain("printf 'MODE=dry-run\\n'")
+        ->toContain("printf 'VALIDATION=ok\\n'")
+        ->toContain("printf 'Aucune modification effectuée (--dry-run).\\n'")
+        ->not->toContain("printf 'PLAN=ok\\nENVIRONMENT=")
+        ->not->toContain("'planned'");
+
+    expect($doc)
+        ->toContain('`--dry-run` n\'écrit ni journal, ni verrou, ni fichier temporaire');
 });
 
 test('aucun workflow ne déclenche automatiquement le rollback', function () use ($root): void {

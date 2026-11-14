@@ -19,6 +19,9 @@ declare(strict_types=1);
  */
 const ROLLBACK_ATTESTATION_MAX_AGE_DEFAULT = 86400;
 const ROLLBACK_ATTESTATION_FUTURE_TOLERANCE = 300;
+const ROLLBACK_PROOF_MARKER = 'C2ME-MIGRATE-STATUS-PROOF';
+const ROLLBACK_PROOF_VERSION = '1';
+const ROLLBACK_PROOF_HEADERS = ['version', 'environment', 'release', 'database', 'captured_at'];
 
 /**
  * @return list<string>
@@ -200,6 +203,204 @@ function rollback_attestation_timestamp(mixed $value, array &$errors): ?DateTime
     return $date;
 }
 
+function rollback_attestation_proof_path(string $attestationPath): string
+{
+    return $attestationPath.'.migrate-status.txt';
+}
+
+function rollback_attestation_modes_enforced(): bool
+{
+    $probe = tempnam(sys_get_temp_dir(), 'c2me-mode-');
+
+    if ($probe === false) {
+        return false;
+    }
+
+    $changed = chmod($probe, 0644);
+    clearstatcache(true, $probe);
+    $mode = fileperms($probe);
+
+    unlink($probe);
+
+    return $changed && $mode !== false && ($mode & 0777) === 0644;
+}
+
+/**
+ * Vérifie la preuve conservée de `migrate:status` et son empreinte.
+ *
+ * @param  array<mixed>  $attestation
+ * @param  array{environment:string,source:string,target:string,database:string,max_age:int}  $expected
+ * @param  list<string>  $errors
+ */
+function rollback_attestation_validate_proof(
+    string $path,
+    array $attestation,
+    array $expected,
+    array &$errors
+): void {
+    if (is_link($path) || ! is_file($path)) {
+        $errors[] = "Preuve migrate:status absente ou non régulière : {$path}.";
+
+        return;
+    }
+
+    if (! is_readable($path)) {
+        $errors[] = "Preuve migrate:status illisible : {$path}.";
+
+        return;
+    }
+
+    if (rollback_attestation_modes_enforced()) {
+        $mode = fileperms($path);
+
+        if ($mode === false) {
+            $errors[] = 'Permissions de la preuve migrate:status illisibles.';
+
+            return;
+        }
+
+        if (($mode & 0022) !== 0) {
+            $errors[] = 'Preuve migrate:status modifiable par le groupe ou les autres utilisateurs : refusée.';
+        }
+
+        if (($mode & 0400) === 0) {
+            $errors[] = 'Preuve migrate:status non lisible par son propriétaire : refusée.';
+        }
+    }
+
+    $contents = file_get_contents($path);
+
+    if ($contents === false) {
+        $errors[] = "Preuve migrate:status illisible : {$path}.";
+
+        return;
+    }
+
+    $recorded = (string) ($attestation['migrate_status_sha256'] ?? '');
+    $actual = hash('sha256', $contents);
+
+    if (! hash_equals($recorded, $actual)) {
+        $errors[] = 'migrate_status_sha256 ne correspond pas à la preuve conservée.';
+    }
+
+    $normalized = str_replace("\r\n", "\n", $contents);
+    $lines = explode("\n", $normalized);
+
+    if (($lines[0] ?? '') !== ROLLBACK_PROOF_MARKER) {
+        $errors[] = 'Preuve migrate:status : en-tête de format absent.';
+
+        return;
+    }
+
+    $headers = [];
+    $bodyStart = null;
+
+    for ($index = 1; $index < count($lines); $index++) {
+        $line = $lines[$index];
+
+        if ($line === '---') {
+            $bodyStart = $index + 1;
+            break;
+        }
+
+        if (preg_match('/^([a-z_]+): (.+)$/', $line, $matches) !== 1) {
+            $errors[] = 'Preuve migrate:status : ligne d en-tête invalide.';
+
+            return;
+        }
+
+        $key = $matches[1];
+
+        if (! in_array($key, ROLLBACK_PROOF_HEADERS, true)) {
+            $errors[] = "Preuve migrate:status : en-tête inconnu {$key}.";
+        }
+
+        if (array_key_exists($key, $headers)) {
+            $errors[] = "Preuve migrate:status : en-tête dupliqué {$key}.";
+        }
+
+        $headers[$key] = $matches[2];
+    }
+
+    if ($bodyStart === null) {
+        $errors[] = 'Preuve migrate:status : séparateur de sortie absent.';
+
+        return;
+    }
+
+    foreach (ROLLBACK_PROOF_HEADERS as $required) {
+        if (! array_key_exists($required, $headers)) {
+            $errors[] = "Preuve migrate:status : en-tête {$required} absent.";
+        }
+    }
+
+    $body = trim(implode("\n", array_slice($lines, $bodyStart)));
+
+    if ($body === '') {
+        $errors[] = 'Preuve migrate:status : sortie vide.';
+    }
+
+    if (($headers['version'] ?? '') !== ROLLBACK_PROOF_VERSION) {
+        $errors[] = 'Preuve migrate:status : version non prise en charge.';
+    }
+
+    if (($headers['environment'] ?? '') !== $expected['environment']
+        || ($headers['environment'] ?? '') !== ($attestation['environment'] ?? '')) {
+        $errors[] = 'Preuve migrate:status : environnement incohérent.';
+    }
+
+    if (($headers['release'] ?? '') !== $expected['source']
+        || ($headers['release'] ?? '') !== ($attestation['source_release'] ?? '')) {
+        $errors[] = 'Preuve migrate:status : release incohérente.';
+    }
+
+    if (($headers['database'] ?? '') !== $expected['database']
+        || ($headers['database'] ?? '') !== ($attestation['database'] ?? '')) {
+        $errors[] = 'Preuve migrate:status : base incohérente.';
+    }
+
+    $capturedAt = rollback_attestation_parse_timestamp($headers['captured_at'] ?? null);
+
+    if ($capturedAt === null) {
+        $errors[] = 'Preuve migrate:status : captured_at invalide.';
+    } else {
+        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+
+        if ($capturedAt->getTimestamp() - $now->getTimestamp() > ROLLBACK_ATTESTATION_FUTURE_TOLERANCE) {
+            $errors[] = 'Preuve migrate:status : captured_at est dans le futur.';
+        }
+
+        $checkedAt = rollback_attestation_parse_timestamp($attestation['checked_at'] ?? null);
+
+        if ($checkedAt instanceof DateTimeImmutable) {
+            $delta = $checkedAt->getTimestamp() - $capturedAt->getTimestamp();
+
+            if ($delta < -ROLLBACK_ATTESTATION_FUTURE_TOLERANCE) {
+                $errors[] = 'Preuve migrate:status : capturée après checked_at.';
+            }
+
+            if ($delta > $expected['max_age']) {
+                $errors[] = 'Preuve migrate:status : trop ancienne par rapport à l attestation.';
+            }
+        }
+    }
+}
+
+function rollback_attestation_parse_timestamp(mixed $value): ?DateTimeImmutable
+{
+    if (! is_string($value)) {
+        return null;
+    }
+
+    $date = DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s\Z', $value, new DateTimeZone('UTC'));
+
+    if ($date === false || $date->format('Y-m-d\TH:i:s\Z') !== $value) {
+        return null;
+    }
+
+    return $date;
+}
+
 /**
  * @return list<string>
  */
@@ -225,7 +426,20 @@ function rollback_attestation_validate_file(string $path, array $expected): arra
         return ['L attestation doit être un objet JSON.'];
     }
 
-    return rollback_attestation_validate_array($decoded, $expected);
+    $errors = rollback_attestation_validate_array($decoded, $expected);
+
+    if ($errors !== []) {
+        return $errors;
+    }
+
+    rollback_attestation_validate_proof(
+        rollback_attestation_proof_path($path),
+        $decoded,
+        $expected,
+        $errors
+    );
+
+    return $errors;
 }
 
 if (PHP_SAPI === 'cli' && isset($_SERVER['argv'][0]) && realpath((string) $_SERVER['argv'][0]) === __FILE__) {

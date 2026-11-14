@@ -499,16 +499,19 @@ Le script [`remote-deploy.sh`](../../.github/scripts/deploy/remote-deploy.sh) es
 4. vérification SHA-256 ;
 5. inspection des entrées : refus des liens symboliques, liens physiques, périphériques, chemins absolus, `../`, `.env` et `storage/` ;
 6. vérification de l'existence de `shared/.env`, `shared/storage` et du bon `APP_ENV` ;
-7. refus si la release existe déjà ;
-8. extraction dans un répertoire temporaire créé par `mktemp -d` sous `releases/.incoming-*`, avec vérification du type, de l'absence de lien et de l'appartenance à l'utilisateur courant, puis contrôle qu'aucune entrée ne sort de ce répertoire ;
-9. liaison de `.env` et `storage` vers `shared/`, et `public/storage` vers le stockage partagé ;
-10. application des permissions de la release (`2750`) et de `bootstrap/cache` (`2770`), puis contrôle de la racine, de `releases/`, de `shared/`, du stockage et de `.env` (`0600` ou `0640`, aucune écriture de groupe, aucun accès des autres) ;
-11. vérification explicite du binaire PHP 8.4 avant toute commande Artisan ;
-12. `config:cache`, `view:cache`, puis `route:cache` si activé ; un échec de cache interrompt le déploiement **avant** publication ;
-13. `queue:restart` si activé ;
-14. écriture du marqueur `release.json` ;
-15. publication atomique du répertoire de release, puis activation atomique de `current` ;
-16. journalisation dans `shared/deployment.log`.
+7. acquisition du verrou partagé `shared/.release-operation.lock`, commun avec le rollback, avant toute création ou activation de release ;
+8. refus si la release existe déjà ;
+9. extraction dans un répertoire temporaire créé par `mktemp -d` sous `releases/.incoming-*`, avec vérification du type, de l'absence de lien et de l'appartenance à l'utilisateur courant, puis contrôle qu'aucune entrée ne sort de ce répertoire ;
+10. liaison de `.env` et `storage` vers `shared/`, et `public/storage` vers le stockage partagé ;
+11. application des permissions de la release (`2750`) et de `bootstrap/cache` (`2770`), puis contrôle de la racine, de `releases/`, de `shared/`, du stockage et de `.env` (`0600` ou `0640`, aucune écriture de groupe, aucun accès des autres) ;
+12. vérification explicite du binaire PHP 8.4 avant toute commande Artisan ;
+13. `config:cache`, `view:cache`, puis `route:cache` si activé ; un échec de cache interrompt le déploiement **avant** publication ;
+14. `queue:restart` si activé ;
+15. écriture du marqueur `release.json` ;
+16. publication atomique du répertoire de release, puis activation atomique de `current` ;
+17. journalisation dans `shared/deployment.log` et libération du verrou partagé en fin d'opération.
+
+Le verrou partagé `shared/.release-operation.lock` est créé atomiquement (`mkdir`) et contient le PID, l'hôte, l'horodatage, l'opération (`deploy` ou `rollback`) et un jeton d'exécution. Il est acquis avant toute création de répertoire `.incoming-*` ou activation de `current`, conservé jusqu'à la fin, puis libéré sur succès, erreur ou signal. Un jeton différent interdit toute suppression : le déploiement ne supprime jamais le verrou d'un autre processus. Un verrou orphelin (arrêt brutal) bloque l'opération et exige une libération manuelle explicite.
 
 Le script installe des traps `EXIT`, `HUP`, `TERM` et `INT`. Le nettoyage ne supprime un répertoire que si l'exécution courante l'a créé (`incoming_created` ou `release_created`), et jamais s'il est actif. Une collision avec une release ou un répertoire temporaire préexistant provoque un arrêt sans suppression.
 

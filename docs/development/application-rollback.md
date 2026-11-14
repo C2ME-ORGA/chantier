@@ -126,7 +126,7 @@ Le script refuse toute cible sans **attestation de compatibilité** :
   "database": "chantier_production",
   "checked_at": "2026-11-14T10:00:00Z",
   "checked_by": "c2me-deploy-production",
-  "migrate_status_sha256": "<sha256 de la sortie migrate:status conservée>",
+  "migrate_status_sha256": "<sha256 de la preuve migrate:status>",
   "migrations": {
     "in_progress": false,
     "pending": false,
@@ -141,6 +141,10 @@ Le script refuse toute cible sans **attestation de compatibilité** :
 Règles :
 
 - l'attestation est produite après contrôle de `migrate:status` et application de la grille [`database-migrations.md`](database-migrations.md) ;
+- **la preuve est un fichier conservé à côté de l'attestation** : `<attestation>.migrate-status.txt`. Il contient un en-tête (environnement, release, base, date de capture) puis la sortie exacte de `migrate:status` après une ligne `---`. Le champ `migrate_status_sha256` est le SHA-256 de ce fichier complet ;
+- le validateur recalcule l'empreinte de la preuve et refuse une preuve absente, illisible, modifiée, symbolique ou incohérente avec l'environnement, la release et la base ;
+- les permissions de la preuve sont contrôlées lorsque la plateforme applique les modes POSIX : écriture de groupe et des autres interdite, lecture propriétaire requise ;
+- cette vérification garantit l'**intégrité** de la preuve, pas son **authenticité** : un opérateur peut produire une preuve et une attestation cohérentes mais inexactes. La responsabilité reste humaine et tracée ;
 - la durée de validité est de 24 h par défaut, réglable par `--max-attestation-age` ;
 - une attestation ne prouve pas à elle seule l'état du schéma : elle rend la décision explicite, bornée et traçable ;
 - toute valeur `in_progress`, `pending`, `partial`, `destructive_applied`, `contract_applied` à `true` interdit le rollback ;
@@ -174,7 +178,7 @@ Après un rollback réussi, la reprise des workers et des files est **manuelle**
 
 Le journal `shared/rollback.log` est en ajout seul, au format JSONL. Chaque ligne contient au minimum :
 
-- horodatage UTC, événement (`started`, `completed`, `failed`, `refused`, `interrupted`, `planned`) ;
+- horodatage UTC, événement (`started`, `completed`, `failed`, `refused`, `interrupted`) ;
 - identifiant d'opération unique ;
 - environnement, opérateur, hôte ;
 - release source et cible, versions, commits, empreinte de la cible ;
@@ -184,14 +188,15 @@ Le journal `shared/rollback.log` est en ajout seul, au format JSONL. Chaque lign
 - résultat et erreur éventuelle ;
 - indicateur `dry_run`.
 
-Aucun secret, contenu de `.env` ou donnée métier n'y est écrit. Une opération interrompue par un signal produit une entrée `interrupted` puis libère le verrou. Après un `SIGKILL` ou un arrêt brutal, une entrée `started` sans entrée finale signale une opération à analyser ; le verrou éventuel relève de la procédure de verrou orphelin de [`backup-restore-runbook.md`](backup-restore-runbook.md).
+Aucun secret, contenu de `.env` ou donnée métier n'y est écrit. Le mode `--dry-run` n'écrit ni journal, ni verrou, ni fichier temporaire. Une opération interrompue par un signal produit une entrée `interrupted` puis libère le verrou. Après un `SIGKILL` ou un arrêt brutal, une entrée `started` sans entrée finale signale une opération à analyser ; le verrou éventuel relève de la procédure de verrou orphelin de [`backup-restore-runbook.md`](backup-restore-runbook.md).
 
 ## 10. Interruptions et concurrence
 
 - Les signaux `HUP`, `INT` et `TERM` sont traités : journalisation `interrupted`, arrêt des enfants suivis, nettoyage du fichier temporaire et du verrou, puis sortie avec `129`, `130` ou `143`.
 - La bascule de `current` est protégée par un masquage court des signaux, comme dans CHAN-97.
-- Un verrou `shared/.rollback.lock` empêche deux rollbacks simultanés ; il est associé à l'hôte et au PID.
-- Un répertoire `releases/.incoming-*` interdit le rollback pendant un déploiement.
+- Le verrou `shared/.release-operation.lock` est **partagé avec le déploiement** (`remote-deploy.sh`). Les deux opérations utilisent le même mécanisme (répertoire créé atomiquement, PID, hôte, horodatage, opération, jeton) et la même section critique : publication d'une release et activation de `current`. Un seul déploiement ou rollback peut détenir ce verrou.
+- Le verrou est acquis avant la création du répertoire `.incoming-*` côté déploiement et avant la bascule côté rollback ; il est conservé jusqu'à la fin de l'opération et libéré sur succès, erreur ou signal. Un verrou orphelin n'est jamais supprimé automatiquement.
+- Un répertoire `releases/.incoming-*` interdit le rollback pendant un déploiement ; cette vérification reste un diagnostic, l'exclusion mutuelle étant assurée par le verrou partagé.
 - `current` est revérifié juste avant la bascule ; tout changement interrompt l'opération.
 
 ## 11. Différence avec une restauration de données
@@ -209,7 +214,7 @@ Un rollback applicatif n'est jamais une restauration de données.
 
 ## 12. Tests
 
-- `scripts/ops/tests/test-rollback.sh` : rollback nominal staging et production, refus (release absente, hors racine, incomplète, symbolique, `current` invalide, cible active, `--from` incohérent), attestation (migrations en cours/attente/partielle, Contract, incompatibilité, périmètre, péremption), workers/files/jobs, concurrence, health check en échec, interruption SIGTERM, intégrité du journal, atomicité de `current` sous Linux, absence de modification de `.env` et du stockage.
+- `scripts/ops/tests/test-rollback.sh` : rollback nominal staging et production, refus (release absente, hors racine, incomplète, symbolique, `current` invalide, cible active, `--from` incohérent), attestation (migrations en cours/attente/partielle, Contract, incompatibilité, périmètre, péremption, preuve modifiée/absente/d'un autre environnement ou d'une autre release), workers/files/jobs, verrou partagé déploiement/rollback, échec et signal du déploiement, concurrence de deux rollbacks, dry-run exact sans état, health check en échec, interruption SIGTERM, intégrité du journal, atomicité de `current` sous Linux, absence de modification de `.env` et du stockage.
 - `tests/Unit/Rollback` : documentation, validateur d'attestation, gardes statiques du script.
 
 Les tests utilisent des releases et un health check simulés. Ils ne prouvent pas un rollback réel sur staging ou production.
@@ -217,7 +222,8 @@ Les tests utilisent des releases et un health check simulés. Ils ne prouvent pa
 ## 13. Limites et cas non couverts
 
 - Aucun rollback réel n'a été exécuté.
-- La compatibilité N/N-1 reste déclarative : le script ne se connecte pas à MariaDB et ne prouve pas l'état du schéma.
+- La compatibilité N/N-1 reste déclarative : le script ne se connecte pas à MariaDB et ne prouve pas l'état du schéma. L'attestation vérifie l'intégrité d'une preuve `migrate:status`, pas son authenticité.
+- Le mode `--dry-run` n'écrit ni journal ni verrou : il ne laisse aucune trace de l'intention.
 - Le health check HTTP ne prouve pas le bon fonctionnement métier.
 - Les workers et files ne sont pas pilotés par le script.
 - Aucun test sur le health check TLS réel, les vhosts ou PHP-FPM.

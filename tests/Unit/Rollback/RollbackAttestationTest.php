@@ -148,3 +148,128 @@ test('le validateur de fichier refuse un JSON invalide et un fichier absent', fu
     unlink($invalid);
     rmdir($directory);
 });
+
+/**
+ * Écrit une attestation et sa preuve migrate:status dans un répertoire neuf.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @param  (callable(string):string)|null  $proofMutator
+ * @return array{0:string,1:string,2:string}
+ */
+function chan98WriteAttestationWithProof(array $overrides = [], ?callable $proofMutator = null): array
+{
+    $directory = sys_get_temp_dir().'/chan98-proof-'.bin2hex(random_bytes(6));
+    mkdir($directory, 0700, true);
+
+    $attestation = chan98ValidAttestation($overrides);
+    $proofPath = $directory.'/attestation.json.migrate-status.txt';
+
+    $proof = "C2ME-MIGRATE-STATUS-PROOF\n"
+        ."version: 1\n"
+        .'environment: '.$attestation['environment']."\n"
+        .'release: '.$attestation['source_release']."\n"
+        .'database: '.$attestation['database']."\n"
+        .'captured_at: '.$attestation['checked_at']."\n"
+        ."---\n"
+        ." Migration name ......................................... Batch / Status\n"
+        ." 0001_01_01_000000_create_users_table ................... [1] Ran\n";
+
+    if ($proofMutator !== null) {
+        $proof = $proofMutator($proof);
+    }
+
+    file_put_contents($proofPath, $proof);
+    chmod($proofPath, 0600);
+
+    if (! array_key_exists('migrate_status_sha256', $overrides)) {
+        $attestation['migrate_status_sha256'] = hash('sha256', $proof);
+    }
+    $attestationPath = $directory.'/attestation.json';
+    file_put_contents($attestationPath, json_encode($attestation, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    chmod($attestationPath, 0600);
+
+    return [$attestationPath, $proofPath, $directory];
+}
+
+test('une attestation avec preuve intacte est acceptée', function (): void {
+    [$attestationPath, , $directory] = chan98WriteAttestationWithProof();
+
+    expect(rollback_attestation_validate_file($attestationPath, chan98AttestationExpected()))
+        ->toBe([]);
+
+    unlink($attestationPath);
+    unlink($attestationPath.'.migrate-status.txt');
+    rmdir($directory);
+});
+
+test('une preuve modifiée, absente ou non régulière invalide l attestation', function (string $mode): void {
+    if ($mode === 'modified') {
+        [$attestationPath, $proofPath, $directory] = chan98WriteAttestationWithProof();
+        file_put_contents($proofPath, 'contenu modifié', FILE_APPEND);
+    } elseif ($mode === 'absent') {
+        [$attestationPath, $proofPath, $directory] = chan98WriteAttestationWithProof();
+        unlink($proofPath);
+    } else {
+        [$attestationPath, $proofPath, $directory] = chan98WriteAttestationWithProof();
+        unlink($proofPath);
+        mkdir($proofPath);
+    }
+
+    $errors = rollback_attestation_validate_file($attestationPath, chan98AttestationExpected());
+
+    expect($errors)->not->toBe([]);
+
+    @unlink($attestationPath);
+    @unlink($proofPath);
+    @rmdir($proofPath);
+    @rmdir($directory);
+})->with(['modified', 'absent', 'directory']);
+
+test('un digest incorrect est refusé', function (): void {
+    [$attestationPath, , $directory] = chan98WriteAttestationWithProof([
+        'migrate_status_sha256' => str_repeat('c', 64),
+    ]);
+
+    $errors = rollback_attestation_validate_file($attestationPath, chan98AttestationExpected());
+
+    expect($errors)->toContain('migrate_status_sha256 ne correspond pas à la preuve conservée.');
+
+    unlink($attestationPath);
+    unlink($attestationPath.'.migrate-status.txt');
+    rmdir($directory);
+});
+
+test('une preuve d un autre environnement ou d une autre release est refusée', function (string $header, string $value, string $expectedMessage): void {
+    [$attestationPath, , $directory] = chan98WriteAttestationWithProof([], function (string $proof) use ($header, $value): string {
+        return preg_replace('/^'.$header.': .*$/m', $header.': '.$value, $proof) ?? $proof;
+    });
+
+    $errors = rollback_attestation_validate_file($attestationPath, chan98AttestationExpected());
+
+    expect($errors)->toContain($expectedMessage);
+
+    unlink($attestationPath);
+    unlink($attestationPath.'.migrate-status.txt');
+    rmdir($directory);
+})->with([
+    ['environment', 'staging', 'Preuve migrate:status : environnement incohérent.'],
+    ['release', 'v9.9.9-9-9', 'Preuve migrate:status : release incohérente.'],
+    ['database', 'chantier_staging', 'Preuve migrate:status : base incohérente.'],
+]);
+
+test('une preuve incohérente dans le temps est refusée', function (string $capturedAt, string $expectedMessage): void {
+    [$attestationPath, , $directory] = chan98WriteAttestationWithProof([], function (string $proof) use ($capturedAt): string {
+        return preg_replace('/^captured_at: .*$/m', 'captured_at: '.$capturedAt, $proof) ?? $proof;
+    });
+
+    $errors = rollback_attestation_validate_file($attestationPath, chan98AttestationExpected());
+
+    expect($errors)->toContain($expectedMessage);
+
+    unlink($attestationPath);
+    unlink($attestationPath.'.migrate-status.txt');
+    rmdir($directory);
+})->with([
+    [gmdate('Y-m-d\TH:i:s\Z', time() + 3600), 'Preuve migrate:status : captured_at est dans le futur.'],
+    ['2020-01-01T00:00:00Z', 'Preuve migrate:status : trop ancienne par rapport à l attestation.'],
+]);

@@ -33,6 +33,12 @@ readonly BOOTSTRAP_CACHE_MODE='2770'
 # le jeton unique de l'exécution : un nom de chemin prévisible ne suffit jamais.
 readonly OWNER_MARKER='.c2me-deploy-owner'
 
+# Verrou partagé avec le rollback applicatif (scripts/ops/rollback.sh). Il
+# protège la publication des releases et l'activation de `current` contre une
+# opération concurrente. Il est créé atomiquement par mkdir et n'est jamais
+# supprimé s'il appartient à une autre exécution.
+readonly OPERATION_LOCK_NAME='.release-operation.lock'
+
 environment=""
 release_id=""
 version=""
@@ -61,6 +67,10 @@ deployment_failure_status="failure"
 entries_file=""
 verbose_file=""
 run_token=""
+current_host=""
+operation_lock_dir=""
+operation_lock_token=""
+operation_lock_owned=0
 
 usage() {
   cat <<'USAGE'
@@ -329,6 +339,99 @@ verify_release_permissions() {
 
 # Jeton unique de l'exécution. Il est écrit dans chaque répertoire créé pour
 # prouver la propriété de création sans se fier au nom du chemin.
+# ---------------------------------------------------------------------------
+# Verrou partagé déploiement / rollback
+# ---------------------------------------------------------------------------
+
+resolve_host_identity() {
+  local host
+
+  host="$(hostname -s 2>/dev/null || hostname 2>/dev/null || true)"
+  host="$(printf '%s' "$host" | tr -cd 'A-Za-z0-9._-')"
+
+  case "${host,,}" in
+    '' | 'unknown' | 'localhost' | 'localhost.localdomain')
+      host=""
+      ;;
+  esac
+
+  [[ -n "$host" ]] \
+    || die "identité d'hôte non déterminable : définir un hostname stable, unique et non réservé."
+
+  current_host="$host"
+}
+
+# Acquiert le verrou partagé avant toute création ou activation de release.
+# Un verrou existant n'est jamais supprimé automatiquement : une interruption
+# brutale nécessite une intervention explicite (rollback.sh unlock).
+acquire_operation_lock() {
+  local lock_dir="$shared/$OPERATION_LOCK_NAME"
+
+  if [[ -e "$lock_dir" || -L "$lock_dir" ]]; then
+    if [[ -L "$lock_dir" || ! -d "$lock_dir" ]]; then
+      die "verrou d'opération invalide (non répertoire ou symbolique) : $lock_dir"
+    fi
+
+    local lock_host lock_pid lock_operation lock_started
+    lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
+    lock_pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
+    lock_operation="$(cat "$lock_dir/operation" 2>/dev/null || true)"
+    lock_started="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
+
+    if [[ -z "$lock_host" || "${lock_host,,}" == 'unknown' || "${lock_host,,}" == 'localhost' || "${lock_host,,}" == 'localhost.localdomain' ]]; then
+      die "verrou sans hôte fiable (absent ou réservé) : opération refusée. Intervention manuelle requise."
+    fi
+
+    if [[ "$lock_host" != "$current_host" ]]; then
+      die "verrou détenu par l'hôte $lock_host, pas par $current_host : opération refusée."
+    fi
+
+    if [[ "$lock_pid" =~ ^[0-9]+$ ]] && kill -0 "$lock_pid" 2>/dev/null; then
+      die "opération concurrente en cours (${lock_operation:-inconnue}, pid $lock_pid, depuis ${lock_started:-date inconnue}) : déploiement refusé."
+    fi
+
+    die "verrou orphelin détecté (${lock_operation:-inconnue}, pid ${lock_pid:-inconnu}) : suppression automatique interdite. Vérifier l'absence de processus, puis libérer explicitement depuis scripts/ops/rollback.sh unlock."
+  fi
+
+  if ! mkdir -- "$lock_dir" 2>/dev/null; then
+    die "verrou d'opération déjà détenu (course concurrente) : déploiement refusé."
+  fi
+
+  operation_lock_dir="$lock_dir"
+  operation_lock_owned=1
+
+  local random=""
+  random="$(od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"
+  [[ -n "$random" ]] || random="$$-${RANDOM}-${RANDOM}-$(date -u '+%s')"
+  operation_lock_token="deploy-$$-${random}"
+
+  chmod 0700 "$lock_dir" 2>/dev/null || true
+  printf '%s\n' "$$" >"$lock_dir/pid" 2>/dev/null || true
+  printf '%s\n' "$current_host" >"$lock_dir/host" 2>/dev/null || true
+  printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$lock_dir/started_at" 2>/dev/null || true
+  printf '%s\n' 'deploy' >"$lock_dir/operation" 2>/dev/null || true
+  printf '%s\n' "$operation_lock_token" >"$lock_dir/token" 2>/dev/null || true
+  chmod 0600 "$lock_dir/pid" "$lock_dir/host" "$lock_dir/started_at" "$lock_dir/operation" "$lock_dir/token" 2>/dev/null || true
+}
+
+# Ne libère que le verrou créé par cette exécution : un jeton différent prouve
+# qu'il appartient à un autre processus et interdit toute suppression.
+release_operation_lock() {
+  [[ "$operation_lock_owned" -eq 1 && -n "$operation_lock_dir" ]] || return 0
+
+  local recorded=""
+  recorded="$(cat "$operation_lock_dir/token" 2>/dev/null || true)"
+
+  if [[ -n "$recorded" && "$recorded" == "$operation_lock_token" ]]; then
+    rm -rf -- "$operation_lock_dir" 2>/dev/null || true
+  else
+    printf 'AVERTISSEMENT: verrou non supprimé (jeton différent) : %s\n' "$operation_lock_dir" >&2
+  fi
+
+  operation_lock_owned=0
+  operation_lock_dir=""
+}
+
 init_run_token() {
   [[ -n "$run_token" ]] && return 0
 
@@ -434,6 +537,7 @@ on_exit() {
   local status=$?
 
   cleanup_incomplete || true
+  release_operation_lock || true
   rm -f -- "${entries_file:-}" "${verbose_file:-}" 2>/dev/null || true
 
   if [[ "$status" -ne 0 ]]; then
@@ -786,6 +890,9 @@ main() {
   [[ "$app_env" == "$environment" ]] || die "APP_ENV du .env ne correspond pas à l'environnement attendu"
 
   verify_shared_layout_permissions
+
+  resolve_host_identity
+  acquire_operation_lock
 
   release_dir="$root/releases/$release_id"
 

@@ -198,6 +198,24 @@ write_attestation() {
   local database="$5"
   local checked_at="$6"
   local migrations="$7"
+  local proof="$file.migrate-status.txt"
+
+  cat >"$proof" <<PROOF
+C2ME-MIGRATE-STATUS-PROOF
+version: 1
+environment: $environment
+release: $source
+database: $database
+captured_at: $checked_at
+---
+ Migration name ......................................... Batch / Status
+ 0001_01_01_000000_create_users_table ................... [1] Ran
+ 0001_01_01_000001_create_cache_table ................... [1] Ran
+PROOF
+  chmod 0600 "$proof"
+
+  local digest
+  digest="$(sha256sum "$proof" | awk '{print $1}')"
 
   cat >"$file" <<JSON
 {
@@ -208,10 +226,11 @@ write_attestation() {
   "database": "$database",
   "checked_at": "$checked_at",
   "checked_by": "test-operator",
-  "migrate_status_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "migrate_status_sha256": "$digest",
   "migrations": $migrations
 }
 JSON
+  chmod 0600 "$file"
 }
 
 rollback() {
@@ -477,6 +496,71 @@ else
   fail 'une attestation absente doit être refusée.'
 fi
 
+# Preuve migrate:status : modification, absence et incohérence de périmètre.
+setup_case 'refus-preuve-modifiee' staging
+printf 'ligne ajoutée après attestation\n' >>"$ATTESTATION.migrate-status.txt"
+output="$(run_rollback staging "$TARGET_ID")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'ne correspond pas à la preuve conservée' 'preuve modifiée refusée'
+else
+  fail 'une preuve modifiée doit invalider l attestation.'
+fi
+
+setup_case 'refus-preuve-absente' staging
+rm -f "$ATTESTATION.migrate-status.txt"
+output="$(run_rollback staging "$TARGET_ID")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'Preuve migrate:status absente' 'preuve absente refusée'
+else
+  fail 'une preuve absente doit invalider l attestation.'
+fi
+
+setup_case 'refus-preuve-environnement' staging
+proof="$ATTESTATION.migrate-status.txt"
+sed -i 's/^environment: staging$/environment: production/' "$proof"
+php -r '
+    $attestation = $argv[1];
+    $proof = $argv[2];
+    $data = json_decode(file_get_contents($attestation), true);
+    $data["migrate_status_sha256"] = hash_file("sha256", $proof);
+    file_put_contents($attestation, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+' "$ATTESTATION" "$proof"
+output="$(run_rollback staging "$TARGET_ID")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'environnement incohérent' 'preuve d un autre environnement refusée'
+else
+  fail 'une preuve d un autre environnement doit être refusée.'
+fi
+
+setup_case 'refus-preuve-release' staging
+proof="$ATTESTATION.migrate-status.txt"
+sed -i "s/^release: $SOURCE_ID$/release: v9.9.9-9-9/" "$proof"
+php -r '
+    $attestation = $argv[1];
+    $proof = $argv[2];
+    $data = json_decode(file_get_contents($attestation), true);
+    $data["migrate_status_sha256"] = hash_file("sha256", $proof);
+    file_put_contents($attestation, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+' "$ATTESTATION" "$proof"
+output="$(run_rollback staging "$TARGET_ID")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'release incohérente' 'preuve d une autre release refusée'
+else
+  fail 'une preuve d une autre release doit être refusée.'
+fi
+
 # ---------------------------------------------------------------------------
 # 4. Workers, files et concurrence
 # ---------------------------------------------------------------------------
@@ -526,19 +610,215 @@ confirmation_refusal 'refus-files' 'files non confirmées' '--confirm-queues-pau
 confirmation_refusal 'refus-jobs' 'jobs non confirmés' '--confirm-jobs-triaged'
 
 setup_case 'refus-concurrence' staging
-mkdir "$CASE_ROOT/shared/.rollback.lock"
-printf '%s\n' "$$" >"$CASE_ROOT/shared/.rollback.lock/pid"
-printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$CASE_ROOT/shared/.rollback.lock/started_at"
-printf 'test-host\n' >"$CASE_ROOT/shared/.rollback.lock/host"
+mkdir "$CASE_ROOT/shared/.release-operation.lock"
+printf '%s\n' "$$" >"$CASE_ROOT/shared/.release-operation.lock/pid"
+printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$CASE_ROOT/shared/.release-operation.lock/started_at"
+printf 'test-host\n' >"$CASE_ROOT/shared/.release-operation.lock/host"
 output="$(run_rollback staging "$TARGET_ID")"
 status=$?
-rm -rf "$CASE_ROOT/shared/.rollback.lock"
+rm -rf "$CASE_ROOT/shared/.release-operation.lock"
 
 if ((status != 0)); then
   pass
   assert_contains "$output" 'déjà en cours' 'opération concurrente refusée'
 else
   fail 'une opération concurrente doit être refusée.'
+fi
+
+# Verrou partagé : un verrou de déploiement bloque le rollback et n'est pas
+# supprimé par le refus.
+setup_case 'refus-lock-deploiement' staging
+mkdir "$CASE_ROOT/shared/.release-operation.lock"
+printf '%s\n' "$$" >"$CASE_ROOT/shared/.release-operation.lock/pid"
+printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$CASE_ROOT/shared/.release-operation.lock/started_at"
+printf 'test-host\n' >"$CASE_ROOT/shared/.release-operation.lock/host"
+printf 'deploy\n' >"$CASE_ROOT/shared/.release-operation.lock/operation"
+output="$(run_rollback staging "$TARGET_ID")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'déjà en cours' 'verrou de déploiement bloque le rollback'
+else
+  fail 'un verrou de déploiement doit bloquer le rollback.'
+fi
+
+if [[ -d "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'un verrou de déploiement a été supprimé par le rollback.'
+fi
+
+rm -rf "$CASE_ROOT/shared/.release-operation.lock"
+
+# Verrou partagé : le déploiement refuse un verrou détenu par le rollback.
+setup_case 'deploiement-bloque-par-rollback' staging
+mkdir "$CASE_ROOT/shared/.release-operation.lock"
+printf '%s\n' "$$" >"$CASE_ROOT/shared/.release-operation.lock/pid"
+printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$CASE_ROOT/shared/.release-operation.lock/started_at"
+printf 'test-host\n' >"$CASE_ROOT/shared/.release-operation.lock/host"
+printf 'rollback\n' >"$CASE_ROOT/shared/.release-operation.lock/operation"
+deploy_output="$(
+  (
+    source "$project_root/.github/scripts/deploy/remote-deploy.sh"
+    shared="$CASE_ROOT/shared"
+    current_host="test-host"
+    acquire_operation_lock
+  ) 2>&1
+)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$deploy_output" 'concurrente en cours' 'rollback bloque le déploiement'
+else
+  fail 'un verrou de rollback doit bloquer le déploiement.'
+fi
+
+if [[ -d "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'le verrou de rollback a été supprimé par le déploiement.'
+fi
+
+rm -rf "$CASE_ROOT/shared/.release-operation.lock"
+
+# Un déploiement qui détient le verrou le libère sur signal.
+setup_case 'deploiement-verrou-signal' staging
+(
+  source "$project_root/.github/scripts/deploy/remote-deploy.sh"
+  shared="$CASE_ROOT/shared"
+  resolve_host_identity
+  install_traps
+  acquire_operation_lock
+  printf 'ready\n' >"$CASE_DIR/deploy-lock-ready"
+  sleep 30
+) >"$CASE_DIR/deploy-lock.out" 2>&1 &
+deploy_pid=$!
+
+for attempt in $(seq 1 150); do
+  [[ -f "$CASE_DIR/deploy-lock-ready" ]] && break
+  sleep 0.1
+done
+
+if [[ -f "$CASE_DIR/deploy-lock-ready" && -d "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  live_host="$(hostname -s 2>/dev/null || hostname)"
+  output="$(C2ME_HOST_ID="$live_host" run_rollback staging "$TARGET_ID")"
+  status=$?
+
+  if ((status != 0)); then
+    pass
+    assert_contains "$output" 'déjà en cours' 'déploiement actif bloque le rollback'
+  else
+    fail 'un déploiement actif doit bloquer le rollback.'
+  fi
+else
+  fail 'le déploiement simulé n a pas pris le verrou.'
+fi
+
+kill -TERM "$deploy_pid" 2>/dev/null
+wait "$deploy_pid" 2>/dev/null
+status=$?
+
+assert_status 143 "$status" 'déploiement interrompu : code 143'
+
+if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'le verrou du déploiement n a pas été libéré après le signal.'
+fi
+
+# Un échec du déploiement libère le verrou.
+setup_case 'deploiement-echec-libere' staging
+(
+  source "$project_root/.github/scripts/deploy/remote-deploy.sh"
+  shared="$CASE_ROOT/shared"
+  resolve_host_identity
+  install_traps
+  acquire_operation_lock
+  die 'échec simulé du déploiement'
+) >"$CASE_DIR/deploy-failure.out" 2>&1 || true
+
+if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'un déploiement en échec n a pas libéré le verrou.'
+fi
+
+# Deux rollbacks concurrents ne basculent jamais current simultanément.
+setup_case 'rollback-concurrent' staging
+curl_pid_file="$work_dir/concurrent-curl.pid"
+curl_stop_file="$work_dir/concurrent-curl.stop"
+rm -f "$curl_pid_file" "$curl_stop_file"
+
+FAKE_CURL_SLEEP=30 FAKE_CURL_PID="$curl_pid_file" FAKE_CURL_STOP="$curl_stop_file" \
+  bash "$ops_dir/rollback.sh" --env staging --to "$TARGET_ID" \
+  --reason 'premier rollback concurrent' --schema-attestation "$ATTESTATION" \
+  --confirm-workers-stopped --confirm-queues-paused --confirm-jobs-triaged \
+  >"$CASE_DIR/first-rollback.log" 2>&1 &
+first_pid=$!
+
+for attempt in $(seq 1 150); do
+  [[ -s "$curl_pid_file" ]] && break
+  sleep 0.1
+done
+
+if [[ -s "$curl_pid_file" ]]; then
+  second_attestation="$CASE_DIR/attestation-second.json"
+  write_attestation "$second_attestation" staging "$TARGET_ID" "$SOURCE_ID" 'chantier_staging' \
+    "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    '{"in_progress":false,"pending":false,"partial":false,"destructive_applied":false,"contract_applied":false,"compatible_with_target":true}'
+
+  second_output="$(run_rollback staging "$SOURCE_ID" --schema-attestation "$second_attestation")"
+  second_status=$?
+
+  if ((second_status != 0)); then
+    pass
+    assert_contains "$second_output" 'déjà en cours' 'second rollback concurrent refusé'
+  else
+    fail "un second rollback concurrent doit être refusé. Sortie : $second_output"
+  fi
+
+  kill -TERM "$first_pid" 2>/dev/null
+  wait "$first_pid" 2>/dev/null
+  first_status=$?
+
+  assert_status 143 "$first_status" 'premier rollback interrompu proprement'
+  assert_status "$TARGET_ID" "$(current_id)" 'une seule bascule de current malgré la concurrence'
+else
+  fail 'le premier rollback ne s est pas bloqué pour le test de concurrence.'
+  kill -KILL "$first_pid" 2>/dev/null || true
+  wait "$first_pid" 2>/dev/null || true
+fi
+
+# Mode dry-run : sortie exacte et aucun état modifié.
+setup_case 'dry-run' staging
+dry_link_before="$(readlink -f "$CASE_ROOT/current")"
+dry_output="$(run_rollback staging "$TARGET_ID" --dry-run)"
+dry_status=$?
+dry_expected="PLAN=ok
+MODE=dry-run
+ENVIRONMENT=staging
+SOURCE=$SOURCE_ID
+TARGET=$TARGET_ID
+CURRENT_BEFORE=$CASE_ROOT/releases/$SOURCE_ID
+VALIDATION=ok
+Aucune modification effectuée (--dry-run)."
+
+assert_status 0 "$dry_status" 'dry-run réussi'
+assert_status "$dry_expected" "$dry_output" 'sortie dry-run exacte'
+assert_status "$dry_link_before" "$(readlink -f "$CASE_ROOT/current")" 'dry-run : current inchangé'
+
+if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'dry-run a créé un verrou.'
+fi
+
+if [[ ! -e "$CASE_ROOT/shared/rollback.log" ]]; then
+  pass
+else
+  fail 'dry-run a créé ou modifié le journal.'
 fi
 
 setup_case 'refus-deploiement-en-cours' staging
@@ -642,7 +922,7 @@ if [[ -s "$curl_pid_file" ]]; then
     fail 'le processus enfant n a pas reçu le signal.'
   fi
 
-  if [[ ! -e "$CASE_ROOT/shared/.rollback.lock" ]]; then
+  if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
     pass
   else
     fail 'le verrou subsiste après interruption.'

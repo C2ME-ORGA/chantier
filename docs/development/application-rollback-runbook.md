@@ -20,6 +20,7 @@ Procédure opérateur du **rollback applicatif manuel** de C2ME Chantier.
 ```bash
 ENV=production
 ROOT=/www/wwwroot/chantier.c2me.fr          # staging : /www/wwwroot/chantier-staging.c2me.ovh
+DB_NAME=chantier_production                 # staging : chantier_staging
 PHP=/chemin/verifie/php8.4
 export C2ME_ROOT="$ROOT"
 export C2ME_HOST_ID="$(hostname -s)"        # obligatoire : stable, unique, non réservé
@@ -66,24 +67,44 @@ Le script doit être exécuté avec le compte technique de l'environnement (`c2m
 
 ## 3. Attestation de compatibilité N/N-1
 
-1. Exécuter la lecture de l'état des migrations depuis `current` :
+1. Exécuter la lecture de l'état des migrations depuis `current` et conserver la sortie exacte :
 
    ```bash
    cd "$ROOT/current"
-   "$PHP" artisan migrate:status --no-ansi | tee "/tmp/migrate-status-$ENV.txt"
-   sha256sum "/tmp/migrate-status-$ENV.txt"
+   "$PHP" artisan migrate:status --no-ansi > "/tmp/migrate-status-$ENV.raw"
    ```
 
    Cette commande est une **lecture**. Aucune migration n'est exécutée.
 
-2. Appliquer la grille de [`database-migrations.md`](database-migrations.md) :
+2. Construire la preuve conservée, avec son en-tête de périmètre :
+
+   ```bash
+   PROOF="/tmp/attestation-$ENV.json.migrate-status.txt"
+   RELEASE="$(basename "$(readlink -f "$ROOT/current")")"
+   {
+     printf 'C2ME-MIGRATE-STATUS-PROOF\n'
+     printf 'version: 1\n'
+     printf 'environment: %s\n' "$ENV"
+     printf 'release: %s\n' "$RELEASE"
+     printf 'database: %s\n' "$DB_NAME"
+     printf 'captured_at: %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+     printf -- '---\n'
+     cat "/tmp/migrate-status-$ENV.raw"
+   } > "$PROOF"
+   chmod 0600 "$PROOF"
+   sha256sum "$PROOF"
+   ```
+
+   Le nom de la preuve est **obligatoirement** `<attestation>.migrate-status.txt` : le validateur le déduit du chemin de l'attestation. Le SHA-256 affiché est celui du fichier complet, en-tête compris.
+
+3. Appliquer la grille de [`database-migrations.md`](database-migrations.md) :
    - aucune migration en cours, partielle ou non vérifiée ;
    - aucune migration en attente incompatible avec la cible ;
    - aucune migration destructive ni Contract appliqué depuis la cible ;
    - le code cible lit et écrit correctement sur le schéma courant ;
    - les jobs en file sont compatibles ou ont été traités.
 
-3. Rédiger l'attestation JSON, hors du dépôt, avec l'empreinte de la sortie conservée :
+4. Rédiger l'attestation JSON, hors du dépôt, avec l'empreinte de la preuve conservée :
 
    ```json
    {
@@ -94,7 +115,7 @@ Le script doit être exécuté avec le compte technique de l'environnement (`c2m
      "database": "chantier_production",
      "checked_at": "<UTC ISO 8601>",
      "checked_by": "<compte technique>",
-     "migrate_status_sha256": "<sha256 de la sortie migrate:status>",
+     "migrate_status_sha256": "<sha256 de la preuve complète>",
      "migrations": {
        "in_progress": false,
        "pending": false,
@@ -107,6 +128,8 @@ Le script doit être exécuté avec le compte technique de l'environnement (`c2m
    ```
 
    La validité par défaut est de 24 h. Une valeur à `true` interdit le rollback.
+
+   La preuve doit être conservée à côté de l'attestation sous le nom exact `<attestation>.migrate-status.txt` (par exemple `/tmp/attestation-production.json.migrate-status.txt`). Le validateur recalcule son SHA-256 ; une preuve absente, modifiée ou incohérente bloque le rollback.
 
 ## 4. Contrôle à blanc
 
@@ -123,13 +146,13 @@ bash scripts/ops/rollback.sh \
   --dry-run
 ```
 
-Le mode `--dry-run` valide la cible, les liens, l'attestation, les confirmations et la concurrence sans modifier `current`. Il écrit une entrée `planned` dans le journal.
+Le mode `--dry-run` valide la cible, les liens, l'attestation, les confirmations et la concurrence sans modifier `current`. Il n'écrit **ni journal, ni verrou, ni fichier temporaire**.
 
 ## 5. Exécution
 
 Retirer `--dry-run` et exécuter la même commande. Le script :
 
-1. prend le verrou `shared/.rollback.lock` ;
+1. prend le verrou partagé `shared/.release-operation.lock`, utilisé aussi par le déploiement ;
 2. revérifie l'absence de déploiement et l'état de `current` ;
 3. écrit l'entrée `started` ;
 4. bascule `current` de façon atomique ;
