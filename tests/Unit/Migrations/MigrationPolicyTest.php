@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Symfony\Component\Yaml\Yaml;
+
+require_once dirname(__DIR__, 3).'/scripts/ci/lib/workflow-migrations.php';
 
 /**
  * Politique de migrations CHAN-98, lot 1.
@@ -217,21 +220,20 @@ test('les migrations restent autonomes et ne lisent pas la configuration d envir
     expect($violations)->toBe([]);
 });
 
-test('aucun workflow ni script de deploiement n execute de migration', function (): void {
+test('aucun script de deploiement ou de packaging n execute de migration', function (): void {
     $root = dirname(__DIR__, 3);
 
     $directories = [
-        $root.'/.github/workflows',
         $root.'/.github/scripts/deploy',
         $root.'/.github/scripts/package',
         $root.'/.github/scripts/lib',
     ];
 
     $patterns = [
-        '/\bartisan\s+migrate\b/i' => 'commande artisan migrate',
-        '/\bmigrate\s+--force\b/i' => 'migration forcée',
-        '/\bmigrate:(?:fresh|refresh|reset|rollback)\b/i' => 'réinitialisation ou rollback de base',
+        '/\bartisan\s+(?:migrate(?::[a-z]+)?|db:wipe)\b/i' => 'commande de migration',
+        '/\bmigrate:(?:fresh|refresh|reset|rollback)\b/i' => 'commande de migration destructive',
         '/\bdb:wipe\b/i' => 'suppression de base',
+        '/\bmigrate\s+--force\b/i' => 'migration forcée',
     ];
 
     $violations = [];
@@ -239,6 +241,7 @@ test('aucun workflow ni script de deploiement n execute de migration', function 
     foreach ($directories as $directory) {
         foreach (chan98ProjectFiles($directory, ['yml', 'yaml', 'sh', 'php']) as $file) {
             $contents = (string) file_get_contents($file);
+            $contents = (string) preg_replace('/^\s*#.*$/m', '', $contents);
 
             foreach ($patterns as $pattern => $label) {
                 if (preg_match($pattern, $contents) === 1) {
@@ -249,4 +252,99 @@ test('aucun workflow ni script de deploiement n execute de migration', function 
     }
 
     expect($violations)->toBe([]);
+});
+
+test('les workflows ne contiennent que les migrations autorisees du job mariadb', function (): void {
+    $root = dirname(__DIR__, 3);
+    $violations = [];
+
+    foreach (glob($root.'/.github/workflows/*.yml') ?: [] as $file) {
+        $workflow = Yaml::parseFile($file);
+
+        if (! is_array($workflow)) {
+            $violations[] = basename($file).' : YAML invalide.';
+
+            continue;
+        }
+
+        $allowedJob = basename($file) === 'tests.yml' ? 'mariadb' : null;
+
+        foreach (c2me_workflow_migration_violations($workflow, $allowedJob) as $violation) {
+            $violations[] = basename($file).' / '.$violation['job'].' : '.$violation['line'];
+        }
+    }
+
+    expect($violations)->toBe([]);
+});
+
+/**
+ * @return array<string, mixed>
+ */
+function chan21MigrationWorkflow(string $job, string $command): array
+{
+    return [
+        'jobs' => [
+            $job => [
+                'steps' => [
+                    ['run' => $command],
+                ],
+            ],
+        ],
+    ];
+}
+
+test('refuse les migrations non autorisees dans les jobs', function (string $job, string $command, ?string $allowedJob): void {
+    $violations = c2me_workflow_migration_violations(
+        chan21MigrationWorkflow($job, $command),
+        $allowedJob
+    );
+
+    expect($violations)->toHaveCount(1)
+        ->and($violations[0]['job'])->toBe($job)
+        ->and($violations[0]['line'])->toBe($command);
+})->with([
+    'db:wipe dans ci' => ['ci', 'php artisan db:wipe', 'mariadb'],
+    'migrate:fresh dans package-linux' => ['package-linux', 'php artisan migrate:fresh --force', 'mariadb'],
+    'migrate:refresh dans mariadb' => ['mariadb', 'php artisan migrate:refresh', 'mariadb'],
+    'migrate:reset dans mariadb' => ['mariadb', 'php artisan migrate:reset', 'mariadb'],
+    'migrate:rollback dans mariadb' => ['mariadb', 'php artisan migrate:rollback', 'mariadb'],
+    'artisan migrate dans ci' => ['ci', 'php artisan migrate', 'mariadb'],
+    'commande autorisee suivie d une commande interdite' => [
+        'mariadb',
+        'php artisan migrate:fresh --force --no-interaction && php artisan migrate:reset',
+        'mariadb',
+    ],
+    'migration dans un autre workflow' => ['deploy', 'php artisan migrate --force', null],
+]);
+
+test('accepte uniquement les trois commandes autorisees dans le job mariadb', function (): void {
+    $workflow = [
+        'jobs' => [
+            'mariadb' => [
+                'steps' => [
+                    ['run' => 'php artisan migrate:fresh --force --no-interaction'],
+                    ['run' => 'php artisan migrate:status --no-ansi'],
+                    ['run' => 'php scripts/ci/verify-mariadb-migrations.php'],
+                ],
+            ],
+        ],
+    ];
+
+    expect(c2me_workflow_migration_violations($workflow, 'mariadb'))->toBe([]);
+});
+
+test('refuse les commandes autorisees hors du job mariadb', function (): void {
+    $workflow = [
+        'jobs' => [
+            'ci' => [
+                'steps' => [
+                    ['run' => 'php artisan migrate:fresh --force --no-interaction'],
+                    ['run' => 'php artisan migrate:status --no-ansi'],
+                    ['run' => 'php scripts/ci/verify-mariadb-migrations.php'],
+                ],
+            ],
+        ],
+    ];
+
+    expect(c2me_workflow_migration_violations($workflow, 'mariadb'))->toHaveCount(3);
 });
