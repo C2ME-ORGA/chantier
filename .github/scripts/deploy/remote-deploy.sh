@@ -33,6 +33,12 @@ readonly BOOTSTRAP_CACHE_MODE='2770'
 # le jeton unique de l'exécution : un nom de chemin prévisible ne suffit jamais.
 readonly OWNER_MARKER='.c2me-deploy-owner'
 
+# Verrou partagé avec le rollback applicatif (scripts/ops/rollback.sh). Il
+# protège la publication des releases et l'activation de `current` contre une
+# opération concurrente. Il est créé atomiquement par mkdir et n'est jamais
+# supprimé s'il appartient à une autre exécution.
+readonly OPERATION_LOCK_NAME='.release-operation.lock'
+
 environment=""
 release_id=""
 version=""
@@ -61,6 +67,12 @@ deployment_failure_status="failure"
 entries_file=""
 verbose_file=""
 run_token=""
+current_host=""
+operation_lock_dir=""
+operation_lock_token=""
+operation_lock_inode=""
+operation_lock_owned=0
+operation_guard_fd=""
 
 usage() {
   cat <<'USAGE'
@@ -329,6 +341,251 @@ verify_release_permissions() {
 
 # Jeton unique de l'exécution. Il est écrit dans chaque répertoire créé pour
 # prouver la propriété de création sans se fier au nom du chemin.
+# ---------------------------------------------------------------------------
+# Verrou partagé déploiement / rollback
+# ---------------------------------------------------------------------------
+
+resolve_host_identity() {
+  local host
+
+  host="$(hostname -s 2>/dev/null || hostname 2>/dev/null || true)"
+  host="$(printf '%s' "$host" | tr -cd 'A-Za-z0-9._-')"
+
+  case "${host,,}" in
+    '' | 'unknown' | 'localhost' | 'localhost.localdomain')
+      host=""
+      ;;
+  esac
+
+  [[ -n "$host" ]] \
+    || die "identité d'hôte non déterminable : définir un hostname stable, unique et non réservé."
+
+  current_host="$host"
+}
+
+# Garde de sérialisation des mutations du verrou (flock sur répertoire).
+# Le garde est un répertoire persistant ; son descripteur est vérifié avant et
+# après flock pour détecter un lien symbolique ou un remplacement.
+operation_lock_inode_of() {
+  stat -c '%d:%i' -- "$1" 2>/dev/null || return 1
+}
+
+operation_guard_validate_fd() {
+  local guard="$1"
+  local fd="$2"
+
+  [[ -n "$fd" && -e "/proc/self/fd/$fd" ]] || return 1
+  [[ -d "$guard" && ! -L "$guard" ]] || return 1
+
+  local fd_path path_real fd_inode path_inode
+  fd_path="$(readlink -f "/proc/self/fd/$fd" 2>/dev/null || true)"
+  path_real="$(readlink -f "$guard" 2>/dev/null || true)"
+
+  [[ -n "$fd_path" && -n "$path_real" && "$fd_path" == "$path_real" ]] || return 1
+
+  fd_inode="$(stat -Lc '%d:%i' "/proc/self/fd/$fd" 2>/dev/null || true)"
+  path_inode="$(stat -c '%d:%i' "$guard" 2>/dev/null || true)"
+
+  [[ -n "$fd_inode" && "$fd_inode" == "$path_inode" ]]
+}
+
+operation_guard_enter() {
+  local lock_dir="$1"
+  local guard="${lock_dir}.guard"
+  local timeout="${DEPLOY_LOCK_GUARD_TIMEOUT:-30}"
+
+  command -v flock >/dev/null 2>&1 \
+    || die "flock est requis pour le verrou partagé : opération refusée."
+
+  if [[ -L "$guard" ]]; then
+    die "garde de verrou symbolique interdit : $guard"
+  fi
+
+  if [[ ! -e "$guard" ]]; then
+    if ! mkdir -- "$guard" 2>/dev/null; then
+      die "création du garde de verrou impossible : $guard"
+    fi
+
+    chmod 0700 "$guard" 2>/dev/null \
+      || die "permissions du garde de verrou non appliquées : $guard"
+  fi
+
+  if [[ -L "$guard" || ! -d "$guard" ]]; then
+    die "garde de verrou non régulier (répertoire attendu) : $guard"
+  fi
+
+  if ! exec {operation_guard_fd}<"$guard"; then
+    operation_guard_fd=""
+    die "ouverture du garde de verrou impossible : $guard"
+  fi
+
+  if ! operation_guard_validate_fd "$guard" "$operation_guard_fd"; then
+    exec {operation_guard_fd}>&-
+    operation_guard_fd=""
+    die "garde de verrou remplacé ou incohérent à l ouverture : $guard"
+  fi
+
+  if ! flock -x -w "$timeout" "$operation_guard_fd"; then
+    exec {operation_guard_fd}>&-
+    operation_guard_fd=""
+    die "garde de verrou indisponible après ${timeout}s : déploiement refusé."
+  fi
+
+  if ! operation_guard_validate_fd "$guard" "$operation_guard_fd"; then
+    flock -u "$operation_guard_fd" 2>/dev/null || true
+    exec {operation_guard_fd}>&-
+    operation_guard_fd=""
+    die "garde de verrou remplacé après ouverture : déploiement refusé."
+  fi
+}
+
+operation_guard_exit() {
+  [[ -n "${operation_guard_fd:-}" ]] || return 0
+
+  flock -u "$operation_guard_fd" 2>/dev/null || true
+  exec {operation_guard_fd}>&-
+  operation_guard_fd=""
+}
+
+# Écrit les métadonnées obligatoires et vérifie leur relecture. Toute erreur
+# rend l'acquisition invalide.
+write_operation_metadata() {
+  local lock_dir="$1"
+  local token="$2"
+
+  printf '%s\n' "$$" >"$lock_dir/pid" || return 1
+  printf '%s\n' "$current_host" >"$lock_dir/host" || return 1
+  printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$lock_dir/started_at" || return 1
+  printf '%s\n' 'deploy' >"$lock_dir/operation" || return 1
+  printf '%s\n' "$token" >"$lock_dir/token" || return 1
+
+  chmod 0600 "$lock_dir/pid" "$lock_dir/host" "$lock_dir/started_at" "$lock_dir/operation" "$lock_dir/token" || return 1
+
+  [[ "$(cat "$lock_dir/token" 2>/dev/null || true)" == "$token" ]] || return 1
+  [[ "$(cat "$lock_dir/pid" 2>/dev/null || true)" == "$$" ]] || return 1
+  [[ "$(cat "$lock_dir/host" 2>/dev/null || true)" == "$current_host" ]] || return 1
+  [[ "$(cat "$lock_dir/operation" 2>/dev/null || true)" == 'deploy' ]] || return 1
+
+  return 0
+}
+
+remove_operation_lock_if_owned() {
+  local lock_dir="$1"
+  local token="$2"
+  local inode="$3"
+
+  [[ -L "$lock_dir" || ! -d "$lock_dir" ]] && return 0
+  [[ -n "$inode" && "$(operation_lock_inode_of "$lock_dir" || true)" == "$inode" ]] || return 0
+  [[ -n "$token" && "$(cat "$lock_dir/token" 2>/dev/null || true)" == "$token" ]] || return 0
+
+  rm -rf -- "$lock_dir" 2>/dev/null || true
+}
+
+# Acquiert le verrou partagé avant toute création ou activation de release.
+# Un verrou existant n'est jamais supprimé automatiquement : une interruption
+# brutale nécessite une intervention explicite (rollback.sh unlock).
+acquire_operation_lock() {
+  local lock_dir="$shared/$OPERATION_LOCK_NAME"
+
+  operation_guard_enter "$lock_dir"
+
+  if [[ -e "$lock_dir" || -L "$lock_dir" ]]; then
+    if [[ -L "$lock_dir" || ! -d "$lock_dir" ]]; then
+      die "verrou d'opération invalide (non répertoire ou symbolique) : $lock_dir"
+    fi
+
+    local lock_host lock_pid lock_operation lock_started
+    lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
+    lock_pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
+    lock_operation="$(cat "$lock_dir/operation" 2>/dev/null || true)"
+    lock_started="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
+
+    if [[ -z "$lock_host" || "${lock_host,,}" == 'unknown' || "${lock_host,,}" == 'localhost' || "${lock_host,,}" == 'localhost.localdomain' ]]; then
+      die "verrou sans hôte fiable (absent ou réservé) : opération refusée. Intervention manuelle requise."
+    fi
+
+    if [[ "$lock_host" != "$current_host" ]]; then
+      die "verrou détenu par l'hôte $lock_host, pas par $current_host : opération refusée."
+    fi
+
+    if [[ "$lock_pid" =~ ^[0-9]+$ ]] && kill -0 "$lock_pid" 2>/dev/null; then
+      die "opération concurrente en cours (${lock_operation:-inconnue}, pid $lock_pid, depuis ${lock_started:-date inconnue}) : déploiement refusé."
+    fi
+
+    die "verrou orphelin détecté (${lock_operation:-inconnue}, pid ${lock_pid:-inconnu}) : suppression automatique interdite. Vérifier l'absence de processus, puis exécuter 'scripts/ops/rollback.sh unlock --env ${environment:-<env>} --confirm-stale-lock' sur cet hôte."
+  fi
+
+  if ! mkdir -- "$lock_dir" 2>/dev/null; then
+    die "verrou d'opération déjà détenu (course concurrente) : déploiement refusé."
+  fi
+
+  local inode=""
+  inode="$(operation_lock_inode_of "$lock_dir" || true)"
+
+  local random=""
+  random="$(od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"
+  [[ -n "$random" ]] || random="$$-${RANDOM}-${RANDOM}-$(date -u '+%s')"
+  local token="deploy-$$-${random}"
+
+  if ! chmod 0700 "$lock_dir" 2>/dev/null; then
+    remove_operation_lock_if_owned "$lock_dir" "$token" "$inode"
+    operation_guard_exit
+    die "permissions du verrou non appliquées : $lock_dir"
+  fi
+
+  if ! write_operation_metadata "$lock_dir" "$token"; then
+    remove_operation_lock_if_owned "$lock_dir" "$token" "$inode"
+    operation_guard_exit
+    die "écriture des métadonnées du verrou impossible ou incohérente : $lock_dir"
+  fi
+
+  operation_lock_dir="$lock_dir"
+  operation_lock_token="$token"
+  operation_lock_inode="$inode"
+  operation_lock_owned=1
+
+  operation_guard_exit
+}
+
+# Ne libère que le verrou créé par cette exécution, sous garde, en vérifiant
+# jeton et inode. Un jeton différent interdit toute suppression.
+release_operation_lock() {
+  [[ "$operation_lock_owned" -eq 1 && -n "$operation_lock_dir" ]] || return 0
+
+  local lock_dir="$operation_lock_dir"
+
+  operation_guard_enter "$lock_dir"
+
+  if [[ -L "$lock_dir" || ! -d "$lock_dir" ]]; then
+    operation_lock_owned=0
+    operation_lock_dir=""
+    operation_lock_token=""
+    operation_lock_inode=""
+    operation_guard_exit
+
+    return 0
+  fi
+
+  local recorded=""
+  local inode=""
+  recorded="$(cat "$lock_dir/token" 2>/dev/null || true)"
+  inode="$(operation_lock_inode_of "$lock_dir" || true)"
+
+  if [[ -n "$recorded" && "$recorded" == "$operation_lock_token" \
+    && -n "$operation_lock_inode" && "$inode" == "$operation_lock_inode" ]]; then
+    rm -rf -- "$lock_dir" 2>/dev/null || true
+  else
+    printf 'AVERTISSEMENT: verrou non supprimé (jeton ou identité différents) : %s\n' "$lock_dir" >&2
+  fi
+
+  operation_lock_owned=0
+  operation_lock_dir=""
+  operation_lock_token=""
+  operation_lock_inode=""
+
+  operation_guard_exit
+}
+
 init_run_token() {
   [[ -n "$run_token" ]] && return 0
 
@@ -434,6 +691,7 @@ on_exit() {
   local status=$?
 
   cleanup_incomplete || true
+  release_operation_lock || true
   rm -f -- "${entries_file:-}" "${verbose_file:-}" 2>/dev/null || true
 
   if [[ "$status" -ne 0 ]]; then
@@ -786,6 +1044,9 @@ main() {
   [[ "$app_env" == "$environment" ]] || die "APP_ENV du .env ne correspond pas à l'environnement attendu"
 
   verify_shared_layout_permissions
+
+  resolve_host_identity
+  acquire_operation_lock
 
   release_dir="$root/releases/$release_id"
 

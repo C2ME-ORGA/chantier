@@ -17,6 +17,7 @@ Ce document décrit une automatisation **préparée mais non exécutée depuis c
 | Déploiements, artefacts et promotion | Ce document |
 | Migrations, compatibilité N/N-1 et rollback applicatif | [`database-migrations.md`](database-migrations.md) |
 | Sauvegarde, intégrité et restauration | [`backup-restore.md`](backup-restore.md) |
+| Rollback applicatif manuel | [`application-rollback.md`](application-rollback.md) |
 | Environnements, isolation et protections | [`environments.md`](environments.md) |
 | Branches, commits et Pull Requests | [`git-workflow.md`](git-workflow.md) |
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
@@ -35,7 +36,7 @@ Ce document décrit une automatisation **préparée mais non exécutée depuis c
 - Un artefact est **immuable** : un tag publié n'est jamais déplacé et l'artefact associé n'est jamais remplacé.
 - Les deux environnements sont strictement indépendants : comptes SSH, chemins, secrets, bases, stockage, journaux, workers et tâches planifiées distincts.
 - Le serveur reste l'autorité. Le workflow ne transmet jamais un chemin arbitraire : le chemin cible est déduit d'une table fixe dans le script serveur et comparé à la variable d'environnement.
-- Aucune migration n'est exécutée par un déploiement. Aucune stratégie de rollback n'est implémentée dans CHAN-97. La stratégie de migrations et les règles de compatibilité N/N-1 sont définies dans [`database-migrations.md`](database-migrations.md).
+- Aucune migration n'est exécutée par un déploiement. Le rollback applicatif est manuel et outillé depuis le lot 3 ([`application-rollback.md`](application-rollback.md)) ; il n'est jamais déclenché par un workflow, un déploiement ou un health check. La stratégie de migrations et les règles de compatibilité N/N-1 restent définies dans [`database-migrations.md`](database-migrations.md).
 - Aucune commande n'est exécutée avec une élévation de privilèges : les scripts serveur tournent avec les comptes techniques dédiés.
 
 ## Architecture serveur
@@ -498,16 +499,19 @@ Le script [`remote-deploy.sh`](../../.github/scripts/deploy/remote-deploy.sh) es
 4. vérification SHA-256 ;
 5. inspection des entrées : refus des liens symboliques, liens physiques, périphériques, chemins absolus, `../`, `.env` et `storage/` ;
 6. vérification de l'existence de `shared/.env`, `shared/storage` et du bon `APP_ENV` ;
-7. refus si la release existe déjà ;
-8. extraction dans un répertoire temporaire créé par `mktemp -d` sous `releases/.incoming-*`, avec vérification du type, de l'absence de lien et de l'appartenance à l'utilisateur courant, puis contrôle qu'aucune entrée ne sort de ce répertoire ;
-9. liaison de `.env` et `storage` vers `shared/`, et `public/storage` vers le stockage partagé ;
-10. application des permissions de la release (`2750`) et de `bootstrap/cache` (`2770`), puis contrôle de la racine, de `releases/`, de `shared/`, du stockage et de `.env` (`0600` ou `0640`, aucune écriture de groupe, aucun accès des autres) ;
-11. vérification explicite du binaire PHP 8.4 avant toute commande Artisan ;
-12. `config:cache`, `view:cache`, puis `route:cache` si activé ; un échec de cache interrompt le déploiement **avant** publication ;
-13. `queue:restart` si activé ;
-14. écriture du marqueur `release.json` ;
-15. publication atomique du répertoire de release, puis activation atomique de `current` ;
-16. journalisation dans `shared/deployment.log`.
+7. acquisition du verrou partagé `shared/.release-operation.lock`, commun avec le rollback, avant toute création ou activation de release ;
+8. refus si la release existe déjà ;
+9. extraction dans un répertoire temporaire créé par `mktemp -d` sous `releases/.incoming-*`, avec vérification du type, de l'absence de lien et de l'appartenance à l'utilisateur courant, puis contrôle qu'aucune entrée ne sort de ce répertoire ;
+10. liaison de `.env` et `storage` vers `shared/`, et `public/storage` vers le stockage partagé ;
+11. application des permissions de la release (`2750`) et de `bootstrap/cache` (`2770`), puis contrôle de la racine, de `releases/`, de `shared/`, du stockage et de `.env` (`0600` ou `0640`, aucune écriture de groupe, aucun accès des autres) ;
+12. vérification explicite du binaire PHP 8.4 avant toute commande Artisan ;
+13. `config:cache`, `view:cache`, puis `route:cache` si activé ; un échec de cache interrompt le déploiement **avant** publication ;
+14. `queue:restart` si activé ;
+15. écriture du marqueur `release.json` ;
+16. publication atomique du répertoire de release, puis activation atomique de `current` ;
+17. journalisation dans `shared/deployment.log` et libération du verrou partagé en fin d'opération.
+
+Le verrou partagé `shared/.release-operation.lock` est créé atomiquement (`mkdir`) et contient le PID, l'hôte, l'horodatage, l'opération (`deploy` ou `rollback`) et un jeton d'exécution. Il est acquis avant toute création de répertoire `.incoming-*` ou activation de `current`, conservé jusqu'à la fin, puis libéré sur succès, erreur ou signal. Les mutations du verrou sont sérialisées par un garde `flock` sur un répertoire persistant (`<verrou>.guard`) : ouverture, vérification du chemin, du type et de l'inode du descripteur, `flock`, puis vérification du jeton et de l'inode du verrou avant suppression. Un lien symbolique, un remplacement ou un inode différent interdit toute suppression. L'acquisition est fail-closed si les métadonnées ne peuvent pas être écrites ou relues. `flock` est obligatoire. Un verrou orphelin (arrêt brutal) bloque l'opération ; il se libère uniquement avec `scripts/ops/rollback.sh unlock --env <env> --confirm-stale-lock`, après contrôle de l'hôte et du PID.
 
 Le script installe des traps `EXIT`, `HUP`, `TERM` et `INT`. Le nettoyage ne supprime un répertoire que si l'exécution courante l'a créé (`incoming_created` ou `release_created`), et jamais s'il est actif. Une collision avec une release ou un répertoire temporaire préexistant provoque un arrêt sans suppression.
 
@@ -529,11 +533,11 @@ Le script [`remote-check.sh`](../../.github/scripts/deploy/remote-check.sh) rev�
 - Toute erreur avant l'activation (extraction, contrôle, permissions, caches Artisan) supprime uniquement le répertoire temporaire et la release créés par l'exécution courante.
 - Une release préexistante, une release active, `current` et `shared/` ne sont jamais supprimés, y compris lors d'un signal `HUP`, `TERM` ou `INT`.
 - `shared/.env` et `shared/storage` ne sont jamais supprimés ni déplacés.
-- Aucune stratégie de rollback n'est implémentée : le rollback relève de CHAN-98.
+- Le rollback applicatif est **manuel et outillé** depuis le lot 3 ([`application-rollback.md`](application-rollback.md)) : il bascule `current` vers une release antérieure après contrôles, attestation N/N-1 et confirmations. Il n'est jamais déclenché par un workflow, un déploiement ou un health check, et ne restaure jamais la base.
 
 ### Échec du contrôle HTTP après activation
 
-Si le health check échoue après l'activation de `current`, le déploiement est signalé en échec mais **aucun rollback automatique** n'est exécuté. La nouvelle release reste active, l'ancienne reste disponible dans `releases/`, et une décision manuelle est nécessaire. Ce comportement est volontaire pour ne pas masquer un incident et sera complété par la procédure de rollback de CHAN-98.
+Si le health check échoue après l'activation de `current`, le déploiement est signalé en échec mais **aucun rollback automatique** n'est exécuté. La nouvelle release reste active, l'ancienne reste disponible dans `releases/`, et une décision manuelle est nécessaire. Ce comportement est volontaire pour ne pas masquer un incident. Le retour manuel est outillé par [`application-rollback.md`](application-rollback.md) ; il exige une attestation de compatibilité N/N-1 et ne restaure jamais la base.
 
 ### Cache Laravel
 
@@ -657,7 +661,7 @@ En l'état, une release stable publiée peut donc être rejouée, y compris une 
 - La procédure de contrôle des permissions documentée n'a pas été exécutée sur le serveur.
 - Aucune migration de base de données n'est exécutée par un déploiement.
 - La stratégie de migrations et de compatibilité N/N-1 est documentée dans [`database-migrations.md`](database-migrations.md) (lot 1 de CHAN-98). Aucun script de migration ou de rollback n'est ajouté par ce lot.
-- Aucun rollback automatique n'est implémenté : une release précédente reste disponible dans `releases/`, mais son activation relève d'une décision et d'une procédure manuelle. Un rollback applicatif ne restaure jamais la base de données.
+- Aucun rollback automatique n'est implémenté : une release précédente reste disponible dans `releases/`, et son activation relève d'une décision et de la procédure manuelle outillée du lot 3 ([`application-rollback.md`](application-rollback.md)). Un rollback applicatif ne restaure jamais la base de données.
 - En cas d'échec avant activation, le répertoire incomplet est nettoyé sans toucher à la release active ni à `shared/`.
 - En cas d'échec du health check après activation, la nouvelle release reste active et le déploiement est signalé en échec ; aucune restauration automatique n'est effectuée.
 - Le mode maintenance n'est pas activé automatiquement.

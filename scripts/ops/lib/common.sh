@@ -47,6 +47,14 @@ c2me_env_group() {
   esac
 }
 
+c2me_env_url() {
+  case "$1" in
+    staging) printf '%s\n' 'https://chantier-staging.c2me.ovh' ;;
+    production) printf '%s\n' 'https://chantier.c2me.fr' ;;
+    *) return 1 ;;
+  esac
+}
+
 c2me_env_backup_root() {
   case "$1" in
     staging | production) printf '%s\n' "/var/backups/c2me/$1" ;;
@@ -124,6 +132,176 @@ c2me_register_cleanup() {
 }
 
 C2ME_CLEANUP_DONE=0
+C2ME_LOCK_TOKEN=""
+C2ME_LOCK_INODE=""
+C2ME_LOCK_OWNED=0
+C2ME_GUARD_FD=""
+
+# ---------------------------------------------------------------------------
+# Garde de sérialisation des mutations de verrou (Linux : flock sur répertoire)
+#
+# Le garde est un répertoire persistant `<verrou>.guard`. Il est créé par mkdir,
+# ouvert en lecture, puis son descripteur est vérifié (chemin résolu, type,
+# inode) avant et après flock. Une ouverture qui suivrait un lien symbolique ou
+# un remplacement est détectée et refusée. Le garde n'est jamais supprimé.
+# ---------------------------------------------------------------------------
+
+c2me_guard_validate_fd() {
+  local guard="$1"
+  local fd="$2"
+
+  [[ -n "$fd" && -e "/proc/self/fd/$fd" ]] || return 1
+  [[ -d "$guard" && ! -L "$guard" ]] || return 1
+
+  local fd_path path_real fd_inode path_inode
+  fd_path="$(readlink -f "/proc/self/fd/$fd" 2>/dev/null || true)"
+  path_real="$(readlink -f "$guard" 2>/dev/null || true)"
+
+  [[ -n "$fd_path" && -n "$path_real" && "$fd_path" == "$path_real" ]] || return 1
+
+  fd_inode="$(stat -Lc '%d:%i' "/proc/self/fd/$fd" 2>/dev/null || true)"
+  path_inode="$(stat -c '%d:%i' "$guard" 2>/dev/null || true)"
+
+  [[ -n "$fd_inode" && "$fd_inode" == "$path_inode" ]]
+}
+
+c2me_guard_enter() {
+  local lock_dir="$1"
+  local guard="${lock_dir}.guard"
+  local timeout="${C2ME_LOCK_GUARD_TIMEOUT:-30}"
+  local flock_bin="${C2ME_FLOCK_BIN:-$(command -v flock || true)}"
+
+  if [[ -z "$flock_bin" || ! -x "$flock_bin" ]]; then
+    if [[ "${C2ME_ALLOW_MISSING_FLOCK:-0}" -eq 1 ]]; then
+      if [[ "${C2ME_TEST_MODE:-0}" -ne 1 ]]; then
+        C2ME_GUARD_FD=""
+        c2me_die 'contournement de flock réservé aux tests explicites (C2ME_TEST_MODE=1) : opération refusée.'
+      fi
+
+      case "${C2ME_ENV:-}" in
+        production)
+          C2ME_GUARD_FD=""
+          c2me_die 'flock est requis en production : le contournement C2ME_ALLOW_MISSING_FLOCK est interdit.'
+          ;;
+        staging)
+          C2ME_GUARD_FD=""
+          c2me_warn 'mode de test explicite : flock absent, garde de verrou non appliqué.'
+
+          return 0
+          ;;
+        '')
+          C2ME_GUARD_FD=""
+          c2me_die 'flock absent et C2ME_ENV non déterminé : contournement de test refusé.'
+          ;;
+        *)
+          C2ME_GUARD_FD=""
+          c2me_die "flock absent et environnement non opérationnel inconnu (${C2ME_ENV}) : contournement refusé."
+          ;;
+      esac
+    fi
+
+    C2ME_GUARD_FD=""
+    c2me_die 'flock est requis pour sérialiser les mutations de verrou : opération refusée.'
+  fi
+
+  if [[ -L "$guard" ]]; then
+    c2me_die "fichier de garde symbolique interdit : $guard"
+  fi
+
+  if [[ ! -e "$guard" ]]; then
+    if ! mkdir -- "$guard" 2>/dev/null; then
+      c2me_die "création du garde de verrou impossible : $guard"
+    fi
+
+    c2me_chmod 0700 -- "$guard" || {
+      c2me_die "permissions du garde de verrou non appliquées : $guard"
+    }
+  fi
+
+  if [[ -L "$guard" || ! -d "$guard" ]]; then
+    c2me_die "fichier de garde non régulier (répertoire attendu) : $guard"
+  fi
+
+  if ! exec {C2ME_GUARD_FD}<"$guard"; then
+    C2ME_GUARD_FD=""
+    c2me_die "ouverture du garde de verrou impossible : $guard"
+  fi
+
+  if ! c2me_guard_validate_fd "$guard" "$C2ME_GUARD_FD"; then
+    exec {C2ME_GUARD_FD}>&-
+    C2ME_GUARD_FD=""
+    c2me_die "garde de verrou remplacé ou incohérent à l ouverture : $guard"
+  fi
+
+  if ! "$flock_bin" -x -w "$timeout" "$C2ME_GUARD_FD"; then
+    exec {C2ME_GUARD_FD}>&-
+    C2ME_GUARD_FD=""
+    c2me_die "garde de verrou indisponible après ${timeout}s : opération refusée."
+  fi
+
+  if ! c2me_guard_validate_fd "$guard" "$C2ME_GUARD_FD"; then
+    "$flock_bin" -u "$C2ME_GUARD_FD" 2>/dev/null || true
+    exec {C2ME_GUARD_FD}>&-
+    C2ME_GUARD_FD=""
+    c2me_die "garde de verrou remplacé après ouverture : opération refusée."
+  fi
+}
+
+c2me_guard_exit() {
+  [[ -n "${C2ME_GUARD_FD:-}" ]] || return 0
+
+  flock -u "$C2ME_GUARD_FD" 2>/dev/null || true
+  exec {C2ME_GUARD_FD}>&-
+  C2ME_GUARD_FD=""
+}
+
+c2me_lock_inode() {
+  local path="$1"
+
+  stat -c '%d:%i' -- "$path" 2>/dev/null || return 1
+}
+
+# Écrit les métadonnées obligatoires du verrou et vérifie leur relecture.
+# Toute erreur est fatale pour l'acquisition.
+c2me_lock_write_metadata() {
+  local lock_dir="$1"
+  local token="$2"
+  local pid="$3"
+  local host="$4"
+  local started_at="$5"
+
+  printf '%s\n' "$pid" >"$lock_dir/pid" || return 1
+  printf '%s\n' "$host" >"$lock_dir/host" || return 1
+  printf '%s\n' "$started_at" >"$lock_dir/started_at" || return 1
+  printf '%s\n' "$token" >"$lock_dir/token" || return 1
+
+  c2me_chmod 0600 -- "$lock_dir/token" || return 1
+  c2me_chmod 0640 -- "$lock_dir/pid" "$lock_dir/started_at" "$lock_dir/host" || return 1
+
+  [[ "$(cat "$lock_dir/token" 2>/dev/null || true)" == "$token" ]] || return 1
+  [[ "$(cat "$lock_dir/pid" 2>/dev/null || true)" == "$pid" ]] || return 1
+  [[ "$(cat "$lock_dir/host" 2>/dev/null || true)" == "$host" ]] || return 1
+  [[ "$(cat "$lock_dir/started_at" 2>/dev/null || true)" == "$started_at" ]] || return 1
+
+  return 0
+}
+
+# Supprime un verrou partiellement créé uniquement si son inode et son jeton
+# correspondent encore à ceux de l'exécution courante. Appelé sous garde.
+c2me_remove_lock_if_owned() {
+  local lock_dir="$1"
+  local token="$2"
+  local inode="$3"
+
+  [[ -L "$lock_dir" || ! -d "$lock_dir" ]] && return 0
+  [[ -n "$inode" && "$(c2me_lock_inode "$lock_dir" || true)" == "$inode" ]] || return 0
+
+  local recorded=""
+  recorded="$(cat "$lock_dir/token" 2>/dev/null || true)"
+  [[ -n "$token" && "$recorded" == "$token" ]] || return 0
+
+  rm -rf -- "$lock_dir" 2>/dev/null || true
+}
 
 c2me_cleanup() {
   if ((C2ME_CLEANUP_DONE == 1)); then
@@ -150,16 +328,7 @@ c2me_cleanup() {
   done
 
   if [[ -n "${C2ME_LOCK_DIR:-}" && -d "${C2ME_LOCK_DIR:-}" ]]; then
-    local attempt=0
-
-    while [[ -d "$C2ME_LOCK_DIR" && attempt -lt 20 ]]; do
-      rm -rf -- "$C2ME_LOCK_DIR" 2>/dev/null || true
-      attempt=$((attempt + 1))
-
-      if [[ -d "$C2ME_LOCK_DIR" ]]; then
-        sleep 0.25
-      fi
-    done
+    c2me_release_lock
   fi
 
   return 0
@@ -198,8 +367,26 @@ c2me_child_pids_of() {
     return 0
   fi
 
-  if command -v ps >/dev/null 2>&1; then
+  if command -v ps >/dev/null 2>&1 && ps -eo pid=,ppid= >/dev/null 2>&1; then
     ps -eo pid=,ppid= 2>/dev/null | awk -v parent="$parent" '$2 == parent {print $1}' || true
+
+    return 0
+  fi
+
+  # Repli sans ps ni pgrep : lecture directe de /proc sur Linux.
+  if [[ -d /proc ]]; then
+    local status_file pid ppid
+
+    for status_file in /proc/[0-9]*/status; do
+      [[ -r "$status_file" ]] || continue
+      pid="${status_file#/proc/}"
+      pid="${pid%/status}"
+      ppid="$(awk '/^PPid:/ {print $2; exit}' "$status_file" 2>/dev/null || true)"
+
+      if [[ "$ppid" == "$parent" ]]; then
+        printf '%s\n' "$pid"
+      fi
+    done
   fi
 }
 
@@ -347,19 +534,26 @@ c2me_lock_pid_alive() {
 
 c2me_acquire_lock() {
   local lock_dir="$1"
+  local unlock_hint="${C2ME_UNLOCK_HINT:-scripts/ops/backup.sh unlock --env <env> --confirm-stale-lock}"
 
   if [[ -z "$C2ME_HOST_ID" ]]; then
     c2me_die "identité d'hôte non déterminable : définir un hostname stable ou C2ME_HOST_ID. Prise de verrou refusée."
   fi
 
-  if [[ -d "$lock_dir" ]]; then
+  c2me_guard_enter "$lock_dir"
+
+  if [[ -e "$lock_dir" || -L "$lock_dir" ]]; then
+    if [[ -L "$lock_dir" || ! -d "$lock_dir" ]]; then
+      c2me_die "verrou invalide (non répertoire ou symbolique) : $lock_dir"
+    fi
+
     local pid started_at lock_host
     pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
     started_at="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
     lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
 
     if [[ -z "$lock_host" || "${lock_host,,}" == 'unknown' ]]; then
-      c2me_die "verrou sans hôte fiable (absent, vide ou unknown ; pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier manuellement l'absence de processus, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock' sur l'hôte concerné."
+      c2me_die "verrou sans hôte fiable (absent, vide ou unknown ; pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier manuellement l'absence de processus, puis exécuter '${unlock_hint}' sur l'hôte concerné."
     fi
 
     if [[ "$lock_host" != "$C2ME_HOST_ID" ]]; then
@@ -370,27 +564,109 @@ c2me_acquire_lock() {
       c2me_die "une autre opération est déjà en cours (pid $pid, depuis ${started_at:-date inconnue}, verrou : $lock_dir)."
     fi
 
-    c2me_die "verrou orphelin détecté (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}, hôte $lock_host) : suppression automatique interdite. Vérifier qu'aucun processus n'est actif, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock'."
+    c2me_die "verrou orphelin détecté (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}, hôte $lock_host) : suppression automatique interdite. Vérifier qu'aucun processus n'est actif, puis exécuter '${unlock_hint}'."
   fi
 
   if ! mkdir -- "$lock_dir" 2>/dev/null; then
     c2me_die "impossible de créer le verrou (course concurrente ?) : $lock_dir"
   fi
 
+  local created_inode=""
+  created_inode="$(c2me_lock_inode "$lock_dir" || true)"
+
+  local random=""
+  random="$(od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"
+  [[ -n "$random" ]] || random="$$-${RANDOM}-${RANDOM}-$(date -u '+%s')"
+  local token="lock-$$-${random}"
+
+  if ! c2me_chmod 0700 -- "$lock_dir"; then
+    c2me_remove_lock_if_owned "$lock_dir" "$token" "$created_inode"
+    c2me_guard_exit
+    c2me_die "permissions du verrou non appliquées : $lock_dir"
+  fi
+
+  if ! c2me_lock_write_metadata "$lock_dir" "$token" "$$" "$C2ME_HOST_ID" "$(c2me_iso_now)"; then
+    c2me_remove_lock_if_owned "$lock_dir" "$token" "$created_inode"
+    c2me_guard_exit
+    c2me_die "écriture des métadonnées du verrou impossible ou incohérente : $lock_dir"
+  fi
+
   C2ME_LOCK_DIR="$lock_dir"
-  c2me_chmod 0700 -- "$lock_dir"
-  printf '%s\n' "$$" >"$lock_dir/pid" 2>/dev/null || true
-  printf '%s\n' "$(c2me_iso_now)" >"$lock_dir/started_at" 2>/dev/null || true
-  printf '%s\n' "$C2ME_HOST_ID" >"$lock_dir/host" 2>/dev/null || true
-  C2ME_CLEANUP_PATHS+=("$lock_dir")
+  C2ME_LOCK_TOKEN="$token"
+  C2ME_LOCK_INODE="$created_inode"
+  C2ME_LOCK_OWNED=1
+
+  c2me_guard_exit
+}
+
+# Libère uniquement un verrou dont le jeton et l'inode correspondent à ceux
+# créés par ce processus. La vérification et la suppression se font sous le
+# garde flock : aucune opération coopérative ne peut remplacer le verrou entre
+# les deux.
+c2me_release_lock() {
+  local lock_dir="${C2ME_LOCK_DIR:-}"
+
+  [[ "$C2ME_LOCK_OWNED" -eq 1 && -n "$lock_dir" ]] || {
+    C2ME_LOCK_OWNED=0
+    C2ME_LOCK_TOKEN=""
+    C2ME_LOCK_INODE=""
+
+    return 0
+  }
+
+  c2me_guard_enter "$lock_dir"
+
+  if [[ -L "$lock_dir" || ! -d "$lock_dir" ]]; then
+    C2ME_LOCK_OWNED=0
+    C2ME_LOCK_TOKEN=""
+    C2ME_LOCK_INODE=""
+    C2ME_LOCK_DIR=""
+    c2me_guard_exit
+
+    return 0
+  fi
+
+  local recorded=""
+  local current_inode=""
+  recorded="$(cat "$lock_dir/token" 2>/dev/null || true)"
+  current_inode="$(c2me_lock_inode "$lock_dir" || true)"
+
+  if [[ -n "$recorded" && "$recorded" == "$C2ME_LOCK_TOKEN" \
+    && -n "$C2ME_LOCK_INODE" && "$current_inode" == "$C2ME_LOCK_INODE" ]]; then
+    local attempt=0
+
+    while [[ -d "$lock_dir" && attempt -lt 20 ]]; do
+      rm -rf -- "$lock_dir" 2>/dev/null || true
+      attempt=$((attempt + 1))
+
+      if [[ -d "$lock_dir" ]]; then
+        sleep 0.25
+      fi
+    done
+  else
+    printf 'AVERTISSEMENT: verrou non libéré (jeton ou identité différents) : %s\n' "$lock_dir" >&2
+  fi
+
+  C2ME_LOCK_OWNED=0
+  C2ME_LOCK_TOKEN=""
+  C2ME_LOCK_INODE=""
+  C2ME_LOCK_DIR=""
+  c2me_guard_exit
 }
 
 # Récupération explicite d'un verrou orphelin. Refuse si le PID est vivant.
+# Toutes les vérifications et la suppression sont sous le garde flock.
 c2me_release_stale_lock() {
   local lock_dir="$1"
 
   if [[ -z "$C2ME_HOST_ID" ]]; then
     c2me_die "identité d'hôte locale non déterminable : libération de verrou refusée."
+  fi
+
+  c2me_guard_enter "$lock_dir"
+
+  if [[ -L "$lock_dir" ]]; then
+    c2me_die "le verrou est un lien symbolique : libération refusée ($lock_dir)."
   fi
 
   if [[ ! -d "$lock_dir" ]]; then
@@ -402,8 +678,8 @@ c2me_release_stale_lock() {
   started_at="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
   lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
 
-  if [[ -z "$lock_host" || "${lock_host,,}" == 'unknown' ]]; then
-    c2me_die "verrou sans hôte fiable (absent, vide ou unknown) : libération refusée. Vérifier manuellement l'absence de processus sur l'hôte concerné."
+  if [[ -z "$lock_host" || "${lock_host,,}" == 'unknown' || "${lock_host,,}" == 'localhost' || "${lock_host,,}" == 'localhost.localdomain' ]]; then
+    c2me_die "verrou sans hôte fiable (absent, vide ou réservé) : libération refusée. Vérifier manuellement l'absence de processus sur l'hôte concerné."
   fi
 
   if [[ "$lock_host" != "$C2ME_HOST_ID" ]]; then
@@ -414,12 +690,34 @@ c2me_release_stale_lock() {
     c2me_die 'pid absent ou invalide dans le verrou : libération refusée, vérification manuelle requise.'
   fi
 
-  if c2me_lock_pid_alive "$pid"; then
-    c2me_die "le verrou est actif (pid $pid depuis ${started_at:-date inconnue}) : libération refusée."
+  if [[ -z "$started_at" ]]; then
+    c2me_die 'date de création absente dans le verrou : libération refusée.'
   fi
 
+  if [[ -e "$lock_dir/token" ]]; then
+    if [[ -L "$lock_dir/token" || ! -f "$lock_dir/token" || ! -r "$lock_dir/token" ]]; then
+      c2me_die 'jeton de verrou non régulier ou illisible : libération refusée.'
+    fi
+  fi
+
+  if c2me_lock_pid_alive "$pid"; then
+    c2me_die "le verrou est actif (pid $pid depuis $started_at) : libération refusée."
+  fi
+
+  local inode_before inode_after
+  inode_before="$(c2me_lock_inode "$lock_dir" || true)"
+  [[ -n "$inode_before" ]] || c2me_die 'identité du verrou illisible : libération refusée.'
+
+  # Revalidation immédiate de l'identité avant suppression : un remplacement
+  # externe non coopératif est détecté même sous garde.
+  inode_after="$(c2me_lock_inode "$lock_dir" || true)"
+  [[ "$inode_after" == "$inode_before" ]] \
+    || c2me_die 'le verrou a été remplacé pendant les contrôles : libération refusée.'
+
   rm -rf -- "$lock_dir"
-  c2me_info "verrou orphelin libéré explicitement (pid $pid, depuis ${started_at:-date inconnue}, hôte $lock_host)."
+  c2me_info "verrou orphelin libéré explicitement (pid $pid, depuis $started_at, hôte $lock_host)."
+
+  c2me_guard_exit
 }
 
 # Applique un mode. Sur les systèmes de test non POSIX (MSYS), chmod est sans
@@ -627,7 +925,7 @@ c2me_resolve_environment() {
       ;;
   esac
 
-  C2ME_PHP_BIN="${C2ME_PHP_BIN:-php}"
+  C2ME_PHP_BIN="${C2ME_PHP_BIN:-$(command -v php || true)}"
   C2ME_MYSQL_BIN="${C2ME_MYSQL_BIN:-$(command -v mariadb || command -v mysql || true)}"
   C2ME_DB_DUMP_BIN="${C2ME_DB_DUMP_BIN:-$(command -v mariadb-dump || command -v mysqldump || true)}"
   C2ME_AGE_BIN="${C2ME_AGE_BIN:-$(command -v age || true)}"

@@ -400,6 +400,8 @@ Un arrêt brutal (`SIGKILL`, arrêt du serveur, coupure) peut laisser `<BACKUP_R
 
 6. Ne jamais supprimer `.lock` par un `rm -rf` improvisé : le script refuse un verrou dont le PID est vivant et conserve la trace.
 
+> **Verrou partagé déploiement / rollback.** Cette procédure concerne le verrou de sauvegarde `<BACKUP_ROOT>/.lock`. Le verrou `shared/.release-operation.lock`, commun au déploiement et au rollback applicatif, se libère uniquement avec `bash scripts/ops/rollback.sh unlock --env "$ENV" --confirm-stale-lock`, après contrôle de l'hôte et du PID. Les commandes `backup.sh unlock` et `restore.sh unlock` ne ciblent pas ce verrou.
+
 ## 6. Checklist d'exécution
 
 ### Sauvegarde
