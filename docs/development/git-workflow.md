@@ -41,6 +41,7 @@ Les pushes directs sur `main` et `develop` sont interdits et bloqués par les ru
 | `feature/` | Nouvelle fonctionnalité. | `develop` | `develop` |
 | `bugfix/` | Correction non urgente. | `develop` | `develop` |
 | `hotfix/` | Correction urgente issue de la production. | `main` | `main` (PR), puis `develop` (PR de synchronisation) |
+| `docs/` | Modification de documentation sans changement fonctionnel. | `develop` | `develop` |
 
 Une branche temporaire ne doit servir qu'à un seul ticket Jira et à un seul sujet fonctionnel.
 
@@ -52,7 +53,7 @@ Format obligatoire :
 <type>/CHAN-<numéro>-<description>
 ```
 
-- `<type>` : `feature`, `bugfix` ou `hotfix`. Le préfixe est obligatoire et doit correspondre à la nature du travail.
+- `<type>` : `feature`, `bugfix`, `hotfix` ou `docs`. Le préfixe est obligatoire et doit correspondre à la nature du travail. `docs/` est réservé aux changements documentaires sans modification fonctionnelle.
 - `CHAN-<numéro>` : clé Jira obligatoire, avec un numéro sans zéros superflus.
 - `<description>` : description courte et explicite, en minuscules, en ASCII, avec des tirets pour séparer les mots.
 - La description ne doit contenir ni espace, ni underscore, ni accent, ni majuscule, ni tiret en début ou en fin.
@@ -74,6 +75,7 @@ Exemples invalides :
 | `feature/chantiers` | Clé Jira absente. |
 | `Feature/CHAN-93-branch-conventions` | Préfixe en majuscules. |
 | `fix/CHAN-93-correction` | Préfixe non autorisé. |
+| `docs/documentation` | Clé Jira absente. |
 | `feature/CHAN-93_Branch_Conventions` | Underscore et majuscules. |
 | `feature/CHAN-93-ajout des chantiers` | Espaces dans le nom. |
 | `feature/CHAN-93-échéances` | Accent dans le nom. |
@@ -194,6 +196,7 @@ BREAKING CHANGE: les clients doivent utiliser le champ `uuid` à la place de `id
 | Fonctionnalité | `feature/CHAN-123-description` | `develop` |
 | Correction non urgente | `bugfix/CHAN-123-description` | `develop` |
 | Correction urgente | `hotfix/CHAN-123-description` | `main`, puis synchronisation de `develop` |
+| Documentation | `docs/CHAN-123-description` | `develop` |
 | Livraison | `develop` | `main` |
 | Synchronisation après hotfix | `main` | `develop` |
 
@@ -234,7 +237,7 @@ Aucune approbation n'est exigée pour les changements attribués au développeur
 Le flux d'intégration est le suivant :
 
 ```text
-feature/* ou bugfix/*  ──PR──>  develop  ──PR──>  main
+feature/*, bugfix/* ou docs/*  ──PR──>  develop  ──PR──>  main
 hotfix/*               ──PR──>  main     ──PR──>  develop (synchronisation)
 ```
 
@@ -249,7 +252,7 @@ Ce flux décrit l'intégration du code. La sélection de version, les tags, les 
 Sont actuellement opérationnels :
 
 - les branches permanentes `main` et `develop` ;
-- les branches temporaires `feature/*`, `bugfix/*` et `hotfix/*` ;
+- les branches temporaires `feature/*`, `bugfix/*`, `hotfix/*` et `docs/*` ;
 - les Pull Requests obligatoires vers `main` et `develop` ;
 - le contrôle `ci` obligatoire ;
 - les rulesets `protect-main` et `protect-develop` ;
@@ -312,7 +315,7 @@ Ne pas modifier ces règles sans décision documentée. Toute évolution doit ê
 
 Avant d'ouvrir une Pull Request :
 
-- [ ] La branche respecte le format `<type>/CHAN-<numéro>-<description>`.
+- [ ] La branche respecte le format `<type>/CHAN-<numéro>-<description>` (`feature/`, `bugfix/`, `hotfix/` ou `docs/`).
 - [ ] La branche part de la bonne branche cible.
 - [ ] Les commits suivent `type(scope): description`.
 - [ ] Les tests et contrôles pertinents ont été exécutés.
