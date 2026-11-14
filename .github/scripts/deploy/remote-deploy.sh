@@ -70,7 +70,9 @@ run_token=""
 current_host=""
 operation_lock_dir=""
 operation_lock_token=""
+operation_lock_inode=""
 operation_lock_owned=0
+operation_guard_fd=""
 
 usage() {
   cat <<'USAGE'
@@ -361,11 +363,94 @@ resolve_host_identity() {
   current_host="$host"
 }
 
+# Garde de sérialisation des mutations du verrou (flock). Il empêche tout
+# autre déploiement ou rollback de remplacer le verrou entre la vérification
+# du jeton et la suppression.
+operation_lock_inode_of() {
+  stat -c '%d:%i' -- "$1" 2>/dev/null || return 1
+}
+
+operation_guard_enter() {
+  local lock_dir="$1"
+  local guard="${lock_dir}.guard"
+  local timeout="${DEPLOY_LOCK_GUARD_TIMEOUT:-30}"
+
+  [[ ! -L "$guard" ]] || die "fichier de garde symbolique interdit : $guard"
+
+  if [[ -e "$guard" && ! -f "$guard" ]]; then
+    die "fichier de garde non régulier : $guard"
+  fi
+
+  command -v flock >/dev/null 2>&1 \
+    || die "flock est requis pour le verrou partagé : opération refusée."
+
+  if ! exec {operation_guard_fd}>>"$guard"; then
+    operation_guard_fd=""
+    die "ouverture du garde de verrou impossible : $guard"
+  fi
+
+  if ! chmod 0600 "$guard" 2>/dev/null; then
+    exec {operation_guard_fd}>&-
+    operation_guard_fd=""
+    die "permissions du garde de verrou non appliquées : $guard"
+  fi
+
+  if ! flock -x -w "$timeout" "$operation_guard_fd"; then
+    exec {operation_guard_fd}>&-
+    operation_guard_fd=""
+    die "garde de verrou indisponible après ${timeout}s : déploiement refusé."
+  fi
+}
+
+operation_guard_exit() {
+  [[ -n "${operation_guard_fd:-}" ]] || return 0
+
+  flock -u "$operation_guard_fd" 2>/dev/null || true
+  exec {operation_guard_fd}>&-
+  operation_guard_fd=""
+}
+
+# Écrit les métadonnées obligatoires et vérifie leur relecture. Toute erreur
+# rend l'acquisition invalide.
+write_operation_metadata() {
+  local lock_dir="$1"
+  local token="$2"
+
+  printf '%s\n' "$$" >"$lock_dir/pid" || return 1
+  printf '%s\n' "$current_host" >"$lock_dir/host" || return 1
+  printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$lock_dir/started_at" || return 1
+  printf '%s\n' 'deploy' >"$lock_dir/operation" || return 1
+  printf '%s\n' "$token" >"$lock_dir/token" || return 1
+
+  chmod 0600 "$lock_dir/pid" "$lock_dir/host" "$lock_dir/started_at" "$lock_dir/operation" "$lock_dir/token" || return 1
+
+  [[ "$(cat "$lock_dir/token" 2>/dev/null || true)" == "$token" ]] || return 1
+  [[ "$(cat "$lock_dir/pid" 2>/dev/null || true)" == "$$" ]] || return 1
+  [[ "$(cat "$lock_dir/host" 2>/dev/null || true)" == "$current_host" ]] || return 1
+  [[ "$(cat "$lock_dir/operation" 2>/dev/null || true)" == 'deploy' ]] || return 1
+
+  return 0
+}
+
+remove_operation_lock_if_owned() {
+  local lock_dir="$1"
+  local token="$2"
+  local inode="$3"
+
+  [[ -L "$lock_dir" || ! -d "$lock_dir" ]] && return 0
+  [[ -n "$inode" && "$(operation_lock_inode_of "$lock_dir" || true)" == "$inode" ]] || return 0
+  [[ -n "$token" && "$(cat "$lock_dir/token" 2>/dev/null || true)" == "$token" ]] || return 0
+
+  rm -rf -- "$lock_dir" 2>/dev/null || true
+}
+
 # Acquiert le verrou partagé avant toute création ou activation de release.
 # Un verrou existant n'est jamais supprimé automatiquement : une interruption
 # brutale nécessite une intervention explicite (rollback.sh unlock).
 acquire_operation_lock() {
   local lock_dir="$shared/$OPERATION_LOCK_NAME"
+
+  operation_guard_enter "$lock_dir"
 
   if [[ -e "$lock_dir" || -L "$lock_dir" ]]; then
     if [[ -L "$lock_dir" || ! -d "$lock_dir" ]]; then
@@ -397,39 +482,71 @@ acquire_operation_lock() {
     die "verrou d'opération déjà détenu (course concurrente) : déploiement refusé."
   fi
 
-  operation_lock_dir="$lock_dir"
-  operation_lock_owned=1
+  local inode=""
+  inode="$(operation_lock_inode_of "$lock_dir" || true)"
 
   local random=""
   random="$(od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"
   [[ -n "$random" ]] || random="$$-${RANDOM}-${RANDOM}-$(date -u '+%s')"
-  operation_lock_token="deploy-$$-${random}"
+  local token="deploy-$$-${random}"
 
-  chmod 0700 "$lock_dir" 2>/dev/null || true
-  printf '%s\n' "$$" >"$lock_dir/pid" 2>/dev/null || true
-  printf '%s\n' "$current_host" >"$lock_dir/host" 2>/dev/null || true
-  printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$lock_dir/started_at" 2>/dev/null || true
-  printf '%s\n' 'deploy' >"$lock_dir/operation" 2>/dev/null || true
-  printf '%s\n' "$operation_lock_token" >"$lock_dir/token" 2>/dev/null || true
-  chmod 0600 "$lock_dir/pid" "$lock_dir/host" "$lock_dir/started_at" "$lock_dir/operation" "$lock_dir/token" 2>/dev/null || true
+  if ! chmod 0700 "$lock_dir" 2>/dev/null; then
+    remove_operation_lock_if_owned "$lock_dir" "$token" "$inode"
+    operation_guard_exit
+    die "permissions du verrou non appliquées : $lock_dir"
+  fi
+
+  if ! write_operation_metadata "$lock_dir" "$token"; then
+    remove_operation_lock_if_owned "$lock_dir" "$token" "$inode"
+    operation_guard_exit
+    die "écriture des métadonnées du verrou impossible ou incohérente : $lock_dir"
+  fi
+
+  operation_lock_dir="$lock_dir"
+  operation_lock_token="$token"
+  operation_lock_inode="$inode"
+  operation_lock_owned=1
+
+  operation_guard_exit
 }
 
-# Ne libère que le verrou créé par cette exécution : un jeton différent prouve
-# qu'il appartient à un autre processus et interdit toute suppression.
+# Ne libère que le verrou créé par cette exécution, sous garde, en vérifiant
+# jeton et inode. Un jeton différent interdit toute suppression.
 release_operation_lock() {
   [[ "$operation_lock_owned" -eq 1 && -n "$operation_lock_dir" ]] || return 0
 
-  local recorded=""
-  recorded="$(cat "$operation_lock_dir/token" 2>/dev/null || true)"
+  local lock_dir="$operation_lock_dir"
 
-  if [[ -n "$recorded" && "$recorded" == "$operation_lock_token" ]]; then
-    rm -rf -- "$operation_lock_dir" 2>/dev/null || true
+  operation_guard_enter "$lock_dir"
+
+  if [[ -L "$lock_dir" || ! -d "$lock_dir" ]]; then
+    operation_lock_owned=0
+    operation_lock_dir=""
+    operation_lock_token=""
+    operation_lock_inode=""
+    operation_guard_exit
+
+    return 0
+  fi
+
+  local recorded=""
+  local inode=""
+  recorded="$(cat "$lock_dir/token" 2>/dev/null || true)"
+  inode="$(operation_lock_inode_of "$lock_dir" || true)"
+
+  if [[ -n "$recorded" && "$recorded" == "$operation_lock_token" \
+    && -n "$operation_lock_inode" && "$inode" == "$operation_lock_inode" ]]; then
+    rm -rf -- "$lock_dir" 2>/dev/null || true
   else
-    printf 'AVERTISSEMENT: verrou non supprimé (jeton différent) : %s\n' "$operation_lock_dir" >&2
+    printf 'AVERTISSEMENT: verrou non supprimé (jeton ou identité différents) : %s\n' "$lock_dir" >&2
   fi
 
   operation_lock_owned=0
   operation_lock_dir=""
+  operation_lock_token=""
+  operation_lock_inode=""
+
+  operation_guard_exit
 }
 
 init_run_token() {

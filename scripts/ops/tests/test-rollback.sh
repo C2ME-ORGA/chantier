@@ -1008,6 +1008,154 @@ fi
 
 rm -rf "$CASE_ROOT/shared/.release-operation.lock"
 
+# Verrou remplacé par un autre répertoire : inode différent, aucune suppression.
+setup_case 'verrou-remplace-repertoire' staging
+lock_dir="$CASE_ROOT/shared/.release-operation.lock"
+if start_blocked_rollback 'replace-dir'; then
+  mv "$lock_dir" "$lock_dir.original"
+  mkdir "$lock_dir"
+  printf '%s\n' "$$" >"$lock_dir/pid"
+  printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$lock_dir/started_at"
+  printf '%s\n' "$(hostname -s 2>/dev/null || hostname)" >"$lock_dir/host"
+  printf 'rollback\n' >"$lock_dir/operation"
+  printf 'jeton-nouveau-verrou\n' >"$lock_dir/token"
+
+  stop_blocked_rollback
+  token_status=$?
+  assert_status 143 "$token_status" 'verrou remplacé : interruption propre'
+
+  if [[ -d "$lock_dir" && "$(cat "$lock_dir/token" 2>/dev/null || true)" == 'jeton-nouveau-verrou' ]]; then
+    pass
+  else
+    fail 'le verrou de remplacement a été supprimé ou modifié.'
+  fi
+
+  rm -rf "$lock_dir" "$lock_dir.original"
+else
+  fail 'le rollback bloqué n a pas démarré pour le remplacement de répertoire.'
+  kill -KILL "$BLOCKED_PID" 2>/dev/null || true
+  wait "$BLOCKED_PID" 2>/dev/null || true
+fi
+
+# Verrou remplacé par un lien symbolique : aucune suppression.
+setup_case 'verrou-symbolique' staging
+lock_dir="$CASE_ROOT/shared/.release-operation.lock"
+if start_blocked_rollback 'replace-symlink'; then
+  mv "$lock_dir" "$lock_dir.original"
+  mkdir "$CASE_ROOT/shared/autre-cible"
+  ln -s "$CASE_ROOT/shared/autre-cible" "$lock_dir"
+
+  stop_blocked_rollback
+  token_status=$?
+  assert_status 143 "$token_status" 'verrou symbolique : interruption propre'
+
+  if [[ -L "$lock_dir" ]]; then
+    pass
+  else
+    fail 'le lien symbolique du verrou a été supprimé ou remplacé.'
+  fi
+
+  rm -rf "$lock_dir" "$lock_dir.original" "$CASE_ROOT/shared/autre-cible"
+else
+  fail 'le rollback bloqué n a pas démarré pour le verrou symbolique.'
+  kill -KILL "$BLOCKED_PID" 2>/dev/null || true
+  wait "$BLOCKED_PID" 2>/dev/null || true
+fi
+
+# Garde flock : une opération concurrente ne peut pas entrer dans la section
+# critique tant que le garde est détenu.
+if command -v flock >/dev/null 2>&1; then
+  setup_case 'garde-verrou' staging
+  guard="$CASE_ROOT/shared/.release-operation.lock.guard"
+  : >"$guard"
+  flock -x "$guard" -c 'sleep 3' &
+  guard_holder=$!
+  sleep 0.3
+
+  output="$(C2ME_LOCK_GUARD_TIMEOUT=1 run_rollback staging "$TARGET_ID")"
+  status=$?
+
+  if ((status != 0)); then
+    pass
+    assert_contains "$output" 'garde de verrou indisponible' 'garde flock bloque l acquisition'
+  else
+    fail 'un garde détenu doit empêcher le rollback.'
+  fi
+
+  assert_status "$SOURCE_ID" "$(current_id)" 'garde détenu : current inchangé'
+  wait "$guard_holder" 2>/dev/null || true
+else
+  skip 'flock indisponible : test du garde non exécuté.'
+fi
+
+# Écriture de métadonnées en échec : la fonction réelle doit échouer et ne
+# jamais masquer l'erreur.
+setup_case 'ecriture-metadonnees' staging
+metadata_dir="$CASE_DIR/metadata-lock"
+mkdir "$metadata_dir"
+mkdir "$metadata_dir/token"
+if (
+  source "$ops_dir/lib/common.sh"
+  c2me_lock_write_metadata "$metadata_dir" 'jeton-test' '123' 'test-host' '2026-11-14T00:00:00Z'
+) 2>/dev/null; then
+  fail 'l écriture de métadonnées doit échouer si le jeton est un répertoire.'
+else
+  pass
+fi
+
+# Garde non régulier : acquisition refusée avant toute écriture.
+setup_case 'garde-non-regulier' staging
+mkdir "$CASE_ROOT/shared/.release-operation.lock.guard"
+output="$(run_rollback staging "$TARGET_ID")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'garde non régulier' 'garde non régulier refusé'
+else
+  fail 'un garde non régulier doit empêcher le rollback.'
+fi
+
+if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'un verrou a été créé malgré un garde invalide.'
+fi
+
+rm -rf "$CASE_ROOT/shared/.release-operation.lock.guard"
+
+# Interruption pendant l'attente du garde à l'acquisition : aucun verrou ne
+# doit rester.
+setup_case 'interruption-acquisition' staging
+guard="$CASE_ROOT/shared/.release-operation.lock.guard"
+: >"$guard"
+flock -x "$guard" -c 'sleep 5' &
+guard_holder=$!
+sleep 0.3
+
+C2ME_LOCK_GUARD_TIMEOUT=10 bash "$ops_dir/rollback.sh" --env staging --to "$TARGET_ID" \
+  --reason 'interruption acquisition' --schema-attestation "$ATTESTATION" \
+  --confirm-workers-stopped --confirm-queues-paused --confirm-jobs-triaged \
+  >"$CASE_DIR/interruption-acquisition.log" 2>&1 &
+acquisition_pid=$!
+sleep 0.5
+
+kill -TERM "$acquisition_pid" 2>/dev/null
+wait "$acquisition_pid" 2>/dev/null
+status=$?
+
+assert_status 143 "$status" 'interruption pendant acquisition : code 143'
+
+if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'un verrou subsiste après interruption pendant l acquisition.'
+fi
+
+assert_status "$SOURCE_ID" "$(current_id)" 'interruption acquisition : current inchangé'
+kill -TERM "$guard_holder" 2>/dev/null
+wait "$guard_holder" 2>/dev/null || true
+
 # Mode dry-run : sortie exacte et aucun état modifié.
 setup_case 'dry-run' staging
 dry_link_before="$(readlink -f "$CASE_ROOT/current")"

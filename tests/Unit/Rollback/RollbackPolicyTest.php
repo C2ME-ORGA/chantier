@@ -124,17 +124,34 @@ test('le verrou est partagé avec le déploiement', function () use ($root, $ops
         ->toContain('shared/.release-operation.lock');
 });
 
-test('la libération du verrou vérifie le jeton d appartenance', function () use ($ops): void {
+test('la libération du verrou vérifie le jeton d appartenance', function () use ($root, $ops): void {
     $common = (string) file_get_contents($ops.'/lib/common.sh');
     $rollback = (string) file_get_contents($ops.'/rollback.sh');
+    $deploy = (string) file_get_contents($root.'/.github/scripts/deploy/remote-deploy.sh');
 
     expect($common)
         ->toContain('C2ME_LOCK_TOKEN')
+        ->toContain('C2ME_LOCK_INODE')
         ->toContain('C2ME_LOCK_OWNED')
         ->toContain('c2me_release_lock')
-        ->toContain('jeton absent ou différent')
-        ->toContain('lock_dir/token')
-        ->not->toContain('C2ME_CLEANUP_PATHS+=("$lock_dir")');
+        ->toContain('jeton ou identité différents')
+        ->toContain('c2me_guard_enter')
+        ->toContain('flock -x')
+        ->toContain('C2ME_REQUIRE_FLOCK')
+        ->toContain('c2me_lock_write_metadata')
+        ->toContain('c2me_remove_lock_if_owned')
+        ->toContain('lien symbolique : libération refusée')
+        ->not->toContain('C2ME_CLEANUP_PATHS+=("$lock_dir")')
+        ->not->toContain('>"$lock_dir/token" 2>/dev/null || true');
+
+    expect($deploy)
+        ->toContain('operation_guard_enter')
+        ->toContain('operation_lock_inode')
+        ->toContain('write_operation_metadata')
+        ->toContain('remove_operation_lock_if_owned')
+        ->toContain('flock -x')
+        ->toContain('jeton ou identité différents')
+        ->not->toContain('>"$lock_dir/token" 2>/dev/null || true');
 
     expect($rollback)
         ->toContain('unlock')

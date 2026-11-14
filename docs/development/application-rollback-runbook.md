@@ -29,6 +29,8 @@ export C2ME_PHP_BIN="$PHP"
 
 Le script doit être exécuté avec le compte technique de l'environnement (`c2me-deploy-production` ou `c2me-deploy-staging`), depuis une copie de travail maîtrisée des scripts, sans `sudo`.
 
+`flock` (util-linux) doit être disponible : il sérialise les mutations du verrou partagé et son absence bloque le rollback.
+
 ## 2. Préflight
 
 1. Identifier l'incident et la release cible :
