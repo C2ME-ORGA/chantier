@@ -117,7 +117,7 @@ Le projet utilise deux branches permanentes et des branches temporaires rattach�
 - `develop` : branche d'intégration ;
 - `feature/CHAN-123-description` : nouvelles fonctionnalités, créées depuis `develop` ;
 - `bugfix/CHAN-123-description` : corrections non urgentes, créées depuis `develop` ;
-- `hotfix/CHAN-123-description` : correctifs urgents, créés depuis `main`.
+- `hotfix/CHAN-123-description` : correctifs urgents, créés depuis `main` ;\n- `docs/CHAN-123-description` : modifications documentaires sans changement fonctionnel, créées depuis `develop`.
 
 Les commits suivent les [Conventional Commits](https://www.conventionalcommits.org/) (`feat`, `fix`, `docs`, etc.). Les Pull Requests sont obligatoires vers `main` et `develop`, et le contrôle GitHub Actions `ci` doit être vert avant toute fusion.
 
@@ -125,7 +125,7 @@ Les protections `protect-main` et `protect-develop` sont documentées comme acti
 
 ## Environnements et opérations
 
-Les procédures relatives aux environnements, releases, déploiements, migrations, sauvegardes/restaurations et rollback sont documentées dans `docs/development/`. Leur documentation ne constitue pas, à elle seule, la preuve qu'une opération réelle a été exécutée.
+Les procédures relatives aux environnements, releases, déploiements, migrations, sauvegardes/restaurations et rollback sont documentées dans `docs/development/` : [sauvegarde et restauration](docs/development/backup-restore.md), [runbook sauvegarde/restauration](docs/development/backup-restore-runbook.md), [rollback applicatif](docs/development/application-rollback.md) et [runbook rollback](docs/development/application-rollback-runbook.md). Leur documentation ne constitue pas, à elle seule, la preuve qu'une opération réelle a été exécutée.
 
 Aucune sauvegarde/restauration réelle ni copie hors site ne doit être considérée comme validée sans preuve d'exécution et de contrôle.
 
