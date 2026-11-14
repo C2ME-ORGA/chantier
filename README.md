@@ -76,7 +76,7 @@ php artisan config:clear
 php artisan migrate
 ```
 
-La validation spécifique MariaDB (migrations, contraintes, types, transactions et tests automatisés sur le moteur réel) reste à réaliser au lot 2 de CHAN-21. Le lot 1 prépare uniquement l'environnement CI MariaDB 10.11 décrit ci-dessous ; la configuration SQLite des tests ne prouve pas la compatibilité MariaDB.
+Les lots 1 et 2 de CHAN-21 sont intégrés : la CI GitHub Actions démarre un service MariaDB 10.11 éphémère, exécute les migrations sur la base isolée `chantier_test`, vérifie que le schéma est à jour, puis lance la suite `tests/MariaDb` (connexion, schéma, contraintes, CRUD et routes applicatives). SQLite reste le moteur des tests rapides ; la suite MariaDB valide le comportement réel du moteur. Les commandes locales sont décrites dans la section « Intégration continue » ci-dessous.
 
 ### Assets front-end
 
