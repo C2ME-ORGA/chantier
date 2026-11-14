@@ -79,6 +79,46 @@ function workflow_paths(string $directory): array
     return $paths;
 }
 
+/**
+ * Retourne les scripts `run` déclarés directement dans les étapes d'un job.
+ *
+ * @param  array<string, mixed>  $job
+ * @return list<string>
+ */
+function job_run_scripts(array $job): array
+{
+    $steps = is_array($job['steps'] ?? null) ? $job['steps'] : [];
+    $scripts = [];
+
+    foreach ($steps as $step) {
+        if (is_array($step) && is_string($step['run'] ?? null)) {
+            $scripts[] = $step['run'];
+        }
+    }
+
+    return $scripts;
+}
+
+/**
+ * Vérifie qu'une commande est exécutée sur une ligne exacte d'un script `run`.
+ *
+ * Une ligne commentée ou une simple mention dans un autre texte ne compte pas.
+ *
+ * @param  list<string>  $scripts
+ */
+function runs_exact_command(array $scripts, string $command): bool
+{
+    foreach ($scripts as $script) {
+        foreach (preg_split('/\R/', $script) ?: [] as $line) {
+            if (trim($line) === $command) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 $workflowDirectory = $projectRoot.'/.github/workflows';
 $workflowPaths = workflow_paths($workflowDirectory);
 
@@ -195,11 +235,85 @@ $tests = $documents['tests.yml'] ?? [];
 
 if ($tests !== []) {
     $rawTests = (string) file_get_contents($workflowDirectory.'/tests.yml');
+    $jobs = is_array($tests['jobs'] ?? null) ? $tests['jobs'] : [];
 
     check(str_contains($rawTests, 'test-deployment-automation.sh'), 'tests.yml doit exécuter les tests de déploiement.');
     check(str_contains($rawTests, 'validate-workflows.php'), 'tests.yml doit valider les workflows.');
     check(str_contains($rawTests, 'test-assemble-linux.sh'), 'tests.yml doit exécuter le test d\'assemblage Linux.');
-    check(isset(($tests['jobs'] ?? [])['package-linux']), 'tests.yml doit définir le job package-linux.');
+    check(isset($jobs['package-linux']), 'tests.yml doit définir le job package-linux.');
+
+    $ciJob = is_array($jobs['ci'] ?? null) ? $jobs['ci'] : [];
+    $ciScripts = job_run_scripts($ciJob);
+
+    check($ciJob !== [], 'tests.yml doit définir le job ci.');
+    check(runs_exact_command($ciScripts, 'composer ci:check'), 'Le job ci doit exécuter composer ci:check dans une étape run.');
+    check(runs_exact_command($ciScripts, 'touch database/database.sqlite'), 'Le job ci doit préparer database/database.sqlite dans une étape run.');
+
+    $mariadbJob = is_array($jobs['mariadb'] ?? null) ? $jobs['mariadb'] : [];
+    $mariadbService = is_array($mariadbJob['services']['mariadb'] ?? null) ? $mariadbJob['services']['mariadb'] : [];
+    $serviceEnv = is_array($mariadbService['env'] ?? null) ? $mariadbService['env'] : [];
+    $jobEnv = is_array($mariadbJob['env'] ?? null) ? $mariadbJob['env'] : [];
+
+    check($mariadbJob !== [], 'tests.yml doit définir un job mariadb séparé du job SQLite.');
+    check(($mariadbService['image'] ?? null) === 'mariadb:10.11', 'Le job mariadb doit utiliser l\'image mariadb:10.11.');
+
+    $ports = [];
+
+    if (is_array($mariadbService['ports'] ?? null)) {
+        foreach ($mariadbService['ports'] as $port) {
+            if (is_string($port) || is_int($port)) {
+                $ports[] = (string) $port;
+            }
+        }
+    }
+
+    check(in_array('127.0.0.1:3306:3306', $ports, true), 'Le service mariadb doit exposer le port 3306 sur la boucle locale uniquement.');
+
+    $healthcheck = (string) ($mariadbService['options'] ?? '');
+    check(str_contains($healthcheck, '--health-cmd='), 'Le service mariadb doit définir un healthcheck.');
+    check(str_contains($healthcheck, 'healthcheck.sh --connect --innodb_initialized'), 'Le healthcheck mariadb doit attendre la disponibilité effective du serveur.');
+    check(str_contains($healthcheck, '--health-retries='), 'Le healthcheck mariadb doit définir un nombre de tentatives.');
+
+    check(($serviceEnv['MARIADB_DATABASE'] ?? null) === 'chantier_test', 'Le service mariadb doit créer la base chantier_test.');
+    check(($serviceEnv['MARIADB_USER'] ?? null) === 'chantier_test', 'Le service mariadb doit créer l\'utilisateur chantier_test.');
+
+    $applicationPassword = (string) ($serviceEnv['MARIADB_PASSWORD'] ?? '');
+    $rootPassword = (string) ($serviceEnv['MARIADB_ROOT_PASSWORD'] ?? '');
+
+    check($applicationPassword !== '', 'Le service mariadb doit définir un mot de passe applicatif dédié à la CI.');
+    check($rootPassword !== '', 'Le service mariadb doit définir un mot de passe root dédié à la CI.');
+    check($applicationPassword !== $rootPassword, 'Les mots de passe applicatif et root du service mariadb doivent être distincts.');
+
+    check(($jobEnv['DB_CONNECTION'] ?? null) === 'mariadb', 'Le job mariadb doit définir DB_CONNECTION=mariadb.');
+    check(($jobEnv['DB_HOST'] ?? null) === '127.0.0.1', 'Le job mariadb doit définir DB_HOST=127.0.0.1.');
+    check((string) ($jobEnv['DB_PORT'] ?? '') === '3306', 'Le job mariadb doit définir DB_PORT=3306.');
+    check(($jobEnv['DB_DATABASE'] ?? null) === ($serviceEnv['MARIADB_DATABASE'] ?? null), 'La base du job mariadb doit correspondre à celle du service.');
+    check(($jobEnv['DB_USERNAME'] ?? null) === ($serviceEnv['MARIADB_USER'] ?? null), 'L\'utilisateur du job mariadb doit correspondre à celui du service.');
+    check(($jobEnv['DB_PASSWORD'] ?? null) === ($serviceEnv['MARIADB_PASSWORD'] ?? null), 'Le mot de passe du job mariadb doit correspondre à celui du service.');
+
+    $mariadbSteps = is_array($mariadbJob['steps'] ?? null) ? $mariadbJob['steps'] : [];
+    $phpStep = [];
+
+    foreach ($mariadbSteps as $step) {
+        if (is_array($step) && str_starts_with((string) ($step['uses'] ?? ''), 'shivammathur/setup-php@')) {
+            $phpStep = $step;
+
+            break;
+        }
+    }
+
+    $phpWith = is_array($phpStep['with'] ?? null) ? $phpStep['with'] : [];
+    $extensions = is_string($phpWith['extensions'] ?? null)
+        ? (preg_split('/[\s,]+/', trim($phpWith['extensions']), -1, PREG_SPLIT_NO_EMPTY) ?: [])
+        : [];
+
+    check((string) ($phpWith['php-version'] ?? '') === '8.4', 'Le job mariadb doit utiliser PHP 8.4.');
+    check(in_array('pdo_mysql', $extensions, true), 'Le job mariadb doit installer l\'extension pdo_mysql.');
+
+    check(
+        runs_exact_command(job_run_scripts($mariadbJob), 'php scripts/ci/verify-mariadb.php'),
+        'Le job mariadb doit exécuter scripts/ci/verify-mariadb.php dans une étape run.'
+    );
 }
 
 foreach ($failures as $failure) {
