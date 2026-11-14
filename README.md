@@ -76,7 +76,7 @@ php artisan config:clear
 php artisan migrate
 ```
 
-La validation spécifique MariaDB (migrations, contraintes, types, transactions et tests automatisés sur le moteur réel) reste à réaliser dans CHAN-21. La configuration SQLite des tests ne prouve pas la compatibilité MariaDB.
+La validation spécifique MariaDB (migrations, contraintes, types, transactions et tests automatisés sur le moteur réel) reste à réaliser au lot 2 de CHAN-21. Le lot 1 prépare uniquement l'environnement CI MariaDB 10.11 décrit ci-dessous ; la configuration SQLite des tests ne prouve pas la compatibilité MariaDB.
 
 ### Assets front-end
 
@@ -98,6 +98,15 @@ npm run build
 ```
 
 Ces commandes doivent être exécutées après installation ; leur présence ici ne signifie pas qu'elles ont déjà été validées sur chaque environnement.
+
+### Intégration continue
+
+Le workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) sépare deux environnements :
+
+- le job `ci` conserve les contrôles existants sur SQLite en mémoire, conformément à `phpunit.xml` : tests de l'automatisation des releases et des déploiements, validation des workflows (dont la configuration MariaDB), tests des scripts de sauvegarde/restauration et de rollback, Pint, Larastan/PHPStan, Pest et build frontend ;
+- le job `mariadb-10.11` démarre un service éphémère `mariadb:10.11` et vérifie réellement la connexion Laravel avec `DB_CONNECTION=mariadb`, puis identifie le serveur et exige MariaDB 10.11.
+
+Le job MariaDB n'utilise que des identifiants jetables propres à la CI et n'accède à aucun serveur C2ME. Il ne modifie ni `.env.example` ni `phpunit.xml` et n'exécute pas encore les migrations ni la suite de tests : cette validation relève du lot 2 de CHAN-21.
 
 ## Livewire et Filament
 

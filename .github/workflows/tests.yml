@@ -39,7 +39,7 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Validate deployment workflows
+      - name: Validate workflows and MariaDB configuration
         run: php .github/scripts/tests/validate-workflows.php
 
       - name: Run deployment automation tests
@@ -66,6 +66,64 @@ jobs:
 
       - name: Run CI checks
         run: composer ci:check
+
+  mariadb:
+    name: mariadb-10.11
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Base éphémère réservée à la CI : aucun accès au serveur C2ME et aucun
+    # identifiant d'un environnement réel. Les valeurs sont jetables et ne
+    # doivent jamais être réutilisées hors de ce service.
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: chantier_test
+          MARIADB_USER: chantier_test
+          MARIADB_PASSWORD: ci-chantier-test-only
+          MARIADB_ROOT_PASSWORD: ci-chantier-root-only
+        ports:
+          - 127.0.0.1:3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+          --health-start-period=20s
+
+    env:
+      DB_CONNECTION: mariadb
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: chantier_test
+      DB_USERNAME: chantier_test
+      DB_PASSWORD: ci-chantier-test-only
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql
+          tools: composer:v2
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Verify Laravel MariaDB connection
+        run: php scripts/ci/verify-mariadb.php
 
   package-linux:
     name: package-linux
