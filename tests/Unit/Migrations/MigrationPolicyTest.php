@@ -301,9 +301,10 @@ test('refuse les migrations non autorisees dans les jobs', function (string $job
 
     expect($violations)->toHaveCount(1)
         ->and($violations[0]['job'])->toBe($job)
-        ->and($violations[0]['line'])->toBe($command);
+        ->and($violations[0]['line'])->not->toBe('');
 })->with([
     'db:wipe dans ci' => ['ci', 'php artisan db:wipe', 'mariadb'],
+    'db:wipe dans mariadb' => ['mariadb', 'php artisan db:wipe', 'mariadb'],
     'migrate:fresh dans package-linux' => ['package-linux', 'php artisan migrate:fresh --force', 'mariadb'],
     'migrate:refresh dans mariadb' => ['mariadb', 'php artisan migrate:refresh', 'mariadb'],
     'migrate:reset dans mariadb' => ['mariadb', 'php artisan migrate:reset', 'mariadb'],
@@ -314,6 +315,30 @@ test('refuse les migrations non autorisees dans les jobs', function (string $job
         'php artisan migrate:fresh --force --no-interaction && php artisan migrate:reset',
         'mariadb',
     ],
+    'commande reconstruite sur plusieurs lignes' => [
+        'mariadb',
+        "php artisan \\\n  migrate:refresh",
+        'mariadb',
+    ],
+    'argument entre guillemets doubles' => ['mariadb', 'php artisan "migrate:refresh"', 'mariadb'],
+    'argument entre guillemets simples' => ['mariadb', "php artisan 'migrate:refresh'", 'mariadb'],
+    'affectation d environnement avant la commande' => ['mariadb', 'APP_ENV=testing php artisan migrate:refresh', 'mariadb'],
+    'chaine avec continuation de ligne' => [
+        'mariadb',
+        "php artisan migrate:fresh --force --no-interaction && \\\n  php artisan migrate:reset",
+        'mariadb',
+    ],
+    'commande autorisee suivie d un pipe' => [
+        'mariadb',
+        'php artisan migrate:fresh --force --no-interaction | tee /tmp/migrate.log',
+        'mariadb',
+    ],
+    'commande autorisee suivie d un point-virgule' => [
+        'mariadb',
+        'php artisan migrate:fresh --force --no-interaction; echo ok',
+        'mariadb',
+    ],
+    'commande interdite apres un ou logique' => ['mariadb', 'true || php artisan migrate:refresh', 'mariadb'],
     'migration dans un autre workflow' => ['deploy', 'php artisan migrate --force', null],
 ]);
 

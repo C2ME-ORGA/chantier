@@ -2526,6 +2526,20 @@ jobs:
 YAML
 }
 
+write_migration_block_fixture() {
+  local name="$1"
+  local job="$2"
+  local command="$3"
+
+  {
+    printf 'jobs:\n'
+    printf '  %s:\n' "$job"
+    printf '    steps:\n'
+    printf '      - run: |\n'
+    printf '%s\n' "$command" | sed 's/^/          /'
+  } > "$migration_fixtures/$name.yml"
+}
+
 assert_migration_fixture_fails() {
   local name="$1"
   local allowed_job="${2-mariadb}"
@@ -2566,6 +2580,32 @@ assert_migration_fixture_fails "chained-mariadb" "mariadb" "commande autorisée 
 
 write_migration_fixture "other-workflow" "deploy" "php artisan migrate --force"
 assert_migration_fixture_fails "other-workflow" "" "migration dans un autre workflow"
+
+write_migration_block_fixture "continuation-mariadb" "mariadb" "php artisan \\
+  migrate:refresh"
+assert_migration_fixture_fails "continuation-mariadb" "mariadb" "commande reconstituée sur plusieurs lignes"
+
+write_migration_block_fixture "double-quoted-mariadb" "mariadb" 'php artisan "migrate:refresh"'
+assert_migration_fixture_fails "double-quoted-mariadb" "mariadb" "argument entre guillemets doubles"
+
+write_migration_block_fixture "single-quoted-mariadb" "mariadb" "php artisan 'migrate:refresh'"
+assert_migration_fixture_fails "single-quoted-mariadb" "mariadb" "argument entre guillemets simples"
+
+write_migration_block_fixture "env-prefix-mariadb" "mariadb" "APP_ENV=testing php artisan migrate:refresh"
+assert_migration_fixture_fails "env-prefix-mariadb" "mariadb" "affectation d'environnement avant la commande"
+
+write_migration_block_fixture "continuation-chain-mariadb" "mariadb" "php artisan migrate:fresh --force --no-interaction && \\
+  php artisan migrate:reset"
+assert_migration_fixture_fails "continuation-chain-mariadb" "mariadb" "chaîne avec continuation de ligne"
+
+write_migration_block_fixture "pipe-mariadb" "mariadb" "php artisan migrate:fresh --force --no-interaction | tee /tmp/migrate.log"
+assert_migration_fixture_fails "pipe-mariadb" "mariadb" "commande autorisée suivie d'un pipe"
+
+write_migration_block_fixture "semicolon-mariadb" "mariadb" "php artisan migrate:fresh --force --no-interaction; echo ok"
+assert_migration_fixture_fails "semicolon-mariadb" "mariadb" "commande autorisée suivie d'un point-virgule"
+
+write_migration_block_fixture "or-mariadb" "mariadb" "true || php artisan migrate:refresh"
+assert_migration_fixture_fails "or-mariadb" "mariadb" "commande interdite après un ou logique"
 
 cat > "$migration_fixtures/allowed-mariadb.yml" <<'YAML'
 jobs:
