@@ -262,6 +262,16 @@ FAKE
 
 real_tar="$(command -v tar)"
 real_gzip="$(command -v gzip)"
+real_hostname="$(command -v hostname)"
+
+cat >"$fake_bin/hostname" <<FAKE
+#!/usr/bin/env bash
+if [[ -n "\${FAKE_HOSTNAME:-}" ]]; then
+  printf '%s\n' "\${FAKE_HOSTNAME}"
+  exit 0
+fi
+exec "$real_hostname" "\$@"
+FAKE
 
 cat >"$fake_bin/tar" <<FAKE
 #!/usr/bin/env bash
@@ -1424,7 +1434,7 @@ rm -rf "$backup_root/.lock"
 mkdir "$backup_root/.lock"
 printf '%s\n' "$dead_pid" >"$backup_root/.lock/pid"
 printf '2026-11-13T00:00:00Z\n' >"$backup_root/.lock/started_at"
-printf 'autre-hote\n' >"$backup_root/.lock/host"
+printf 'c2me-prod-02\n' >"$backup_root/.lock/host"
 
 output="$(run_backup set --env staging --trigger manual --confirm-workers-stopped --confirm-scheduler-disabled)"
 status=$?
@@ -1500,6 +1510,103 @@ if ((status != 0)); then
   assert_contains "$output" "identité d'hôte locale non déterminable" 'identité locale inconnue refusée à la libération'
 else
   fail 'une identité locale inconnue doit empêcher la libération du verrou.'
+fi
+
+rm -rf "$backup_root/.lock"
+
+# Identités réservées : localhost et localhost.localdomain refusés, qu'ils
+# soient détectés ou fournis explicitement.
+output="$(unset C2ME_HOST_ID; FAKE_HOSTNAME=localhost bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  --confirm-workers-stopped --confirm-scheduler-disabled 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" "identité d'hôte non déterminable" 'identité locale localhost refusée'
+else
+  fail 'une identité locale localhost doit empêcher la prise du verrou.'
+fi
+
+output="$(unset C2ME_HOST_ID; FAKE_HOSTNAME=localhost.localdomain bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  --confirm-workers-stopped --confirm-scheduler-disabled 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" "identité d'hôte non déterminable" 'identité locale localhost.localdomain refusée'
+else
+  fail 'une identité locale localhost.localdomain doit empêcher la prise du verrou.'
+fi
+
+output="$(C2ME_HOST_ID=localhost bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  --confirm-workers-stopped --confirm-scheduler-disabled 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" "identité d'hôte non déterminable" 'identité explicite localhost refusée'
+else
+  fail 'une identité explicite localhost doit empêcher la prise du verrou.'
+fi
+
+output="$(C2ME_HOST_ID=localhost.localdomain bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  --confirm-workers-stopped --confirm-scheduler-disabled 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" "identité d'hôte non déterminable" 'identité explicite localhost.localdomain refusée'
+else
+  fail 'une identité explicite localhost.localdomain doit empêcher la prise du verrou.'
+fi
+
+output="$(C2ME_HOST_ID='' bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  --confirm-workers-stopped --confirm-scheduler-disabled 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" "identité d'hôte non déterminable" 'identité explicite vide refusée'
+else
+  fail 'une identité explicite vide doit empêcher la prise du verrou.'
+fi
+
+# Identité explicite stable et unique : prise de verrou autorisée.
+valid_host_output="$(C2ME_HOST_ID=c2me-prod-01 bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  --confirm-workers-stopped --confirm-scheduler-disabled 2>&1)"
+valid_host_status=$?
+valid_host_set="$(extract SET_ID "$valid_host_output")"
+
+if ((valid_host_status == 0)) && [[ -n "$valid_host_set" ]]; then
+  pass
+else
+  fail "une identité explicite valide doit être acceptée. Sortie : $valid_host_output"
+fi
+
+if [[ -n "$valid_host_set" ]]; then
+  recorded_host="$(php "$ops_dir/lib/manifest.php" summary "$backup_root/sets/$valid_host_set/manifest.json" host.name)"
+
+  if [[ "$recorded_host" == 'c2me-prod-01' ]]; then
+    pass
+  else
+    fail "le manifeste doit enregistrer l'hôte c2me-prod-01 (obtenu : $recorded_host)."
+  fi
+fi
+
+# Libération de verrou avec identité locale réservée : refusée.
+mkdir "$backup_root/.lock"
+printf '%s\n' "$dead_pid" >"$backup_root/.lock/pid"
+printf '2026-11-13T00:00:00Z\n' >"$backup_root/.lock/started_at"
+printf 'test-host\n' >"$backup_root/.lock/host"
+
+output="$(C2ME_HOST_ID=localhost bash "$ops_dir/restore.sh" unlock --env staging --confirm-stale-lock 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" "identité d'hôte locale non déterminable" 'libération avec identité localhost refusée'
+else
+  fail 'une identité locale localhost doit empêcher la libération du verrou.'
 fi
 
 rm -rf "$backup_root/.lock"

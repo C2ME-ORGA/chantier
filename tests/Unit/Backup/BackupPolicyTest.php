@@ -330,12 +330,15 @@ test('le verrou est associé à l hôte et refuse une libération distante', fun
         ->toContain("appartient à l'hôte")
         ->toContain("identité d'hôte non déterminable")
         ->toContain("identité d'hôte locale non déterminable")
-        ->toContain("C2ME_HOST_ID=''");
+        ->toContain("C2ME_HOST_ID=''")
+        ->toContain('localhost.localdomain')
+        ->toContain('${C2ME_HOST_ID+x}');
 
     expect($doc)
         ->toContain('un PID distant ne constitue jamais une preuve de processus mort')
         ->toContain('un verrou provenant d\'un autre hôte ne peut pas être libéré localement')
-        ->toContain('identité d\'hôte locale doit être **stable et déterminable**');
+        ->toContain('identité d\'hôte locale doit être **stable, unique et non réservée**')
+        ->toContain('`localhost.localdomain`');
 });
 
 test('files.total_bytes ne somme que les fichiers réguliers', function () use ($ops): void {

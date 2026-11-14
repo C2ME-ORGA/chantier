@@ -429,7 +429,7 @@ Le manifeste est écrit **en dernier**, après tous les contrôles. Son propre S
 - Il lit `shared/storage` (traversée et lecture) mais n'y écrit jamais.
 - Il n'a aucun accès à l'autre environnement.
 - Les identifiants MySQL proviennent d'un fichier d'options en `0600`, jamais d'un argument de commande ni d'une variable exportée dans un journal.
-- L'hôte doit posséder un nom **stable et déterminable** (`hostname -s` non vide, différent de `unknown`) ou une variable `C2ME_HOST_ID` explicite. Une identité inconnue empêche la prise de verrou : les verrous ne sont jamais rattachés à un hôte ambigu.
+- L'hôte doit posséder un nom **stable, unique et non réservé** (`hostname -s` non vide, différent de `unknown`, `localhost` et `localhost.localdomain`) ou une variable `C2ME_HOST_ID` explicite respectant les mêmes règles. Une identité explicitement invalide n'est jamais remplacée par l'identité détectée. Une identité inconnue empêche la prise de verrou : les verrous ne sont jamais rattachés à un hôte ambigu.
 
 ### 8.4 Données déchiffrées
 
@@ -523,7 +523,7 @@ Une interruption brutale (`SIGKILL`, arrêt du serveur, coupure) peut laisser le
 Règles :
 
 - un verrou existant n'est **jamais supprimé automatiquement** ;
-- l'identité d'hôte locale doit être **stable et déterminable** ; `unknown`, une valeur vide ou un hostname non résolu ne sont jamais acceptés. La prise d'un verrou est refusée si l'identité locale n'est pas fiable ;
+- l'identité d'hôte locale doit être **stable, unique et non réservée** ; `unknown`, une valeur vide, `localhost`, `localhost.localdomain` et un hostname non résolu ne sont jamais acceptés. La prise d'un verrou est refusée si l'identité locale n'est pas fiable ; une valeur explicitement invalide n'est jamais remplacée silencieusement ;
 - le champ `host` est lu et validé ; un verrou sans hôte, vide ou égal à `unknown`, ou dont l'hôte diffère de l'hôte courant, est refusé : un PID distant ne constitue jamais une preuve de processus mort ;
 - sur l'hôte enregistré, le script vérifie si le PID est encore vivant (`kill -0`) ;
 - PID vivant : l'opération est refusée comme concurrente ; la libération est également refusée ;
@@ -869,7 +869,7 @@ La démonstration réelle relève du runbook, sur un environnement isolé, avec 
 9. Confirmer le mode maintenance, l'arrêt des workers et la neutralisation du cron.
 10. Préparer un jeu de données de recette synthétique comprenant des fichiers déposés via l'application.
 11. Vérifier l'espace disque disponible.
-12. Vérifier que l'identité d'hôte est stable et non `unknown` (`hostname -s`), ou définir `C2ME_HOST_ID` explicitement.
+12. Vérifier que l'identité d'hôte est stable, unique et non réservée (`hostname -s` différent de `unknown`, `localhost`, `localhost.localdomain`), ou définir `C2ME_HOST_ID` explicitement.
 13. Prévoir un ticket d'exploitation pour consigner manifeste, checksums, journaux et rapport.
 
 ### 17.3 Limites assumées

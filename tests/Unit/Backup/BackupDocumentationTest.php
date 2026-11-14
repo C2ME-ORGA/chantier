@@ -130,7 +130,7 @@ test('la documentation couvre les signaux, l inspection TAR et les verrous orphe
         ->toContain('PAX global')
         ->toContain('`GNU.sparse.*`')
         ->toContain('un PID distant ne constitue jamais une preuve de processus mort')
-        ->toContain('identité d\'hôte locale doit être **stable et déterminable**')
+        ->toContain('identité d\'hôte locale doit être **stable, unique et non réservée**')
         ->toContain('sans limite de 512 Kio')
         ->toContain('`gzip -d` et `zstd -d` bloqués');
 });

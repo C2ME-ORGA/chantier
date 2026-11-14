@@ -605,18 +605,27 @@ c2me_resolve_environment() {
   C2ME_MAINTENANCE_MARKER="$C2ME_STORAGE_ROOT/framework/down"
   C2ME_RELEASE_FILE="$C2ME_ROOT/current/release.json"
   C2ME_OPERATOR="${C2ME_OPERATOR:-${USER:-unknown}}"
-  local detected_host
+  local detected_host host_source
   detected_host="$(hostname -s 2>/dev/null || hostname 2>/dev/null || true)"
-  C2ME_HOST_ID="${C2ME_HOST_ID:-$detected_host}"
+
+  if [[ -n "${C2ME_HOST_ID+x}" ]]; then
+    host_source="$C2ME_HOST_ID"
+  else
+    host_source="$detected_host"
+  fi
+
   C2ME_OPERATOR="$(printf '%s' "$C2ME_OPERATOR" | tr -cd 'A-Za-z0-9._-')"
-  C2ME_HOST_ID="$(printf '%s' "$C2ME_HOST_ID" | tr -cd 'A-Za-z0-9._-')"
+  C2ME_HOST_ID="$(printf '%s' "$host_source" | tr -cd 'A-Za-z0-9._-')"
   [[ -n "$C2ME_OPERATOR" ]] || C2ME_OPERATOR='unknown'
 
-  # Une identité d'hôte inconnue n'est jamais fiable : le verrou est refusé
-  # plutôt que rattaché à un hôte ambigu.
-  if [[ -z "$C2ME_HOST_ID" || "${C2ME_HOST_ID,,}" == 'unknown' ]]; then
-    C2ME_HOST_ID=''
-  fi
+  # Une identité d'hôte inconnue ou réservée n'est jamais fiable : le verrou
+  # est refusé plutôt que rattaché à un hôte ambigu. Une valeur explicitement
+  # invalide n'est jamais remplacée par l'identité détectée.
+  case "${C2ME_HOST_ID,,}" in
+    '' | 'unknown' | 'localhost' | 'localhost.localdomain')
+      C2ME_HOST_ID=''
+      ;;
+  esac
 
   C2ME_PHP_BIN="${C2ME_PHP_BIN:-php}"
   C2ME_MYSQL_BIN="${C2ME_MYSQL_BIN:-$(command -v mariadb || command -v mysql || true)}"
