@@ -870,7 +870,7 @@ La démonstration réelle relève du runbook, sur un environnement isolé, avec 
 10. Préparer un jeu de données de recette synthétique comprenant des fichiers déposés via l'application.
 11. Vérifier l'espace disque disponible.
 12. Vérifier que l'identité d'hôte est stable, unique et non réservée (`hostname -s` différent de `unknown`, `localhost`, `localhost.localdomain`), ou définir `C2ME_HOST_ID` explicitement.
-13. Vérifier la présence de `flock` (util-linux) : il est obligatoire en production pour la sauvegarde et la restauration. Le contournement de test `C2ME_ALLOW_MISSING_FLOCK=1` est interdit en exploitation et **refusé systématiquement lorsque `C2ME_ENV=production`**, même si la variable est positionnée.
+13. Vérifier la présence de `flock` (util-linux) : il est obligatoire en production pour la sauvegarde et la restauration. Le contournement de test exige cumulativement `C2ME_ALLOW_MISSING_FLOCK=1` et `C2ME_TEST_MODE=1` ; il est refusé en production, en staging opérationnel et pour tout environnement vide ou inconnu. Il n'est jamais activable par une simple valeur de `C2ME_ENV`.
 14. Prévoir un ticket d'exploitation pour consigner manifeste, checksums, journaux et rapport.
 
 ### 17.3 Limites assumées

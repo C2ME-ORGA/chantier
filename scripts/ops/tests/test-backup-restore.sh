@@ -362,6 +362,7 @@ export FAKE_IMPORT_LOG="$work_dir/import.sql"
 
 if ! command -v flock >/dev/null 2>&1; then
   export C2ME_ALLOW_MISSING_FLOCK=1
+  export C2ME_TEST_MODE=1
 fi
 
 run_backup() {
@@ -1656,30 +1657,32 @@ missing_flock="$guard_policy_dir/flock-absent"
 run_guard_policy() {
   local case_name="$1"
   local allow="$2"
-  local environment="$3"
-  local flock_bin="$4"
+  local test_mode="$3"
+  local environment="$4"
+  local flock_bin="$5"
 
   (
     source "$ops_dir/lib/common.sh"
     C2ME_FLOCK_BIN="$flock_bin"
     C2ME_ALLOW_MISSING_FLOCK="$allow"
+    C2ME_TEST_MODE="$test_mode"
     C2ME_ENV="$environment"
     c2me_guard_enter "$guard_policy_dir/$case_name"
     c2me_guard_exit
   ) 2>&1
 }
 
-output="$(run_guard_policy 'test-staging' 1 staging "$missing_flock")"
+output="$(run_guard_policy 'test-staging' 1 1 staging "$missing_flock")"
 status=$?
 
 if ((status == 0)); then
   pass
-  assert_contains "$output" 'mode de test explicite' 'flock absent + mode test + staging : toléré'
+  assert_contains "$output" 'mode de test explicite' 'flock absent + mode test explicite + staging : toléré'
 else
-  fail "le mode de test explicite doit être toléré hors production. Sortie : $output"
+  fail "le mode de test explicite doit être toléré dans le contexte de test. Sortie : $output"
 fi
 
-output="$(run_guard_policy 'test-production' 1 production "$missing_flock")"
+output="$(run_guard_policy 'test-production' 1 1 production "$missing_flock")"
 status=$?
 
 if ((status != 0)); then
@@ -1690,7 +1693,27 @@ else
   fail 'le contournement de flock doit être interdit en production.'
 fi
 
-output="$(run_guard_policy 'test-sans-flag' 0 staging "$missing_flock")"
+output="$(run_guard_policy 'test-staging-operationnel' 1 0 staging "$missing_flock")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'réservé aux tests' 'staging opérationnel sans C2ME_TEST_MODE : refusé'
+else
+  fail 'staging opérationnel ne doit pas bénéficier du contournement.'
+fi
+
+output="$(run_guard_policy 'test-env-inconnu' 1 1 qa "$missing_flock")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'inconnu' 'environnement inconnu : refusé'
+else
+  fail 'un environnement inconnu ne doit pas bénéficier du contournement.'
+fi
+
+output="$(run_guard_policy 'test-sans-flag' 0 1 staging "$missing_flock")"
 status=$?
 
 if ((status != 0)); then
@@ -1700,7 +1723,7 @@ else
   fail 'flock absent sans contournement doit être refusé.'
 fi
 
-output="$(run_guard_policy 'test-env-vide' 1 '' "$missing_flock")"
+output="$(run_guard_policy 'test-env-vide' 1 1 '' "$missing_flock")"
 status=$?
 
 if ((status != 0)); then
@@ -1711,7 +1734,7 @@ else
 fi
 
 if command -v flock >/dev/null 2>&1; then
-  output="$(run_guard_policy 'normal-production' 1 production "$(command -v flock)")"
+  output="$(run_guard_policy 'normal-production' 1 1 production "$(command -v flock)")"
   status=$?
 
   if ((status == 0)) && [[ -d "$guard_policy_dir/normal-production.guard" ]]; then
