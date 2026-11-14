@@ -104,9 +104,9 @@ Ces commandes doivent être exécutées après installation ; leur présence ici
 Le workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) sépare deux environnements :
 
 - le job `ci` conserve les contrôles existants sur SQLite en mémoire, conformément à `phpunit.xml` : tests de l'automatisation des releases et des déploiements, validation des workflows (dont la configuration MariaDB), tests des scripts de sauvegarde/restauration et de rollback, Pint, Larastan/PHPStan, Pest et build frontend ;
-- le job `mariadb-10.11` démarre un service éphémère `mariadb:10.11`, vérifie réellement la connexion Laravel avec `DB_CONNECTION=mariadb`, exécute `migrate:fresh` sur la base isolée `chantier_test`, vérifie que toutes les migrations sont appliquées avec `scripts/ci/verify-mariadb-migrations.php`, puis exécute la suite dédiée `tests/MariaDb` via `phpunit.mariadb.xml`.
+- le job `mariadb-10.11` démarre un service éphémère `mariadb:10.11`, vérifie réellement la connexion Laravel avec `DB_CONNECTION=mariadb`, exécute `migrate:fresh` sur la base isolée `chantier_test`, vérifie que toutes les migrations sont appliquées avec `scripts/ci/verify-mariadb-migrations.php`, puis exécute la suite `tests/MariaDb` (connexion, migrations, schéma, CRUD `User` et routes applicatives `/` et `/up`) via `phpunit.mariadb.xml`.
 
-Le job MariaDB n'utilise que des identifiants jetables propres à la CI et n'accède à aucun serveur C2ME. Les tests MariaDB ne sont pas exécutés par `php artisan test` par défaut et ne remplacent pas SQLite. Pour les exécuter localement sur une instance MariaDB 10.11 isolée :
+Le job MariaDB n'utilise que des identifiants jetables propres à la CI et n'accède à aucun serveur C2ME. Les tests rapides `tests/Unit` et `tests/Feature` restent exécutés sur SQLite en mémoire par `php artisan test`. La suite `tests/MariaDb` ne remplace pas SQLite : elle vérifie le moteur réel, les migrations, le schéma, le CRUD existant et le démarrage des routes applicatives sur MariaDB. Pour l'exécuter localement sur une instance MariaDB 10.11 isolée :
 
 ```powershell
 $env:DB_CONNECTION='mariadb'
