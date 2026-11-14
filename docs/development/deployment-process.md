@@ -6,7 +6,7 @@ Ce document décrit l'automatisation des déploiements **staging** et **producti
 - Ticket parent : CHAN-92 – Définir le workflow Git, les releases et les déploiements.
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : construction des paquets, publication des artefacts, promotion d'une release candidate vers la production, workflows GitHub Actions, comptes SSH, contrôles post-déploiement et procédure initiale de configuration serveur.
-- Hors portée : recette fonctionnelle, sauvegardes et restauration, automatisation du rollback (lot 2 de CHAN-98). La stratégie de migrations, la politique de rollback applicatif et les règles de compatibilité N/N-1 sont définies dans [`database-migrations.md`](database-migrations.md) (lot 1 de CHAN-98).
+- Hors portée : recette fonctionnelle, sauvegardes et restauration, automatisation du rollback. La stratégie de migrations, la politique de rollback applicatif et les règles de compatibilité N/N-1 sont définies dans [`database-migrations.md`](database-migrations.md) (lot 1 de CHAN-98). La sauvegarde, l'intégrité et la restauration isolée sont définies dans [`backup-restore.md`](backup-restore.md) (lot 2 de CHAN-98).
 
 Ce document décrit une automatisation **préparée mais non exécutée depuis ce dépôt** : aucun déploiement réel n'a été déclenché. Les comptes SSH, groupes Linux et racines aaPanel existent déjà et sont documentés ici ; aucune de leurs propriétés n'a été modifiée par cette correction. Les sections « configuration manuelle » restent à réaliser ou à vérifier.
 
@@ -16,6 +16,7 @@ Ce document décrit une automatisation **préparée mais non exécutée depuis c
 | --- | --- |
 | Déploiements, artefacts et promotion | Ce document |
 | Migrations, compatibilité N/N-1 et rollback applicatif | [`database-migrations.md`](database-migrations.md) |
+| Sauvegarde, intégrité et restauration | [`backup-restore.md`](backup-restore.md) |
 | Environnements, isolation et protections | [`environments.md`](environments.md) |
 | Branches, commits et Pull Requests | [`git-workflow.md`](git-workflow.md) |
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
@@ -669,7 +670,8 @@ En l'état, une release stable publiée peut donc être rejouée, y compris une 
 ### Dépendances
 
 - **CHAN-98, lot 1** : stratégie de migrations, compatibilité N/N-1, conventions et politique de rollback, documentées dans [`database-migrations.md`](database-migrations.md). Les points d'intégration sont le marqueur `release.json`, le répertoire `releases/` et le lien `current`.
-- **CHAN-98, lot 2** : sauvegarde, restauration et automatisation du rollback. Ce lot est requis avant toute migration destructive en production.
+- **CHAN-98, lot 2** : sauvegarde, intégrité et restauration isolée, définies dans [`backup-restore.md`](backup-restore.md) et [`backup-restore-runbook.md`](backup-restore-runbook.md). Les scripts [`scripts/ops`](../../scripts/ops) ne sont ni planifiés ni appelés par un déploiement. Aucune sauvegarde réelle n'a été produite et aucune restauration réelle n'a été démontrée : la stratégie reste requise avant toute migration destructive en production.
+- **Automatisation du rollback** : non implémentée. Un rollback applicatif reste manuel et ne restaure jamais la base de données.
 - **CHAN-99** : dépendance de suivi mentionnée par le ticket parent. Son périmètre n'est pas décrit dans ce dépôt à la date de rédaction ; aucun élément de CHAN-99 n'est intégré ici.
 
 ## Vérifications locales

@@ -18,6 +18,7 @@ Ce document est préparatoire. Il ne crée aucun environnement, ne configure auc
 | Branches, commits et Pull Requests | [`git-workflow.md`](git-workflow.md) |
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
 | Migrations, compatibilité N/N-1 et rollback applicatif | [`database-migrations.md`](database-migrations.md) |
+| Sauvegarde, intégrité et restauration | [`backup-restore.md`](backup-restore.md) |
 | Contrôle d'intégration continue | [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) |
 | Workflow de release | [`.github/workflows/release.yml`](../../.github/workflows/release.yml) |
 | Règles impératives pour les agents et contributeurs | [`AGENTS.md`](../../AGENTS.md) |
@@ -461,13 +462,18 @@ Le dépôt étant public :
 
 ### Sauvegardes
 
-- La base `chantier_production` et le stockage de production disposent de sauvegardes dédiées, chiffrées et stockées hors du répertoire de l'application.
-- La base `chantier_staging` et son stockage disposent de sauvegardes ou d'un mécanisme de réinitialisation séparés.
+La stratégie complète — inventaire, cohérence base/fichiers, chiffrement, manifeste, rétention, intégrité et restauration isolée — est définie dans [`backup-restore.md`](backup-restore.md), avec la procédure opérateur dans [`backup-restore-runbook.md`](backup-restore-runbook.md).
+
+- Chaque environnement possède sa propre racine de sauvegarde, son compte technique et sa clé de chiffrement.
+- La base `chantier_production` et le stockage de production disposent de jeux de sauvegarde dédiés, chiffrés et stockés hors du répertoire de l'application.
+- La base `chantier_staging` et son stockage disposent de jeux séparés.
 - Les sauvegardes de production ne sont jamais accessibles depuis staging.
-- Une sauvegarde de production n'est restaurée en staging qu'après anonymisation.
-- Les accès aux sauvegardes suivent le principe du moindre privilège.
-- Une restauration de production doit être testée avant de considérer la procédure comme opérationnelle.
-- La politique de rétention, la fréquence et le support de sauvegarde restent à confirmer lors de la configuration.
+- Une sauvegarde de production n'est restaurée en staging qu'après anonymisation ; en pratique, le jeu de recette est reconstruit à partir de données fictives.
+- Les secrets (`.env`, configuration compilée, droits MySQL) sont exclus des sauvegardes métier et relèvent d'une procédure de conservation séparée.
+- La clé privée de déchiffrement n'est jamais stockée sur le serveur.
+- Aucune restauration de production réelle n'est autorisée dans ce lot.
+- **Aucune copie hors site n'existe** : la perte complète du serveur est un NO-GO documenté.
+- Aucun RTO démontré n'est disponible : aucune restauration réelle n'a encore été réalisée.
 
 ### Tâches planifiées
 
@@ -543,7 +549,7 @@ Les contrôles suivants doivent être exécutés lors de la mise en place des en
 - Confirmer l'identifiant du compte GitHub personnel de l'approbateur unique de production.
 - Relever et renseigner `DEPLOY_PHP_BIN` pour chaque environnement.
 - Vérifier l'empreinte SSH hors bande et renseigner `SSH_KNOWN_HOSTS`.
-- Définir la politique de sauvegarde, de rétention et de test de restauration (CHAN-98, lot 2).
+- Définir la politique de sauvegarde, de rétention et de test de restauration : stratégie et runbook livrés dans [`backup-restore.md`](backup-restore.md) et [`backup-restore-runbook.md`](backup-restore-runbook.md) ; les comptes, racines de sauvegarde et clés restent à créer par l'administrateur.
 - Définir la méthode de protection HTTP du staging.
 - Décider si Redis est utilisé et, le cas échéant, attribuer les bases et préfixes.
 - Décrire la procédure d'anonymisation des données de recette.

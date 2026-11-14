@@ -45,6 +45,9 @@ jobs:
       - name: Run deployment automation tests
         run: bash .github/scripts/tests/test-deployment-automation.sh
 
+      - name: Run backup and restore script tests
+        run: bash scripts/ops/tests/test-backup-restore.sh
+
       - name: Prepare environment
         run: |
           cp .env.example .env

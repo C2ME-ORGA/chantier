@@ -99,6 +99,12 @@ Depuis CHAN-97, deux workflows automatisent les déploiements :
 
 Le paquet contient `vendor/` et les assets Vite, jamais `.env`, `node_modules` ni `storage`. Le déploiement serveur utilise des releases versionnées, un lien `current` et un stockage partagé, sans migration automatique ni rollback automatisé. Les environnements GitHub et leurs secrets doivent être configurés manuellement. La procédure complète, les limites et les vérifications sont décrites dans [`docs/development/deployment-process.md`](docs/development/deployment-process.md). La stratégie de migrations, la compatibilité N/N-1 et la politique de rollback sont définies dans [`docs/development/database-migrations.md`](docs/development/database-migrations.md).
 
+## Sauvegardes et restauration
+
+La stratégie de sauvegarde, d'intégrité et de restauration isolée est définie dans [`docs/development/backup-restore.md`](docs/development/backup-restore.md), avec la procédure opérateur dans [`docs/development/backup-restore-runbook.md`](docs/development/backup-restore-runbook.md). Un jeu de sauvegarde de référence contient toujours la base et les fichiers d'une même opération ; un dump de base seul n'est jamais une sauvegarde complète. La clé privée de déchiffrement n'est jamais stockée sur le serveur.
+
+Aucune sauvegarde réelle n'a été produite et aucune restauration réelle n'a été démontrée à ce stade. Les scripts [`scripts/ops`](scripts/ops) sont livrés avec des tests locaux à outils simulés ; ils ne sont pas planifiés automatiquement. La perte complète du serveur reste un **NO-GO** tant qu'aucune copie hors site n'existe.
+
 ## Suivi
 
 Le backlog et les décisions projet sont suivis dans [Jira – C2ME Chantier](https://sarlc2me.atlassian.net/jira/software/projects/CHAN).

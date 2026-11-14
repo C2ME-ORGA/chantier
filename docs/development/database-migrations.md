@@ -6,7 +6,7 @@ Ce document définit la stratégie de migrations, les règles de compatibilité 
 - Ticket parent : CHAN-92 – Définir le workflow Git, les releases et les déploiements.
 - Dépôt : [`C2ME-ORGA/chantier`](https://github.com/C2ME-ORGA/chantier).
 - Portée : audit du schéma existant, stratégie Expand / Migrate / Contract, compatibilité N/N-1, politique d'exécution, conventions de rédaction, validation manuelle, rollback applicatif et procédures d'échec.
-- Hors portée : sauvegarde et restauration opérationnelles (lot 2 de CHAN-98), recette fonctionnelle, automatisation des migrations dans les workflows et exécution réelle sur staging ou production.
+- Hors portée : sauvegarde et restauration opérationnelles (traitées par le lot 2 dans [`backup-restore.md`](backup-restore.md)), recette fonctionnelle, automatisation des migrations dans les workflows et exécution réelle sur staging ou production.
 
 > **Statut de ce lot.** Aucune migration n'a été exécutée sur une base réelle, aucune base n'a été modifiée et aucun workflow de déploiement n'a été changé. Les seules vérifications exécutées sont des tests statiques et la suite de tests locale sur SQLite en mémoire. Les procédures de ce document sont des règles à appliquer ; elles ne constituent pas une preuve d'exécution.
 
@@ -15,6 +15,7 @@ Ce document définit la stratégie de migrations, les règles de compatibilité 
 | Sujet | Référence |
 | --- | --- |
 | Migrations, compatibilité N/N-1 et rollback | Ce document |
+| Sauvegarde, intégrité et restauration | [`backup-restore.md`](backup-restore.md) |
 | Déploiements, releases et activation de `current` | [`deployment-process.md`](deployment-process.md) |
 | Environnements, isolation et sauvegardes | [`environments.md`](environments.md) |
 | Versionnement et releases | [`release-process.md`](release-process.md) |
@@ -804,7 +805,7 @@ Une suppression de structure de cette liste n'est autorisée que si elle porte `
 | 2 | B et C — données, `NOT NULL`, index unique, clé étrangère | Responsable technique + propriétaire du dépôt |
 | 3 | D et E — destructrice ou infrastructure | Responsable technique + propriétaire du dépôt + sauvegarde restaurable vérifiée + décision écrite |
 
-Les rôles exacts et les personnes habilitées restent à formaliser (section 14). Le propriétaire du dépôt est déjà l'approbateur de l'environnement `production` dans [`deployment-process.md`](deployment-process.md). Tant que la procédure de sauvegarde et de restauration du lot 2 n'est pas opérationnelle, aucune migration de niveau 2 ou 3 ne peut être approuvée pour la production.
+Les rôles exacts et les personnes habilitées restent à formaliser (section 14). Le propriétaire du dépôt est déjà l'approbateur de l'environnement `production` dans [`deployment-process.md`](deployment-process.md). La stratégie de sauvegarde et de restauration est définie dans [`backup-restore.md`](backup-restore.md) et sa procédure opérateur dans [`backup-restore-runbook.md`](backup-restore-runbook.md). Tant qu'aucune restauration réelle n'a été démontrée avec preuves, aucune migration de niveau 2 ou 3 ne peut être approuvée pour la production.
 
 ### 9.2 Checklist avant staging
 
@@ -890,7 +891,7 @@ Une migration destructive de structure (classe D) ne peut être planifiée que s
 1. **Fenêtre de rollback close** : plus aucune release réactivable ne dépend de l'objet supprimé.
 2. **Release intermédiaire** : au moins une release stable a été déployée sans dépendre de l'objet (fin de la double écriture et des lectures de secours).
 3. **Compatibilité N-1 démontrée** : le code de la release immédiatement précédente ne référence plus l'objet.
-4. **Sauvegarde vérifiée** : une sauvegarde de la base et du stockage est disponible et sa restauration a été testée (lot 2).
+4. **Sauvegarde vérifiée** : une sauvegarde de la base et du stockage est disponible et sa restauration a été testée (voir [`backup-restore.md`](backup-restore.md)).
 5. **Archivage** : les données à conserver sont exportées ou migrées avant la suppression.
 6. **Consommateurs identifiés** : aucun export, client hors connexion, intégration ou rapport ne dépend du champ supprimé.
 7. **Répétition en staging** : la migration a été exécutée sur une copie représentative anonymisée.
@@ -939,7 +940,7 @@ Un seul critère manquant interdit la migration destructive de structure. Une su
 - Une release dont le code n'est pas compatible avec le schéma courant n'est pas une cible valide.
 - Une release dont les fichiers de migration seraient réexécutés ne doit pas être activée sans contrôle de `migrate:status`.
 - Une release N-1 peut être conservée dans `releases/` sans être une cible de rollback ; la décision doit être écrite.
-- La procédure automatisée de rollback, la sauvegarde et la restauration relèvent du lot 2. La procédure manuelle de la section 6.8 reste une règle d'exploitation à répéter en staging avant toute utilisation en production.
+- La procédure automatisée de rollback et l'automatisation des sauvegardes restent hors périmètre. La sauvegarde et la restauration sont définies dans [`backup-restore.md`](backup-restore.md) ; la procédure manuelle de la section 6.8 reste une règle d'exploitation à répéter en staging avant toute utilisation en production.
 
 ### 12.5 Limites assumées de ce lot
 
@@ -1001,19 +1002,21 @@ bash .github/scripts/tests/test-deployment-automation.sh
 | D-02 | Rôles et personnes habilitées à approuver les niveaux 1, 2 et 3 | Détermine la validation manuelle |
 | D-03 | Utilisateur MySQL dédié aux migrations, distinct de l'utilisateur d'exécution | Réduit le privilège DDL disponible à l'application |
 | D-04 | Environnement de répétition MariaDB 10.11 (CI ou staging dédié) | Réduit le risque DDL non testé |
-| D-05 | Procédure de sauvegarde, rétention, chiffrement et test de restauration | Conditionne les migrations destructrices |
+| D-05 | Procédure de sauvegarde, rétention, chiffrement et test de restauration | **Tranchée** : [`backup-restore.md`](backup-restore.md) et [`backup-restore-runbook.md`](backup-restore-runbook.md). Les comptes, clés et racines restent à créer par l'administrateur. |
 | D-06 | Ajout de métadonnées de schéma dans `release.json` ou dans un journal séparé | Améliore la traçabilité release/schéma |
 | D-07 | Seuils précis des migrations longues et fenêtres d'exécution | Détermine le mode opératoire |
 | D-08 | Outil de changement de schéma en ligne (si nécessaire) | À valider avant toute adoption |
 | D-09 | Backlog des Contracts à planifier | Évite l'accumulation de colonnes mortes |
 | D-10 | Versionnement du protocole de synchronisation hors connexion | Conditionne les migrations visibles par les clients hors connexion |
 | D-11 | Sort des jobs en file lors d'un rollback | Détermine la procédure d'arrêt et de reprise |
-| D-12 | Autorisation et procédure de restauration de sauvegarde en production | Lot 2 |
+| D-12 | Autorisation et procédure de restauration de sauvegarde en production | **Partiellement tranchée** : procédure de restauration isolée définie dans [`backup-restore.md`](backup-restore.md). Aucune restauration de production n'est autorisée ni démontrée ; l'autorisation reste à accorder après un test réel réussi. |
 
 ## 15. Références
 
 - [`AGENTS.md`](../../AGENTS.md) — règles impératives du projet.
 - [`deployment-process.md`](deployment-process.md) — releases, activation et limites CHAN-97.
+- [`backup-restore.md`](backup-restore.md) — sauvegarde, intégrité et restauration.
+- [`backup-restore-runbook.md`](backup-restore-runbook.md) — procédure opérateur.
 - [`environments.md`](environments.md) — environnements, isolation, base et sauvegardes.
 - [`release-process.md`](release-process.md) — versionnement, tags et releases.
 - [`git-workflow.md`](git-workflow.md) — branches, commits et Pull Requests.
