@@ -41,6 +41,11 @@ export C2ME_MYSQL_BIN=/usr/bin/mariadb
 export C2ME_DB_DUMP_BIN=/usr/bin/mariadb-dump
 export C2ME_AGE_BIN=/usr/bin/age
 
+# Identité d'hôte stable : obligatoire pour le verrou.
+# Si `hostname -s` n'est pas fiable (conteneur, nom vide, "unknown"), définir
+# explicitement une valeur stable et unique par serveur.
+export C2ME_HOST_ID="$(hostname -s)"
+
 # Exemple de structure — les valeurs ne sont jamais affichées ni commitées
 # /home/c2me-backup-production/.my.cnf
 [client]
@@ -370,7 +375,8 @@ Un arrêt brutal (`SIGKILL`, arrêt du serveur, coupure) peut laisser `<BACKUP_R
 2. Vérifier l'hôte enregistré dans le verrou (il est déjà affiché par la commande précédente) :
 
    - hôte différent de l'hôte courant : **ne pas libérer localement**. Se connecter à l'hôte enregistré, y vérifier l'absence de processus, puis y retirer le verrou après confirmation. Si cet hôte n'existe plus, la décision revient à l'administrateur et doit être consignée.
-   - champ `host` absent : verrou ambigu, résolution manuelle obligatoire.
+   - champ `host` absent, vide ou égal à `unknown` : verrou non fiable, résolution manuelle obligatoire.
+   - identité locale `unknown` ou vide : le script refuse toute libération ; corriger `C2ME_HOST_ID` avant de recommencer.
 
 3. Vérifier l'état du PID :
 

@@ -329,6 +329,11 @@ c2me_on_signal() {
 
   trap - EXIT HUP INT TERM
   c2me_terminate_children
+
+  # Ferme les descripteurs hérités par le shell (redirections de fonction en
+  # cours) avant de supprimer la zone de travail : certains systèmes refusent
+  # la suppression d'un fichier encore ouvert par le processus courant.
+  exec </dev/null >/dev/null 2>&1
   c2me_cleanup
   exit "$code"
 }
@@ -343,17 +348,21 @@ c2me_lock_pid_alive() {
 c2me_acquire_lock() {
   local lock_dir="$1"
 
+  if [[ -z "$C2ME_HOST_ID" ]]; then
+    c2me_die "identité d'hôte non déterminable : définir un hostname stable ou C2ME_HOST_ID. Prise de verrou refusée."
+  fi
+
   if [[ -d "$lock_dir" ]]; then
     local pid started_at lock_host
     pid="$(cat "$lock_dir/pid" 2>/dev/null || true)"
     started_at="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
     lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
 
-    if [[ -z "$lock_host" ]]; then
-      c2me_die "verrou sans hôte identifiable (pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier manuellement l'absence de processus, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock' sur l'hôte concerné."
+    if [[ -z "$lock_host" || "${lock_host,,}" == 'unknown' ]]; then
+      c2me_die "verrou sans hôte fiable (absent, vide ou unknown ; pid ${pid:-inconnu}, depuis ${started_at:-date inconnue}) : suppression automatique interdite. Vérifier manuellement l'absence de processus, puis exécuter 'backup.sh unlock --env <env> --confirm-stale-lock' sur l'hôte concerné."
     fi
 
-    if [[ "$lock_host" != "${C2ME_HOST_ID:-unknown}" ]]; then
+    if [[ "$lock_host" != "$C2ME_HOST_ID" ]]; then
       c2me_die "verrou détenu par un autre hôte ($lock_host) : un PID distant ne prouve pas qu'un processus est mort. Libération locale refusée ; résoudre le verrou sur $lock_host après vérification manuelle."
     fi
 
@@ -372,13 +381,17 @@ c2me_acquire_lock() {
   c2me_chmod 0700 -- "$lock_dir"
   printf '%s\n' "$$" >"$lock_dir/pid" 2>/dev/null || true
   printf '%s\n' "$(c2me_iso_now)" >"$lock_dir/started_at" 2>/dev/null || true
-  printf '%s\n' "${C2ME_HOST_ID:-unknown}" >"$lock_dir/host" 2>/dev/null || true
+  printf '%s\n' "$C2ME_HOST_ID" >"$lock_dir/host" 2>/dev/null || true
   C2ME_CLEANUP_PATHS+=("$lock_dir")
 }
 
 # Récupération explicite d'un verrou orphelin. Refuse si le PID est vivant.
 c2me_release_stale_lock() {
   local lock_dir="$1"
+
+  if [[ -z "$C2ME_HOST_ID" ]]; then
+    c2me_die "identité d'hôte locale non déterminable : libération de verrou refusée."
+  fi
 
   if [[ ! -d "$lock_dir" ]]; then
     c2me_die "aucun verrou à libérer : $lock_dir"
@@ -389,12 +402,12 @@ c2me_release_stale_lock() {
   started_at="$(cat "$lock_dir/started_at" 2>/dev/null || true)"
   lock_host="$(cat "$lock_dir/host" 2>/dev/null || true)"
 
-  if [[ -z "$lock_host" ]]; then
-    c2me_die "verrou sans hôte identifiable : libération refusée. Vérifier manuellement l'absence de processus sur l'hôte concerné."
+  if [[ -z "$lock_host" || "${lock_host,,}" == 'unknown' ]]; then
+    c2me_die "verrou sans hôte fiable (absent, vide ou unknown) : libération refusée. Vérifier manuellement l'absence de processus sur l'hôte concerné."
   fi
 
-  if [[ "$lock_host" != "${C2ME_HOST_ID:-unknown}" ]]; then
-    c2me_die "le verrou appartient à l'hôte $lock_host, pas à ${C2ME_HOST_ID:-unknown} : libération locale refusée. Résoudre le verrou sur $lock_host après vérification manuelle."
+  if [[ "$lock_host" != "$C2ME_HOST_ID" ]]; then
+    c2me_die "le verrou appartient à l'hôte $lock_host, pas à $C2ME_HOST_ID : libération locale refusée. Résoudre le verrou sur $lock_host après vérification manuelle."
   fi
 
   if [[ ! "$pid" =~ ^[0-9]+$ ]]; then
@@ -592,11 +605,18 @@ c2me_resolve_environment() {
   C2ME_MAINTENANCE_MARKER="$C2ME_STORAGE_ROOT/framework/down"
   C2ME_RELEASE_FILE="$C2ME_ROOT/current/release.json"
   C2ME_OPERATOR="${C2ME_OPERATOR:-${USER:-unknown}}"
-  C2ME_HOST_ID="${C2ME_HOST_ID:-$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf 'unknown')}"
+  local detected_host
+  detected_host="$(hostname -s 2>/dev/null || hostname 2>/dev/null || true)"
+  C2ME_HOST_ID="${C2ME_HOST_ID:-$detected_host}"
   C2ME_OPERATOR="$(printf '%s' "$C2ME_OPERATOR" | tr -cd 'A-Za-z0-9._-')"
   C2ME_HOST_ID="$(printf '%s' "$C2ME_HOST_ID" | tr -cd 'A-Za-z0-9._-')"
   [[ -n "$C2ME_OPERATOR" ]] || C2ME_OPERATOR='unknown'
-  [[ -n "$C2ME_HOST_ID" ]] || C2ME_HOST_ID='unknown'
+
+  # Une identité d'hôte inconnue n'est jamais fiable : le verrou est refusé
+  # plutôt que rattaché à un hôte ambigu.
+  if [[ -z "$C2ME_HOST_ID" || "${C2ME_HOST_ID,,}" == 'unknown' ]]; then
+    C2ME_HOST_ID=''
+  fi
 
   C2ME_PHP_BIN="${C2ME_PHP_BIN:-php}"
   C2ME_MYSQL_BIN="${C2ME_MYSQL_BIN:-$(command -v mariadb || command -v mysql || true)}"
@@ -716,9 +736,9 @@ c2me_test_compression() {
   local path="$1"
 
   if [[ "$C2ME_COMPRESSION_TOOL" == 'zstd' ]]; then
-    "$C2ME_ZSTD_BIN" -q -t -- "$path"
+    c2me_run "$C2ME_ZSTD_BIN" -q -t -- "$path"
   else
-    "$C2ME_GZIP_BIN" -t -- "$path" 2>/dev/null
+    c2me_run "$C2ME_GZIP_BIN" -t -- "$path" 2>/dev/null
   fi
 }
 
@@ -730,11 +750,17 @@ c2me_decompress() {
   case "$tool" in
     zstd)
       c2me_require_command "$C2ME_ZSTD_BIN" 'zstd'
-      "$C2ME_ZSTD_BIN" -d -q -o "$destination" -- "$source"
+
+      if ! c2me_run "$C2ME_ZSTD_BIN" -d -q -o "$destination" -- "$source"; then
+        c2me_die "échec de la décompression zstd de $source."
+      fi
       ;;
     gzip)
       c2me_require_command "$C2ME_GZIP_BIN" 'gzip'
-      "$C2ME_GZIP_BIN" -d -c -- "$source" >"$destination"
+
+      if ! c2me_run "$C2ME_GZIP_BIN" -d -c -- "$source" >"$destination"; then
+        c2me_die "échec de la décompression gzip de $source."
+      fi
       ;;
     *)
       c2me_die "outil de compression inconnu : $tool"

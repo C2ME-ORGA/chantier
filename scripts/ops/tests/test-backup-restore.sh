@@ -277,14 +277,56 @@ FAKE
 
 cat >"$fake_bin/gzip" <<FAKE
 #!/usr/bin/env bash
+mode=compress
+for arg in "\$@"; do
+  case "\$arg" in
+    -d|--decompress) mode=decompress ;;
+    -t|--test) mode=test ;;
+  esac
+done
 if [[ -n "\${FAKE_GZIP_BLOCK:-}" ]]; then
-  printf '%s\n' "\$\$" >"\${FAKE_GZIP_BLOCK_PID:-/dev/null}"
-  trap 'printf stopped >"\${FAKE_GZIP_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+  if [[ "\${FAKE_GZIP_BLOCK}" == 'any' || "\${FAKE_GZIP_BLOCK}" == "\$mode" ]]; then
+    printf '%s\n' "\$\$" >"\${FAKE_GZIP_BLOCK_PID:-/dev/null}"
+    trap 'printf stopped >"\${FAKE_GZIP_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+    while :; do
+      sleep 1
+    done
+  fi
+fi
+exec "$real_gzip" "\$@"
+FAKE
+
+cat >"$fake_bin/zstd" <<'FAKE'
+#!/usr/bin/env bash
+mode=compress
+output=""
+input=""
+
+while (($#)); do
+  case "$1" in
+    -d | --decompress) mode="decompress"; shift ;;
+    -t | --test) mode="test"; shift ;;
+    -o) output="$2"; shift 2 ;;
+    -q | -T0 | -10) shift ;;
+    --) shift ;;
+    *) input="$1"; shift ;;
+  esac
+done
+
+if [[ -n "${FAKE_ZSTD_BLOCK:-}" && "${FAKE_ZSTD_BLOCK}" == "$mode" ]]; then
+  printf '%s\n' "$$" >"${FAKE_ZSTD_BLOCK_PID:-/dev/null}"
+  trap 'printf stopped >"${FAKE_ZSTD_BLOCK_STOP:-/dev/null}"; exit 143' TERM
   while :; do
     sleep 1
   done
 fi
-exec "$real_gzip" "\$@"
+
+if [[ "$mode" == 'test' ]]; then
+  exit 0
+fi
+
+[[ -n "$output" ]] || { echo 'zstd factice : --output manquant' >&2; exit 1; }
+cp -- "$input" "$output"
 FAKE
 
 chmod +x "$fake_bin"/*
@@ -303,6 +345,7 @@ export C2ME_DB_DUMP_BIN="$fake_bin/mariadb-dump"
 export C2ME_AGE_BIN="$fake_bin/age"
 export C2ME_TAR_BIN="$fake_bin/tar"
 export C2ME_GZIP_BIN="$fake_bin/gzip"
+export C2ME_ZSTD_BIN="$fake_bin/zstd"
 export C2ME_OPERATOR="test-operator"
 export C2ME_HOST_ID="test-host"
 export FAKE_IMPORT_LOG="$work_dir/import.sql"
@@ -821,8 +864,17 @@ php "$project_root/scripts/ops/tests/make-tar-fixture.php" "$fixtures_dir/gnu-lo
 gnu_valid_output="$(php "$inspector" "$fixtures_dir/gnu-longname-valid.tar" 2>&1)"
 assert_contains "$gnu_valid_output" 'files=1' 'nom long GNU valide accepté'
 
+php "$project_root/scripts/ops/tests/make-tar-fixture.php" "$fixtures_dir/tail-zero-large.tar" tail-zero-large >/dev/null
+tail_large_output="$(php "$inspector" "$fixtures_dir/tail-zero-large.tar" 2>&1)"
+assert_contains "$tail_large_output" 'files=1' 'remplissage nul supérieur à 512 Kio accepté'
+
+php "$project_root/scripts/ops/tests/make-tar-fixture.php" "$fixtures_dir/tail-zero.tar" tail-zero >/dev/null
+tail_zero_output="$(php "$inspector" "$fixtures_dir/tail-zero.tar" 2>&1)"
+assert_contains "$tail_zero_output" 'files=1' 'reste entièrement nul accepté'
+
 for fixture_type in symlink hardlink fifo chardev blockdev traversal absolute outside dotdot corrupt-checksum truncated special-type \
-  pax-global pax-size pax-sparse pax-xattr pax-malformed pax-empty pax-contradictory gnu-longname-malformed gnu-longlink-malformed; do
+  pax-global pax-size pax-sparse pax-xattr pax-malformed pax-empty pax-contradictory gnu-longname-malformed gnu-longlink-malformed \
+  tail-nonzero-after-limit tail-nonzero-end; do
   php "$project_root/scripts/ops/tests/make-tar-fixture.php" "$fixtures_dir/$fixture_type.tar" "$fixture_type" >/dev/null
 
   if php "$inspector" "$fixtures_dir/$fixture_type.tar" >/dev/null 2>&1; then
@@ -1064,6 +1116,25 @@ assert_child_interrupted() {
   fi
 }
 
+# Jeu compressé en zstd, créé avant les tests d interruption pour que le
+# nombre de jeux reste stable pendant ces tests.
+zstd_output="$(C2ME_COMPRESSION=zstd bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  --confirm-workers-stopped --confirm-scheduler-disabled 2>&1)"
+zstd_status=$?
+zstd_set_id="$(extract SET_ID "$zstd_output")"
+
+if ((zstd_status == 0)) && [[ -n "$zstd_set_id" ]]; then
+  pass
+else
+  fail "un jeu compressé en zstd est nécessaire au test de décompression. Sortie : $zstd_output"
+fi
+
+if ls "$backup_root/sets/$zstd_set_id" 2>/dev/null | grep -q '\.zst\.age$'; then
+  pass
+else
+  fail 'le jeu zstd doit contenir un artefact .zst.age.'
+fi
+
 sets_before_children="$(ls -1 "$backup_root/sets" | wc -l | tr -d ' ')"
 
 # mariadb-dump bloqué
@@ -1100,7 +1171,7 @@ gzip_pid_file="$work_dir/child-gzip.pid"
 gzip_stop_file="$work_dir/child-gzip.stop"
 rm -f "$gzip_pid_file" "$gzip_stop_file"
 
-FAKE_GZIP_BLOCK=1 FAKE_GZIP_BLOCK_PID="$gzip_pid_file" FAKE_GZIP_BLOCK_STOP="$gzip_stop_file" \
+FAKE_GZIP_BLOCK=compress FAKE_GZIP_BLOCK_PID="$gzip_pid_file" FAKE_GZIP_BLOCK_STOP="$gzip_stop_file" \
   bash "$ops_dir/backup.sh" set --env staging --trigger manual \
   --confirm-workers-stopped --confirm-scheduler-disabled >"$work_dir/child-gzip.log" 2>&1 &
 child_main_pid=$!
@@ -1179,6 +1250,69 @@ if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
 else
   fail 'mariadb import interrompu : zone de travail non nettoyée.'
 fi
+
+# Décompression gzip bloquée pendant une restauration
+gzip_dec_pid_file="$work_dir/child-gzip-decompress.pid"
+gzip_dec_stop_file="$work_dir/child-gzip-decompress.stop"
+rm -f "$gzip_dec_pid_file" "$gzip_dec_stop_file"
+
+FAKE_GZIP_BLOCK=decompress FAKE_GZIP_BLOCK_PID="$gzip_dec_pid_file" FAKE_GZIP_BLOCK_STOP="$gzip_dec_stop_file" \
+  bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
+  --target-dir "$work_dir/restauration/child-gzip-decompress" --owner "$owner" --identity "$work_dir/id.age" \
+  >"$work_dir/child-gzip-decompress.log" 2>&1 &
+child_main_pid=$!
+
+if wait_for_file "$gzip_dec_pid_file"; then
+  kill -TERM "$child_main_pid" 2>/dev/null
+  wait "$child_main_pid" 2>/dev/null
+  child_status=$?
+
+  assert_child_interrupted 'gzip decompression interrompue' "$child_status" '143' "$gzip_dec_pid_file" "$gzip_dec_stop_file"
+else
+  fail 'le double de gzip ne s est pas bloqué pendant la décompression.'
+  kill -KILL "$child_main_pid" 2>/dev/null || true
+  wait "$child_main_pid" 2>/dev/null || true
+  rm -rf "$backup_root/.lock"
+fi
+
+if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
+  pass
+else
+  fail 'gzip decompression interrompue : zone de travail non nettoyée.'
+fi
+
+assert_dir_absent "$work_dir/restauration/child-gzip-decompress" 'aucune cible créée après interruption de gzip -d'
+
+zstd_dec_pid_file="$work_dir/child-zstd-decompress.pid"
+zstd_dec_stop_file="$work_dir/child-zstd-decompress.stop"
+rm -f "$zstd_dec_pid_file" "$zstd_dec_stop_file"
+
+FAKE_ZSTD_BLOCK=decompress FAKE_ZSTD_BLOCK_PID="$zstd_dec_pid_file" FAKE_ZSTD_BLOCK_STOP="$zstd_dec_stop_file" \
+  bash "$ops_dir/restore.sh" files --env staging --set "$zstd_set_id" \
+  --target-dir "$work_dir/restauration/child-zstd-decompress" --owner "$owner" --identity "$work_dir/id.age" \
+  >"$work_dir/child-zstd-decompress.log" 2>&1 &
+child_main_pid=$!
+
+if wait_for_file "$zstd_dec_pid_file"; then
+  kill -TERM "$child_main_pid" 2>/dev/null
+  wait "$child_main_pid" 2>/dev/null
+  child_status=$?
+
+  assert_child_interrupted 'zstd decompression interrompue' "$child_status" '143' "$zstd_dec_pid_file" "$zstd_dec_stop_file"
+else
+  fail 'le double de zstd ne s est pas bloqué pendant la décompression.'
+  kill -KILL "$child_main_pid" 2>/dev/null || true
+  wait "$child_main_pid" 2>/dev/null || true
+  rm -rf "$backup_root/.lock"
+fi
+
+if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
+  pass
+else
+  fail 'zstd decompression interrompue : zone de travail non nettoyée.'
+fi
+
+assert_dir_absent "$work_dir/restauration/child-zstd-decompress" 'aucune cible créée après interruption de zstd -d'
 
 # tar bloqué pendant l'extraction
 tar_pid_file="$work_dir/child-tar.pid"
@@ -1324,7 +1458,7 @@ status=$?
 
 if ((status != 0)); then
   pass
-  assert_contains "$output" 'sans hôte identifiable' 'verrou sans hôte refusé'
+  assert_contains "$output" 'sans hôte fiable' 'verrou sans hôte refusé'
 else
   fail 'un verrou sans hôte doit être refusé.'
 fi
@@ -1334,9 +1468,66 @@ status=$?
 
 if ((status != 0)); then
   pass
-  assert_contains "$output" 'sans hôte identifiable' 'libération d un verrou sans hôte refusée'
+  assert_contains "$output" 'sans hôte fiable' 'libération d un verrou sans hôte refusée'
 else
   fail 'la libération d un verrou sans hôte doit être refusée.'
+fi
+
+rm -rf "$backup_root/.lock"
+
+# Identité locale inconnue : prise et libération de verrou refusées.
+output="$(C2ME_HOST_ID=unknown bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  --confirm-workers-stopped --confirm-scheduler-disabled 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" "identité d'hôte non déterminable" 'identité locale inconnue refusée à la prise du verrou'
+else
+  fail 'une identité locale inconnue doit empêcher la prise du verrou.'
+fi
+
+mkdir "$backup_root/.lock"
+printf '%s\n' "$dead_pid" >"$backup_root/.lock/pid"
+printf '2026-11-13T00:00:00Z\n' >"$backup_root/.lock/started_at"
+printf 'test-host\n' >"$backup_root/.lock/host"
+
+output="$(C2ME_HOST_ID=unknown bash "$ops_dir/restore.sh" unlock --env staging --confirm-stale-lock 2>&1)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" "identité d'hôte locale non déterminable" 'identité locale inconnue refusée à la libération'
+else
+  fail 'une identité locale inconnue doit empêcher la libération du verrou.'
+fi
+
+rm -rf "$backup_root/.lock"
+
+# Verrou dont l'hôte vaut unknown : refusé à la prise et à la libération.
+mkdir "$backup_root/.lock"
+printf '%s\n' "$dead_pid" >"$backup_root/.lock/pid"
+printf '2026-11-13T00:00:00Z\n' >"$backup_root/.lock/started_at"
+printf 'unknown\n' >"$backup_root/.lock/host"
+
+output="$(run_backup set --env staging --trigger manual --confirm-workers-stopped --confirm-scheduler-disabled)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'sans hôte fiable' 'verrou host=unknown refusé'
+else
+  fail 'un verrou host=unknown doit être refusé.'
+fi
+
+output="$(run_backup unlock --env staging --confirm-stale-lock)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'sans hôte fiable' 'libération d un verrou host=unknown refusée'
+else
+  fail 'la libération d un verrou host=unknown doit être refusée.'
 fi
 
 rm -rf "$backup_root/.lock"

@@ -263,7 +263,7 @@ Règles complémentaires :
   2. envoient `TERM` aux processus concernés ;
   3. attendent leur terminaison réelle, avec escalade `KILL` après un délai borné ;
   4. seulement ensuite, suppriment la zone de travail et libèrent le verrou, puis terminent avec `129`, `130` ou `143`.
-- Les commandes critiques (`mariadb-dump`, `age`, `tar`, `zstd`/`gzip`, import `mariadb`) sont exécutées via `c2me_run`, qui suit le PID de l'enfant. Le verrou n'est jamais libéré tant qu'un processus enfant peut encore écrire.
+- Les commandes critiques (`mariadb-dump`, `age`, `tar`, `zstd`/`gzip` en compression **et décompression**, import `mariadb`) sont exécutées via `c2me_run`, qui suit le PID de l'enfant. Le verrou n'est jamais libéré tant qu'un processus enfant peut encore écrire.
 - Aucune opération ne reprend après le nettoyage.
 - Si le processus est tué par `SIGKILL`, aucun gestionnaire ne s'exécute : le verrou et le répertoire de travail peuvent subsister. La procédure de verrou orphelin (§10.4) s'applique ; le répertoire `incoming/` est examiné et jamais promu.
 - Aucun renommage final n'a lieu avant la vérification de compression, le chiffrement et le calcul du checksum.
@@ -429,6 +429,7 @@ Le manifeste est écrit **en dernier**, après tous les contrôles. Son propre S
 - Il lit `shared/storage` (traversée et lecture) mais n'y écrit jamais.
 - Il n'a aucun accès à l'autre environnement.
 - Les identifiants MySQL proviennent d'un fichier d'options en `0600`, jamais d'un argument de commande ni d'une variable exportée dans un journal.
+- L'hôte doit posséder un nom **stable et déterminable** (`hostname -s` non vide, différent de `unknown`) ou une variable `C2ME_HOST_ID` explicite. Une identité inconnue empêche la prise de verrou : les verrous ne sont jamais rattachés à un hôte ambigu.
 
 ### 8.4 Données déchiffrées
 
@@ -522,7 +523,8 @@ Une interruption brutale (`SIGKILL`, arrêt du serveur, coupure) peut laisser le
 Règles :
 
 - un verrou existant n'est **jamais supprimé automatiquement** ;
-- le champ `host` est lu et validé ; un verrou sans hôte identifiable, ou dont l'hôte diffère de l'hôte courant, est refusé : un PID distant ne constitue jamais une preuve de processus mort ;
+- l'identité d'hôte locale doit être **stable et déterminable** ; `unknown`, une valeur vide ou un hostname non résolu ne sont jamais acceptés. La prise d'un verrou est refusée si l'identité locale n'est pas fiable ;
+- le champ `host` est lu et validé ; un verrou sans hôte, vide ou égal à `unknown`, ou dont l'hôte diffère de l'hôte courant, est refusé : un PID distant ne constitue jamais une preuve de processus mort ;
 - sur l'hôte enregistré, le script vérifie si le PID est encore vivant (`kill -0`) ;
 - PID vivant : l'opération est refusée comme concurrente ; la libération est également refusée ;
 - PID absent, illisible ou mort sur le même hôte : l'opération est refusée avec la mention « verrou orphelin » et la commande de récupération ;
@@ -579,6 +581,7 @@ Le script de restauration refuse notamment :
 - une clé privée absente, lisible par le groupe ou les autres, ou située dans un emplacement interdit ;
 - une archive dont une entrée n'est pas un fichier régulier ou un répertoire sous `app/private` ou `app/public` : lien symbolique, lien physique, FIFO, socket, périphérique, entrée spéciale, chemin absolu, composant `.` ou `..`, nom avec barre oblique inverse ou hors périmètre ;
 - une archive dont l'en-tête est corrompu, tronqué, sans bloc de fin, ou dont le nombre de fichiers et le volume ne correspondent pas au manifeste ;
+- une archive dont les octets situés après le bloc de fin ne sont pas tous nuls : le reste du fichier est parcouru intégralement par blocs, sans limite de 512 Kio ;
 - une cible qui ne correspond pas à l'environnement déclaré du jeu, sauf dérogation écrite documentée ;
 - un opérateur sans droits suffisants pour appliquer le remappage d'appartenance.
 
@@ -797,6 +800,8 @@ Ces tests sont statiques : ils ne prouvent ni le comportement MariaDB 10.11, ni 
 - inspection d'archives malveillantes : symlink, hardlink, FIFO, périphériques, `../`, chemin absolu, entrée hors périmètre, en-tête corrompu, archive tronquée ;
 - en-têtes PAX : global `g`, `size`, `GNU.sparse.*`, `SCHILY.xattr.*`, enregistrement mal formé, en-tête vide, métadonnées contradictoires, nom long GNU mal formé, lien long GNU refusé ;
 - PAX `path` autorisé et nom long GNU valide acceptés ;
+- fin d'archive : remplissage nul supérieur à 512 Kio accepté, octet non nul juste après 512 Kio refusé, octet non nul en fin de fichier refusé, reste entièrement nul accepté ;
+- décompression interrompue : `gzip -d` et `zstd -d` bloqués, enfant terminé avant nettoyage et libération du verrou ;
 - refus d'une restauration dont l'archive contient une entrée interdite, sans création de la cible ;
 - détection d'un artefact altéré ;
 - refus d'une base de restauration préexistante ;
@@ -864,7 +869,8 @@ La démonstration réelle relève du runbook, sur un environnement isolé, avec 
 9. Confirmer le mode maintenance, l'arrêt des workers et la neutralisation du cron.
 10. Préparer un jeu de données de recette synthétique comprenant des fichiers déposés via l'application.
 11. Vérifier l'espace disque disponible.
-12. Prévoir un ticket d'exploitation pour consigner manifeste, checksums, journaux et rapport.
+12. Vérifier que l'identité d'hôte est stable et non `unknown` (`hostname -s`), ou définir `C2ME_HOST_ID` explicitement.
+13. Prévoir un ticket d'exploitation pour consigner manifeste, checksums, journaux et rapport.
 
 ### 17.3 Limites assumées
 

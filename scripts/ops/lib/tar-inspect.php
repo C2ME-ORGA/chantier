@@ -85,16 +85,8 @@ function tar_inspect(string $path): array
                 }
 
                 $sawEnd = true;
-                $remainder = $size - $position;
-
-                if ($remainder > 0) {
-                    fseek($handle, $position);
-                    $tail = fread($handle, (int) min($remainder, TAR_BLOCK_SIZE * 1024));
-
-                    if ($tail === false || trim($tail, "\0") !== '') {
-                        throw new RuntimeException('données non nulles après le bloc de fin TAR.');
-                    }
-                }
+                tar_assert_zero_tail($handle, $position, $size);
+                $position = $size;
 
                 break;
             }
@@ -343,6 +335,38 @@ function tar_assert_supported_format(string $header): void
 
     if (! $isPosixUstar && ! $isGnu) {
         throw new RuntimeException('format TAR non pris en charge : seuls ustar POSIX et GNU sont acceptés.');
+    }
+}
+
+/**
+ * Vérifie que tous les octets restants après le bloc de fin sont nuls.
+ * Lecture par blocs, sans charger l'archive en mémoire.
+ *
+ * @param  resource  $handle
+ */
+function tar_assert_zero_tail($handle, int $position, int $size): void
+{
+    $remaining = $size - $position;
+
+    while ($remaining > 0) {
+        $chunkSize = (int) min($remaining, 65536);
+
+        if (fseek($handle, $position) !== 0) {
+            throw new RuntimeException('lecture du remplissage TAR impossible.');
+        }
+
+        $chunk = fread($handle, $chunkSize);
+
+        if ($chunk === false || strlen($chunk) !== $chunkSize) {
+            throw new RuntimeException('lecture incomplète du remplissage TAR.');
+        }
+
+        if (trim($chunk, "\0") !== '') {
+            throw new RuntimeException('octets non nuls après le bloc de fin TAR.');
+        }
+
+        $position += $chunkSize;
+        $remaining -= $chunkSize;
     }
 }
 

@@ -68,6 +68,11 @@ function end_of_archive(): string
     return str_repeat("\0", BLOCK * 2);
 }
 
+function end_with_padding(int $zeroBytes): string
+{
+    return str_repeat("\0", (BLOCK * 2) + $zeroBytes);
+}
+
 function pax_record(string $key, string $value): string
 {
     $body = ' '.$key.'='.$value."\n";
@@ -207,6 +212,25 @@ $archive = match ($type) {
         .write_header('app/private/fichier.txt', '0', strlen($content))
         .write_data($content)
         .end_of_archive(),
+
+    'tail-zero-large' => write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_with_padding(600 * 1024),
+
+    'tail-zero' => write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_with_padding(4096),
+
+    'tail-nonzero-after-limit' => write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_with_padding(512 * 1024)
+        .'X'
+        .str_repeat("\0", 16),
+
+    'tail-nonzero-end' => write_header('app/private/fichier.txt', '0', strlen($content))
+        .write_data($content)
+        .end_with_padding(4096)
+        .'X',
 
     default => null,
 };

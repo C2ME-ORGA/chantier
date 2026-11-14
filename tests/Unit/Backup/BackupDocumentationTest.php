@@ -129,7 +129,10 @@ test('la documentation couvre les signaux, l inspection TAR et les verrous orphe
         ->toContain('Formats acceptés : **ustar POSIX** et **GNU**')
         ->toContain('PAX global')
         ->toContain('`GNU.sparse.*`')
-        ->toContain('un PID distant ne constitue jamais une preuve de processus mort');
+        ->toContain('un PID distant ne constitue jamais une preuve de processus mort')
+        ->toContain('identité d\'hôte locale doit être **stable et déterminable**')
+        ->toContain('sans limite de 512 Kio')
+        ->toContain('`gzip -d` et `zstd -d` bloqués');
 });
 
 test('le runbook documente la récupération d un verrou orphelin', function () use ($runbookPath): void {

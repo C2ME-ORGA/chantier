@@ -261,6 +261,7 @@ test('les archives sont créées sans ACL ni xattrs et inspectées strictement',
 
     expect($inspector)
         ->toContain('tar_assert_supported_format')
+        ->toContain('tar_assert_zero_tail')
         ->toContain('TAR_PAX_ALLOWED_KEYS')
         ->toContain("['path', 'linkpath']")
         ->toContain('en-tête PAX global g interdit')
@@ -269,7 +270,16 @@ test('les archives sont créées sans ACL ni xattrs et inspectées strictement',
         ->toContain('en-tête PAX malformé')
         ->toContain('métadonnées PAX et GNU contradictoires')
         ->toContain('en-tête GNU K (lien long) refusé')
-        ->toContain('métadonnées TAR sans entrée cible');
+        ->toContain('métadonnées TAR sans entrée cible')
+        ->toContain('octets non nuls après le bloc de fin TAR')
+        ->not->toContain('TAR_BLOCK_SIZE * 1024');
+
+    $fixtures = (string) file_get_contents($ops.'/tests/make-tar-fixture.php');
+
+    expect($fixtures)
+        ->toContain('tail-zero-large')
+        ->toContain('tail-nonzero-after-limit')
+        ->toContain('tail-nonzero-end');
 });
 
 test('les processus enfants sont terminés avant la suppression de la zone de travail et du verrou', function () use ($ops): void {
@@ -303,7 +313,10 @@ test('les processus enfants sont terminés avant la suppression de la zone de tr
     expect($common)
         ->toContain('c2me_run "$C2ME_AGE_BIN"')
         ->toContain('c2me_run "$C2ME_ZSTD_BIN"')
-        ->toContain('c2me_run "$C2ME_GZIP_BIN"');
+        ->toContain('c2me_run "$C2ME_GZIP_BIN"')
+        ->toContain('c2me_run "$C2ME_ZSTD_BIN" -d')
+        ->toContain('c2me_run "$C2ME_GZIP_BIN" -d')
+        ->toContain('c2me_run "$C2ME_ZSTD_BIN" -q -t');
 });
 
 test('le verrou est associé à l hôte et refuse une libération distante', function () use ($root, $ops): void {
@@ -313,12 +326,16 @@ test('le verrou est associé à l hôte et refuse une libération distante', fun
     expect($common)
         ->toContain('lock_host')
         ->toContain('verrou détenu par un autre hôte')
-        ->toContain('verrou sans hôte identifiable')
-        ->toContain("appartient à l'hôte");
+        ->toContain('sans hôte fiable')
+        ->toContain("appartient à l'hôte")
+        ->toContain("identité d'hôte non déterminable")
+        ->toContain("identité d'hôte locale non déterminable")
+        ->toContain("C2ME_HOST_ID=''");
 
     expect($doc)
         ->toContain('un PID distant ne constitue jamais une preuve de processus mort')
-        ->toContain('un verrou provenant d\'un autre hôte ne peut pas être libéré localement');
+        ->toContain('un verrou provenant d\'un autre hôte ne peut pas être libéré localement')
+        ->toContain('identité d\'hôte locale doit être **stable et déterminable**');
 });
 
 test('files.total_bytes ne somme que les fichiers réguliers', function () use ($ops): void {

@@ -33,7 +33,7 @@ Commandes :
 
 Options :
   --env <env>                 Environnement du jeu (obligatoire)
-  --set <set-id>              Jeu à restaurer (obligatoire)
+  --set <set-id>              Jeu à restaurer (obligatoire sauf pour unlock)
   --target-db <nom>           Base cible ; motif chantier_restore_YYYYMMDD_hex8
   --target-dir <chemin>       Répertoire cible neuf, hors racine applicative
   --owner <user:groupe>       Remappage d'appartenance (obligatoire pour files)
@@ -108,7 +108,10 @@ while (($#)); do
 done
 
 [[ -n "$env" ]] || c2me_die "l'option --env est obligatoire."
-[[ -n "$set_id" ]] || c2me_die "l'option --set est obligatoire."
+
+if [[ "$command" != 'unlock' ]]; then
+  [[ -n "$set_id" ]] || c2me_die "l'option --set est obligatoire."
+fi
 
 c2me_resolve_environment "$env"
 C2ME_DB_DEFAULTS_FILE="${C2ME_DB_DEFAULTS_FILE:-}"
