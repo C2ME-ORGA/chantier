@@ -21,7 +21,6 @@ source "$OPS_DIR/lib/common.sh"
 
 ATTESTATION_TOOL="$OPS_DIR/lib/rollback-attestation.php"
 ROLLBACK_LOCK_NAME='.release-operation.lock'
-C2ME_REQUIRE_FLOCK=1
 C2ME_CURL_BIN="${C2ME_CURL_BIN:-$(command -v curl || true)}"
 
 environment=""

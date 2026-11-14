@@ -104,6 +104,10 @@ export C2ME_HOST_ID="test-host"
 export C2ME_OPERATOR="test-operator"
 export C2ME_CURL_BIN="$fake_bin/curl"
 
+if ! command -v flock >/dev/null 2>&1; then
+  export C2ME_ALLOW_MISSING_FLOCK=1
+fi
+
 # ---------------------------------------------------------------------------
 # Bac à sable
 # ---------------------------------------------------------------------------
@@ -1067,7 +1071,7 @@ fi
 if command -v flock >/dev/null 2>&1; then
   setup_case 'garde-verrou' staging
   guard="$CASE_ROOT/shared/.release-operation.lock.guard"
-  : >"$guard"
+  mkdir "$guard"
   flock -x "$guard" -c 'sleep 3' &
   guard_holder=$!
   sleep 0.3
@@ -1105,13 +1109,13 @@ fi
 
 # Garde non régulier : acquisition refusée avant toute écriture.
 setup_case 'garde-non-regulier' staging
-mkdir "$CASE_ROOT/shared/.release-operation.lock.guard"
+: >"$CASE_ROOT/shared/.release-operation.lock.guard"
 output="$(run_rollback staging "$TARGET_ID")"
 status=$?
 
 if ((status != 0)); then
   pass
-  assert_contains "$output" 'garde non régulier' 'garde non régulier refusé'
+  assert_contains "$output" 'fichier de garde non régulier' 'garde non régulier refusé'
 else
   fail 'un garde non régulier doit empêcher le rollback.'
 fi
@@ -1124,11 +1128,94 @@ fi
 
 rm -rf "$CASE_ROOT/shared/.release-operation.lock.guard"
 
+# .guard symbolique : refus avant toute ouverture.
+setup_case 'garde-symbolique' staging
+ln -s "$CASE_ROOT/shared" "$CASE_ROOT/shared/.release-operation.lock.guard"
+output="$(run_rollback staging "$TARGET_ID")"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$output" 'garde symbolique' 'garde symbolique refusé'
+else
+  fail 'un garde symbolique doit empêcher le rollback.'
+fi
+
+if [[ ! -e "$CASE_ROOT/shared/.release-operation.lock" ]]; then
+  pass
+else
+  fail 'un verrou a été créé malgré un garde symbolique.'
+fi
+
+rm -f "$CASE_ROOT/shared/.release-operation.lock.guard"
+
+# Identité du descripteur : valide avant remplacement, refusée après.
+setup_case 'garde-identite-descripteur' staging
+guard_dir="$CASE_ROOT/shared/.release-operation.lock.guard"
+mkdir "$guard_dir"
+
+if (
+  source "$ops_dir/lib/common.sh"
+  exec {guard_fd}<"$guard_dir"
+  c2me_guard_validate_fd "$guard_dir" "$guard_fd" || exit 1
+  mv "$guard_dir" "$guard_dir.old"
+  mkdir "$guard_dir"
+  if c2me_guard_validate_fd "$guard_dir" "$guard_fd"; then
+    exit 1
+  fi
+  exit 0
+) 2>/dev/null; then
+  pass
+else
+  fail 'la validation du descripteur de garde doit détecter un remplacement.'
+fi
+
+rm -rf "$guard_dir" "$guard_dir.old"
+
+# flock absent : refus en mode production, tolérance uniquement en mode de test
+# explicitement autorisé.
+setup_case 'flock-absent-production' staging
+flock_output="$(
+  (
+    source "$ops_dir/lib/common.sh"
+    C2ME_FLOCK_BIN="$CASE_DIR/flock-absent"
+    c2me_guard_enter "$CASE_DIR/lock-production"
+  ) 2>&1
+)"
+status=$?
+
+if ((status != 0)); then
+  pass
+  assert_contains "$flock_output" 'flock est requis' 'flock absent refusé en production'
+else
+  fail 'flock absent doit être refusé hors mode de test.'
+fi
+
+if [[ ! -e "$CASE_DIR/lock-production.guard" ]]; then
+  pass
+else
+  fail 'un garde a été créé malgré l absence de flock.'
+fi
+
+status=0
+(
+  source "$ops_dir/lib/common.sh"
+  C2ME_FLOCK_BIN="$CASE_DIR/flock-absent"
+  C2ME_ALLOW_MISSING_FLOCK=1
+  c2me_guard_enter "$CASE_DIR/lock-test"
+) >/dev/null 2>&1 || status=$?
+
+if ((status == 0)); then
+  pass
+else
+  fail 'le mode de test explicite doit tolérer flock absent.'
+fi
+
 # Interruption pendant l'attente du garde à l'acquisition : aucun verrou ne
 # doit rester.
 setup_case 'interruption-acquisition' staging
 guard="$CASE_ROOT/shared/.release-operation.lock.guard"
-: >"$guard"
+mkdir "$guard"
 flock -x "$guard" -c 'sleep 5' &
 guard_holder=$!
 sleep 0.3

@@ -363,11 +363,30 @@ resolve_host_identity() {
   current_host="$host"
 }
 
-# Garde de sérialisation des mutations du verrou (flock). Il empêche tout
-# autre déploiement ou rollback de remplacer le verrou entre la vérification
-# du jeton et la suppression.
+# Garde de sérialisation des mutations du verrou (flock sur répertoire).
+# Le garde est un répertoire persistant ; son descripteur est vérifié avant et
+# après flock pour détecter un lien symbolique ou un remplacement.
 operation_lock_inode_of() {
   stat -c '%d:%i' -- "$1" 2>/dev/null || return 1
+}
+
+operation_guard_validate_fd() {
+  local guard="$1"
+  local fd="$2"
+
+  [[ -n "$fd" && -e "/proc/self/fd/$fd" ]] || return 1
+  [[ -d "$guard" && ! -L "$guard" ]] || return 1
+
+  local fd_path path_real fd_inode path_inode
+  fd_path="$(readlink -f "/proc/self/fd/$fd" 2>/dev/null || true)"
+  path_real="$(readlink -f "$guard" 2>/dev/null || true)"
+
+  [[ -n "$fd_path" && -n "$path_real" && "$fd_path" == "$path_real" ]] || return 1
+
+  fd_inode="$(stat -Lc '%d:%i' "/proc/self/fd/$fd" 2>/dev/null || true)"
+  path_inode="$(stat -c '%d:%i' "$guard" 2>/dev/null || true)"
+
+  [[ -n "$fd_inode" && "$fd_inode" == "$path_inode" ]]
 }
 
 operation_guard_enter() {
@@ -375,30 +394,48 @@ operation_guard_enter() {
   local guard="${lock_dir}.guard"
   local timeout="${DEPLOY_LOCK_GUARD_TIMEOUT:-30}"
 
-  [[ ! -L "$guard" ]] || die "fichier de garde symbolique interdit : $guard"
-
-  if [[ -e "$guard" && ! -f "$guard" ]]; then
-    die "fichier de garde non régulier : $guard"
-  fi
-
   command -v flock >/dev/null 2>&1 \
     || die "flock est requis pour le verrou partagé : opération refusée."
 
-  if ! exec {operation_guard_fd}>>"$guard"; then
+  if [[ -L "$guard" ]]; then
+    die "garde de verrou symbolique interdit : $guard"
+  fi
+
+  if [[ ! -e "$guard" ]]; then
+    if ! mkdir -- "$guard" 2>/dev/null; then
+      die "création du garde de verrou impossible : $guard"
+    fi
+
+    chmod 0700 "$guard" 2>/dev/null \
+      || die "permissions du garde de verrou non appliquées : $guard"
+  fi
+
+  if [[ -L "$guard" || ! -d "$guard" ]]; then
+    die "garde de verrou non régulier (répertoire attendu) : $guard"
+  fi
+
+  if ! exec {operation_guard_fd}<"$guard"; then
     operation_guard_fd=""
     die "ouverture du garde de verrou impossible : $guard"
   fi
 
-  if ! chmod 0600 "$guard" 2>/dev/null; then
+  if ! operation_guard_validate_fd "$guard" "$operation_guard_fd"; then
     exec {operation_guard_fd}>&-
     operation_guard_fd=""
-    die "permissions du garde de verrou non appliquées : $guard"
+    die "garde de verrou remplacé ou incohérent à l ouverture : $guard"
   fi
 
   if ! flock -x -w "$timeout" "$operation_guard_fd"; then
     exec {operation_guard_fd}>&-
     operation_guard_fd=""
     die "garde de verrou indisponible après ${timeout}s : déploiement refusé."
+  fi
+
+  if ! operation_guard_validate_fd "$guard" "$operation_guard_fd"; then
+    flock -u "$operation_guard_fd" 2>/dev/null || true
+    exec {operation_guard_fd}>&-
+    operation_guard_fd=""
+    die "garde de verrou remplacé après ouverture : déploiement refusé."
   fi
 }
 

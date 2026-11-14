@@ -360,6 +360,10 @@ export C2ME_OPERATOR="test-operator"
 export C2ME_HOST_ID="test-host"
 export FAKE_IMPORT_LOG="$work_dir/import.sql"
 
+if ! command -v flock >/dev/null 2>&1; then
+  export C2ME_ALLOW_MISSING_FLOCK=1
+fi
+
 run_backup() {
   local output
   output="$(bash "$ops_dir/backup.sh" "$@" 2>&1)"

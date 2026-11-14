@@ -138,55 +138,91 @@ C2ME_LOCK_OWNED=0
 C2ME_GUARD_FD=""
 
 # ---------------------------------------------------------------------------
-# Garde de sérialisation des mutations de verrou (Linux : flock)
+# Garde de sérialisation des mutations de verrou (Linux : flock sur répertoire)
 #
-# Toutes les opérations coopératives (acquisition, libération, récupération
-# d'un verrou orphelin) prennent ce garde avant de lire ou de modifier le
-# répertoire de verrou. La vérification du jeton et la suppression sont ainsi
-# dans la même section critique : un autre déploiement ou rollback ne peut pas
-# remplacer le verrou entre les deux.
+# Le garde est un répertoire persistant `<verrou>.guard`. Il est créé par mkdir,
+# ouvert en lecture, puis son descripteur est vérifié (chemin résolu, type,
+# inode) avant et après flock. Une ouverture qui suivrait un lien symbolique ou
+# un remplacement est détectée et refusée. Le garde n'est jamais supprimé.
 # ---------------------------------------------------------------------------
+
+c2me_guard_validate_fd() {
+  local guard="$1"
+  local fd="$2"
+
+  [[ -n "$fd" && -e "/proc/self/fd/$fd" ]] || return 1
+  [[ -d "$guard" && ! -L "$guard" ]] || return 1
+
+  local fd_path path_real fd_inode path_inode
+  fd_path="$(readlink -f "/proc/self/fd/$fd" 2>/dev/null || true)"
+  path_real="$(readlink -f "$guard" 2>/dev/null || true)"
+
+  [[ -n "$fd_path" && -n "$path_real" && "$fd_path" == "$path_real" ]] || return 1
+
+  fd_inode="$(stat -Lc '%d:%i' "/proc/self/fd/$fd" 2>/dev/null || true)"
+  path_inode="$(stat -c '%d:%i' "$guard" 2>/dev/null || true)"
+
+  [[ -n "$fd_inode" && "$fd_inode" == "$path_inode" ]]
+}
 
 c2me_guard_enter() {
   local lock_dir="$1"
   local guard="${lock_dir}.guard"
   local timeout="${C2ME_LOCK_GUARD_TIMEOUT:-30}"
+  local flock_bin="${C2ME_FLOCK_BIN:-$(command -v flock || true)}"
+
+  if [[ -z "$flock_bin" || ! -x "$flock_bin" ]]; then
+    if [[ "${C2ME_ALLOW_MISSING_FLOCK:-0}" -eq 1 ]]; then
+      C2ME_GUARD_FD=""
+      c2me_warn 'mode de test explicite : flock absent, garde de verrou non appliqué.'
+
+      return 0
+    fi
+
+    C2ME_GUARD_FD=""
+    c2me_die 'flock est requis pour sérialiser les mutations de verrou : opération refusée.'
+  fi
 
   if [[ -L "$guard" ]]; then
     c2me_die "fichier de garde symbolique interdit : $guard"
   fi
 
-  if [[ -e "$guard" && ! -f "$guard" ]]; then
-    c2me_die "fichier de garde non régulier : $guard"
-  fi
-
-  if ! command -v flock >/dev/null 2>&1; then
-    if [[ "${C2ME_REQUIRE_FLOCK:-0}" -eq 1 ]]; then
-      C2ME_GUARD_FD=""
-      c2me_die 'flock est requis pour sérialiser les mutations de verrou : opération refusée.'
+  if [[ ! -e "$guard" ]]; then
+    if ! mkdir -- "$guard" 2>/dev/null; then
+      c2me_die "création du garde de verrou impossible : $guard"
     fi
 
-    C2ME_GUARD_FD=""
-    c2me_warn 'flock indisponible : garde de verrou non appliqué sur cette plateforme.'
-
-    return 0
+    c2me_chmod 0700 -- "$guard" || {
+      c2me_die "permissions du garde de verrou non appliquées : $guard"
+    }
   fi
 
-  if ! exec {C2ME_GUARD_FD}>>"$guard"; then
+  if [[ -L "$guard" || ! -d "$guard" ]]; then
+    c2me_die "fichier de garde non régulier (répertoire attendu) : $guard"
+  fi
+
+  if ! exec {C2ME_GUARD_FD}<"$guard"; then
     C2ME_GUARD_FD=""
     c2me_die "ouverture du garde de verrou impossible : $guard"
   fi
 
-  c2me_chmod 0600 -- "$guard" || {
+  if ! c2me_guard_validate_fd "$guard" "$C2ME_GUARD_FD"; then
     exec {C2ME_GUARD_FD}>&-
     C2ME_GUARD_FD=""
-    c2me_die "permissions du garde de verrou non appliquées : $guard"
-  }
+    c2me_die "garde de verrou remplacé ou incohérent à l ouverture : $guard"
+  fi
 
-  if ! flock -x -w "$timeout" "$C2ME_GUARD_FD"; then
+  if ! "$flock_bin" -x -w "$timeout" "$C2ME_GUARD_FD"; then
     exec {C2ME_GUARD_FD}>&-
     C2ME_GUARD_FD=""
     c2me_die "garde de verrou indisponible après ${timeout}s : opération refusée."
+  fi
+
+  if ! c2me_guard_validate_fd "$guard" "$C2ME_GUARD_FD"; then
+    "$flock_bin" -u "$C2ME_GUARD_FD" 2>/dev/null || true
+    exec {C2ME_GUARD_FD}>&-
+    C2ME_GUARD_FD=""
+    c2me_die "garde de verrou remplacé après ouverture : opération refusée."
   fi
 }
 
