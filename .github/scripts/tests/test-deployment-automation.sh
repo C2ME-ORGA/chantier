@@ -2478,9 +2478,25 @@ assert_contains "$notes_file" "sera refusé" "Arbre différent non référencé"
 scripts_dir="$script_dir"
 workflows_dir="$project_root/.github/workflows"
 
-if grep -rEl 'artisan[[:space:]]+migrate|migrate[[:space:]]+--force' \
-  "$scripts_dir/lib" "$scripts_dir/deploy" "$scripts_dir/package" "$workflows_dir" >/dev/null 2>&1; then
-  fail "Aucune migration automatique ne doit être déclenchée."
+# CHAN-21 lot 2 : le job MariaDB éphémère de tests.yml exécute migrate:fresh
+# sur la base isolée chantier_test. Les workflows et scripts de déploiement
+# restent soumis à l'interdiction.
+migration_hits="$(grep -rEl 'artisan[[:space:]]+migrate|migrate[[:space:]]+--force' \
+  "$scripts_dir/lib" "$scripts_dir/deploy" "$scripts_dir/package" "$workflows_dir" 2>/dev/null \
+  | grep -vF "$workflows_dir/tests.yml" || true)"
+
+if [ -n "$migration_hits" ]; then
+  fail "Aucune migration automatique ne doit être déclenchée hors du job MariaDB isolé."
+else
+  pass
+fi
+
+unexpected_test_migrations="$(grep -nE 'artisan[[:space:]]+migrate|migrate[[:space:]]+--force' \
+  "$workflows_dir/tests.yml" 2>/dev/null \
+  | grep -vE 'php artisan migrate:fresh --force --no-interaction|php artisan migrate:status --no-ansi' || true)"
+
+if [ -n "$unexpected_test_migrations" ]; then
+  fail "Le workflow de tests ne doit exécuter que les migrations MariaDB isolées attendues."
 else
   pass
 fi
