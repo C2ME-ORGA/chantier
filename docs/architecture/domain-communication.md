@@ -1,26 +1,27 @@
-# Communication inter-domaines : contrats synchrones et événements
+# Communication inter-domaines : contrats, événements, fiabilité et évolution
 
 Ce document définit les conventions applicables aux **échanges entre domaines métier** de **C2ME Chantier** :
 
 - les **contrats synchrones** (Lot 2), lorsqu'un domaine demande une capacité à un autre et attend une réponse immédiate ;
-- les **événements inter-domaines** (Lot 3), lorsqu'un domaine annonce un fait métier accompli auquel d'autres domaines peuvent réagir indépendamment.
+- les **événements inter-domaines** (Lot 3), lorsqu'un domaine annonce un fait métier accompli auquel d'autres domaines peuvent réagir indépendamment ;
+- la **fiabilité, le synchronisme et l'évolution** (Lot 4), qui fixent les politiques transversales de choix, d'erreur, de reprise, d'idempotence, de traçabilité et de décision d'infrastructure.
 
 **Repères.**
 
 - Ticket : CHAN-28 — Définir les contrats et règles de communication inter-domaines.
 - Ticket parent : CHAN-10 — Mettre en place l'architecture Modular Monolith.
-- Portée : contrats synchrones (sections 1 à 14), événements inter-domaines (sections 15 à 22), propriété, structure, publication, consommation, idempotence, erreurs, tests et évolution.
-- Hors portée : files d'attente supervisées, Outbox, broker externe, architecture distribuée, matrice de dépendances CHAN-29, tests d'architecture CHAN-31 et harmonisation générale de `AGENTS.md` CHAN-30.
+- Portée : contrats synchrones (sections 1 à 14), événements inter-domaines (sections 15 à 22), fiabilité, synchronisme et évolution (sections 23 à 32), propriété, structure, publication, consommation, idempotence, erreurs et tests.
+- Hors portée : mise en œuvre d'une file d'attente supervisée, d'une Outbox, d'un broker externe ou d'une architecture distribuée, matrice de dépendances CHAN-29, tests d'architecture CHAN-31 et harmonisation générale de `AGENTS.md` CHAN-30.
 
-> **Statut : document de travail — Lots 2 et 3.**
+> **Statut : document de travail — Lots 2, 3 et 4.**
 >
-> Le Lot 2 formalise les contrats synchrones. Le Lot 3 formalise les événements inter-domaines. Aucun contrat, DTO, Model de domaine, Action, Service, événement, listener ou provider de domaine n'est implémenté à ce stade : les exemples sont **fictifs et pédagogiques**. Ils ne représentent ni un besoin métier validé, ni une fonctionnalité existante.
+> Le Lot 2 formalise les contrats synchrones. Le Lot 3 formalise les événements inter-domaines. Le Lot 4 consolide les règles de fiabilité, de synchronisme, de reprise, d'idempotence, de traçabilité et d'évolution. Aucun contrat, DTO, Model de domaine, Action, Service, événement, listener, job, worker, Outbox ou provider de domaine n'est implémenté à ce stade : les exemples sont **fictifs et pédagogiques**. Ils ne représentent ni un besoin métier validé, ni une fonctionnalité existante.
 >
-> Le Lot 3 est **documentaire**. Il ne crée aucune classe PHP, aucun test applicatif, aucune migration, aucune dépendance, aucun broker, aucune file d'attente supervisée et aucune configuration. Les règles ci-dessous décrivent la cible à respecter lors de l'implémentation réelle des premiers événements.
+> Les Lots 3 et 4 sont **documentaires**. Ils ne créent aucune classe PHP, aucun test applicatif, aucune migration, aucune dépendance, aucun broker, aucune file d'attente supervisée, aucune Outbox, aucun worker et aucune configuration. Les règles ci-dessous décrivent la cible à respecter lors de l'implémentation réelle des premiers échanges.
 
 Les conventions internes d'un domaine restent définies par [`domain-conventions.md`](domain-conventions.md) (CHAN-27). Ce document ne les remplace pas ; il les complète pour la frontière entre domaines.
 
-Les sections 1 à 14 sont la référence des contrats synchrones et ne sont pas rouvertes par le Lot 3. Les sections 15 à 22 sont la référence des événements inter-domaines. Les règles communes sont référencées, pas recopiées : propriété du contrat, interdiction d'importer l'implémentation interne, payload typé, absence de Model Eloquent dans les signatures publiques, autorisation côté fournisseur et discipline d'évolution.
+Les sections 1 à 14 sont la référence des contrats synchrones et ne sont pas rouvertes par les Lots 3 et 4. Les sections 15 à 22 sont la référence des événements inter-domaines. Les sections 23 à 32 sont la référence transversale de la fiabilité, du synchronisme et de l'évolution. Les règles communes sont référencées, pas recopiées : propriété du contrat, interdiction d'importer l'implémentation interne, payload typé, absence de Model Eloquent dans les signatures publiques, autorisation côté fournisseur et discipline d'évolution.
 
 ---
 
@@ -93,9 +94,9 @@ Ces décisions sont celles validées pour CHAN-28. Elles ne sont pas rouvertes p
 | Forme | Interface non imposée ; classe concrète par défaut lorsque cela suffit. |
 | Données | Entrées et sorties typées ; pas de Model Eloquent dans les signatures publiques. |
 | Identité | Pas de `App\Models\User` dans l'API publique ; représentation minimale explicite si nécessaire. |
-| Périmètre | Contrats synchrones (sections 1 à 14) ; événements inter-domaines traités au Lot 3 (sections 15 à 22). |
+| Périmètre | Contrats synchrones (sections 1 à 14) ; événements inter-domaines (sections 15 à 22) ; fiabilité, synchronisme et évolution (sections 23 à 32). |
 
-Les décisions propres aux événements inter-domaines sont formalisées en section 15.10. Elles complètent ce tableau sans rouvrir les décisions des contrats synchrones.
+Les décisions propres aux événements inter-domaines sont formalisées en section 15.10. Les politiques de fiabilité, de synchronisme et d'évolution sont formalisées dans la Partie III (sections 23 à 32). Elles complètent ce tableau sans rouvrir les décisions des contrats synchrones.
 
 ## 4. Structure et namespaces
 
@@ -2808,39 +2809,1228 @@ Ces règles doivent être automatisées lorsqu'un premier événement réel exis
 - [ ] Les tests couvrent le payload, l'après-commit, le rollback, le listener, l'erreur et l'idempotence.
 - [ ] Aucun broker, Outbox, worker ou retry complexe n'est introduit sans décision.
 
-## 23. Sujets différés
+La checklist de fiabilité transversale, qui couvre aussi les contrats synchrones, est en section 32.
 
-| Sujet | Ticket ou lot |
+---
+
+> **Partie III — Fiabilité, synchronisme et évolution.** Les sections 23 à 32 complètent les Parties I et II. Elles ne réécrivent pas les mécanismes déjà documentés : elles fixent les politiques transversales de choix, d'erreur, de reprise, d'idempotence, de traçabilité, d'évolution et de décision d'infrastructure. Les exemples BTP de cette partie restent illustratifs et ne valident aucune règle métier.
+
+## 23. Politique de synchronisme et d'asynchronisme
+
+### 23.1 Vocabulaire et principe
+
+Le choix entre synchrone et asynchrone est un **choix de responsabilité et de temps**, pas un choix de performance.
+
+- **Synchrone** : l'appelant attend le résultat avant de poursuivre. Un contrat synchrone est synchrone par définition. Un listener d'événement peut aussi être synchrone : il s'exécute dans le processus de l'émetteur, après le commit.
+- **Asynchrone** : le fait ou la demande est accepté, puis traité plus tard, dans un autre processus ou après la réponse. Un listener d'événement peut être asynchrone s'il est mis en file et si un worker supervisé le traite. Un job Laravel est un traitement différé lorsqu'il est mis en file ; il peut être exécuté en synchrone dans certains cas explicites.
+- **Outbox** : mécanisme de persistance du message dans la transaction métier, puis de publication par un relais. Ce n'est pas un mode d'exécution à lui seul et ce n'est pas une garantie d'exactly-once.
+
+Le choix doit être explicite dans l'Action, le listener, le job ou la fiche du contrat. Il ne doit pas être déduit d'une convention implicite ou d'un comportement fortuit du framework.
+
+### 23.2 Situations imposant un traitement synchrone
+
+| Situation | Pourquoi | Exemple BTP illustratif |
+| --- | --- | --- |
+| Une décision est nécessaire avant l'écriture suivante | Le consommateur ne peut pas continuer sans la réponse | Procurement vérifie le disponible budgétaire avant de créer une commande fournisseur. |
+| Une autorisation ou un invariant doit être vérifié avant le fait | Une réponse différée laisserait passer une opération interdite | Projects vérifie les conditions de clôture avant de clôturer une affaire. |
+| Une ressource doit être réservée ou son indisponibilité doit bloquer l'opération | L'opération ne doit pas être acceptée puis échouer silencieusement | Inventory confirme une réservation de stock avant une sortie chantier. |
+| L'utilisateur doit connaître le résultat pour agir | L'interface ne peut pas afficher un succès conditionnel | Validation d'un devis ou d'une commande. |
+| Une cohérence immédiate est exigée par une règle métier validée | Un traitement différé créerait un état intermédiaire inacceptable | Mouvement de stock ou écriture financière sensible. |
+| Une erreur doit empêcher l'opération initiale | Le consommateur doit pouvoir refuser ou annuler son propre fait | Contrôle d'un budget avant engagement. |
+| Une opération critique dont le rejeu n'est pas sûr | L'absence de réponse fiable impose un contrôle immédiat | Pointage validé et verrouillé avant consolidation. |
+
+Le synchrone n'est pas réservé aux contrats : un listener synchrone peut convenir lorsqu'une réaction est rapide, déterministe et que son échec doit être visible immédiatement. Il reste un listener : il ne retourne pas de valeur métier et ne transforme pas l'événement en requête.
+
+### 23.3 Situations autorisant un traitement asynchrone
+
+| Situation | Pourquoi | Exemple BTP illustratif |
+| --- | --- | --- |
+| Notification ou information non critique | Le fait métier est acquis ; un retard ou un échec n'empêche pas l'opération | Informer un responsable qu'une réception est disponible. |
+| Projection ou rapport | La donnée peut être recalculée depuis la source | Mise à jour d'un tableau de bord de suivi de chantier. |
+| Génération de document | La génération peut être retardée sans bloquer le fait | Production d'un bon de livraison ou d'un DOE. |
+| Traitement long ou appel externe lent | Le traitement ne doit pas bloquer la réponse utilisateur | Envoi d'un dossier à un fournisseur ou génération d'un PDF volumineux. |
+| Réaction indépendante à un fait accompli | L'émetteur n'attend pas de réponse | Enregistrement d'un coût après une réception de stock. |
+| Effet de bord idempotent et observable | Une répétition est sans conséquence ou détectable | Synchronisation d'une projection de reporting. |
+| Consommateur pouvant rattraper son retard | Le système accepte un état temporairement différé | Consolidation de temps validés vers Costing. |
+
+L'asynchrone n'est autorisé que si les conditions suivantes sont réunies :
+
+1. le fait métier est déjà accompli et durable ;
+2. une réponse immédiate n'est pas nécessaire ;
+3. le traitement est idempotent ou protégé contre les doublons ;
+4. un worker supervisé, une file et une surveillance existent ;
+5. les erreurs et les reprises ont un propriétaire opérationnel ;
+6. l'utilisateur ne reçoit pas une promesse de résultat immédiat qui serait fausse.
+
+### 23.4 Situations dans lesquelles l'asynchronisme est déconseillé
+
+| Situation | Risque | Recommandation |
+| --- | --- | --- |
+| Aucun worker supervisé n'est démontré | Jobs accumulés, traitement jamais exécuté | Rester synchrone ou ne pas mettre en file. |
+| Aucun mécanisme d'idempotence | Doublons de stock, de coût, d'email ou d'écriture financière | Traiter en synchrone ou concevoir l'idempotence d'abord. |
+| Aucun monitoring des échecs | Panne silencieuse, données incomplètes | Ne pas activer l'asynchrone avant supervision. |
+| La réponse conditionne la suite immédiate | L'utilisateur ou l'Action agirait sur un état incertain | Contrat synchrone. |
+| L'ordre est indispensable | Traitements dans le désordre, états incohérents | Orchestration explicite ou traitement synchrone. |
+| L'opération est financière, stock ou sécurité sans clé stable | Effets irréversibles ou dupliqués | Idempotence stricte et décision explicite. |
+| Le besoin est seulement d'éviter une latence | Complexité opérationnelle sans bénéfice démontré | Mesurer, optimiser ou utiliser un contrat ciblé. |
+| Le consommateur peut être indisponible longtemps | Retard non borné, attentes utilisateur non gérées | Outbox/queue avec supervision, ou synchrone. |
+
+### 23.5 Conséquences d'un listener synchrone lent
+
+| Conséquence | Effet |
+| --- | --- |
+| Latence | La durée du listener s'ajoute à la réponse de l'émetteur. |
+| Timeout | La requête peut expirer alors que le fait est déjà commité. |
+| Erreur après commit | L'appelant voit une erreur, mais le fait métier reste acquis. |
+| Saturation | Les processus PHP-FPM peuvent être monopolisés par des traitements lents. |
+| Retry utilisateur | L'utilisateur peut relancer l'opération et produire des doublons. |
+| Ordre et couplage | Les listeners s'exécutent séquentiellement ; un listener lent retarde les suivants. |
+| Effet de bord partiel | Certains listeners peuvent avoir réussi avant l'échec d'un autre. |
+
+Un listener synchrone doit rester court. Un traitement lourd, un appel réseau lent ou une génération de document ne doivent pas être exécutés dans le listener sans décision explicite.
+
+### 23.6 Conséquences d'un listener asynchrone indisponible
+
+| Conséquence | Effet |
+| --- | --- |
+| Jobs en attente | Les jobs restent dans la file ; aucun traitement n'a lieu sans worker. |
+| Retard | Les projections, notifications ou coûts sont retardés. |
+| Échec silencieux | Sans monitoring, l'absence de worker peut passer inaperçue. |
+| Retry | La file peut réessayer, mais peut aussi épuiser ses tentatives. |
+| `failed_jobs` | Les jobs échoués doivent être triés, rejoués ou abandonnés avec décision. |
+| Perte avant mise en file | Un crash entre le commit et la mise en file peut perdre l'événement. |
+| Ordre | L'ordre global n'est pas garanti. |
+| Attente utilisateur | L'utilisateur peut croire que l'effet est terminé alors qu'il est seulement planifié. |
+
+Un traitement asynchrone exige une supervision, une alerte, une procédure de reprise et une idempotence. Sans ces éléments, il ne doit pas être présenté comme disponible.
+
+### 23.7 Attentes de l'utilisateur et traitement différé
+
+| Situation | Attente à concevoir |
+| --- | --- |
+| Fait métier immédiat | L'interface confirme le fait, pas les effets différés. |
+| Effet différé | L'interface indique que le traitement est en cours ou planifié, sans promettre une date non maîtrisée. |
+| Échec différé | L'utilisateur ou l'opérateur doit pouvoir identifier l'échec et savoir quoi faire. |
+| Traitement rejoué | L'interface ne doit pas afficher un doublon comme un nouveau fait. |
+| Mode hors connexion | Le serveur reste l'autorité ; aucune promesse de traitement immédiat non confirmée. |
+
+Une interface ne doit pas écrire « envoyé », « enregistré » ou « clôturé » si seul un job a été mis en file. Elle doit distinguer le fait métier de ses conséquences.
+
+### 23.8 Responsabilités
+
+| Acteur | Responsabilité |
+| --- | --- |
+| Domaine émetteur | Produire le fait, publier après commit et documenter le mécanisme attendu. |
+| Domaine consommateur | Traiter l'événement ou la réponse, appliquer son idempotence, gérer ses erreurs et ses reprises. |
+| Auteur du contrat | Définir si la réponse est immédiate, quels échecs sont attendus et comment le consommateur poursuit. |
+| Auteur du job | Définir la file, les tentatives, le backoff, le timeout, l'idempotence et le comportement en échec. |
+| Exploitation | Superviser les workers, les files, les logs, les alertes et les `failed_jobs`. |
+| Architecture | Décider l'introduction d'une file, d'une Outbox ou d'un transport dédié selon les critères de la section 29. |
+
+### 23.9 Matrice de décision synchrone / asynchrone
+
+| Critère | Synchrone | Asynchrone |
+| --- | --- | --- |
+| Réponse immédiate nécessaire | Oui, l'appelant attend le résultat. | Non, le résultat est différé. |
+| Échec du traitement | Visible par l'appelant ; rollback possible avant commit. | Différé ; retry, `failed_jobs` ou reprise manuelle. |
+| Impact sur l'opération initiale | Peut l'empêcher ou la refuser. | Ne peut pas annuler un fait déjà commité. |
+| Latence | Ajoutée à la réponse. | Retirée de la réponse, subie plus tard. |
+| Retry | Décidé par l'appelant ; jamais aveugle. | Politique de file ; exécution possible plusieurs fois, sans garantie de succès. |
+| Supervision | Requête, base, logs et erreurs applicatives. | Worker, file, `failed_jobs`, alertes et procédure de reprise. |
+| Idempotence | Nécessaire si l'appelant peut rejouer. | Obligatoire pour tout effet de bord. |
+| Traçabilité | Logs de requête, corrélation, résultat. | Logs de job, contexte de file, `failed_jobs`, corrélation. |
+| Complexité | Plus simple à raisonner. | Plus complexe à exploiter et à tester. |
+| Cas typique | Décision, validation, réservation, contrôle bloquant. | Notification, projection, document, traitement long. |
+
+### 23.10 Matrice des mécanismes
+
+| Mécanisme | L'appelant attend-il ? | Échec | Retry | Supervision |
+| --- | --- | --- | --- | --- |
+| Contrat synchrone | Oui | Exception ou résultat typé ; peut bloquer ou annuler avant commit. | Aucun retry automatique ; appelant responsable. | Requête et base. |
+| Événement, listener synchrone | Non pour une réponse métier, mais le processus exécute le listener après commit. | Peut faire échouer la requête après commit ; les listeners suivants sont ignorés. | Aucun retry automatique. | Processus web/commande et logs. |
+| Événement, listener asynchrone | Non | Retry, `failed_jobs` ou perte selon la file. | Politique de file, si worker supervisé. | Worker, file, alertes. |
+| Job Laravel | Non | Retry, `failed_jobs` ou perte selon la configuration. | Politique de file. | Worker, file, alertes. |
+| Outbox future | Non | Message persisté, relais et consommateur peuvent échouer. | Relais et consommateur, avec idempotence. | Relais, file, worker, alertes, purge. |
+
+### 23.11 Exemples BTP illustratifs
+
+> Ces exemples sont **pédagogiques**. Ils ne créent aucune dépendance autorisée et ne valident aucune règle métier. La matrice CHAN-29 Lot 2 reste l'autorité sur les dépendances.
+
+| Processus | Besoin de décision | Mode recommandé | Pourquoi |
+| --- | --- | --- | --- |
+| Ouverture d'affaire | Projects accomplit le fait ; les autres domaines réagissent | Événement après commit ; listeners synchrones par défaut | Le fait est accompli ; les réactions ne doivent pas annuler l'ouverture. |
+| Validation de devis | Projects valide la transition ; Costing/Budgets peuvent être consultés | Contrat synchrone si une décision est nécessaire, puis événement après commit | La validation ne doit pas être acceptée sur une réponse différée. |
+| Commande fournisseur | Budgets vérifie le disponible avant l'engagement | Contrat synchrone avant création, événement après approbation | Une commande ne doit pas être créée sans disponible ou dérogation. |
+| Approvisionnement et réception | Inventory enregistre le fait physique | Opération synchrone Inventory, événement après réception | Le stock est la source de vérité ; la réaction des coûts peut être différée. |
+| Mouvement de stock | Inventory valide le mouvement | Synchrone et transactionnel ; événement après commit | Un décrément asynchrone non idempotent créerait un stock faux. |
+| Suivi de chantier | Projects/Planning produisent des faits | Événements et projections, éventuellement asynchrones | Un reporting différé est acceptable ; la décision contractuelle ne l'est pas. |
+| Pointage | TimeTracking valide et verrouille | Synchrone serveur ; consolidation éventuellement asynchrone | Le serveur reste l'autorité ; le temps validé peut être consolidé plus tard. |
+| Réservation de matériel | Inventory/Equipment confirme la disponibilité | Contrat synchrone | Une réservation différée ne doit pas laisser croire que la ressource est disponible. |
+| Clôture de chantier | Projects vérifie les conditions | Contrôles synchrones ; événement après clôture | La clôture ne doit pas être prononcée avant les contrôles ; les conséquences peuvent être différées. |
+
+### 23.12 Règles de décision
+
+1. Si une réponse est nécessaire pour poursuivre, utiliser un contrat synchrone.
+2. Si le fait est accompli et que la réaction peut être différée, utiliser un événement.
+3. Si l'échec de la réaction doit empêcher le fait, utiliser un contrat synchrone avant le commit, pas un événement.
+4. Si le traitement est long ou dépend d'un service externe lent, étudier l'asynchrone avec supervision.
+5. Si l'asynchrone n'a ni worker, ni idempotence, ni monitoring, rester synchrone ou ne pas implémenter.
+6. Si la perte après commit est inacceptable, étudier une Outbox selon la section 29.
+7. Ne jamais utiliser un événement comme RPC déguisé ni un contrat comme simple notification.
+8. Documenter le choix et ses limites dans l'Action, le contrat ou l'événement concerné.
+
+## 24. Politique de gestion des erreurs
+
+### 24.1 Principe
+
+Toutes les erreurs ne sont pas des incidents. Une **erreur métier attendue** est un résultat normal du domaine ; une **erreur technique** est un défaut d'exécution ou d'infrastructure. Les deux ne doivent pas être confondues, ni dans le code, ni dans les logs, ni dans l'interface.
+
+Une erreur survenue après le commit ne peut jamais être présentée comme un rollback de l'opération émettrice. Le fait métier est acquis ; seuls les effets du consommateur peuvent être incomplets.
+
+### 24.2 Catégories d'erreurs
+
+| Catégorie | Définition et exemple | Domaine responsable | Conséquence sur l'opération initiale |
+| --- | --- | --- | --- |
+| 1. Refus métier attendu | Une règle refuse l'opération : budget insuffisant, stock indisponible, client bloqué. | Domaine qui porte la règle. | L'opération est refusée ou bloquée ; aucun fait n'est produit. |
+| 2. Conflit d'état ou de transition | La ressource a changé : devis déjà accepté, commande déjà approuvée, période verrouillée, version obsolète. | Domaine propriétaire de l'état. | L'opération est refusée ; l'utilisateur doit recharger ou décider. |
+| 3. Erreur de validation métier | Un invariant ou une donnée obligatoire manque : date incohérente, imputation invalide, quantité négative. | Domaine qui valide l'invariant. | L'opération est refusée avant écriture. |
+| 4. Erreur technique temporaire | Deadlock, perte de connexion, timeout, limite de débit, indisponibilité brève. | Infrastructure ou adaptateur. | Rollback avant commit, ou retry si l'opération est idempotente. |
+| 5. Erreur technique permanente | Bug, schéma incompatible, classe absente, donnée illisible, configuration invalide. | Développement ou infrastructure. | L'opération échoue ; aucun retry aveugle. |
+| 6. Indisponibilité d'un service externe | API fournisseur, email, stockage externe indisponible. | Domaine qui appelle le service (émetteur ou consommateur). | Synchrone : opération bloquée ou différée ; asynchrone : retry ou échec. |
+| 7. Erreur de configuration ou d'infrastructure | File absente, worker non supervisé, disque de logs plein, base indisponible. | Exploitation. | Le traitement peut être bloqué ou les jobs non exécutés. |
+| 8. Erreur d'exécution d'un listener après commit | Le listener échoue après que le fait émetteur est commité. | Domaine consommateur. | Le fait reste acquis ; les effets du listener peuvent être partiels ou absents. |
+
+### 24.3 Traitement par catégorie
+
+| Catégorie | Nouvelle tentative | Remontée | Journalisation | Intervention humaine |
+| --- | --- | --- | --- | --- |
+| Refus métier attendu | Non | Oui, comme résultat ou exception publique | Info ou notice, sans stack trace | Souvent, pour décider ou corriger la demande |
+| Conflit d'état | Non automatique | Oui, conflit explicite | Warning avec état attendu/observé | Oui, pour recharger ou arbitrer |
+| Validation métier | Non | Oui, détail des champs/invariants | Info, sans donnée sensible | Oui, pour corriger la saisie |
+| Technique temporaire | Oui, si idempotent et borné | Oui si persistant | Error avec contexte | Si persistant ou critique |
+| Technique permanente | Non | Oui | Error ou critical | Oui, développeur/exploitation |
+| Service externe indisponible | Oui si sûr et idempotent | Oui si l'opération échoue | Warning/error selon criticité | Oui si le service reste indisponible |
+| Configuration/infrastructure | Non applicatif | Oui | Critical | Oui, exploitation |
+| Listener après commit | Selon idempotence et file | Oui, mais pas comme rollback | Error avec clé métier et listener | Oui si l'effet est critique |
+
+Les niveaux de journalisation sont indicatifs. Le niveau exact doit être adapté à la criticité et à la politique d'exploitation, sans exposer de donnée sensible.
+
+Pour les logs structurés, des codes stables peuvent être utilisés : `business_refusal`, `state_conflict`, `validation_error`, `transient_error`, `permanent_error`, `external_unavailable`, `infrastructure_error`, `post_commit_listener_error`. Ces codes ne remplacent pas le message métier et ne doivent pas contenir de donnée sensible.
+
+### 24.4 Quatre moments à ne pas confondre
+
+| Moment | État du fait | Comportement attendu |
+| --- | --- | --- |
+| Échec avant le commit de l'émetteur | Le fait n'est pas produit | Rollback, aucune publication, erreur rendue à l'appelant. |
+| Échec d'un listener synchrone après commit | Le fait est produit | L'erreur remonte après le commit ; aucun rollback ; les listeners suivants peuvent être ignorés. |
+| Échec d'un job asynchrone | Le fait est produit | Retry ou `failed_jobs` ; le fait reste acquis ; idempotence obligatoire. |
+| Échec d'une communication synchrone | Le fournisseur a peut-être commité | Le consommateur ne peut pas annuler le fournisseur ; prévoir compensation ou reprise. |
+
+### 24.5 Erreur d'un contrat synchrone
+
+Un contrat synchrone peut échouer de trois manières :
+
+- **refus métier** : le fournisseur déclare une exception publique ou un résultat typé ; le consommateur applique sa règle et arrête son opération ;
+- **conflit d'état** : le fournisseur signale que la ressource a changé ; le consommateur recharge ou demande une décision ;
+- **erreur technique** : le fournisseur ne peut pas répondre ; le consommateur ne doit pas la transformer en refus métier ni poursuivre comme si tout allait bien.
+
+Si le fournisseur a commité avant que le consommateur échoue, il n'y a pas de rollback inter-domaines. Le consommateur doit prévoir la compensation, la reprise ou l'arrêt explicite. Voir la section 9.4.
+
+### 24.6 Erreur d'un listener après commit
+
+Un listener synchrone s'exécute après le commit de l'émetteur. Une exception :
+
+- ne peut pas annuler le fait ;
+- peut faire échouer la requête ou la commande de l'émetteur ;
+- interrompt les listeners suivants ;
+- ne bénéficie d'aucun retry automatique ;
+- peut laisser un effet partiel.
+
+La réponse à apporter dépend de la criticité :
+
+| Criticité de la réaction | Réponse |
+| --- | --- |
+| Réaction indispensable au succès métier | Ne pas utiliser un événement : contrat synchrone avant commit. |
+| Réaction importante mais indépendante | Journaliser, alerter, prévoir une reprise manuelle ou un job idempotent. |
+| Réaction non critique | Journaliser et continuer ; ne pas faire échouer l'émetteur. |
+| Réaction inconnue ou non maîtrisée | Ne pas la brancher sur l'événement tant que son comportement n'est pas défini. |
+
+### 24.7 Erreur d'un job asynchrone
+
+Un job asynchrone doit définir :
+
+- les exceptions qui sont des échecs permanents et ne doivent pas être retentées ;
+- les exceptions temporaires qui peuvent être retentées ;
+- la politique de tentatives et de backoff, justifiée ;
+- le comportement en cas d'échec définitif ;
+- la procédure de reprise manuelle ;
+- l'idempotence de l'effet.
+
+`failed_jobs` conserve le job en échec, son payload et son exception. Ce n'est pas un journal métier durable et cela peut contenir des données sensibles. L'accès, la rétention et la purge doivent être maîtrisés.
+
+### 24.8 Erreur de configuration ou d'infrastructure
+
+Une file sans worker, un worker non supervisé, un disque de logs plein ou une base indisponible ne sont pas des erreurs métier. Ils doivent être :
+
+- détectés par la supervision ou le health check approprié ;
+- journalisés comme incidents d'exploitation ;
+- traités par une procédure opérationnelle ;
+- distingués d'un refus métier dans l'interface et les rapports.
+
+Le health check `/up` prouve que l'application répond, pas que les workers traitent les files, que les jobs réussissent ou que les intégrations externes fonctionnent.
+
+### 24.9 Représentation et exposition des erreurs
+
+| Type | Représentation | Exposition |
+| --- | --- | --- |
+| Refus métier attendu | Exception publique ou résultat typé du contrat | Message métier compréhensible, sans détail interne. |
+| Conflit d'état | Exception publique dédiée | Indication de recharger ou de demander une décision. |
+| Validation métier | Exception ou résultat de validation | Champs/invariants concernés, sans donnée sensible. |
+| Erreur technique | Exception technique, journalisée | Message générique ; pas de SQL, stack trace ou secret. |
+| Erreur de programmation | `LogicException` / `InvalidArgumentException` | Ne pas masquer ; corriger le code. |
+| Erreur après commit | Exception du listener, journalisée | Ne pas annoncer un rollback ; indiquer que le fait est acquis et que la réaction est en échec. |
+
+**Règles :**
+
+- ne pas capturer `\Throwable` pour ignorer silencieusement ;
+- ne pas convertir une erreur technique en refus métier ;
+- ne pas exposer de SQL, de trace, de token ou de donnée personnelle ;
+- ne pas journaliser le payload complet d'un événement ou d'une requête ;
+- utiliser `report()` pour les erreurs inattendues et un log adapté pour les erreurs prévues ;
+- documenter les exceptions publiques dans les contrats (`@throws`).
+
+### 24.10 Propriété et escalade
+
+| Erreur | Propriétaire | Escalade |
+| --- | --- | --- |
+| Refus métier | Domaine qui porte la règle | Utilisateur ou chargé d'affaires selon la règle. |
+| Conflit d'état | Domaine propriétaire de l'état | Utilisateur, superviseur ou direction selon la criticité. |
+| Validation métier | Domaine et interface | Utilisateur. |
+| Technique temporaire | Infrastructure ou adaptateur | Exploitation si persistant. |
+| Technique permanente | Développement | Équipe technique. |
+| Service externe | Domaine qui appelle le service et exploitation | Fournisseur ou direction si bloquant. |
+| Configuration/infrastructure | Exploitation | Responsable technique. |
+| Listener après commit | Domaine consommateur | Exploitation si l'effet est critique. |
+
+## 25. Politique de retry et de reprise
+
+### 25.1 Principe
+
+Un retry n'est pas une garantie de succès. C'est une **décision explicite** de répéter une opération qui a échoué pour une raison supposée temporaire, sur une opération dont la répétition est sûre.
+
+Un retry ne doit jamais être :
+
+- aveugle sur une erreur permanente ;
+- appliqué à une opération non idempotente ;
+- utilisé pour masquer un bug ;
+- configuré avec des nombres arbitraires sans justification ;
+- présenté comme une garantie exactly-once.
+
+### 25.2 Ce qui peut être retenté
+
+| Condition | Retry possible ? | Remarque |
+| --- | --- | --- |
+| Erreur technique temporaire et opération idempotente | Oui, avec limite et backoff | Deadlock, timeout, connexion perdue, rate limit. |
+| Erreur métier attendue | Non | Un refus ne devient pas un succès en réessayant. |
+| Conflit d'état | Non automatique | L'état doit être rechargé ou arbitré. |
+| Erreur de validation | Non | La donnée doit être corrigée. |
+| Erreur permanente | Non | Bug, schéma, configuration, donnée invalide. |
+| Service externe avec clé d'idempotence | Oui, si le fournisseur l'honore | Sinon, vérifier l'état avant de rejouer. |
+| Écriture financière ou stock non idempotente | Non | Concevoir l'idempotence avant toute reprise. |
+| Job avec effet de bord non idempotent | Non | Le job doit être corrigé ou protégé. |
+
+### 25.3 Retry d'un contrat synchrone
+
+Laravel n'ajoute aucun retry automatique autour d'un appel de contrat. Le consommateur décide explicitement de réessayer ou non.
+
+| Situation | Décision |
+| --- | --- |
+| Lecture ou décision sans effet de bord | Un nouvel appel est possible si l'erreur est temporaire. |
+| Commande idempotente avec clé stable | Retry possible avec la même clé. |
+| Commande non idempotente | Ne pas retenter sans vérification de l'état. |
+| Refus métier ou conflit | Ne pas retenter automatiquement. |
+| Erreur technique après un possible commit du fournisseur | Vérifier l'état auprès du fournisseur avant de rejouer. |
+
+Le consommateur ne doit pas envelopper un appel de contrat dans une boucle de retry générique sans connaître la sémantique de l'opération.
+
+Les tentatives intégrées à `DB::transaction($callback, $attempts)` concernent les erreurs de concurrence de la base. Elles ne doivent pas être utilisées pour retenter un effet externe non idempotent contenu dans le callback.
+
+### 25.4 Retry d'un listener synchrone
+
+Il n'existe aucun retry automatique pour un listener synchrone. Une exception remonte à l'appelant après le commit ; les listeners suivants ne sont pas exécutés.
+
+| Option | Usage |
+| --- | --- |
+| Ne pas retenter | Réaction non critique ou erreur permanente. |
+| Rejouer manuellement l'événement | Listener idempotent et procédure documentée. |
+| Concevoir un job idempotent | Réaction longue ou devant survivre à la requête, avec worker supervisé. |
+| Utiliser un contrat synchrone avant commit | La réaction doit empêcher le fait. |
+
+Un retry manuel doit utiliser la même identité métier et vérifier l'état actuel avant de produire un nouvel effet.
+
+### 25.5 Retry d'un job Laravel
+
+Laravel fournit nativement les tentatives, le backoff, le timeout, `maxExceptions`, `retryUntil` et la journalisation des échecs dans `failed_jobs` pour les jobs en file. Leur exécution réelle nécessite une file et un worker supervisé.
+
+| Élément | Règle |
+| --- | --- |
+| Nombre de tentatives | À définir par job selon la criticité, le coût et la nature de l'erreur ; aucun nombre global arbitraire. |
+| Backoff | À définir selon la cause : rate limit, contention, indisponibilité externe ; jitter si pertinent. |
+| Timeout | À définir selon la durée attendue et la possibilité d'annuler proprement. |
+| `maxExceptions` | Utile lorsqu'un job peut être retenté mais doit échouer après plusieurs exceptions réelles. |
+| `retryUntil` | Utile lorsqu'une fenêtre de reprise est plus pertinente qu'un nombre de tentatives. |
+| `failed_jobs` | File d'attente des échecs, pas un journal métier ; accès et rétention à maîtriser. |
+| `ShouldBeUnique` | Ne remplace pas l'idempotence ; ne garantit pas l'unicité d'exécution. |
+| `WithoutOverlapping` | Limite la concurrence, pas les doublons historiques. |
+
+Aucune configuration de retry n'est ajoutée dans ce lot. Les valeurs seront décidées lors de l'implémentation d'un job réel, avec une justification opérationnelle.
+
+### 25.6 Retry d'un appel externe
+
+Un appel externe ne doit être retenté que si :
+
+- l'erreur est temporaire ;
+- l'appel est idempotent ou le fournisseur accepte une clé d'idempotence ;
+- le délai et le nombre de tentatives sont bornés ;
+- le fournisseur ne facture pas deux fois et ne duplique pas l'effet ;
+- l'absence de réponse est traitée comme une ambiguïté, pas comme un échec certain.
+
+En cas de timeout, l'appel a peut-être réussi. Il faut vérifier l'état auprès du fournisseur avant de rejouer, ou utiliser une clé d'idempotence.
+
+### 25.7 Erreurs permanentes à ne pas retenter
+
+| Erreur | Pourquoi |
+| --- | --- |
+| Refus métier | La règle ne changera pas sans action humaine. |
+| Conflit d'état | La ressource a changé ; il faut recharger. |
+| Validation invalide | La donnée doit être corrigée. |
+| Autorisation refusée | Les droits doivent être modifiés. |
+| Schéma ou type incompatible | Le code ou la donnée doit être corrigé. |
+| Configuration absente | L'exploitation doit intervenir. |
+| Bug de programmation | Le retry reproduira le bug. |
+| Donnée définitivement absente | Le retry ne la créera pas. |
+
+### 25.8 Backoff et délais
+
+Le backoff doit être justifié par la cause de l'échec :
+
+- limite de débit : respecter `Retry-After` ou un délai plus long ;
+- contention base : délai court et jitter, sans marteler la base ;
+- service externe indisponible : délai progressif, avec limite ;
+- ressource locale saturée : retarder et alerter, pas seulement retenter ;
+- erreur de programmation : ne pas retenter.
+
+Aucun nombre de tentatives, délai initial, délai maximal ou durée de rétention n'est fixé par ce document. Ces valeurs dépendent du job, du fournisseur, de la criticité et de l'exploitation. Elles doivent être documentées et mesurées avant d'être figées.
+
+### 25.9 `failed_jobs` et reprise manuelle
+
+`failed_jobs` est disponible dans le schéma Laravel et `config/queue.php` utilise par défaut `database-uuids`. Cela ne prouve pas qu'un worker traite les jobs.
+
+| Règle | Niveau |
+| --- | --- |
+| Un job échoué n'est pas rejoué automatiquement en masse. | Obligatoire |
+| L'opérateur vérifie l'état métier avant `queue:retry`. | Obligatoire |
+| Le rejeu utilise la même clé d'idempotence. | Obligatoire |
+| Le payload et l'exception de `failed_jobs` sont traités comme des données sensibles. | Obligatoire |
+| La rétention et la purge de `failed_jobs` sont décidées par l'exploitation. | Obligatoire |
+| `queue:flush` n'est jamais utilisé pour masquer un incident. | Obligatoire |
+| Le rejeu est tracé dans le ticket ou le journal d'exploitation. | Recommandé |
+
+Commandes Laravel disponibles : `queue:failed`, `queue:retry`, `queue:forget`, `queue:flush`, `queue:prune-failed`. Elles ne remplacent ni une analyse d'impact ni une procédure de reprise.
+
+### 25.10 Responsabilité de l'opérateur lors d'un rejeu
+
+L'opérateur qui rejoue doit pouvoir répondre à :
+
+1. Quel fait métier est concerné ?
+2. Le job a-t-il déjà partiellement réussi ?
+3. L'effet est-il idempotent ?
+4. La même clé métier est-elle utilisée ?
+5. Faut-il corriger la donnée avant de rejouer ?
+6. Qui doit être informé du rejeu ?
+7. Comment vérifier le résultat après rejeu ?
+
+Sans ces réponses, le rejeu est une opération à risque et doit être escaladé. Le rejeu est une opération d'exploitation autorisée, pas une action utilisateur ordinaire.
+
+### 25.11 Tableau de synthèse
+
+| Mécanisme | Retry automatique | Conditions | Risque principal |
+| --- | --- | --- | --- |
+| Contrat synchrone | Non | Décision de l'appelant, opération idempotente | Double effet si la commande n'est pas idempotente. |
+| Listener synchrone | Non | Rejeu manuel documenté | Effet partiel et doublons. |
+| Listener asynchrone | Oui, si file | Worker, tentatives, idempotence | Exécution possible plusieurs fois, sans garantie de succès. |
+| Job Laravel | Oui, si file | Configuration du job | Retry storm, doublons, `failed_jobs`. |
+| Appel externe | Selon l'adaptateur | Idempotence ou clé fournisseur | Effet externe dupliqué. |
+| Outbox future | Relais + consommateur | Conception dédiée | Complexité, doublons, messages bloqués. |
+
+## 26. Politique d'idempotence et de déduplication
+
+### 26.1 Cinq niveaux à distinguer
+
+| Niveau | Question | Exemple |
+| --- | --- | --- |
+| Action métier | Rejouer la même opération avec la même identité produit-il le même état ? | Ouvrir une affaire déjà ouverte, valider une commande déjà approuvée. |
+| Contrat synchrone | Le fournisseur peut-il recevoir deux fois la même commande ? | Réserver deux fois la même quantité. |
+| Listener | Le même événement peut-il être traité deux fois ? | Enregistrer deux fois un coût. |
+| Job | Le job peut-il être retenté après un échec partiel ? | Générer deux fois un document. |
+| Appel externe | Le fournisseur peut-il recevoir deux fois la même demande ? | Envoyer deux fois un bon de commande. |
+
+L'idempotence n'est pas un attribut global d'un domaine. Elle se définit par opération, par effet de bord et par clé.
+
+### 26.2 Mécanismes de déduplication
+
+| Mécanisme | Force | Limite | Usage recommandé |
+| --- | --- | --- | --- |
+| Clé métier naturelle | Simple, lisible, stable | Ne couvre pas les faits multiples pour un même objet | Fait unique par affaire, réception, commande. |
+| Contrainte d'unicité en base | Forte en concurrence, atomique | Limitée à la base et au schéma | Création unique, mouvement, coût. |
+| Clé d'idempotence fournie par le consommateur | Explicite, contrôlable | Nécessite un stockage et une politique de rétention | Commande synchrone, job, API interne. |
+| Identifiant d'événement stable et persisté | Corrèle une occurrence précise | Nécessite une persistance ou une dérivation stable | Rejeu, file, dedup ciblée. |
+| Table de déduplication | Dédouble explicitement les traitements | Complexité, purge, transaction avec l'effet | Consommateur avec effet non naturellement unique. |
+| Journal de traitement | Traçabilité et diagnostic | Ne déduplique pas automatiquement | Audit, support, preuve de traitement. |
+| Clé d'idempotence d'un fournisseur externe | Délègue la protection au fournisseur | Dépend du fournisseur et de son délai | Appel API externe. |
+
+### 26.3 Critères de choix
+
+| Critère | Question | Conséquence |
+| --- | --- | --- |
+| Criticité métier | Une répétition peut-elle créer une perte financière, un stock faux ou un risque sécurité ? | Plus la criticité est élevée, plus la protection doit être forte et testée. |
+| Probabilité de répétition | Double clic, retry, job, rejeu, file, panne réseau ? | Un effet non idempotent doit être protégé dès qu'un rejeu est possible. |
+| Détectabilité | Peut-on reconnaître un doublon avant l'effet ? | Sinon, contrainte d'unicité ou clé persistée. |
+| Concurrence | Deux traitements peuvent-ils arriver simultanément ? | La contrainte en base est préférable à un `if` applicatif. |
+| Effet externe | Email, API, fichier, impression ? | Une contrainte locale ne protège pas l'extérieur. |
+| Stockage | Peut-on conserver la clé et le résultat ? | Sinon, l'idempotence est limitée. |
+| Coût | La protection est-elle proportionnée au risque ? | Ne pas imposer une table générique à tous les domaines. |
+
+### 26.4 Opérations sensibles
+
+| Opération | Risque | Protection minimale | Remarque |
+| --- | --- | --- | --- |
+| Mouvement de stock | Quantité doublée, stock négatif | Clé de mouvement stable + contrainte d'unicité + transaction | Le stock est la source de vérité ; le mouvement doit être atomique. |
+| Commande fournisseur | Engagement financier dupliqué | Identifiant de commande + état + contrainte sur référence externe | Ne pas recréer une commande sur un retry. |
+| Pointage et temps | Heures doublées, paie/cost faux | Identifiant d'opération hors connexion + contrainte collaborateur/date/source | Le serveur reste l'autorité ; les corrections sont tracées. |
+| Écriture financière/comptable | Coût ou engagement dupliqué | Clé de fait source + type d'écriture + période + audit | Aucun last-write-wins ; validation et traçabilité. |
+| Génération de document | Versions ou envois multiples | Clé document + source + version + stockage idempotent | Vérifier l'existence avant de régénérer. |
+| Notification/email | Doublon visible par l'utilisateur | Clé de notification ou journal d'envoi | Le fournisseur peut avoir une clé d'idempotence. |
+| Appel externe | Double commande ou double paiement | Clé fournisseur + vérification d'état | Un timeout n'est pas un échec certain. |
+
+### 26.5 Pas de table générique imposée
+
+Une table générique de déduplication n'est pas imposée à tous les domaines. Elle peut être justifiée lorsqu'un consommateur a plusieurs effets non naturellement uniques et qu'une clé métier ne suffit pas. Dans ce cas :
+
+- la table appartient au consommateur ou à un composant technique explicitement décidé ;
+- la clé, la portée, la rétention et la purge sont définies ;
+- l'écriture de la clé et l'effet sont dans la même transaction lorsque possible ;
+- la table n'est pas un event store et ne remplace pas l'audit métier ;
+- elle ne garantit pas l'exactly-once.
+
+### 26.6 Identifiant d'événement et clé métier
+
+Le Lot 3 a établi qu'un `eventId` n'est pas obligatoire et qu'un identifiant aléatoire régénéré à chaque tentative ne protège pas contre un nouvel appel de l'Action. Le Lot 4 conserve cette règle.
+
+| Situation | Clé à privilégier |
+| --- | --- |
+| Fait unique par objet métier | Identifiant métier de l'objet + type de fait |
+| Fait multiple pour un même objet | Identifiant métier de l'occurrence, persisté par le producteur |
+| Événement sérialisé et rejoué | Identité stable portée par l'événement, si elle existe |
+| Commande synchrone rejouable | Clé d'idempotence fournie par le consommateur |
+| Appel externe | Clé d'idempotence du fournisseur |
+
+Un identifiant technique d'événement n'est pas une clé métier. Il peut aider au diagnostic ou à la déduplication ciblée, mais il ne remplace pas une contrainte métier.
+
+### 26.7 Idempotence et retry
+
+L'idempotence doit être définie **avant** d'activer un retry. Un retry sur une opération non idempotente transforme une erreur temporaire en doublon permanent.
+
+| Retry | Idempotence requise |
+| --- | --- |
+| Retry d'un contrat de lecture | Non, mais le résultat peut avoir changé. |
+| Retry d'une commande synchrone | Oui, avec la même clé. |
+| Retry d'un listener | Oui, pour chaque effet de bord. |
+| Retry d'un job | Oui, pour chaque effet de bord. |
+| Retry d'un appel externe | Oui, ou clé fournisseur vérifiée. |
+
+### 26.8 Preuves et tests attendus
+
+Lors de l'implémentation réelle, les tests devront couvrir :
+
+- deux appels identiques avec la même clé ;
+- deux appels concurrents avec la même clé ;
+- un crash après l'effet de bord mais avant l'accusé ;
+- un rejeu manuel du même événement ou job ;
+- une erreur permanente qui ne doit pas être retentée ;
+- la vérification de l'état avant un nouvel appel externe.
+
+Aucun test applicatif n'est créé dans ce lot.
+
+## 27. Traçabilité et observabilité
+
+### 27.1 Quatre notions à distinguer
+
+| Notion | Rôle | Durabilité | Source de vérité |
+| --- | --- | --- | --- |
+| Journal technique | Diagnostiquer une requête, un job, une erreur ou une performance. | Souvent rotation et rétention courte. | Non. |
+| Audit métier | Conserver l'historique opposable d'un fait ou d'une décision métier. | Durable, accès contrôlé, rétention définie. | Non, sauf règle métier explicite. |
+| Historique de traitement | Savoir qu'un événement ou job a été traité, rejoué ou ignoré. | Dépend du mécanisme de déduplication. | Non. |
+| Source de vérité métier | État courant du domaine. | La base du domaine. | Oui. |
+
+Les logs ne sont ni un journal durable d'événements, ni un audit métier, ni une source de vérité. Un log perdu, tronqué ou expiré ne doit pas changer l'état métier.
+
+### 27.2 Champs minimaux d'un échange tracé
+
+| Champ | Obligation | Remarque |
+| --- | --- | --- |
+| `correlation_id` | Recommandé | Identifiant opaque de la chaîne de traitement, s'il existe déjà. |
+| `operation_id` | Conditionnel | Identifiant de l'opération métier ou de la demande d'origine. |
+| `event_id` | Conditionnel | Uniquement si un identifiant stable et persisté existe. |
+| Nom du contrat ou de l'événement | Obligatoire | Classe publique concernée. |
+| Domaine émetteur | Obligatoire | Domaine propriétaire du fait ou de la capacité. |
+| Domaine consommateur | Obligatoire | Domaine qui réagit ou appelle. |
+| Listener ou Action exécutée | Obligatoire | Classe et méthode responsables. |
+| Résultat | Obligatoire | `handled`, `refused`, `conflict`, `retried`, `failed`, `skipped`. |
+| Catégorie d'erreur | Conditionnel | Utiliser la taxonomie de la section 24. |
+| Durée | Recommandé | Utile pour détecter les traitements lents. |
+| Nombre de tentatives | Conditionnel | Pour les jobs et les reprises. |
+| Horodatages | Obligatoire | Date du fait, début et fin de traitement. |
+| Clé métier | Obligatoire si disponible | `affaireId`, `mouvementId`, `commandeId`, etc. |
+
+Un champ absent doit être absent, pas rempli avec une valeur inventée. Un `correlation_id` ne doit pas être confondu avec un identifiant métier.
+
+### 27.3 Ce qu'il faut journaliser
+
+| Élément | Pourquoi |
+| --- | --- |
+| Événement ou contrat | Identifier l'échange. |
+| Clé métier stable | Corréler avec le domaine. |
+| Domaine émetteur et consommateur | Localiser la responsabilité. |
+| Listener ou Action | Identifier le traitement. |
+| Résultat et catégorie d'erreur | Diagnostiquer sans relire tout le payload. |
+| Durée et tentative | Détecter les lenteurs et les reprises. |
+| Horodatages | Reconstituer la chronologie. |
+| Identifiant de corrélation | Relier les traitements d'une même chaîne. |
+
+### 27.4 Ce qu'il ne faut jamais journaliser
+
+- mots de passe, tokens, clés, secrets, cookies de session ;
+- données bancaires ou de paiement ;
+- données personnelles non nécessaires au diagnostic ;
+- coordonnées client complètes, contenu de document, notes libres sensibles ;
+- payload complet d'un événement, d'une requête ou d'un job ;
+- SQL brut avec paramètres, contenu de fichiers, données de santé ;
+- stack trace complète dans une réponse utilisateur ;
+- données d'un autre environnement.
+
+Les logs de `failed_jobs` contiennent le payload et l'exception du job. Ils doivent être protégés, purgés et accessibles uniquement aux personnes habilitées.
+
+### 27.5 Mécanismes Laravel natifs
+
+| Mécanisme | Usage | Limite |
+| --- | --- | --- |
+| `Log` | Journaliser un message et un contexte structuré. | Pas un audit durable. |
+| `Log::withContext()` | Ajouter un contexte au logger courant. | Portée du logger et du processus. |
+| `Context::add()` | Ajouter un contexte partagé, propagé aux jobs en file. | Doit rester sérialisable et sans secret. |
+| `Context::addHidden()` | Masquer une valeur dans les logs. | La valeur peut rester dans le payload du job ; ne pas y mettre de secret. |
+| `Context::scope()` | Contexte temporaire autour d'un traitement. | Ne remplace pas une corrélation persistante. |
+| Événements de queue | `JobQueued`, `JobProcessing`, `JobProcessed`, `JobFailed`, `JobExceptionOccurred`, `JobRetryRequested`, `JobTimedOut`. | Nécessitent une file et un worker ; ne prouvent pas le succès métier. |
+| Gestion des exceptions | `report()`, `render()`, `dontReport()`, `shouldRenderJsonWhen()`. | La configuration actuelle ne personnalise que le rendu JSON. |
+
+Laravel 13 propage le contexte de log aux jobs en file via le payload du job (`ContextServiceProvider`). Ce contexte doit donc rester sérialisable, minimal et non sensible.
+
+### 27.6 Identifiant de corrélation
+
+Un `correlation_id` est un identifiant opaque qui relie les logs d'une même chaîne de traitement. Il ne remplace ni l'identifiant métier, ni l'identifiant d'événement.
+
+| Règle | Niveau |
+| --- | --- |
+| L'identifiant de corrélation est généré au point d'entrée si aucun identifiant n'est fourni. | Recommandé |
+| Il est propagé dans le contexte de log et, si possible, aux jobs. | Recommandé |
+| Il ne contient aucune donnée personnelle ou secret. | Obligatoire |
+| Il n'est pas exposé dans une réponse publique. | Obligatoire |
+| Il ne sert pas de clé d'idempotence. | Obligatoire |
+| Aucun système externe de tracing/APM n'est introduit sans décision. | Obligatoire |
+
+Le dépôt ne possède pas aujourd'hui de mécanisme de corrélation global. La convention cible est de le générer au premier point d'entrée réel et de le propager via le contexte Laravel, sans créer de dépendance externe.
+
+### 27.7 Niveaux et catégories
+
+| Niveau | Usage |
+| --- | --- |
+| `debug` | Détail de développement, jamais en production par défaut. |
+| `info` | Fait métier normal, traitement réussi, résultat attendu. |
+| `notice` | Refus métier ou situation normale méritant une trace. |
+| `warning` | Conflit, retry, service externe lent, configuration à surveiller. |
+| `error` | Échec technique, job échoué, traitement incomplet. |
+| `critical` | Perte de données, sécurité, file ou base indisponible, incident majeur. |
+
+Les catégories de la section 24 peuvent être utilisées comme valeur structurée (`error_category`) pour filtrer les logs sans parser le message.
+
+### 27.8 État actuel du dépôt
+
+| Élément | Constat |
+| --- | --- |
+| `config/logging.php` | Canal par défaut `stack`, dont la stack par défaut est `single` ; canal `daily` disponible. |
+| `.env.example` | `LOG_CHANNEL=stack`, `LOG_STACK=single`, `LOG_LEVEL=debug`. |
+| Environnements | La documentation cible recommande `LOG_STACK=daily` et un niveau adapté ; ce n'est pas une preuve de la configuration réelle. |
+| `bootstrap/app.php` | Gestion d'exceptions Laravel standard, rendu JSON conditionnel ; aucun `report()`/`dontReport()` personnalisé. |
+| Journaux de déploiement | `shared/deployment.log` en JSONL, distinct par environnement. |
+| Journaux applicatifs | `shared/storage/logs`, distincts par environnement. |
+| Planificateur | `storage/logs/scheduler.log` par environnement. |
+| Health check | `/up`, sans preuve de l'état des workers, des files ou des intégrations. |
+| APM/tracing/monitoring | Aucun système externe identifié dans le dépôt. |
+| Workers | Aucune configuration Supervisor/Horizon ni preuve d'exécution. |
+| Tables de queue | `jobs`, `job_batches`, `failed_jobs` existent dans les migrations ; cela ne prouve pas qu'un worker les traite. |
+
+### 27.9 Audit, historique et source de vérité
+
+- Un **audit métier** est porté par le domaine propriétaire, avec une rétention et des droits définis. Il ne dépend pas de la rotation des logs.
+- Un **historique de traitement** peut être une table de déduplication ou un journal de job. Il ne remplace pas l'audit métier.
+- La **source de vérité** reste la base du domaine. Un log ou un événement ne doit pas être utilisé pour reconstruire l'état métier.
+- Un événement perdu ne doit pas être « reconstitué » à partir d'un log technique sans procédure explicite.
+
+### 27.10 Ce qu'il ne faut pas faire
+
+- présenter les logs comme un journal durable d'événements ;
+- journaliser le payload complet pour faciliter le debug ;
+- stocker un token ou un mot de passe dans le contexte de log ;
+- utiliser `Context` pour transporter un Model Eloquent ;
+- ajouter un APM ou un traceur externe sans décision ;
+- confondre `failed_jobs` avec un audit métier ;
+- se fier au health check HTTP pour prouver le traitement des files ;
+- laisser des logs sans rotation, rétention ou contrôle d'accès.
+
+## 28. Compatibilité et évolution des contrats
+
+### 28.1 Principes
+
+- Les contrats et événements sont des **API internes** consommées par d'autres domaines.
+- Le versionnement des packages Composer (SemVer) ne détermine pas la compatibilité d'un contrat interne.
+- L'évolution additive est la voie par défaut.
+- Une rupture est coordonnée avec les consommateurs connus.
+- Aucun suffixe `V2`, `V3` ou équivalent n'est introduit sans coexistence réelle.
+- Un changement de sémantique est une rupture même si la signature PHP ne change pas.
+
+Les règles détaillées des contrats sont en section 13 et celles des événements en section 19. Cette section consolide la procédure commune.
+
+### 28.2 Classification des changements
+
+| Changement | Contrat synchrone | Événement | Remarque |
+| --- | --- | --- | --- |
+| Ajouter un champ optionnel avec valeur par défaut | Compatible | Compatible | Documenter l'absence et la valeur par défaut. |
+| Ajouter un champ obligatoire | Incompatible | Incompatible | Casse les appels ou les payloads existants. |
+| Supprimer un champ | Incompatible | Incompatible | Un consommateur non mis à jour peut encore le lire. |
+| Renommer un champ | Incompatible | Incompatible | Traiter comme suppression + ajout. |
+| Changer le type d'un champ | Incompatible | Incompatible | Même si la valeur reste convertible. |
+| Changer la sémantique d'un champ | Incompatible | Incompatible | Rupture silencieuse la plus dangereuse. |
+| Ajouter une méthode à une classe concrète | Compatible | Sans objet | Ne pas modifier le comportement existant. |
+| Ajouter une méthode à une interface | Incompatible pour les implémentations | Sans objet | Les implémentations doivent être mises à jour. |
+| Ajouter un paramètre optionnel | Compatible pour les appels | Sans objet | Vérifier les implémentations et les tests. |
+| Renommer une classe ou un namespace | Incompatible | Incompatible | Casse les imports et l'enregistrement. |
+| Ajouter une exception publique | Conditionnel | Conditionnel | Un consommateur qui ne la gère pas peut changer de comportement. |
+| Changer le type ou le sens d'une exception | Incompatible | Incompatible | Casse le traitement des erreurs. |
+| Ajouter un cas à un enum | Conditionnel | Conditionnel | Un `match` exhaustif peut casser. |
+| Supprimer un cas d'enum | Incompatible | Incompatible | Les consommateurs peuvent encore l'envoyer ou l'attendre. |
+| Ajouter un événement | Sans objet | Compatible | Nouveau fait, aucun impact sur l'existant. |
+| Ajouter un listener | Sans objet | Compatible | Le producteur n'est pas modifié. |
+| Changer le moment de publication | Sans objet | Incompatible | Exemple : sync vers async, avant/après commit ; la signature peut rester identique. |
+| Changer le propriétaire du contrat | Incompatible | Incompatible | Déplace la responsabilité et les imports. |
+
+### 28.3 Procédure de changement incompatible
+
+1. **Identifier les consommateurs.** Catalogue, imports dans le code, listeners enregistrés, tests et documentation.
+2. **Mesurer l'impact.** Champs, types, sémantique, erreurs, timing, idempotence, volume et criticité.
+3. **Définir une stratégie de transition.** Champ additif, ancien et nouveau contrats coexistants, adaptateur consommateur, nouvelle classe, période de dépréciation.
+4. **Mettre à jour les consommateurs.** Dans la même Pull Request si possible, sinon dans des Pull Requests coordonnées.
+5. **Valider la compatibilité.** Tests de contrat, tests consommateurs, vérification des imports et des payloads, revue de la sémantique.
+6. **Supprimer l'ancienne forme après vérification.** Aucun consommateur connu ne doit encore en dépendre ; la suppression est elle-même une rupture annoncée.
+
+Aucune étape ne peut être sautée parce que le projet est en `0.x`.
+
+### 28.4 Exceptions publiques
+
+Une exception publique fait partie du contrat.
+
+- Ajouter une exception que le consommateur ne connaît pas peut changer son comportement.
+- Changer une exception en une autre classe casse les `catch` ciblés.
+- Changer le message ou le code stable doit être traité comme un changement de sémantique si le consommateur s'appuie dessus.
+- Une exception ne doit pas exposer de SQL, de trace, de secret ou de donnée interne.
+- Les exceptions attendues sont documentées avec `@throws` et testées.
+
+### 28.5 Enums publics
+
+| Changement | Compatibilité | Règle |
+| --- | --- | --- |
+| Ajouter un cas | Conditionnelle | Le consommateur doit gérer les valeurs inconnues sans comportement dangereux. |
+| Supprimer un cas | Incompatible | Un producteur ou un consommateur peut encore l'utiliser. |
+| Renommer un cas | Incompatible | Casse la valeur sérialisée et les `match`. |
+| Changer la valeur backed | Incompatible | Casse la persistance et la sérialisation. |
+
+Un enum public ne doit pas être utilisé comme un sac de statuts instables. Si les valeurs évoluent souvent, un contrat plus explicite ou un nouveau fait peut être préférable.
+
+### 28.6 Renommage et coexistence
+
+- Un renommage de classe, de namespace, de champ ou d'événement est une rupture.
+- Une coexistence temporaire peut être justifiée : ancienne classe dépréciée, nouvelle classe, adaptateur chez le consommateur.
+- Une classe dépréciée doit rester documentée et ne pas être réutilisée pour une nouvelle sémantique.
+- Une coexistence ne doit pas devenir permanente : elle doit avoir une condition de retrait.
+- Ne pas créer une copie locale d'un contrat pour éviter un renommage ; cela crée un second contrat non propriétaire.
+
+### 28.7 Dépréciation
+
+| Règle | Niveau |
+| --- | --- |
+| Le champ ou la classe déprécié reste fonctionnel pendant la transition. | Obligatoire |
+| Le docblock indique `@deprecated`, le remplacement et la condition de retrait. | Recommandé |
+| Le catalogue indique le statut `Deprecated`. | Recommandé |
+| Le consommateur est identifié et informé. | Obligatoire |
+| La suppression est annoncée et coordonnée. | Obligatoire |
+| Un nom déprécié n'est pas réutilisé pour une nouvelle sémantique. | Obligatoire |
+
+### 28.8 Versionnement
+
+| Sujet | Règle |
+| --- | --- |
+| Version du package Composer | Ne détermine pas la compatibilité des contrats internes. |
+| Version du projet | Ne remplace pas la compatibilité d'un contrat. |
+| Suffixe `V2`/`V3` | Exceptionnel, uniquement si plusieurs contrats doivent coexister. |
+| Nouveau fait métier | Nouvel événement au nom explicite, pas une version du même nom. |
+| Rupture réelle | Nouvelle classe ou nouveau namespace avec coexistence, ou migration coordonnée. |
+| Version dans le payload | Non par défaut ; un champ de version n'est pas une garantie de compatibilité. |
+
+### 28.9 Documentation et validation
+
+- Mettre à jour le docblock du contrat ou de l'événement.
+- Mettre à jour le catalogue des contrats ou des événements.
+- Décrire le changement, l'impact et les consommateurs dans la Pull Request.
+- Tester le producteur, chaque consommateur et les cas d'erreur.
+- Vérifier les imports et les usages dans le code.
+- Ne pas déclarer un changement compatible sans avoir vérifié les consommateurs connus.
+
+## 29. Critères d'évolution vers une Outbox, une file supervisée ou un transport dédié
+
+### 29.1 État actuel et principe
+
+| Élément | État actuel |
+| --- | --- |
+| Outbox | Aucune table, aucun relais, aucun mécanisme. |
+| Event store | Aucun. |
+| Broker externe | Aucun. |
+| File par défaut | `database` via `config/queue.php`. |
+| Worker supervisé | Non démontré ; aucune configuration Supervisor/Horizon dans le dépôt. |
+| Publication après commit | Callback en mémoire via `ShouldDispatchAfterCommit`. |
+| Perte après commit | Possible si le processus s'arrête avant l'exécution des listeners ou la mise en file. |
+| Rejeu automatique | Aucun pour les listeners synchrones. |
+| `failed_jobs` | Table disponible, mais aucun worker démontré. |
+
+> **Lecture de l'état réel.** `docs/development/environments.md` décrit une cible d'exploitation avec des workers séparés et supervisés, et `deployment-process.md` prévoit un `queue:restart` optionnel. Aucune configuration Supervisor/Horizon, aucun programme de worker et aucune preuve d'exécution ne sont présents dans le dépôt. Le Lot 4 ne considère donc pas l'asynchrone comme disponible par défaut.
+
+Le projet ne doit pas introduire une Outbox, une file supervisée ou un broker par anticipation. L'évolution doit être justifiée par un besoin observé, un risque métier et une capacité d'exploitation.
+
+### 29.2 Ce que résout une Outbox
+
+Une Outbox résout le **fossé entre le commit métier et la publication effective** :
+
+```text
+Transaction métier
+├─ écriture de l'état métier
+└─ écriture du message dans l'Outbox
+Commit atomique
+└─ relais
+   ├─ lit les messages non publiés
+   ├─ publie ou met en file
+   └─ marque comme publié
+```
+
+Sans Outbox, le scénario suivant perd l'événement :
+
+1. la transaction métier est validée ;
+2. le processus s'arrête avant l'exécution du listener ou la mise en file ;
+3. le fait est commité, mais aucun consommateur n'est informé ;
+4. aucun mécanisme ne sait qu'un message manque.
+
+Avec une Outbox, le message est écrit dans la même transaction que le fait. Si le processus s'arrête après le commit, le message reste en base et le relais peut le publier plus tard.
+
+### 29.3 Ce qu'une Outbox ne garantit pas
+
+| Croyance | Réalité |
+| --- | --- |
+| « L'Outbox garantit exactly-once. » | Non. Le relais peut publier deux fois ou le consommateur peut être relancé. |
+| « L'Outbox garantit que le consommateur réussit. » | Non. Elle apporte la persistance du message et sa mise à disposition pour publication, sans garantir l'exécution ni le succès du consommateur. |
+| « L'Outbox supprime les doublons. » | Non. Les consommateurs doivent rester idempotents. |
+| « L'Outbox garantit l'ordre global. » | Non, sauf conception explicite de l'ordre et du partitionnement. |
+| « L'Outbox est un audit métier. » | Non, sauf si elle est conçue et conservée comme telle. |
+| « L'Outbox remplace la supervision. » | Non. Le relais, la file et les consommateurs doivent être supervisés. |
+| « L'Outbox est obligatoire dès qu'un événement existe. » | Non. Elle répond à un besoin de durabilité ou de rejeu démontré. |
+
+### 29.4 Signaux justifiant une étude
+
+| Signal | Pourquoi | Preuve attendue |
+| --- | --- | --- |
+| Perte d'un événement après commit a un impact métier inacceptable | Le fait est commité mais le consommateur ne le sait jamais | Incident documenté, analyse d'impact, règle métier validée. |
+| Un consommateur peut être indisponible longtemps | Les listeners synchrones ne suffisent plus ; il faut reprendre plus tard | Durée d'indisponibilité observée, besoin de reprise. |
+| Un rejeu est nécessaire après panne ou correction | Les callbacks en mémoire ne sont pas durables | Procédure de rejeu, volume concerné, criticité. |
+| Le traitement est long et ne doit pas bloquer la réponse | Le synchrone dégrade l'expérience ou provoque des timeouts | Mesure de latence, durée de traitement, impact utilisateur. |
+| Le volume ou la concurrence dépassent le traitement en ligne | Les listeners synchrones ne tiennent pas la charge | Mesures, tendance, saturation observée. |
+| Les consommateurs doivent être indépendants du processus HTTP | Le traitement doit continuer après la réponse | Besoin d'exécution autonome, supervision. |
+| Un ordonnancement ou un partitionnement est nécessaire | La file simple ne suffit pas | Règle d'ordre métier, besoin de séquence. |
+| Un audit ou une durabilité opposable est exigé | Les logs ne suffisent pas | Exigence métier, légale ou contractuelle. |
+| Un transport externe ou multi-service est nécessaire | Le modular monolith ne suffit plus | Décision d'architecture explicite. |
+
+Aucun seuil numérique (volume, durée, nombre d'incidents, SLA) n'est fixé par ce document. Les seuils doivent être mesurés et validés dans le contexte réel.
+
+### 29.5 Matrice de décision
+
+| Besoin constaté | Laravel natif | Queue supervisée | Outbox | Transport dédié |
+| --- | --- | --- | --- | --- |
+| Notification non critique, perte tolérée | Événement après commit + listener synchrone | Possible mais non nécessaire | Non | Non |
+| Traitement long sans réponse immédiate | Non recommandé (bloque la réponse) | Oui, avec worker supervisé | Possible avec relais | Non nécessaire dans le monolithe |
+| Perte après commit inacceptable | Insuffisant | Insuffisant seul : la mise en file peut être perdue | Oui, message persisté dans la transaction | Possible si multi-services |
+| Rejeu et durabilité d'un fait | Insuffisant | Partiel : `failed_jobs` ne restaure pas un événement perdu | Possible si conçu avec rétention et rejeu | Possible si besoin externe |
+| Consommateur durablement indisponible | Insuffisant | Traitement différé possible si la file est durable et le worker supervisé | Possible, plus robuste | Possible si hors monolithe |
+| Ordre ou partitionnement | Non | Limité, non global | À concevoir | Oui |
+| Audit métier opposable | Non | Non | Non par défaut | Non par défaut |
+| Exactly-once | Non | Non | Non | Non |
+| Retry simple d'un job | Non | Oui | Oui avec relais | Non nécessaire |
+| Intégration externe ou multi-service | Non | Possible | Possible | Oui, après décision |
+
+### 29.6 Prérequis avant une Outbox
+
+Une Outbox ne doit être étudiée que si les prérequis suivants sont réunis :
+
+1. un événement et des consommateurs réels sont définis ;
+2. les consommateurs sont idempotents ;
+3. une clé métier ou un identifiant stable permet la déduplication ;
+4. les frontières de transaction du producteur sont claires ;
+5. le schéma de la table et les migrations sont planifiés ;
+6. un relais supervisé et un worker peuvent être mis en place et exploités ;
+7. les erreurs, blocages et messages non publiés sont monitorés ;
+8. une politique de rétention et de purge est définie ;
+9. les accès et les données sensibles sont protégés ;
+10. une procédure de rejeu et de reprise est documentée ;
+11. l'emplacement et le propriétaire de l'Outbox sont explicitement décidés : table par domaine ou composant technique partagé, sans dépendance du Core vers un domaine ;
+12. une décision d'architecture (ADR ou équivalent) est prise ;
+13. le coût d'exploitation est accepté.
+
+Une Outbox sans relais supervisé, sans monitoring et sans idempotence ne fait que déplacer le problème.
+
+### 29.7 Critères d'une file supervisée
+
+Une file supervisée est justifiée lorsque :
+
+- un traitement long ou peu critique peut être différé ;
+- un retry et `failed_jobs` sont nécessaires ;
+- un worker peut être supervisé, surveillé et redémarré ;
+- les jobs sont idempotents ;
+- l'équipe accepte la complexité d'exploitation.
+
+Une file supervisée ne garantit pas la durabilité du message entre le commit et la mise en file. Pour ce besoin, une Outbox ou un mécanisme équivalent est nécessaire.
+
+### 29.8 Critères d'un transport dédié
+
+Un broker ou un transport dédié peut être étudié lorsque :
+
+- plusieurs services ou processus indépendants doivent consommer ;
+- le volume ou la charge dépassent les capacités du monolithe ;
+- un ordonnancement, un partitionnement ou une diffusion externe est nécessaire ;
+- des partenaires externes doivent recevoir les messages ;
+- l'équipe peut exploiter un broker, des files, des permissions et un monitoring dédiés.
+
+Un transport dédié introduit une architecture distribuée. Il ne doit pas être choisi pour éviter une file Laravel ou une Outbox dans un modular monolith.
+
+### 29.9 Processus de décision
+
+1. Mesurer le problème réel.
+2. Documenter l'incident ou le besoin métier.
+3. Comparer les options dans une décision d'architecture.
+4. Vérifier les prérequis d'idempotence et de supervision.
+5. Réaliser un pilote limité si nécessaire.
+6. Décider explicitement avant toute implémentation.
+7. Prévoir le rollback, la rétention et l'exploitation.
+
+Aucune Outbox, table de messages, file supervisée, configuration de worker ou broker n'est implémentée dans ce lot.
+
+## 30. Synthèse des garanties
+
+### 30.1 Tableau transversal
+
+| Mécanisme | Livraison | Durabilité | Retry | Ordre | Idempotence | Traçabilité | Panne | Responsabilité opérationnelle |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Contrat synchrone | Réponse immédiate ou exception | Aucune garantie de reprise de l'appel | Aucun retry automatique ; appelant responsable | Ordre des appels | Requise si l'appelant peut rejouer | Logs de requête, corrélation | Le fournisseur peut avoir commité ; le consommateur gère | Web, base, domaine fournisseur |
+| Événement, listener synchrone | Listeners en processus après commit | Aucune ; callbacks en mémoire | Aucun retry automatique | Ordre d'enregistrement seulement | Requise chez le consommateur | Logs, clé métier, listener | Fait commité ; erreur après commit ; listeners suivants ignorés | Web/commande, domaine consommateur |
+| Événement, listener asynchrone | Exécution possible plusieurs fois après mise en file ; livraison effective non garantie | File persistante, mais perte possible avant mise en file | Politique de file | Non garanti globalement | Obligatoire | Contexte de job, logs, `failed_jobs` | Job retry/failed ; fait commité | Worker, file, exploitation |
+| Job Laravel | Exécution possible plusieurs fois après mise en file ; livraison effective non garantie | File persistante selon connexion | Oui, selon configuration | Non garanti globalement | Obligatoire | Contexte de job, logs, `failed_jobs` | Job retry/failed ; état métier à vérifier | Worker, file, exploitation |
+| Outbox future | Exécution possible plusieurs fois après publication durable ; livraison effective non garantie | Message persisté avec le fait | Relais et consommateur | À concevoir | Obligatoire | Outbox, logs, relais | Message bloqué, relais en échec, doublon possible | Relais, worker, purge, supervision |
+
+> **Lecture de la colonne « Livraison ».** Une exécution peut avoir lieu une ou plusieurs fois après mise en file ou publication durable. La livraison effective dépend de la persistance, de la disponibilité des workers ou du relais, de la politique de retry et de l'absence d'épuisement définitif des tentatives. Aucun succès du consommateur n'est garanti.
+
+| Étape | Ce que le mécanisme peut assurer | Ce qu'il ne garantit pas |
+| --- | --- | --- |
+| Persistance du message | Une Outbox écrit le message dans la transaction métier ; une file persistante conserve le job après mise en file. | La persistance avant la mise en file, la conservation éternelle ou la publication. |
+| Mise à disposition | Le message ou le job est disponible pour un worker ou un relais. | Qu'un worker ou un relais le prenne en charge. |
+| Exécution | Un worker peut exécuter le job ; un relais peut publier le message. | Que l'exécution commence, termine ou réussisse. |
+| Réussite du consommateur | Le consommateur peut traiter le message et produire son effet. | Le succès métier, l'absence de doublons et l'exactly-once. |
+
+Ces quatre états sont distincts : la persistance ne prouve pas la mise à disposition, la mise à disposition ne prouve pas l'exécution, et l'exécution ne prouve pas le succès métier.
+
+### 30.2 Garanties natives et infrastructure
+
+| Garantie | Laravel natif | Infrastructure supplémentaire |
+| --- | --- | --- |
+| Publication après commit | Oui avec `ShouldDispatchAfterCommit` et transaction active | — |
+| Absence de publication après rollback | Oui avec le mécanisme après-commit | — |
+| Listener synchrone exécuté dans le processus | Oui | — |
+| Retry d'un job en file | Oui si file et worker | Worker supervisé, politique de retry, `failed_jobs` |
+| Contexte de log propagé aux jobs | Oui, via `Context` | — |
+| Livraison durable après crash | Non | Outbox, event store ou équivalent |
+| Rejeu automatique d'un listener synchrone | Non | Procédure dédiée |
+| Ordre global | Non | Conception de file/partition |
+| Exactly-once | Non | Non garanti |
+| Audit métier | Non | Audit du domaine ou event store |
+| Déduplication | Non | Clé métier, contrainte, table dédiée |
+
+### 30.3 Règles de lecture
+
+- « Livraison » ne signifie jamais exactly-once ni une garantie de succès du consommateur.
+- « Durabilité » ne signifie pas que le consommateur a réussi.
+- « Retry » ne signifie pas que l'effet est sans danger.
+- « Ordre » n'est pas une garantie globale.
+- « Traçabilité » ne signifie pas audit métier.
+- « Responsabilité opérationnelle » n'est jamais supprimée par le framework.
+
+### 30.4 Garanties à ne pas promettre
+
+- livraison garantie d'un événement sans Outbox ou équivalent ;
+- exécution unique d'un listener ;
+- succès automatique d'un consommateur ;
+- ordre global des événements ;
+- rejeu automatique d'un listener synchrone ;
+- exactly-once de bout en bout ;
+- audit métier à partir des logs ;
+- traitement garanti d'un job sans worker supervisé.
+
+## 31. Exemples de fiabilité
+
+> **Exemples pédagogiques.** Aucun flux de cette section n'est implémenté. Les domaines, contrats, événements, jobs et dépendances sont illustratifs. La matrice CHAN-29 Lot 2 reste l'autorité sur les dépendances autorisées. Les règles métier citées renvoient aux documents CHAN-29 et ne sont pas validées par ce lot.
+
+### 31.1 Contrat synchrone dont l'échec bloque l'opération consommatrice
+
+**Contexte illustratif.** Procurement prépare une commande fournisseur pour un besoin de chantier. Avant de créer l'engagement, il doit vérifier le disponible budgétaire auprès de Budgets (P05, étape 3).
+
+**Mécanisme.** Contrat synchrone de lecture/décision, par exemple `BudgetAvailability` avec une `BudgetAvailabilityQuery` et un `BudgetAvailabilityResult`. Le nom exact reste à définir avec le premier consommateur réel.
+
+**Déroulement.**
+
+1. Procurement valide le besoin, le fournisseur et les quantités.
+2. Procurement appelle le contrat Budgets avec l'affaire, la ligne budgétaire, le montant et la nature.
+3. Budgets vérifie son enveloppe et retourne un résultat typé : disponible, refusé ou dépassement autorisé.
+4. Si le résultat est refusé, Procurement ne crée pas la commande et affiche le motif.
+5. Si le contrat échoue techniquement, Procurement ne poursuit pas comme si le disponible était acquis. Il peut retenter uniquement si l'appel est sûr et si l'état n'a pas changé.
+6. Si le disponible est confirmé, Procurement crée la commande dans sa propre transaction et publie l'événement après commit.
+
+**Échec et conséquences.**
+
+| Situation | Comportement |
+| --- | --- |
+| Refus métier | Aucune commande ; message métier ; aucune écriture Procurement. |
+| Conflit d'état | Recharger le budget ou demander une décision ; ne pas forcer la commande. |
+| Erreur technique | Ne pas créer la commande ; journaliser ; retry éventuel après vérification. |
+| Budgets indisponible | L'opération est bloquée ou différée selon la règle d'exploitation ; pas de disponible supposé. |
+| Procurement échoue après la vérification | Le contrôle n'a pas consommé le budget ; aucune transaction partagée ; la commande n'existe pas. |
+
+**Idempotence et traçabilité.** Le contrat de lecture ne doit pas avoir d'effet de bord. Si le besoin est une réservation de budget et non une simple consultation, utiliser une commande idempotente avec une clé stable. Tracer la clé de commande, l'affaire, la ligne, le résultat et la corrélation.
+
+**Limite.** Le contrôle de disponible n'est pas une réservation. Si deux commandes concurrentes peuvent consommer la même enveloppe, la règle de réservation ou de contrôle final doit être décidée par Budgets. La dépendance Procurement → Budgets reste soumise à CHAN-29.
+
+### 31.2 Événement après commit dont le listener échoue sans annuler le fait
+
+**Contexte illustratif.** Inventory enregistre une réception de stock pour une commande fournisseur (P05, étape 7). Après le commit, un listener Costing enregistre le coût matière et un listener Procurement met à jour l'échéancier.
+
+**Mécanisme.** Événement `GoodsReceived` (nom illustratif) publié après commit, avec un payload minimal : identifiant de réception, identifiant de commande, date, entrepôt ou affaire, clé de mouvement. Les listeners sont synchrones par défaut.
+
+**Déroulement.**
+
+1. Inventory valide la réception, crée le mouvement de stock et la réception dans une transaction.
+2. L'événement est dispatché dans la transaction ; `ShouldDispatchAfterCommit` diffère les listeners.
+3. La transaction est validée : le stock et la réception sont acquis.
+4. Le listener Costing échoue, par exemple parce que l'axe analytique est incomplet.
+5. Le listener Procurement peut avoir déjà réussi ou être ignoré selon l'ordre ; l'état est partiel.
+6. L'erreur remonte après le commit ; elle ne peut pas annuler la réception.
+
+**Comportement attendu.**
+
+| Point | Règle |
+| --- | --- |
+| Fait Inventory | Reste acquis. |
+| Coût Costing | Peut manquer ; il doit être identifiable et repris. |
+| Rollback | Impossible sur la réception. |
+| Retry | Manuel ou job idempotent, avec la même clé de réception. |
+| Interface | Ne pas afficher « réception annulée » ; indiquer que le traitement du coût est en échec si l'information est visible. |
+| Journal | Événement, réception, listener, catégorie d'erreur, tentative. |
+
+**Idempotence.** Costing utilise une clé `(source_type = GoodsReceived, source_id = reception, cost_type = matière)` et une contrainte d'unicité. Un rejeu ne crée pas un second coût. Procurement met à jour l'échéancier de façon conditionnelle.
+
+**Limite.** Si l'enregistrement du coût est indispensable au succès de la réception, ce n'est pas un événement : il faut un contrat synchrone avant le commit, ou une orchestration explicite. La dépendance Inventory → Costing/Procurement reste soumise à CHAN-29.
+
+### 31.3 Traitement asynchrone nécessitant une reprise
+
+**Contexte illustratif.** Logistics prépare un bon de livraison et doit générer un PDF puis l'envoyer au transporteur. La génération et l'envoi peuvent être différés sans bloquer la préparation du transport.
+
+**Mécanisme.** Job `GenerateAndSendDeliveryNote` mis en file après le fait `DeliveryPlanned`. Le job est idempotent : clé `deliveryId` + version du document ; stockage du PDF avec un nom stable ; envoi avec une clé d'idempotence fournisseur si disponible.
+
+**Déroulement.**
+
+1. Logistics valide le plan de transport et le commit.
+2. Le job est mis en file après commit.
+3. Le worker est indisponible : le job reste dans la file.
+4. À la reprise du worker, le job peut être exécuté.
+5. Le stockage ou l'API externe échoue temporairement : retry selon la politique du job.
+6. Une erreur permanente (template invalide, adresse manquante) envoie le job dans `failed_jobs`.
+7. L'opérateur corrige la donnée, vérifie que le PDF n'a pas déjà été envoyé, puis rejoue avec la même clé.
+
+**Comportement attendu.**
+
+| Situation | Comportement |
+| --- | --- |
+| Worker absent | Aucun traitement ; le job reste en file ; alerter l'exploitation. |
+| Échec temporaire | Retry borné avec backoff ; idempotence obligatoire. |
+| Échec permanent | `failed_jobs` ; intervention humaine ; pas de retry aveugle. |
+| Crash après génération avant envoi | Vérifier l'existence du PDF avant de régénérer. |
+| Crash après envoi avant accusé | Vérifier l'état chez le fournisseur ou utiliser sa clé d'idempotence. |
+| Perte entre commit et mise en file | Possible sans Outbox ; si inacceptable, étudier la section 29. |
+
+**Traçabilité.** Tracer `deliveryId`, version, job, tentative, résultat, durée et catégorie d'erreur. Ne pas journaliser le contenu du PDF ni les coordonnées du destinataire.
+
+**Limite.** Le job n'est pas une garantie de livraison. Sans worker supervisé, il ne s'exécute pas. Sans Outbox, un crash entre le commit et la mise en file peut perdre le job.
+
+### 31.4 Opération de stock nécessitant une idempotence stricte
+
+**Contexte illustratif.** Inventory enregistre un mouvement de stock à partir d'une réception ou d'une consommation. Une répétition du même mouvement doublerait la quantité et fausserait le stock et le coût matière.
+
+**Mécanisme.** Opération synchrone et transactionnelle dans Inventory, avec une clé de mouvement stable :
+
+```text
+(source_type, source_id, line_id, movement_type)
+```
+
+Une contrainte d'unicité en base protège la création. Le stock négatif est interdit sauf dérogation explicite et tracée.
+
+**Déroulement.**
+
+1. Inventory reçoit la demande de mouvement avec sa source et sa ligne.
+2. L'Action vérifie l'état, la quantité et les règles de stock.
+3. Elle crée le mouvement dans une transaction.
+4. La contrainte d'unicité empêche un second mouvement identique.
+5. Un rejeu avec la même clé retourne l'état existant ou ne fait rien, selon le contrat de l'Action.
+6. Une correction ultérieure est un nouveau mouvement motivé, jamais une modification silencieuse de la quantité.
+
+**Idempotence et traçabilité.** La clé métier est la source de vérité de la déduplication. Le mouvement porte un identifiant, un motif, un acteur, une date, la source et la corrélation. Costing peut ensuite valoriser le mouvement avec une clé `(source_type, source_id, cost_type)` pour éviter un double coût.
+
+**Limite.** Une contrainte d'unicité protège la base Inventory. Elle ne protège pas un email, un fichier ou un appel externe. Une opération financière ou comptable exige en plus un audit et une validation adaptés.
+
+### 31.5 Cas dans lequel une Outbox devient justifiée
+
+**Contexte illustratif.** Projects clôture une affaire (`AffaireClosed`) après réception, levée des réserves, DOE et finalisation des coûts. Handover, Costing, Budgets et Reporting doivent être informés. La perte de l'événement laisserait la clôture contractuelle, les coûts ou le reporting incohérents.
+
+**Pourquoi le natif ne suffit pas.** `ShouldDispatchAfterCommit` exécute les listeners après le commit, mais les callbacks sont en mémoire. Si le processus s'arrête entre le commit et l'exécution des listeners, l'événement est perdu. Une file seule ne suffit pas si le crash intervient avant la mise en file.
+
+**Ce qu'une Outbox apporterait.**
+
+1. La clôture et le message `AffaireClosed` sont écrits dans la même transaction.
+2. Le commit rend les deux durables.
+3. Un relais peut publier le message vers les consommateurs.
+4. Un message non publié reste visible et peut être repris.
+5. Les consommateurs restent idempotents par `affaireId` et type de fait.
+
+**Ce qu'elle ne garantirait pas.**
+
+- pas d'exactly-once ;
+- pas d'absence de doublons ;
+- pas de réussite automatique de Handover, Costing, Budgets ou Reporting ;
+- pas d'ordre global ;
+- pas d'audit métier par défaut.
+
+**Décision.** Une Outbox ne serait justifiée que si la perte de `AffaireClosed` est jugée inacceptable par une règle métier validée, si les consommateurs sont idempotents et si un relais supervisé, un monitoring et une procédure de rejeu existent. Aucun seuil numérique n'est fixé. Aucune Outbox n'est implémentée dans ce lot.
+
+**Limite.** La dépendance Projects → Handover/Costing/Budgets/Reporting reste soumise à CHAN-29. L'exemple ne valide ni l'ordre de clôture, ni les conditions de clôture.
+
+## 32. Checklist de revue de la fiabilité
+
+- [ ] Le choix synchrone/asynchrone est explicite et justifié.
+- [ ] Une réponse immédiate nécessaire n'est pas remplacée par un événement.
+- [ ] Un fait accompli n'est pas notifié par un contrat synchrone.
+- [ ] Un traitement asynchrone dispose d'un worker supervisé, d'une file et d'un monitoring.
+- [ ] Un listener synchrone lent est identifié et justifié.
+- [ ] Les attentes de l'utilisateur distinguent le fait métier de ses effets différés.
+- [ ] Les erreurs métier attendues sont distinguées des erreurs techniques.
+- [ ] Les conflits d'état et les erreurs de validation ne sont pas retentés aveuglément.
+- [ ] Une erreur après commit n'est jamais présentée comme un rollback.
+- [ ] Les erreurs techniques temporaires et permanentes sont distinguées.
+- [ ] Un retry n'est appliqué qu'à une opération idempotente et à une erreur temporaire.
+- [ ] Les nombres de tentatives, backoff, timeout et rétentions sont justifiés, pas arbitraires.
+- [ ] Un job en échec a une procédure de reprise et un propriétaire.
+- [ ] `failed_jobs` est protégé, purgé et jamais utilisé comme audit métier.
+- [ ] L'idempotence est définie par opération, pas supposée globale.
+- [ ] Les opérations de stock, finances, temps, documents et notifications sont protégées.
+- [ ] Une table de déduplication n'est pas imposée à tous les domaines.
+- [ ] Un identifiant d'événement n'est pas confondu avec une clé métier.
+- [ ] Les logs contiennent le contexte utile sans secret ni payload sensible.
+- [ ] L'identifiant de corrélation, s'il existe, n'est pas une clé métier.
+- [ ] Les logs ne sont pas présentés comme un journal durable ou un audit.
+- [ ] Le health check ne prouve pas le traitement des files.
+- [ ] Les changements de contrat sont additifs ou coordonnés.
+- [ ] Les exceptions et enums publics sont traités comme des contrats.
+- [ ] Un renommage ou une suppression est une rupture annoncée.
+- [ ] Aucun suffixe `V2`/`V3` n'est introduit sans coexistence réelle.
+- [ ] Une Outbox, une file supervisée ou un broker ne sont étudiés que sur un besoin mesuré.
+- [ ] Une Outbox n'est pas présentée comme une garantie d'exactly-once ou de succès consommateur.
+- [ ] Les prérequis d'idempotence, de supervision, de rétention et de rejeu sont réunis avant toute Outbox.
+- [ ] Le tableau des garanties est à jour et ne promet pas de livraison durable sans infrastructure.
+
+## 33. Sujets différés
+
+| Sujet | Ticket, lot ou décision |
 | --- | --- |
 | Matrice des dépendances autorisées et interdites entre domaines | CHAN-29 |
 | Tests d'architecture et contrôle automatisé des imports | CHAN-31 |
 | Harmonisation de `AGENTS.md` (`modules/`, Bootstrap, etc.) | CHAN-30 |
 | Files d'attente supervisées, workers, `failed_jobs` et reprise | Décision d'exploitation ultérieure |
-| Outbox, event store, durabilité et rejeu automatique | Décision d'architecture ultérieure |
+| Outbox, event store, durabilité et rejeu automatique | Décision d'architecture ultérieure, après application de la section 29 |
 | Broker externe et architecture distribuée | Hors périmètre CHAN-28 |
 | Déduplication générique et table de traitement | À instruire au premier besoin réel |
 | Stratégie d'identifiants UUID/ULID | Décision transversale / Identity |
 | Convention monétaire et devise | Décision transversale |
+| Politique de corrélation, tracing et APM | Décision d'exploitation ou d'architecture |
+| Rétention des logs, des `failed_jobs` et des historiques de traitement | Décision d'exploitation et de sécurité |
+| SLA, volumétrie, nombres de tentatives et délais de backoff | À mesurer et décider par job et par environnement |
 | Organisation des tests par domaine | Ticket d'implémentation du premier domaine |
 | Mapping des exceptions de contrat vers Livewire/Filament | Ticket d'interface concerné |
 | Catalogue exhaustif des contrats et des événements | À remplir au premier contrat et au premier événement réels |
 | Audit opposable des traitements | À définir avec l'exploitation et les besoins métier |
 
-## 24. Références
+## 34. Références
 
-- [`docs/architecture/domain-conventions.md`](domain-conventions.md) — conventions internes CHAN-27, notamment les événements locaux.
-- [`docs/architecture/domain-responsibilities.md`](domain-responsibilities.md) — responsabilités et périmètres des 18 domaines.
-- [`docs/architecture/business-processes.md`](business-processes.md) — processus P01 et P02, ouverture d'affaire.
-- [`docs/architecture/domain-boundary-decisions.md`](domain-boundary-decisions.md) — décisions V-09, V-10, V-11 et V-12.
-- [`docs/architecture/domain-interactions-register.md`](domain-interactions-register.md) — interactions métier, notamment INT-006, INT-007 et INT-014.
+- [`docs/architecture/domain-conventions.md`](domain-conventions.md) — conventions internes CHAN-27, notamment les événements locaux et l'orchestration.
+- [`docs/architecture/domain-responsibilities.md`](domain-responsibilities.md) — responsabilités et périmètres des 18 domaines, notamment Projects, Budgets, Costing, TimeTracking, Procurement, Inventory, Logistics et Handover.
+- [`docs/architecture/business-processes.md`](business-processes.md) — processus P01, P02, P05, P08, P09, P10 et P12.
+- [`docs/architecture/domain-boundary-decisions.md`](domain-boundary-decisions.md) — décisions V-09, V-10, V-11 et V-12, questions ouvertes et arbitrages.
+- [`docs/architecture/domain-interactions-register.md`](domain-interactions-register.md) — interactions métier, notamment INT-006, INT-007, INT-014 et les échanges de stock, coûts, temps et réception.
 - [`app/Core/README.md`](../../app/Core/README.md) — périmètre du noyau technique.
 - [`app/Domains/README.md`](../../app/Domains/README.md) — organisation des domaines.
-- [`AGENTS.md`](../../AGENTS.md) — règles générales du dépôt.
+- [`AGENTS.md`](../../AGENTS.md) — règles générales du dépôt, sécurité, tests et mode hors connexion.
 - [`docs/development/git-workflow.md`](../development/git-workflow.md) — branches, commits et Pull Requests.
-- [`docs/development/release-process.md`](../development/release-process.md) — contrat public externe et versionnement.
+- [`docs/development/release-process.md`](../development/release-process.md) — contrat public externe, versionnement et releases.
+- [`docs/development/deployment-process.md`](../development/deployment-process.md) — déploiement, workers, planificateur, health check et journaux.
+- [`docs/development/environments.md`](../development/environments.md) — environnements, journaux, files et workers cibles.
+- [`docs/development/application-rollback.md`](../development/application-rollback.md) — workers, files, jobs et reprise manuelle.
+- [`docs/development/backup-restore.md`](../development/backup-restore.md) — workers, cron, journaux et cohérence des sauvegardes.
+- [`config/queue.php`](../../config/queue.php) — connexion de file, `after_commit`, `failed_jobs`.
+- [`config/logging.php`](../../config/logging.php) — canaux et niveaux de journalisation.
+- [`bootstrap/app.php`](../../bootstrap/app.php) — configuration de l'application et rendu des exceptions.
+- [`database/migrations/0001_01_01_000002_create_jobs_table.php`](../../database/migrations/0001_01_01_000002_create_jobs_table.php) — tables `jobs`, `job_batches` et `failed_jobs`.
 - [Laravel 13 — Events](https://laravel.com/docs/13.x/events) — `ShouldDispatchAfterCommit`, `ShouldHandleEventsAfterCommit`, découverte et tests.
-- [Laravel 13 — Queues](https://laravel.com/docs/13.x/queues) — `ShouldQueueAfterCommit`, retries, `failed_jobs`.
-- [Laravel 13 — Database Transactions](https://laravel.com/docs/13.x/database#database-transactions) — `DB::afterCommit()` et transactions.
+- [Laravel 13 — Queues](https://laravel.com/docs/13.x/queues) — `ShouldQueueAfterCommit`, retries, `failed_jobs`, workers et événements de queue.
+- [Laravel 13 — Logging](https://laravel.com/docs/13.x/logging) — canaux, niveaux et contexte.
+- [Laravel 13 — Context](https://laravel.com/docs/13.x/context) — contexte de log, propagation et données masquées.
+- [Laravel 13 — Error Handling](https://laravel.com/docs/13.x/errors) — `report()`, `render()`, exceptions et logging.
+- [Laravel 13 — Database Transactions](https://laravel.com/docs/13.x/database#database-transactions) — `DB::afterCommit()`, transactions et tentatives.
 - [Laravel 13 — Service Container](https://laravel.com/docs/13.x/container) — autowiring, bindings et résolution contextuelle.
 - [Laravel 13 — Service Providers](https://laravel.com/docs/13.x/providers) — `register()`, `boot()` et enregistrement.
 - [Jira — CHAN-28](https://sarlc2me.atlassian.net/browse/CHAN-28) — ticket de référence.
