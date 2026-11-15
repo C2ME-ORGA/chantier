@@ -30,7 +30,7 @@ Les objets, interactions et questions sont détaillés dans les documents liés 
 Chaque étape indique :
 
 - le ou les **domaines responsables** de l'opération ;
-- les **domaines contributeurs** ;
+- les **domaines ou acteurs contributeurs** ;
 - les **informations d'entrée** nécessaires ;
 - le **résultat** produit ;
 - les **interactions** principales.
@@ -58,7 +58,7 @@ Les autres domaines fournissent une information ou consomment le résultat ; ils
 | P04 | Planification des ressources humaines et matérielles | Besoin d'exécution daté | Planning | Planning publié et ressources affectées |
 | P05 | Approvisionnement et gestion du stock central | Besoin matière ou seuil de stock | Procurement / Inventory | Commande, réception et stock disponible |
 | P06 | Fabrication interne en atelier | Besoin de fabrication validé | Workshop | Composants fabriqués et contrôlés |
-| P07 | Fabrication ou opération confiée à un prestataire | Décision de faire ou faire-faire | Procurement / Workshop | Prestation externe commandée et acceptée |
+| P07 | Fabrication ou opération externe — sous-traitance dans les deux sens | Décision de faire-faire ou commande reçue | Procurement / Projects / Handover | Prestation externe commandée ou exécutée selon le rôle de C2ME |
 | P08 | Préparation logistique et transport vers le chantier | Besoin de livraison | Logistics | Matériel livré et réceptionné sur site |
 | P09 | Réalisation des travaux sur chantier | Autorisation de démarrer | Projects | Travaux exécutés et suivis |
 | P10 | Suivi des temps, de l'avancement et des coûts | Exécution quotidienne et périodes de suivi | TimeTracking / Planning / Costing | Temps, avancement et coûts fiables |
@@ -100,17 +100,17 @@ Direction générale, direction commerciale, chargé d'affaires, bureau d'étude
 
 ### 3.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Détecter et qualifier le besoin | Clients | Projects | Créer ou retrouver le prospect, qualifier le besoin, identifier les contacts et rôles, vérifier les doublons | Prospect qualifié, contact et rôle identifiés (`CLI-01`, `CLI-03`, `CLI-04`) |
-| 2 | Ouvrir l'étude | Projects | Clients, Documents | Créer l'étude, rattacher le client ou prospect, décrire le périmètre, le site et les contraintes, ouvrir le dossier documentaire | Étude ouverte, périmètre initial et documents de référence (`PRJ-04`, `DOC-01`) |
-| 3 | Réaliser l'étude technique | Projects | Workshop, Quality, Safety, Documents | Visite de site, relevés, calculs, hypothèses techniques, faisabilité de fabrication, exigences qualité et sécurité | Dossier d'étude, hypothèses, plans et notes (`PRJ-04`, `QUA-01`, `SAF-01`) |
+| 2 | Ouvrir l'étude | Projects / Documents | Clients | Créer l'étude, rattacher le client ou prospect, décrire le périmètre, le site et les contraintes, ouvrir le dossier documentaire | Étude ouverte, périmètre initial et dossier documentaire (`PRJ-04`, `DOC-01`) |
+| 3 | Réaliser l'étude technique | Projects | Workshop, Quality, Safety, Documents | Visite de site, relevés, calculs, hypothèses techniques, faisabilité de fabrication, exigences qualité et sécurité | Dossier d'étude, hypothèses, plans et notes (`PRJ-04`) |
 | 4 | Chiffrer l'offre | Costing | Projects, Procurement, Workforce, Equipment, Workshop, Logistics | Quantifier, valoriser main-d'œuvre, matière, équipements, sous-traitance, transport et risques ; produire le chiffrage prévisionnel | Chiffrage et marge prévisionnelle (`CST-01`, `CST-05`) |
 | 5 | Consulter les fournisseurs et sous-traitants | Procurement | Costing, Workshop, Quality, Safety | Consulter, comparer et retenir les offres nécessaires au chiffrage | Offres et engagements prévisionnels (`PRC-04`) |
 | 6 | Vérifier la faisabilité et le planning indicatif | Planning | Projects, Workshop, Procurement, Workforce, Equipment | Vérifier les délais, les capacités, les approvisionnements longs et les contraintes de site | Planning indicatif et alertes (`PLN-01`, `PLN-05`) |
 | 7 | Construire le devis | Projects | Costing, Clients, Documents | Définir le prix, les prestations, les hypothèses, les exclusions, les conditions et la validité ; vérifier la marge cible | Devis versionné (`PRJ-05`, `CST-05`) |
-| 8 | Valider le devis | Projects | Direction, Costing, Budgets, Identity | Vérifier les droits, la marge, les risques, les remises et les conditions ; tracer la validation | Devis validé (`PRJ-05`, `DOC-01`) |
-| 9 | Envoyer et négocier | Projects | Clients, Documents | Envoyer le devis, suivre les échanges, produire les révisions, conserver l'historique | Devis envoyé ou révisé, relation commerciale mise à jour (`CLI-05`, `DOC-05`) |
+| 8 | Valider le devis | Projects | Direction, Costing, Budgets, Identity | Vérifier les droits, la marge, les risques, les remises et les conditions ; tracer la validation | Devis validé (`PRJ-05`) |
+| 9 | Envoyer et négocier | Projects / Documents | Clients | Envoyer le devis, suivre les échanges, produire les révisions, conserver l'historique | Devis envoyé ou révisé (`PRJ-05`, `DOC-05`) |
 | 10 | Accepter ou commander | Clients / Projects | Direction, Budgets, Costing | Enregistrer l'acceptation, la commande ou l'ordre de service ; convertir le prospect en client si nécessaire | Acceptation ou commande enregistrée (`PRJ-06`, `CLI-02`) |
 | 11 | Ouvrir l'affaire et le chantier | Projects | Clients, Budgets, Planning, Costing | Créer l'affaire, rattacher le contrat et les lots, créer le ou les chantiers, nommer les acteurs, notifier les domaines | Affaire et chantier ouverts (`PRJ-01`, `PRJ-02`, `PRJ-03`) |
 | 12 | Établir le budget de l'affaire | Budgets | Costing, Projects, Procurement | Reprendre le chiffrage accepté, construire les lignes budgétaires, valider l'enveloppe et la marge cible | Budget validé (`BUD-01`, `BUD-02`) |
@@ -187,9 +187,9 @@ Direction, chargé d'affaires, assistant commercial, contrôleur de gestion, pla
 
 ### 4.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Réceptionner et enregistrer la commande | Projects | Clients, Documents | Enregistrer la commande ou l'OS, rattacher le document, identifier la référence et la date | Commande enregistrée (`PRJ-06`, `DOC-01`) |
+| 1 | Réceptionner et enregistrer la commande | Projects / Documents | Clients | Enregistrer la commande ou l'OS, rattacher le document, identifier la référence et la date | Commande enregistrée (`PRJ-06`, `DOC-01`) |
 | 2 | Identifier et qualifier le donneur d'ordre | Clients | Projects | Retrouver ou créer le client/donneur d'ordre, vérifier les rôles et les contacts, détecter les doublons | Client et rôles identifiés (`CLI-02`, `CLI-04`) |
 | 3 | Vérifier la cohérence contractuelle | Projects | Costing, Budgets | Vérifier le périmètre, le prix, les délais, les conditions et les écarts avec l'offre ou le tarif | Analyse des écarts et risques contractuels |
 | 4 | Ouvrir l'affaire et le chantier | Projects | Clients, Budgets, Planning, Costing | Créer l'affaire, le chantier, les lots, rattacher le contrat et les acteurs | Affaire ouverte (`PRJ-01`, `PRJ-02`, `PRJ-03`) |
@@ -263,11 +263,11 @@ Chargé d'affaires, conducteur de travaux, bureau d'études, responsable atelier
 
 ### 5.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Tenir le kick-off de l'affaire | Projects | Tous les domaines concernés | Présenter le contrat, le périmètre, les lots, les risques, les acteurs et les règles du projet | Compte rendu de lancement, acteurs nommés (`PRJ-10`) |
 | 2 | Consolider le périmètre contractuel | Projects | Clients, Documents | Vérifier les pièces contractuelles, les limites de prestation, les interfaces et les responsabilités | Périmètre contractuel consolidé (`PRJ-08`) |
-| 3 | Réaliser les études techniques | Projects | Workshop, Quality, Safety | Produire les études d'exécution, notes de calcul, plans, spécifications et hypothèses | Dossier technique validé (`PRJ-04`, `DOC-01`) |
+| 3 | Réaliser les études techniques | Projects | Workshop, Quality, Safety, Documents | Produire les études d'exécution, notes de calcul, plans, spécifications et hypothèses | Dossier technique validé (`PRJ-04`) |
 | 4 | Préparer la fabrication | Workshop | Projects, Quality, Inventory, Procurement | Définir les nomenclatures, gammes, besoins matière, postes et décisions de faire ou faire-faire | Dossiers de fabrication et besoins matière (`WKS-01`, `WKS-02`) |
 | 5 | Valider le budget et la structure de coûts | Budgets / Costing | Projects, Procurement, Workforce | Valider l'enveloppe, les lignes, les taux, les axes analytiques et les règles d'imputation | Budget et structure de coûts (`BUD-01`, `CST-04`) |
 | 6 | Établir le planning d'exécution | Planning | Projects, Workforce, Equipment, Workshop, Procurement | Décomposer les activités, vérifier les capacités, affecter les ressources et publier le planning | Planning d'exécution (`PLN-01`, `PLN-03`) |
@@ -343,7 +343,7 @@ Planificateur, chargé d'affaires, conducteur de travaux, chef de chantier, resp
 
 ### 6.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Exprimer les besoins d'exécution | Projects | — | Fournir le périmètre, les lots, les jalons, les priorités et les contraintes de site | Besoins datés (`PRJ-01`, `PRJ-09`) |
 | 2 | Décomposer en activités | Planning | Projects, Workshop | Créer les activités, durées, dépendances, zones et contraintes | Activités planifiées (`PLN-02`) |
@@ -420,9 +420,9 @@ Acheteur, responsable achats, magasinier, responsable magasin, chargé d'affaire
 
 ### 7.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Exprimer le besoin | Projects / Workshop / Inventory | — | Décrire l'article, la quantité, la date, la destination et le lot | Demande de besoin (`PRC-03`) |
+| 1 | Recueillir et qualifier la demande d'achat | Procurement | Projects, Workshop, Inventory | Décrire l'article ou la prestation, la quantité, la date, la destination et le lot | Demande d'achat (`PRC-03`) |
 | 2 | Vérifier le stock disponible | Inventory | — | Consulter le stock, les réservations et les mouvements prévus | Disponibilité ou pénurie (`INV-01`, `INV-07`) |
 | 3 | Valider le disponible budgétaire | Budgets | Costing, Procurement | Vérifier l'enveloppe, le disponible et la nature de coût | Autorisation ou refus (`BUD-01`) |
 | 4 | Consulter et sélectionner le fournisseur | Procurement | Quality, Safety | Consulter, comparer, vérifier la qualification et retenir l'offre | Offre retenue (`PRC-04`) |
@@ -501,7 +501,7 @@ Responsable atelier, bureau d'études atelier, chef d'atelier, opérateurs, soud
 
 ### 8.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Décider faire ou faire-faire | Projects / Workshop | Procurement, Budgets, Quality | Comparer capacité, coût, délai et risque ; décider l'exécution interne ou externe | Décision tracée (`WKS-01`) |
 | 2 | Créer l'ordre de fabrication | Workshop | Projects, Planning | Créer l'OF, rattacher l'affaire, le lot, les quantités et les dates | OF lancé (`WKS-01`) |
@@ -509,7 +509,7 @@ Responsable atelier, bureau d'études atelier, chef d'atelier, opérateurs, soud
 | 4 | Réserver et sortir la matière | Inventory | Workshop | Vérifier la disponibilité, réserver, sortir et tracer les lots | Matière disponible (`INV-07`, `INV-08`) |
 | 5 | Planifier les opérations | Planning / Workshop | — | Intégrer l'OF dans le planning, affecter les postes et les opérateurs | Créneaux et affectations (`PLN-03`) |
 | 6 | Exécuter les opérations | Workshop | Workforce, Equipment | Découpe, assemblage, soudage, finition, contrôle dimensionnel | Production réalisée (`WKS-06`) |
-| 7 | Réaliser l'autocontrôle | Workshop | Quality | Vérifier les caractéristiques, enregistrer les résultats et signaler les écarts | Autocontrôle (`QUA-03`) |
+| 7 | Réaliser l'autocontrôle | Workshop | Quality | Vérifier les caractéristiques, enregistrer les résultats et signaler les écarts | Autocontrôle atelier (`WKS-06`) |
 | 8 | Faire contrôler par Quality | Quality | Workshop | Contrôler selon le plan, prononcer la conformité ou ouvrir une NCR | Conformité ou NCR (`QUA-04`) |
 | 9 | Traiter les reprises | Workshop | Quality, Costing | Reprendre, réparer ou rebuter ; enregistrer le temps et la matière | Reprise ou rebut (`WKS-06`) |
 | 10 | Emballer et marquer | Workshop | Logistics | Protéger, identifier, peser, mesurer et préparer les colis | Colis prêts (`WKS-07`) |
@@ -552,11 +552,11 @@ Responsable atelier, bureau d'études atelier, chef d'atelier, opérateurs, soud
 
 Q-16, Q-23, Q-24, Q-50.
 
-## 9. P07 — Fabrication ou opération confiée à un prestataire externe
+## 9. P07 — Fabrication ou opération externe — sous-traitance dans les deux sens
 
 ### 9.1 Contexte
 
-C2ME peut confier une fabrication, un traitement, une assemblage ou une prestation à un tiers. Le processus couvre les deux configurations de sous-traitance :
+C2ME peut confier une fabrication, un traitement, un assemblage ou une prestation à un tiers. Le processus couvre les deux configurations de sous-traitance :
 
 - **C2ME donneur d'ordre** : C2ME commande à un sous-traitant.
 - **C2ME sous-traitant** : C2ME intervient pour le compte d'un donneur d'ordre.
@@ -590,7 +590,7 @@ Les étapes dépendent de la configuration. Les deux variantes ci-dessous ne son
 
 #### Variante A — C2ME donneur d'ordre
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Décider de faire-faire | Projects / Workshop | Budgets, Procurement | Comparer coût, délai, capacité et risque ; décider l'externalisation | Décision tracée |
 | 2 | Constituer le dossier technique | Workshop | Projects, Documents | Préparer plans, nomenclatures, spécifications, exigences qualité et sécurité | Dossier de fabrication externe (`WKS-08`) |
@@ -604,7 +604,7 @@ Les étapes dépendent de la configuration. Les deux variantes ci-dessous ne son
 
 #### Variante B — C2ME sous-traitant
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Réceptionner la commande ou l'OS | Projects | Clients, Documents | Enregistrer le donneur d'ordre, le contrat, le périmètre, le prix et les délais | Commande reçue (`PRJ-06`) |
 | 2 | Ouvrir l'affaire de sous-traitance | Projects | Clients, Budgets, Costing | Créer l'affaire, identifier le type de contrat et les obligations de C2ME | Affaire ouverte (`PRJ-01`) |
@@ -676,9 +676,9 @@ Logisticien, magasinier, chef de chantier, conducteur de travaux, transporteur, 
 
 ### 10.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Exprimer le besoin de livraison | Inventory / Workshop / Projects | — | Identifier les colis, quantités, dates, destinations et priorités | Demande de transport (`LOG-01`) |
+| 1 | Recueillir et qualifier les besoins de livraison | Logistics | Inventory, Workshop, Projects | Identifier les colis, quantités, dates, destinations et priorités | Demande de transport (`LOG-01`) |
 | 2 | Vérifier la disponibilité et la préparation | Inventory / Workshop | — | Confirmer que le colis est prêt, contrôlé, emballé et documenté | Colis prêt (`WKS-07`, `INV-09`) |
 | 3 | Planifier le transport | Logistics | Procurement, Equipment, Projects | Choisir le mode, le transporteur, la tournée, les moyens et les dates | Plan de transport (`LOG-02`, `LOG-03`) |
 | 4 | Vérifier les accès et la sécurité | Logistics | Safety, Projects | Vérifier l'accès, les autorisations, les règles de chargement et de levage | Conditions validées (`LOG-07`) |
@@ -754,7 +754,7 @@ Chargé d'affaires, conducteur de travaux, chef de chantier, équipes, sous-trai
 
 ### 11.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Autoriser le démarrage | Projects | Quality, Safety, Budgets | Vérifier les conditions contractuelles, techniques, financières et de sécurité | Autorisation tracée |
 | 2 | Mobiliser le chantier | Planning | Workforce, Equipment, Logistics, Safety | Affecter les équipes, installer les moyens, organiser les accès et les zones | Chantier mobilisé (`PLN-03`) |
@@ -766,7 +766,7 @@ Chargé d'affaires, conducteur de travaux, chef de chantier, équipes, sous-trai
 | 8 | Surveiller la sécurité | Safety | Projects, sous-traitants | Inspecter, corriger, déclarer les incidents, animer la prévention | Sécurité suivie (`SAF-03`, `SAF-04`) |
 | 9 | Suivre l'avancement et les temps | Projects / Planning / TimeTracking | Costing | Déclarer l'avancement, pointer les heures, mettre à jour le planning | Avancement et temps (`PLN-06`, `TKT-01`) |
 | 10 | Gérer les changements | Projects | Clients, Costing, Budgets, Planning | Identifier les travaux supplémentaires, instruire l'avenant, mesurer l'impact | Avenant ou décision (`PRJ-07`) |
-| 11 | Constater l'achèvement | Projects | Quality, Handover | Vérifier la fin des travaux, les autocontrôles et les prérequis de réception | Demande de réception (`HND-01`) |
+| 11 | Demander la réception | Handover | Projects, Quality | Vérifier l'achèvement et ouvrir la demande de réception | Réception demandée (`HND-01`) |
 
 ### 11.6 Résultats
 
@@ -836,7 +836,7 @@ Collaborateur, chef d'équipe, chef de chantier, RH, planificateur, chargé d'af
 
 ### 12.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Saisir les temps | TimeTracking | Collaborateurs, chefs d'équipe | Enregistrer les heures, absences, trajets et imputations | Pointages (`TKT-01`) |
 | 2 | Valider et verrouiller | TimeTracking | Managers, RH | Vérifier les chevauchements, corriger, valider et verrouiller la période | Temps validé (`TKT-02`, `TKT-04`) |
@@ -919,10 +919,10 @@ Responsable qualité, contrôleur qualité, responsable sécurité, préventeur,
 
 ### 13.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Établir les plans | Quality / Safety | Projects, Workshop | Définir les contrôles, fréquences, critères, risques et mesures de prévention | Plans validés (`QUA-01`, `SAF-02`) |
-| 2 | Réaliser les autocontrôles | Workshop / Projects | Quality | Vérifier les caractéristiques avant contrôle formel | Autocontrôles (`QUA-03`) |
+| 2 | Réaliser les autocontrôles | Workshop / Projects | Quality | Vérifier les caractéristiques avant contrôle formel | Autocontrôles exécutés (traces atelier et chantier) |
 | 3 | Réaliser les contrôles qualité | Quality | Workshop, Projects, sous-traitants | Inspecter, mesurer, essayer, enregistrer les résultats | Conformité ou NCR (`QUA-03`, `QUA-04`) |
 | 4 | Traiter la non-conformité | Quality | Workshop, Projects, Procurement | Constater, contenir, analyser la cause, décider reprise/refus/dérogation | NCR et action (`QUA-04`, `QUA-05`) |
 | 5 | Vérifier l'efficacité | Quality | Workshop, Projects | Contrôler après reprise, clôturer la NCR avec preuve | NCR clôturée |
@@ -994,12 +994,12 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 - preuves de conformité et NCR clôturées ;
 - plans conformes à l'exécution et documents du DOE ;
 - réserves éventuelles ;
-- garanties fournisseurs et sous-traitants ;
+- garanties fournisseurs et sous-traitants nécessaires aux garanties clientes ;
 - situation des coûts et des engagements.
 
 ### 14.5 Étapes
 
-| # | Étape | Domaine(s) responsable(s) | Contributeurs | Opérations métier | Résultat / interactions |
+| # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Constater l'achèvement | Projects | Quality, chef de chantier | Vérifier la fin des travaux, les autocontrôles et les prérequis | Achèvement constaté |
 | 2 | Réaliser les contrôles finaux | Quality | Projects, Workshop | Contrôler la conformité finale, clôturer les NCR bloquantes | Dossier de conformité (`QUA-03`, `QUA-04`) |
@@ -1009,7 +1009,7 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 | 6 | Prononcer la réception | Handover | Client, Projects | Rédiger le PV, lister les réserves, fixer les délais | PV et réserves (`HND-01`, `HND-02`) |
 | 7 | Traiter les réserves | Quality / Workshop / Projects | Handover | Corriger, reprendre, documenter, demander la levée | Travaux de levée |
 | 8 | Vérifier et lever les réserves | Handover | Client, Quality | Contrôler la preuve, prononcer la levée ou refuser | Levée (`HND-03`) |
-| 9 | Remettre le DOE et les garanties | Handover | Documents, Clients | Compiler, diffuser, faire accuser réception, remettre les garanties | DOE et garanties (`HND-04`, `HND-05`) |
+| 9 | Remettre le DOE et les garanties | Handover | Documents, Clients | Compiler, diffuser, faire accuser réception, remettre les garanties clientes | DOE et garanties clientes (`HND-04`, `HND-05`) |
 | 10 | Clôturer contractuellement | Handover | Projects, Clients | Vérifier les conditions, prononcer la clôture contractuelle | Clôture contractuelle |
 | 11 | Clôturer les coûts | Costing / Budgets | Projects, Procurement | Solder les engagements, calculer la marge finale, clôturer la période | Marge finale (`CST-05`) |
 | 12 | Clôturer l'affaire | Projects | Handover, Costing, Budgets | Vérifier les conditions, clôturer l'affaire et les lots | Affaire clôturée (`PRJ-01`) |
@@ -1052,7 +1052,7 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 
 ### 14.9 Points ouverts
 
-Q-17, Q-30, Q-31, Q-44.
+Q-53, Q-30, Q-31, Q-44.
 
 ## 15. Vues transverses
 

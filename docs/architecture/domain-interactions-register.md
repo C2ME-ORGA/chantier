@@ -30,7 +30,7 @@ Le registre permet de répondre aux questions suivantes :
 3. **Pas de dépendance aux composants internes.** Aucun Model, Action, Service, DTO interne, Policy ou table d'un autre domaine ne traverse la frontière.
 4. **Pas de transaction partagée implicite.** Une interaction ne doit pas créer une atomicité inter-domaines non décidée.
 5. **Pas d'anticipation.** Un échange n'est retenu que si un consommateur réel et un besoin métier sont identifiés.
-6. **Le registre ne décide pas de la forme.** Une ligne « Notification » peut être couverte par un événement ou un contrat de lecture ; le choix appartient à CHAN-28 et au Lot 2.
+6. **Le registre ne décide pas de la forme.** La nature et le moment de l'échange sont métier ; le choix du contrat ou de l'événement appartient à CHAN-28 et au Lot 2.
 7. **Les documents ne sont pas des données métier.** Un échange documentaire transporte un contenu et des métadonnées ; il ne transfère pas la propriété du contenu.
 
 ### 1.3 Nature des interactions
@@ -89,7 +89,8 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 | 7 | Workforce ↔ TimeTracking | Frontière entre données RH, temps et variables de paie. |
 | 8 | Documents ↔ tous | Frontière entre contenu métier et gestion documentaire. |
 | 9 | Procurement ↔ Workshop | Frontière entre sous-traitance donnée, dossier technique et acceptation. |
-| 10 | Projects ↔ Handover | Frontière entre achèvement, réception, clôture contractuelle et clôture d'affaire. |
+| 10 | Workforce ↔ paie externalisée | Frontière entre données RH/variables et production de la paie. |
+| 11 | Projects ↔ Handover | Frontière entre achèvement, réception, clôture contractuelle et clôture d'affaire. |
 
 ## 3. Registre détaillé
 
@@ -114,7 +115,7 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 | INT-008 | D02 Clients | D03 Projects | Lancer une étude à partir d'un prospect qualifié | Besoin, contacts, maturité, échéance, documents disponibles | Qualification commerciale | Demande | P01 |
 | INT-009 | D02 Clients | D17 Handover | Identifier les représentants du client à la réception | Contacts, rôles, coordonnées, pouvoirs de réception | Préparation de la réception | Référentiel | P12 |
 | INT-010 | D17 Handover | D02 Clients | Mettre à jour la relation avec la réception et les garanties | PV, réserves, levées, DOE, dates de garantie | Réception et clôture | Notification | P12 |
-| INT-011 | D02 Clients | D18 Reporting | Analyser le portefeuille et la relation commerciale | Prospects, clients, affaires, chiffre d'affaires, statut relationnel | Reporting commercial | Consultation | P10 |
+| INT-011 | D02 Clients | D18 Reporting | Analyser le portefeuille et la relation commerciale | Prospects, clients, relation commerciale, statut, affaires connues | Reporting commercial | Consultation | P10 |
 
 ### 3.3 D03 — Projects
 
@@ -144,7 +145,7 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 | INT-033 | D08 TimeTracking | D03 Projects | Alimenter l'avancement contractuel | Temps par lot, avancement constaté, absences | Suivi | Notification | P10 |
 | INT-034 | D03 Projects | D11 Inventory | Exprimer un besoin de matériel pour le chantier | Article, quantité, date, lot, destination | Préparation et exécution | Demande | P05, P09 |
 | INT-035 | D11 Inventory | D03 Projects | Informer sur la disponibilité et les sorties | Disponibilité, réservation, sortie, pénurie | Exécution | Notification | P05, P09 |
-| INT-036 | D03 Projects | D18 Reporting | Alimenter le pilotage des affaires | Portefeuille, avancement, engagements, réception, clôture | Reporting | Consultation | P10, P12 |
+| INT-036 | D03 Projects | D18 Reporting | Alimenter le pilotage des affaires | Portefeuille, montants contractuels, avancement, engagements, réception, clôture | Reporting | Consultation | P10, P12 |
 
 ### 3.4 D04 — Planning
 
@@ -197,11 +198,11 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 | ID | Source | Destinataire | Motif | Informations concernées | Moment | Nature | Processus |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | INT-068 | D07 Workforce | D08 TimeTracking | Fournir les données nécessaires au pointage | Collaborateur, équipe, contrat, droits à absence, période | Saisie et validation | Référentiel | P10 |
-| INT-069 | D08 TimeTracking | D07 Workforce | Préparer les variables de paie | Temps validés, absences, heures supplémentaires, primes | Cycle de paie | Notification | P10 |
+| INT-069 | D08 TimeTracking | D07 Workforce | Fournir les faits de temps nécessaires aux variables de paie | Temps validés, absences, heures supplémentaires | Cycle de paie | Notification | P10 |
 | INT-070 | D07 Workforce | D05 Budgets | Fournir les hypothèses de coût RH | Taux, postes, effectifs, disponibilité | Élaboration budgétaire | Référentiel | P01, P03 |
 | INT-071 | D07 Workforce | D15 Safety | Fournir les formations et qualifications | Formation, qualification, validité, preuve | Affectation et prévention | Référentiel | P04, P09 |
 | INT-072 | D15 Safety | D07 Workforce | Exprimer les exigences de formation et signaler les incidents | Exigence, habilitation, incident, restriction | Prévention | Demande | P04, P11 |
-| INT-073 | D07 Workforce | D14 Quality | Fournir les qualifications techniques disponibles | Qualification, validité, titulaire, preuve | Contrôle qualité | Référentiel | P11 |
+| INT-073 | D07 Workforce | D14 Quality | Transmettre les formations et qualifications RH disponibles | Formations, qualifications RH, validité, preuves | Contrôle qualité | Référentiel | P11 |
 | INT-074 | D07 Workforce | D18 Reporting | Alimenter le pilotage RH | Effectifs, qualifications, absences, masse salariale | Reporting | Consultation | P10 |
 | INT-075 | D07 Workforce | Prestataire de paie (externe) | Transmettre les éléments de paie | Variables, absences, contrat, période, centre de coût | Cycle de paie | Document | P10 |
 
@@ -310,7 +311,7 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 | INT-119 | D17 Handover | D16 Documents | Demander la compilation et la diffusion du DOE | Pièces, ordre, destinataires, versions | Réception | Document | P12 |
 | INT-120 | D17 Handover | D06 Costing | Fournir les dates de réception et de garantie | Réception, réserves, garantie, clôture | Réception et clôture | Notification | P12 |
 | INT-121 | D17 Handover | D18 Reporting | Alimenter le pilotage des réceptions | Délais, réserves, levées, garanties | Reporting | Consultation | P10 |
-| INT-122 | D10 Procurement | D17 Handover | Fournir les garanties fournisseurs et sous-traitants | Garantie, fournisseur, objet, durée, conditions | Clôture | Document | P12 |
+| INT-122 | D10 Procurement | D17 Handover | Fournir les garanties fournisseurs et sous-traitants nécessaires aux garanties clientes | Garantie, fournisseur, objet, durée, conditions | Clôture | Document | P12 |
 
 > Les interactions sortantes principales de Handover sont déjà décrites : INT-029 vers Projects, INT-010 vers Clients, INT-109 reçue de Quality, INT-116 reçue de Documents.
 
@@ -363,14 +364,7 @@ Le registre autorise un **besoin métier**. Il n'autorise pas :
 
 ### 5.2 Interactions et contrats
 
-| Situation | Forme pressentie | Remarque |
-| --- | --- | --- |
-| Référentiel stable | Contrat de lecture ou synchronisation contrôlée | La forme exacte relève de CHAN-28. |
-| Consultation à la demande | Contrat synchrone de lecture | Ne doit pas avoir d'effet de bord. |
-| Notification | Événement inter-domaines | Réservé au Lot 3 de CHAN-28 ; ne pas improviser. |
-| Demande | Contrat synchrone de commande ou événement de demande | Doit documenter l'idempotence et les effets de bord. |
-| Décision | Contrat synchrone avec résultat explicite | Le fournisseur applique ses invariants et son autorisation. |
-| Document | Contrat documentaire ou événement de publication | Le contenu reste propriété du domaine métier. |
+Le registre ne choisit pas entre contrat synchrone et événement. Les colonnes **Nature** et **Moment** décrivent un besoin métier. Toute forme technique sera instruite dans CHAN-28 et dans le Lot 2 de CHAN-29. Aucune ligne ne doit être interprétée comme une autorisation de dépendance, un engagement de mise en œuvre ou une décision d'idempotence.
 
 ### 5.3 Risques de couplage
 
@@ -420,6 +414,7 @@ Les interactions suivantes n'ont pas été retenues comme besoins certains :
 | Q-35 Comptes externes | Détermine INT-004 et INT-005. |
 | Q-37 Unité monétaire | Détermine le format des montants échangés. |
 | Q-41 Sous-traitance dans les deux sens | Détermine les échanges Clients/Projects/Procurement/Handover. |
+| Q-53 Conditions de clôture | Détermine l'enchaînement Handover / Costing / Budgets / Projects. |
 
 ## 7. Références
 

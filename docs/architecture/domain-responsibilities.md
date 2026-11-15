@@ -187,6 +187,8 @@ Un autre domaine peut **consommer** une information sans en être propriétaire.
 
 Les objets métier sont identifiés par un code stable, par exemple `CLI-02 Client` ou `PRJ-01 Affaire`. Le catalogue détaillé, les définitions et les consommateurs figurent dans [`business-objects.md`](business-objects.md).
 
+Les tableaux « Entrées et sorties » des fiches de domaine sont des **synthèses non exhaustives**. Le registre des interactions fait foi pour l'inventaire détaillé : une interaction peut exister sans être répétée dans chaque fiche, et une fiche peut mentionner un besoin qui n'a pas encore donné lieu à une ligne nominative dans le registre.
+
 ### 3.3 Acteurs
 
 Les acteurs sont décrits en langage métier : direction, chargé d'affaires, chef de chantier, bureau d'études, atelier, magasin, acheteur, qualité, sécurité, RH, contrôle de gestion, client, donneur d'ordre, sous-traitant, fournisseur, transporteur. Les comptes et droits correspondants sont gérés par Identity ; les données de la personne sont gérées par Workforce lorsqu'il s'agit d'un collaborateur.
@@ -224,7 +226,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | D07 | Workforce | Collaborateurs, contrats, qualifications et variables de paie | Collaborateur, Contrat, Qualification | Planning, TimeTracking, Costing |
 | D08 | TimeTracking | Pointages, temps de travail et imputations | Pointage, FeuilleDeTemps, Absence | Workforce, Costing, Planning |
 | D09 | Workshop | Fabrication et assemblage internes ou externalisés | OrdreDeFabrication, Opération, Colis | Projects, Inventory, Logistics, Quality |
-| D10 | Procurement | Achats, fournisseurs et sous-traitance donnée | Fournisseur, CommandeAchat, SousTraitance | Inventory, Costing, Planning |
+| D10 | Procurement | Achats, fournisseurs et sous-traitance donnée | Fournisseur, CommandeDAchat, CommandeDeSousTraitance | Inventory, Costing, Planning |
 | D11 | Inventory | Stock central, réceptions, mouvements et traçabilité | Article, Réception, Mouvement, Réservation | Workshop, Projects, Costing |
 | D12 | Equipment | Parc, disponibilité, maintenance et conformité des équipements | Équipement, Maintenance, Inspection | Planning, Logistics, Safety |
 | D13 | Logistics | Transport, livraisons, réceptions chantier et retours | PlanDeTransport, Livraison, Retour | Inventory, Projects, Costing |
@@ -252,7 +254,8 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Règle | Statut |
 | --- | --- |
 | Un compte utilisateur est unique et rattaché à un acteur identifié. | Proposition |
-| L'accès repose sur un rôle, une permission et un périmètre explicites ; le moindre privilège s'applique. | Validé par `AGENTS.md` |
+| L'accès repose sur un rôle, une permission et un périmètre explicites. | Proposition |
+| Le moindre privilège s'applique. | Validé par `AGENTS.md` |
 | Un rôle métier n'est pas déduit automatiquement d'une donnée RH : il est attribué explicitement. | Proposition |
 | La désactivation d'un compte est déclenchée par la fin de collaboration ou une décision de sécurité ; l'historique est conservé. | Proposition |
 | Les opérations sensibles peuvent exiger une séparation des droits entre saisie et validation. | Question ouverte Q-35 |
@@ -352,7 +355,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Les travaux supplémentaires font l'objet d'un avenant validé avant exécution, sauf procédure d'urgence explicitement autorisée. | Proposition |
 | Les jalons contractuels et les dates engagées sont la référence pour Planning ; toute modification est tracée. | Proposition |
 | L'avancement contractuel est déclaré par lot ou phase ; il ne se confond pas avec l'avancement des activités planifiées. | Proposition |
-| La clôture de l'affaire exige la réception contractuelle, la levée des réserves, le DOE et la finalisation des coûts. | Proposition, conditions à valider Q-17 |
+| La clôture de l'affaire exige la réception contractuelle, la levée des réserves, le DOE et la finalisation des coûts. | Proposition, conditions à valider Q-53 |
 | Une suspension ou une annulation exige un motif, une validation et une trace. | Proposition |
 
 **États et transitions.**
@@ -385,7 +388,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Projects est propriétaire de l'engagement et du pilotage contractuel, pas du planning détaillé, du budget, des coûts, de la fabrication, des achats, du stock, de la qualité, de la sécurité ni de la réception contractuelle. Voir BD-01, BD-02, BD-03, BD-17 et BD-19.
 
-**Questions ouvertes.** Q-01 (relation affaire/chantier), Q-27 (avancement), Q-45 (avenants), Q-46 (suspension), Q-47 (annulation), Q-50 (bureau d'études), Q-51 (risques d'affaire), Q-52 (permis et autorisations).
+**Questions ouvertes.** Q-01 (relation affaire/chantier), Q-27 (avancement), Q-45 (avenants), Q-46 (suspension), Q-47 (annulation), Q-50 (bureau d'études), Q-51 (risques d'affaire), Q-52 (permis et autorisations), Q-53 (conditions de clôture).
 
 ---
 
@@ -472,12 +475,13 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Le budget ne se confond pas avec le prix de vente ; la marge cible est validée par la direction. | Proposition |
 | Le budget ne contient pas les coûts constatés : il fixe l'enveloppe et analyse les écarts avec Costing. | Proposition, arbitrage BD-03 |
 | La prévision budgétaire porte sur l'enveloppe et sa consommation ; le coût final estimé (EAC) est porté par Costing. | Proposition |
+| La clôture budgétaire intervient après la clôture des coûts et la clôture contractuelle. | Proposition, Q-53 |
 
 **États et transitions.**
 
 | Objet | États | Transitions principales |
 | --- | --- | --- |
-| Budget | Brouillon, soumis, approuvé, remplacé, rejeté | Soumettre, approuver, remplacer, rejeter. |
+| Budget | Brouillon, soumis, approuvé, remplacé, rejeté, clôturé | Soumettre, approuver, remplacer, rejeter, clôturer. |
 | VersionBudget | Active, archivée | Activer, archiver. |
 | RévisionBudgétaire | Proposée, validée, rejetée | Proposer, valider, rejeter. |
 
@@ -497,7 +501,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Budgets porte l'enveloppe autorisée ; Costing porte le chiffrage, les engagements, les coûts constatés, le coût final estimé et la marge. Procurement porte l'acte commercial d'engagement ; Costing en assure le suivi financier. Voir BD-03.
 
-**Questions ouvertes.** Q-08 (seuils et autorité de révision), Q-09 (reconnaissance des engagements), Q-10 (coût final estimé), Q-37 (unité monétaire et arrondis).
+**Questions ouvertes.** Q-08 (seuils et autorité de révision), Q-09 (reconnaissance des engagements), Q-10 (coût final estimé), Q-37 (unité monétaire et arrondis), Q-53 (clôture budgétaire).
 
 ---
 
@@ -574,7 +578,8 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Règle | Statut |
 | --- | --- |
-| Un collaborateur est identifié de façon unique ; ses données administratives et personnelles sont protégées et accessibles selon le moindre privilège. | Validé par `AGENTS.md` |
+| Un collaborateur est identifié de façon unique. | Proposition |
+| Ses données administratives et personnelles sont protégées et accessibles selon le moindre privilège. | Validé par `AGENTS.md` |
 | Un contrat actif est requis pour affecter un collaborateur à une activité productive. | Proposition |
 | Une qualification ou une formation requise doit être valide pour l'affectation correspondante. | Proposition |
 | Un collaborateur peut appartenir à une équipe principale et être affecté temporairement à d'autres équipes. | Proposition |
@@ -606,7 +611,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | TimeTracking | Collaborateur, équipe, contrat, droits à absence | Saisie et validation |
 | Sortie | Costing | Taux horaires et coûts RH de référence | Valorisation |
 | Sortie | Budgets | Taux et hypothèses RH | Élaboration budgétaire |
-| Sortie | Safety / Quality | Formations et qualifications disponibles | Vérification des exigences |
+| Sortie | Safety / Quality | Formations et qualifications RH disponibles (preuves) | Vérification des exigences |
 | Sortie | Prestataire de paie | Éléments variables, absences, données contractuelles | Cycle de paie |
 | Sortie | Reporting | Effectifs, qualifications, absences, masse salariale | Pilotage RH |
 
@@ -633,7 +638,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- |
 | Un événement de temps comporte un collaborateur, une date ou un horaire, une durée et une imputation. | Proposition |
 | Les chevauchements, durées négatives et incohérences de période sont refusés. | Proposition |
-| Toute correction est tracée avec un motif, un acteur et une date. | Validé par `AGENTS.md` (traçabilité) |
+| Toute correction est tracée avec un motif, un acteur et une date. | Proposition |
 | Une période verrouillée ne peut plus être modifiée sans réouverture autorisée et tracée. | Proposition |
 | Une imputation doit référencer une affaire, un chantier ou une activité valide ; les activités non productives sont autorisées et catégorisées. | Proposition |
 | Le pointage hors connexion est idempotent et le serveur reste l'autorité. | Validé par `AGENTS.md` |
@@ -657,7 +662,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Entrée | Projects | Affaire, chantier, lot, activité | Imputation |
 | Entrée | Planning | Activités planifiées et affectations | Saisie et rapprochement |
 | Entrée | Identity | Acteur et périmètre | Authentification |
-| Sortie | Workforce | Temps validés, absences, heures supplémentaires, variables de paie | Cycle de paie |
+| Sortie | Workforce | Temps validés, absences, heures supplémentaires | Cycle de paie |
 | Sortie | Costing | Heures validées par affaire, lot et nature | Valorisation |
 | Sortie | Planning | Temps réels, avancement, absences | Replanification |
 | Sortie | Projects | Temps par lot et avancement constaté | Suivi de l'affaire |
@@ -736,9 +741,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Fournisseurs, sous-traitants, demandes d'achat, consultations, offres, commandes d'achat, lignes de commande, commandes de sous-traitance, engagements, échéanciers, performance fournisseur, accords-cadres, références fournisseur. |
+| Périmètre inclus | Fournisseurs, sous-traitants, demandes d'achat, consultations, offres, commandes d'achat, lignes de commande, commandes de sous-traitance, engagements, échéanciers, performance fournisseur, accords-cadres, références fournisseur, garanties fournisseurs et sous-traitants. |
 | Périmètre exclu | Stock, réception physique et mouvements (Inventory), transport (Logistics), qualité technique (Quality), budget (Budgets), coûts (Costing), facturation et paiement (hors périmètre), sous-traitance reçue par C2ME (Projects/Clients). |
-| Objets métier | `PRC-01` Fournisseur, `PRC-02` SousTraitant, `PRC-03` DemandeDAchat, `PRC-04` OffreFournisseur, `PRC-05` CommandeDAchat, `PRC-06` LigneDeCommande, `PRC-07` CommandeDeSousTraitance, `PRC-08` ÉvaluationFournisseur, `PRC-09` AccordCadre. |
+| Objets métier | `PRC-01` Fournisseur, `PRC-02` SousTraitant, `PRC-03` DemandeDAchat, `PRC-04` OffreFournisseur, `PRC-05` CommandeDAchat, `PRC-06` LigneDeCommande, `PRC-07` CommandeDeSousTraitance, `PRC-08` ÉvaluationFournisseur, `PRC-09` AccordCadre, `PRC-10` GarantieFournisseur. |
 | Acteurs | Acheteur, responsable achats, chargé d'affaires, responsable atelier, magasinier, qualité, sécurité, direction. |
 
 **Règles métier portées par le domaine.**
@@ -748,11 +753,12 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Une demande d'achat précise le besoin, la quantité, la date, le lot, la nature et la référence budgétaire. | Proposition |
 | Une commande est créée après validation du besoin, du disponible budgétaire et des seuils d'approbation. | Proposition, seuils Q-08 |
 | Un fournisseur ou sous-traitant est qualifié selon la criticité de la prestation, avec Quality et Safety. | Proposition |
-| Une commande constitue un engagement financier ; ses versions, annulations et réceptions partielles sont tracées. | Proposition |
+| Une commande constitue un acte commercial qui crée un engagement financier, suivi par Costing ; ses versions, annulations et réceptions partielles sont tracées. | Proposition |
 | La réception physique ne vaut pas acceptation qualité ; Inventory enregistre, Quality accepte ou refuse. | Proposition |
 | Dans la sous-traitance donnée, Procurement porte la commande et le dossier contractuel ; C2ME reste responsable envers son client. | Proposition |
 | Dans la sous-traitance reçue, Procurement ne crée pas de commande de vente : l'affaire est portée par Projects, le donneur d'ordre par Clients. | Proposition |
 | L'évaluation fournisseur s'appuie sur les faits de délai, qualité, sécurité et prix fournis par les domaines concernés. | Proposition |
+| Les garanties fournisseurs et sous-traitants sont suivies par Procurement ; Handover les reçoit pour constituer les garanties clientes. | Proposition, Q-44 |
 | La facturation et le paiement fournisseur ne sont pas pris en charge par Procurement dans les 18 domaines. | Question ouverte Q-07 |
 
 **États et transitions.**
@@ -785,7 +791,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Procurement porte la relation fournisseur et l'engagement ; Inventory porte le stock et la réception ; Costing valorise ; Budgets autorise ; Quality et Safety qualifient. Voir BD-05, BD-10, BD-16 et BD-19.
 
-**Questions ouvertes.** Q-07, Q-08, Q-17 (article), Q-18 (catalogue), Q-22 (qualification sous-traitant), Q-41 (sous-traitance dans les deux sens).
+**Questions ouvertes.** Q-07, Q-08, Q-17 (article), Q-18 (catalogue), Q-22 (qualification sous-traitant), Q-41 (sous-traitance dans les deux sens), Q-44 (garanties fournisseurs).
 
 ---
 
@@ -804,7 +810,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Règle | Statut |
 | --- | --- |
-| Le stock central est la source de vérité des quantités disponibles. | Validé par le ticket |
+| Le stock central est la source de vérité des quantités disponibles. | Proposition, cohérent avec V-06 (référentiel de stock centralisé) |
 | Tout mouvement possède un motif, une date, un acteur, une référence et une trace. | Proposition |
 | Un stock négatif est interdit, sauf dérogation explicite et tracée. | Proposition |
 | Une réception physique est enregistrée avant la mise à disposition ; un contrôle qualité peut bloquer la mise en stock. | Proposition |
@@ -819,7 +825,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Objet | États | Transitions principales |
 | --- | --- | --- |
-| Stock | Disponible, réservé, bloqué, quarantaine | Réserver, libérer, bloquer, mettre en quarantaine. |
+| LotDeStock (disponibilité) | Disponible, réservé, bloqué, quarantaine | Réserver, libérer, bloquer, mettre en quarantaine. |
 | RéceptionDeStock | Attendue, partielle, complète, avec écart | Réceptionner, constater un écart, clôturer. |
 | MouvementDeStock | Brouillon, validé, annulé | Valider, annuler avec trace. |
 | RéservationDeStock | Active, consommée, libérée | Consommer, libérer. |
@@ -1005,11 +1011,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Entrée | Workshop | Autocontrôles, production, rebuts, demandes de contrôle | Production |
 | Entrée | Procurement | Fournisseurs, sous-traitants, commandes, performance | Sélection et suivi |
 | Entrée | Documents | Normes, procédures, plans contrôlés | Exécution |
-| Entrée | Workforce | Qualifications et formations disponibles | Affectation |
+| Entrée | Workforce | Formations et qualifications RH disponibles (preuves) | Affectation |
 | Entrée | Equipment | Calibration et état des équipements de mesure | Contrôle |
 | Entrée | Handover | Réserves nécessitant un traitement technique | Réception |
 | Sortie | Projects | Conformité, NCR, blocages, certificats | Exécution |
-| Sortie | Workshop | Résultats de contrôle, NCR, reprises | Production |
+| Sortie | Workshop | Résultats de contrôle, NCR, reprises, certificats et qualifications | Production |
 | Sortie | Procurement | Performance qualité fournisseur/sous-traitant | Suivi |
 | Sortie | Inventory | Acceptation, refus, mise en quarantaine | Réception |
 | Sortie | Handover | Preuves de conformité, NCR clôturées | Réception |
@@ -1103,7 +1109,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | La validation du fond appartient au domaine propriétaire ; Documents ne prononce pas la conformité métier. | Proposition |
 | La diffusion est contrôlée et, si nécessaire, accusée réception. | Proposition |
 | Les droits d'accès respectent Identity et les restrictions de confidentialité. | Validé par `AGENTS.md` |
-| Les règles de conservation et d'archivage sont définies avec le métier et le juridique. | Question ouverte Q-32 |
+| Les règles de conservation et d'archivage sont définies avec le métier et le juridique. | Question ouverte Q-33, Q-40 |
 | Un document lié à un objet métier référence cet objet sans dupliquer ses données métier. | Proposition |
 | Un document obsolète est remplacé ou archivé, jamais supprimé sans procédure. | Proposition |
 | Un modèle documentaire n'est pas un document contractuel signé. | Proposition |
@@ -1142,9 +1148,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Réceptions partielles et finales, réserves, levées de réserves, procès-verbaux, DOE, garanties, périodes de garantie, dossier de clôture, attestations. |
+| Périmètre inclus | Réceptions partielles et finales, réserves, levées de réserves, procès-verbaux, DOE, garanties clientes, périodes de garantie, dossier de clôture, attestations. |
 | Périmètre exclu | Conformité technique (Quality), exécution des travaux (Projects), budget et coûts (Budgets/Costing), stock (Inventory), stockage documentaire (Documents), propriété des garanties fournisseurs (Procurement), contentieux (hors périmètre). |
-| Objets métier | `HND-01` Réception, `HND-02` Réserve, `HND-03` LevéeDeRéserve, `HND-04` DOE, `HND-05` Garantie, `HND-06` DossierDeClôture. |
+| Objets métier | `HND-01` Réception, `HND-02` Réserve, `HND-03` LevéeDeRéserve, `HND-04` DOE, `HND-05` GarantieClient, `HND-06` DossierDeClôture. |
 | Acteurs | Responsable réception/handover, chargé d'affaires, chef de chantier, qualité, client, maître d'ouvrage, maître d'œuvre, gestionnaire documentaire. |
 
 **Règles métier portées par le domaine.**
@@ -1158,7 +1164,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Le DOE doit être complet avant la clôture contractuelle ; les fichiers sont gérés par Documents. | Proposition |
 | Le procès-verbal signé constitue le fait contractuel de réception et fixe les dates de garantie. | Proposition |
 | La clôture contractuelle intervient après levée des réserves, DOE complet et garanties constituées. | Proposition |
-| Les garanties client et les garanties fournisseurs/sous-traitants sont distinguées ; ces dernières relèvent de Procurement. | Proposition |
+| Les garanties clientes et les garanties fournisseurs/sous-traitants sont distinguées ; ces dernières relèvent de Procurement. | Proposition |
 | Une réserve n'est pas une non-conformité : elle peut référencer une NCR Quality, sans fusionner les deux objets. | Proposition, Q-30 |
 
 **États et transitions.**
@@ -1168,7 +1174,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Réception | Demandée, planifiée, prononcée, avec réserves, acceptée, refusée | Planifier, prononcer, accepter, refuser. |
 | Réserve | Ouverte, levée demandée, levée, refusée | Demander la levée, vérifier, lever ou refuser. |
 | DOE | Incomplet, complet, validé | Compléter, valider. |
-| Garantie | Active, expirée | Activer, expirer. |
+| GarantieClient | Active, expirée | Activer, expirer. |
 | DossierDeClôture | En préparation, clos | Compléter, clore. |
 
 **Entrées et sorties.**
@@ -1184,13 +1190,13 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Projects | Statut de réception, réserves, levées, PV | Réception et clôture |
 | Sortie | Quality | Réserves à traiter techniquement | Réception |
 | Sortie | Documents | Pièces à compiler, diffuser, archiver | Réception |
-| Sortie | Clients | PV, DOE, garanties, attestations | Réception |
+| Sortie | Clients | PV, DOE, garanties clientes, attestations | Réception |
 | Sortie | Costing | Dates de réception et de garantie | Clôture |
 | Sortie | Reporting | Délais de réception, réserves, garanties | Pilotage |
 
 **Limites et chevauchements.** Handover porte la réception contractuelle et les réserves ; Quality porte la conformité technique et les NCR ; Projects porte l'exécution et la clôture de l'affaire ; Documents stocke le DOE. Voir BD-07, BD-08 et BD-17.
 
-**Questions ouvertes.** Q-30, Q-31, Q-44.
+**Questions ouvertes.** Q-30 (réserve vs NCR), Q-31 (DOE), Q-44 (garanties), Q-53 (conditions de clôture).
 
 ---
 

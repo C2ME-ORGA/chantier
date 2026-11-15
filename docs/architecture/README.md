@@ -42,6 +42,7 @@ Le dépôt ne contient pas encore de code métier dans `app/Domains/` : les doma
 | `P01` à `P12` | Processus métier. |
 | `BD-xx` | Chevauchement analysé. |
 | `PD-xx` | Décision proposée. |
+| `V-xx` | Décision validée de frontière. |
 | `Q-xx` | Question ouverte. |
 | `INT-xxx` | Interaction métier. |
 | Préfixe d'objet | Objet métier, par exemple `PRJ-01` Affaire ou `INV-05` MouvementDeStock. |

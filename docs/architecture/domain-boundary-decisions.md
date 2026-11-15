@@ -36,6 +36,7 @@ Pour chaque chevauchement, le document examine :
 | --- | --- | --- |
 | Chevauchement | `BD-xx` | `BD-03` |
 | Décision proposée | `PD-xx` | `PD-03` |
+| Décision validée | `V-xx` | `V-06` |
 | Question ouverte | `Q-xx` | `Q-09` |
 | Domaine | `D01` à `D18` | `D06` Costing |
 | Objet | Préfixe du domaine + numéro | `CST-03` Engagement |
@@ -139,7 +140,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | --- | --- | --- | --- |
 | Budget, versions, lignes, enveloppe, contingence | D05 Budgets | Projects, Costing, Procurement | Enveloppe autorisée et révisée par Budgets. |
 | Chiffrage prévisionnel d'une offre | D06 Costing | Projects, Budgets | Estimation de coût, base du prix et du budget. |
-| Engagements financiers | D06 Costing (suivi) / D10 Procurement (acte) | Budgets, Projects | Procurement crée l'engagement ; Costing l'enregistre et le suit. |
+| Engagements financiers | D06 Costing (enregistrement et suivi) / D10 Procurement (acte commercial) | Budgets, Projects | Procurement crée la commande ; Costing enregistre et suit l'engagement financier. |
 | Coûts constatés | D06 Costing | Projects, Budgets, Reporting | Costing valorise les faits opérationnels. |
 | Coût final estimé (EAC) | D06 Costing | Projects, Budgets | Projection de coût, à valider Q-10. |
 | Marge | D06 Costing | Projects, Budgets, Reporting | Prix de vente - coût. |
@@ -150,7 +151,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 - **Budgets** porte l'enveloppe autorisée, les versions, les lignes, la contingence, les révisions et le contrôle du disponible. Il ne contient pas les coûts constatés.
 - **Costing** porte le chiffrage, les engagements, les coûts constatés, les imputations, l'EAC, la marge et les écarts. Il ne fixe pas l'enveloppe et n'approuve pas les achats.
-- **Procurement** porte l'acte commercial de la commande et l'engagement fournisseur. Costing en assure le suivi financier.
+- **Procurement** porte l'acte commercial de la commande et la relation fournisseur. Costing enregistre et suit l'engagement financier.
 - **Projects** porte le prix de vente et les montants contractuels. Il ne fixe ni le budget interne ni le coût.
 - Une révision budgétaire est décidée par Budgets ; un engagement est créé par Procurement ; un coût est constaté par Costing. Aucun domaine ne fait le travail des deux autres.
 
@@ -471,7 +472,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Logistics | Tournée, affectation du véhicule, transport, livraison. |
 | Workforce | Chauffeur, contrat, qualification, temps. |
 
-**Séparation recommandée.** Equipment possède le véhicule ; Logistics organise la tournée et affecte le véhicule ; Workforce fournit le chauffeur. Un panne ou un défaut d'inspection bloque l'affectation. Q-26.
+**Séparation recommandée.** Equipment possède le véhicule et enregistre son affectation ; Logistics organise la tournée et demande l'usage du véhicule ; Workforce fournit le chauffeur. Une panne ou un défaut d'inspection bloque l'affectation. Q-26.
 
 **Informations échangées.** Disponibilité, affectation, usage, retour, panne, temps du chauffeur.
 
@@ -532,15 +533,15 @@ L'option A réduit les doublons mais élargit Clients au-delà de la relation co
 | Domaine | Responsabilité |
 | --- | --- |
 | Projects | Décision de clôture de l'affaire, statut contractuel, synthèse. |
-| Handover | Réception contractuelle, réserves, DOE, garanties. |
+| Handover | Réception contractuelle, réserves, DOE, garanties clientes. |
 | Costing | Coût final, marge, clôture de la période analytique. |
 | Budgets | Écart final, clôture budgétaire. |
 
-**Séparation recommandée.** Handover prononce la réception et la clôture contractuelle ; Projects clôt l'affaire lorsque les conditions sont réunies ; Costing clôt les coûts et calcule la marge finale ; Budgets analyse l'écart final. Aucun domaine ne peut clôturer seul l'ensemble : une orchestration ou une décision explicite est nécessaire. Q-17.
+**Séparation recommandée.** Handover prononce la réception et la clôture contractuelle ; Projects clôt l'affaire lorsque les conditions sont réunies ; Costing clôt les coûts et calcule la marge finale ; Budgets analyse l'écart final et clôt le budget. Aucun domaine ne peut clôturer seul l'ensemble : une orchestration ou une décision explicite est nécessaire. Q-53.
 
-**Informations échangées.** Réception, réserves, DOE, garanties, coûts finaux, marge, écarts.
+**Informations échangées.** Réception, réserves, DOE, garanties clientes, coûts finaux, marge, écarts.
 
-**À valider.** Q-17, Q-30, Q-44.
+**À valider.** Q-53, Q-30, Q-44.
 
 **Statut.** Proposition.
 
@@ -635,8 +636,8 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | --- | --- | --- | --- |
 | PD-01 | Clients porte le tiers et la relation commerciale, sous réserve de Q-05 ; Projects porte l'étude, le devis, la commande, l'affaire et le chantier. | Évite de confondre relation durable et engagement contractuel. | Q-02, Q-03, Q-04, Q-05 |
 | PD-02 | Une affaire peut couvrir plusieurs chantiers ou lots ; un chantier appartient à une seule affaire. | Reflète les affaires multi-sites ou multi-lots, sans imposer un modèle rigide. | Q-01 |
-| PD-03 | Budgets porte l'enveloppe autorisée ; Costing porte le chiffrage, les engagements, les coûts constatés, l'EAC et la marge. | Sépare la décision budgétaire de la mesure économique. | Q-08, Q-09, Q-10 |
-| PD-04 | Procurement porte la commande et l'engagement ; Inventory porte la réception, le stock et les mouvements. | Sépare l'acte commercial du fait physique. | Q-17, Q-18, Q-19 |
+| PD-03 | Budgets porte l'enveloppe autorisée ; Costing porte le chiffrage, les engagements financiers, les coûts constatés, l'EAC et la marge. | Sépare la décision budgétaire de la mesure économique. | Q-08, Q-09, Q-10 |
+| PD-04 | Procurement porte la commande et l'acte commercial ; Costing enregistre l'engagement financier ; Inventory porte la réception, le stock et les mouvements. | Sépare l'acte commercial, le suivi financier et le fait physique. | Q-17, Q-18, Q-19 |
 | PD-05 | Workshop porte l'OF et la production ; Inventory porte la réservation, la sortie et la consommation matière. | Évite que l'atelier écrive directement dans le stock. | Q-19, Q-20 |
 | PD-06 | Quality porte la conformité technique ; Handover porte la réception contractuelle, les réserves et le DOE. | Sépare la norme technique de l'acceptation client. | Q-30, Q-31 |
 | PD-07 | Documents porte le contenant, la version et la diffusion ; chaque domaine porte le contenu et la validité métier. | Évite un domaine documentaire qui déciderait du métier. | Q-31, Q-32, Q-33 |
@@ -652,7 +653,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | PD-17 | Les références inter-domaines utilisent des identifiants publics stables, jamais des Models Eloquent. | Conforme à V-09 et V-10. | Q-36 |
 | PD-18 | Aucune transaction partagée n'est introduite par défaut ; le fournisseur d'une opération porte ses invariants et sa transaction. | Conforme à V-12. | — |
 | PD-19 | Un échange n'est créé que pour un consommateur réel ; le registre est un besoin, pas une autorisation technique. | Conforme à V-11. | — |
-| PD-20 | Les dix interactions prioritaires de la section 2.2 du registre sont arbitrées avant la matrice du Lot 2. | Réduit le risque de matrice incomplète. | Q-01 à Q-52 |
+| PD-20 | Les interactions prioritaires de la section 2.2 du registre sont arbitrées avant la matrice du Lot 2. | Réduit le risque de matrice incomplète. | Q-01 à Q-53 |
 
 ## 6. Questions ouvertes
 
@@ -703,7 +704,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | Q-41 | Comment formaliser la sous-traitance dans les deux sens ? | Détermine les objets et les flux Clients/Projects/Procurement/Handover. | Deux parcours distincts, sans objet unique ambigu. | Bloquant Lot 2 |
 | Q-42 | Comment imputer les coûts de qualité, de sécurité et de non-qualité ? | Détermine les échanges Quality/Safety → Costing. | Axes analytiques dédiés, à valider. | Important |
 | Q-43 | Comment traiter les matériaux fournis par le client ? | Détermine la propriété, le stock et la responsabilité. | À arbitrer : stock sous contrôle, hors valorisation ou valorisation spécifique. | Important |
-| Q-44 | Comment distinguer les garanties client et les garanties fournisseurs ? | Détermine la frontière Handover / Procurement. | Handover pour le client ; Procurement pour les fournisseurs. | Important |
+| Q-44 | Comment distinguer les garanties clientes et les garanties fournisseurs ? | Détermine la frontière Handover / Procurement. | Handover pour les garanties clientes ; Procurement pour les garanties fournisseurs. | Important |
 | Q-45 | Quel processus pour les avenants et travaux supplémentaires urgents ? | Détermine les validations Projects/Budgets/Costing. | Avenant avant exécution, sauf urgence autorisée. | Important |
 | Q-46 | Comment gérer la suspension et la reprise d'une affaire ou d'un chantier ? | Détermine les états et les impacts. | Motif, validation, impact planning/coût. | Important |
 | Q-47 | Comment gérer l'annulation ou l'abandon d'une affaire ? | Détermine les états et les coûts engagés. | Décision direction, clôture des engagements, analyse de coût. | Important |
@@ -712,6 +713,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | Q-50 | Le bureau d'études relève-t-il de Projects, de Workshop ou des deux ? | Détermine la propriété des études et des plans. | Projects pour les études contractuelles ; Workshop pour l'exécution atelier. | Important |
 | Q-51 | Le registre des risques d'affaire est-il un objet de Projects, de Reporting ou un attribut de l'étude ? | Détermine la propriété et le suivi des risques. | À arbitrer ; envisager un attribut de l'étude et de l'affaire. | Important |
 | Q-52 | Qui suit les permis et autorisations administratives nécessaires aux travaux ? | Détermine la responsabilité et les échéances. | À arbitrer ; souvent porté par le client, avec suivi par Projects. | Important |
+| Q-53 | Quelles conditions exactes autorisent la clôture d'une affaire et dans quel ordre ? | Détermine l'enchaînement Handover / Costing / Budgets / Projects. | Réception, réserves levées, DOE, coûts et budget clôturés, puis affaire clôturée. | Bloquant Lot 2 |
 
 ### 6.2 Questions à traiter avant le Lot 2
 
@@ -729,7 +731,8 @@ Les questions suivantes sont considérées comme bloquantes pour la matrice tech
 - Q-27 : source de l'avancement ;
 - Q-30 : réserve vs NCR ;
 - Q-36 : stratégie d'identifiants ;
-- Q-41 : sous-traitance dans les deux sens.
+- Q-41 : sous-traitance dans les deux sens ;
+- Q-53 : conditions de clôture d'une affaire.
 
 ### 6.3 Questions pouvant être différées
 

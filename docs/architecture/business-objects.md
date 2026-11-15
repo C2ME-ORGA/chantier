@@ -65,16 +65,16 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | D07 Workforce | 9 | Collaborateur, Contrat, Qualification |
 | D08 TimeTracking | 6 | Pointage, FeuilleDeTemps, Absence |
 | D09 Workshop | 9 | OrdreDeFabrication, Opération, Colis |
-| D10 Procurement | 9 | Fournisseur, CommandeAchat, SousTraitance |
+| D10 Procurement | 10 | Fournisseur, CommandeDAchat, CommandeDeSousTraitance |
 | D11 Inventory | 10 | Article, Réception, Mouvement, Réservation |
 | D12 Equipment | 7 | Équipement, Maintenance, Inspection |
 | D13 Logistics | 7 | PlanDeTransport, Livraison, Retour |
 | D14 Quality | 8 | PlanQualité, Contrôle, NonConformité |
 | D15 Safety | 8 | AnalyseDeRisques, Incident, Habilitation |
 | D16 Documents | 6 | Document, Version, Diffusion |
-| D17 Handover | 6 | Réception, Réserve, DOE, Garantie |
+| D17 Handover | 6 | Réception, Réserve, DOE, GarantieClient |
 | D18 Reporting | 5 | Rapport, Indicateur, Snapshot |
-| **Total** | **131** | — |
+| **Total** | **132** | — |
 
 ## 3. Catalogue par domaine
 
@@ -156,12 +156,12 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | WKF-01 | Collaborateur | Personne employée par C2ME. | Identité, matricule, poste, statut, unité, dates. | Planning, TimeTracking, Identity, Safety |
 | WKF-02 | ContratDeTravail | Contrat liant un collaborateur à C2ME. | Type, dates, durée, statut, conditions. | Workforce, Costing |
 | WKF-03 | Poste | Emploi ou fonction occupée. | Libellé, classification, compétences requises, statut. | Workforce, Planning |
-| WKF-04 | Qualification | Compétence reconnue d'un collaborateur. | Type, niveau, validité, preuve, statut. | Planning, Quality, Safety |
+| WKF-04 | Qualification | Qualification RH reconnue d'un collaborateur (diplôme, formation). | Type, niveau, validité, preuve, statut. | Planning, Quality, Safety |
 | WKF-05 | Formation | Action de formation suivie ou planifiée. | Intitulé, date, durée, organisme, validité. | Workforce, Safety, Quality |
 | WKF-06 | Équipe | Groupe de travail organisé. | Code, responsable, membres, périmètre, statut. | Planning, TimeTracking |
 | WKF-07 | DisponibilitéRH | Disponibilité ou indisponibilité d'un collaborateur. | Période, type, motif, statut. | Planning, TimeTracking |
 | WKF-08 | ÉlémentVariableDePaie | Donnée variable transmise au prestataire de paie. | Type, période, quantité ou montant, statut. | Workforce, prestataire de paie |
-| WKF-09 | DossierRH | Ensemble des données administratives et RH d'un collaborateur. | Documents, statut, confidentialité, historique. | Workforce, Identity |
+| WKF-09 | DossierRH | Ensemble des données administratives et RH d'un collaborateur. | Documents, statut, confidentialité, historique. | Workforce |
 
 ### 3.8 D08 — TimeTracking
 
@@ -201,6 +201,7 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | PRC-07 | CommandeDeSousTraitance | Engagement de sous-traitance auprès d'un prestataire. | Sous-traitant, périmètre, montant, dates, statut. | Workshop, Quality, Costing |
 | PRC-08 | ÉvaluationFournisseur | Évaluation de la performance d'un fournisseur. | Critères, note, période, statut. | Procurement, Quality, Safety |
 | PRC-09 | AccordCadre | Contrat cadre avec un fournisseur ou sous-traitant. | Fournisseur, conditions, validité, statut. | Procurement, Budgets |
+| PRC-10 | GarantieFournisseur | Garantie accordée par un fournisseur ou un sous-traitant. | Fournisseur, objet, durée, conditions, preuve, statut. | Procurement, Handover |
 
 ### 3.11 D11 — Inventory
 
@@ -209,7 +210,7 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | INV-01 | Article | Référence de stock. | Code, désignation, unité, catégorie, seuils, statut. | Procurement, Workshop, Costing |
 | INV-02 | Entrepôt | Lieu de stockage central. | Code, adresse, responsable, statut. | Inventory, Logistics |
 | INV-03 | Emplacement | Localisation dans un entrepôt. | Code, zone, capacité, statut. | Inventory |
-| INV-04 | LotDeStock | Lot traçable d'un article. | Numéro, article, quantité, date, statut. | Quality, Costing |
+| INV-04 | LotDeStock | Lot traçable d'un article. | Numéro, article, quantité, date, statut. | Workshop, Projects, Quality, Costing |
 | INV-05 | MouvementDeStock | Entrée, sortie ou transfert de stock. | Type, article, quantité, date, motif, acteur. | Costing, Reporting |
 | INV-06 | RéceptionDeStock | Réception physique d'une commande. | Commande, fournisseur, quantités, écarts, statut. | Procurement, Quality, Costing |
 | INV-07 | RéservationDeStock | Stock réservé pour une affaire ou un OF. | Article, quantité, affaire/OF, statut. | Workshop, Projects |
@@ -252,7 +253,7 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | QUA-05 | ActionCorrective | Action destinée à corriger ou prévenir une non-conformité. | Cause, action, responsable, échéance, statut. | Quality, Workshop, Procurement |
 | QUA-06 | AuditQualité | Audit d'un processus, d'un fournisseur ou d'un site. | Périmètre, critères, résultats, statut. | Quality, Procurement |
 | QUA-07 | CertificatQualité | Certificat attestant une conformité. | Objet, norme, validité, preuve, statut. | Quality, Handover |
-| QUA-08 | QualificationTechnique | Qualification d'une personne ou d'un processus technique. | Titulaire/processus, norme, validité, preuve, statut. | Quality, Workshop, Workforce |
+| QUA-08 | QualificationTechnique | Qualification d'une personne ou d'un processus technique. | Titulaire/processus, norme, validité, preuve, statut. | Quality, Workshop |
 
 ### 3.15 D15 — Safety
 
@@ -286,7 +287,7 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | HND-02 | Réserve | Écart contractuel constaté à la réception. | Description, localisation, délai, responsable, statut. | Quality, Projects |
 | HND-03 | LevéeDeRéserve | Preuve et décision de levée d'une réserve. | Réserve, preuve, date, vérificateur, statut. | Handover, Quality |
 | HND-04 | DOE | Dossier des ouvrages exécutés remis au client. | Affaire, pièces, complétude, statut. | Clients, Documents |
-| HND-05 | Garantie | Garantie attachée à un ouvrage ou à une fourniture. | Type, objet, début, fin, conditions, statut. | Clients, Projects, Procurement |
+| HND-05 | GarantieClient | Garantie cliente attachée à un ouvrage ou à une fourniture. | Type, objet, début, fin, conditions, statut. | Clients, Projects |
 | HND-06 | DossierDeClôture | Ensemble des pièces et vérifications nécessaires à la clôture contractuelle. | Affaire, réception, réserves levées, DOE, garanties, statut. | Projects, Handover, Costing |
 
 ### 3.18 D18 — Reporting
@@ -317,7 +318,7 @@ Certains concepts traversent plusieurs domaines. Ils ne doivent pas être dupliq
 | Équipement | Equipment | Planning, Logistics, Safety, Quality, Costing | Equipment est la source de l'actif et de sa disponibilité. |
 | Document | Documents | Tous | Documents porte le contenant et la version ; le domaine propriétaire porte le contenu et la validité métier. |
 | Réception contractuelle | Handover | Projects, Clients, Quality | Handover est la source du fait contractuel ; Quality fournit les preuves techniques. |
-| Coût / engagement | Costing | Projects, Budgets, Reporting | Costing est la source des coûts et engagements financiers ; les faits opérationnels restent dans leurs domaines. |
+| Coût / engagement | Costing | Projects, Budgets, Procurement, Reporting | Costing est la source des coûts et engagements financiers ; Procurement reste propriétaire de la commande et de l'acte commercial. |
 | Budget | Budgets | Projects, Costing, Procurement | Budgets est la source de l'enveloppe autorisée. |
 | Planning | Planning | Projects, Workforce, Equipment, Workshop | Planning est la source des activités et affectations datées. |
 | Indicateur | Reporting | Direction, domaines | Reporting calcule et expose ; la source reste le domaine producteur. |
@@ -345,7 +346,6 @@ Les objets suivants ne sont pas retenus comme objets autonomes dans ce lot, faut
 | Contrat de sous-traitance reçu | Dans la sous-traitance reçue, l'engagement est une affaire ; dans la sous-traitance donnée, c'est une commande Procurement. | Q-41 |
 | Contrat de travail intérimaire | Peut relever de Workforce ou de Procurement selon la nature de la relation. | Q-15 |
 | Calibration des équipements de mesure | Peut relever d'Equipment ou de Quality. | Q-25 |
-| Garantie fournisseur | Peut être un attribut de la commande Procurement ou une garantie Handover. | Q-44 |
 
 ## 6. Règles de propriété et de cycle de vie
 
