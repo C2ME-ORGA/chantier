@@ -113,14 +113,16 @@ Direction générale, direction commerciale, chargé d'affaires, bureau d'étude
 | 7 | Construire le devis | Projects | Costing, Clients, Documents | Définir le prix, les prestations, les hypothèses, les exclusions, les conditions et la validité ; vérifier la marge cible | Devis versionné (`PRJ-05`, `CST-05`) |
 | 8 | Valider le devis | Projects | Direction, Costing, Budgets, Identity | Vérifier les droits, la marge, les risques, les remises et les conditions ; tracer la validation | Devis validé (`PRJ-05`) |
 | 9 | Envoyer et négocier | Projects / Documents | Clients | Envoyer le devis, suivre les échanges, produire les révisions, conserver l'historique | Devis envoyé ou révisé (`PRJ-05`, `DOC-05`) |
-| 10 | Qualifier et convertir le prospect | Clients | Projects | À réception de l'acceptation ou de la commande, vérifier la référence du tiers et les informations disponibles, mettre à jour le rôle commercial, convertir le prospect en client si nécessaire | Client et rôle commercial à jour (`CLI-02`, `CLI-04`) |
+| 10 | Qualifier et convertir le prospect | Clients | Projects | À réception de l'acceptation ou de la commande (proposition de travail — moment exact à arbitrer dans Q-04), vérifier la référence du tiers et les informations disponibles, mettre à jour le rôle commercial, convertir le prospect en client si nécessaire | Client et rôle commercial à jour (`CLI-02`, `CLI-04`) |
 | 11 | Enregistrer l'acceptation et la commande | Projects | Clients, Documents | Enregistrer l'acceptation commerciale, la commande, le contrat ou l'ordre de service ; ouvrir ou confirmer l'affaire | Acceptation et commande enregistrées, affaire confirmée (`PRJ-06`, `PRJ-01`) |
 | 12 | Ouvrir le chantier et les lots | Projects | Clients, Budgets, Planning, Costing | Créer le ou les chantiers, les lots et les phases, nommer les acteurs, notifier les domaines | Chantier et lots ouverts (`PRJ-02`, `PRJ-03`) |
 | 13 | Établir le budget de l'affaire | Budgets | Costing, Projects, Procurement | Reprendre le chiffrage accepté, construire les lignes budgétaires, valider l'enveloppe et la marge cible | Budget validé (`BUD-01`, `BUD-02`) |
 
+> **Q-04 ouverte.** Le moment exact de conversion du prospect reste une proposition de travail ; il n'est pas une règle validée.
+
 ### 3.6 Résultats
 
-- prospect qualifié, converti si nécessaire, rôle commercial à jour ;
+- prospect qualifié et rôle commercial à jour ; conversion du prospect à arbitrer dans Q-04 ;
 - étude technique et dossier de référence ;
 - chiffrage prévisionnel et marge simulée ;
 - devis versionné, validé et diffusé ;
@@ -193,7 +195,7 @@ Direction, chargé d'affaires, assistant commercial, contrôleur de gestion, pla
 | # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Réceptionner et enregistrer la commande | Projects / Documents | Clients | Enregistrer la commande ou l'OS, rattacher le document, identifier la référence et la date | Commande enregistrée (`PRJ-06`, `DOC-01`) |
-| 2 | Identifier et qualifier le donneur d'ordre | Clients | Projects | Retrouver ou créer le client/donneur d'ordre, convertir le prospect si nécessaire, vérifier les rôles et les contacts, détecter les doublons | Client identifié ou prospect converti, rôles identifiés (`CLI-02`, `CLI-04`) |
+| 2 | Identifier et qualifier le donneur d'ordre | Clients | Projects | Retrouver ou créer le client/donneur d'ordre, convertir le prospect si nécessaire (moment à arbitrer dans Q-04), vérifier les rôles et les contacts, détecter les doublons | Client identifié ou conversion du prospect à arbitrer (Q-04), rôles identifiés (`CLI-02`, `CLI-04`) |
 | 3 | Vérifier la cohérence contractuelle | Projects | Costing, Budgets | Vérifier le périmètre, le prix, les délais, les conditions et les écarts avec l'offre ou le tarif | Analyse des écarts et risques contractuels |
 | 4 | Ouvrir l'affaire et le chantier | Projects | Clients, Budgets, Planning, Costing | Créer l'affaire, le chantier, les lots, rattacher le contrat et les acteurs | Affaire ouverte (`PRJ-01`, `PRJ-02`, `PRJ-03`) |
 | 5 | Établir un budget provisoire | Budgets | Costing, Procurement, Workforce | Construire une enveloppe provisoire ou confirmer le budget existant ; identifier les engagements urgents | Budget provisoire validé (`BUD-01`) |
@@ -206,7 +208,7 @@ Direction, chargé d'affaires, assistant commercial, contrôleur de gestion, pla
 
 - commande ou OS enregistré ;
 - donneur d'ordre et client identifiés ;
-- prospect converti ou rôle commercial du tiers mis à jour ;
+- rôle commercial du tiers mis à jour, conversion du prospect selon la règle à arbitrer dans Q-04 ;
 - affaire, chantier et lots ouverts ;
 - budget provisoire ou confirmé ;
 - planning initial et besoins critiques identifiés ;
@@ -1080,7 +1082,7 @@ Q-53, Q-30, Q-31, Q-44.
 | Origine | Prospect ou demande de prix | Commande ou ordre de service |
 | Étude | Réalisée avant le devis | Réalisée après réception, ou partiellement disponible |
 | Devis | Versionné et validé | Absent, partiel ou remplacé par un tarif/contrat |
-| Client | Prospect converti à l'acceptation | Identifié à réception de la commande |
+| Client | Prospect converti — moment à arbitrer (Q-04) | Identifié à réception de la commande |
 | Budget | Établi après acceptation | Provisoire, puis confirmé |
 | Risque principal | Étude insuffisante ou marge faible | Périmètre ou délai mal connus |
 | Domaine pilote | Projects | Projects |

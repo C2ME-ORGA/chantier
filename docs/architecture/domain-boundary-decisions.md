@@ -80,7 +80,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - **Clients** est propriétaire des rôles commerciaux (prospect, client, donneur d'ordre), des contacts, de la relation commerciale et des conditions cadre, sous réserve de Q-05. Il ne présume pas l'identité juridique du tiers.
 - **Projects** est propriétaire de l'étude, du devis, de la commande ou de l'ordre de service, du contrat, de l'affaire, du chantier, des lots, des avenants et des jalons contractuels.
 - Clients ne porte pas le devis ni l'affaire. Projects ne duplique pas la fiche client ; il référence le client et les rôles exposés par Clients.
-- Un prospect peut être étudié avant d'être converti en client ; la conversion intervient à la première commande ou au premier contrat, selon Q-04.
+- Un prospect peut être étudié avant d'être converti en client ; le moment exact de conversion reste à arbitrer dans Q-04 (proposition de travail : première commande ou premier contrat).
 - La relation commerciale est mise à jour par les faits de Projects (ouverture, réception, clôture), sans que Projects modifie directement la fiche client.
 
 **Informations échangées.**
@@ -674,7 +674,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | Q-01 | Une affaire peut-elle couvrir plusieurs chantiers ou lots ? Un chantier peut-il appartenir à plusieurs affaires ? | Détermine les axes échangés entre Projects, Planning, Budgets, Costing, Handover. | Affaire 1..N chantiers ; chantier 1..1 affaire. | Bloquant Lot 2 |
 | Q-02 | Quelles différences entre client, donneur d'ordre, maître d'ouvrage, maître d'œuvre et payeur ? | Détermine les rôles portés par Clients et les destinataires de Handover. | Rôles multiples par tiers et par affaire. | Bloquant Lot 2 |
 | Q-03 | L'opportunité commerciale et le pipeline appartiennent-ils à Clients ou à Projects ? | Détermine qui pilote l'étude initiale et les échanges Clients ↔ Projects. | Clients qualifie le prospect ; Projects ouvre l'étude. | Important |
-| Q-04 | À quel moment un prospect devient-il client ? | Détermine la création et la conversion dans Clients. | À la première commande ou au premier contrat. | Important |
+| Q-04 | À quel moment un prospect devient-il client ? | Détermine la création et la conversion dans Clients. | À la première commande ou au premier contrat — proposition de travail, non validée. | Important |
 | Q-05 | Existe-t-il un référentiel unique de tiers (client, fournisseur, sous-traitant) ? | Détermine le portage de l'identité juridique ; les rôles commerciaux et d'achat peuvent coexister. | Option A ou B de BD-16, à arbitrer ; aucune identité juridique n'est présumée par les objets de rôle. | Bloquant Lot 2 |
 | Q-06 | Les conditions de paiement, remises et limites de crédit relèvent-elles de Clients, Projects ou d'un traitement externe ? | Détermine le périmètre financier des domaines. | Conditions cadre dans Clients, conditions contractuelles dans Projects. | Important |
 | Q-07 | La facturation, les règlements et la comptabilité générale sont-ils hors périmètre des 18 domaines ? | Aucun domaine financier n'existe parmi les 18. | Documenter comme hors périmètre ou intégration externe. | Important |

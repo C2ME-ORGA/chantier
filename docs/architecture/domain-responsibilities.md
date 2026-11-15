@@ -301,7 +301,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- |
 | Un client est identifié par une référence de tiers stable ; l'unicité et le portage de l'identité juridique restent à arbitrer dans Q-05. | Proposition |
 | Un tiers peut porter un rôle commercial, un rôle fournisseur et un rôle sous-traitant ; ces rôles ne créent pas nécessairement des identités juridiques distinctes. | Proposition |
-| Un prospect devient client à la première commande ou au premier contrat ; l'historique de prospection est conservé. | Proposition, cohérent avec le cycle validé |
+| Un prospect devient client à la première commande ou au premier contrat ; l'historique de prospection est conservé. | Proposition de travail — à arbitrer dans Q-04 |
 | Un client avec des affaires actives ne peut pas être supprimé ; il peut être désactivé ou bloqué. | Proposition |
 | Un client bloqué ne peut pas recevoir de nouvelle affaire sans dérogation autorisée. | Proposition, seuil et autorité à valider |
 | Les conditions commerciales cadre ne remplacent pas les conditions contractuelles propres à une affaire. | Proposition |
