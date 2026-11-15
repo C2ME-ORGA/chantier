@@ -9,7 +9,7 @@ Ce document définit les conventions applicables aux **contrats synchrones** ent
 
 > **Statut : document de travail — Lot 2.**
 >
-> Ce document formalise uniquement les contrats synchrones. Les événements inter-domaines seront ajoutés au Lot 3. Aucun contrat, DTO, Model, Action, Service, événement ou provider de domaine n'est implémenté à ce stade : les exemples sont **fictifs et pédagogiques**. Ils ne représentent ni un besoin métier validé, ni une fonctionnalité existante.
+> Ce document formalise uniquement les contrats synchrones. Les événements inter-domaines seront ajoutés au Lot 3. Aucun contrat, DTO, Model de domaine, Action, Service, événement ou provider de domaine n'est implémenté à ce stade : les exemples sont **fictifs et pédagogiques**. Ils ne représentent ni un besoin métier validé, ni une fonctionnalité existante.
 
 Les conventions internes d'un domaine restent définies par [`domain-conventions.md`](domain-conventions.md) (CHAN-27). Ce document ne les remplace pas ; il les complète pour la frontière entre domaines.
 
@@ -143,7 +143,7 @@ Les suffixes `Query`, `Command` et `Result` sont des conventions de contrat sync
 | `Policies/` | **Non** | Chaque domaine applique ses propres droits. |
 | `Events/` local | **Non** | Événement local ; les événements publics relèvent du Lot 3. |
 
-**Règle de lecture :** un consommateur peut importer `App\Domains\{Provider}\Contracts\...` et rien d'autre du fournisseur. Les dépendances autorisées entre domaines seront précisées par CHAN-29 ; CHAN-28 se limite à la surface d'échange.
+**Règle de lecture :** pour la surface d'échange définie par CHAN-28, un consommateur importe uniquement `App\Domains\{Provider}\Contracts\...` et rien d'autre du fournisseur. La matrice des dépendances autorisées entre domaines reste du ressort de CHAN-29.
 
 ### 4.5 Importations autorisées et interdites
 
@@ -237,6 +237,8 @@ interface ReferenceAvailability
 namespace App\Domains\ReferenceProvider\Services;
 
 use App\Domains\ReferenceProvider\Contracts\ReferenceAvailability;
+use App\Domains\ReferenceProvider\Contracts\ReferenceAvailabilityQuery;
+use App\Domains\ReferenceProvider\Contracts\ReferenceAvailabilityResult;
 
 final class ReferenceAvailabilityChecker implements ReferenceAvailability
 {
@@ -703,8 +705,10 @@ app/Domains/ReferenceProvider/
 │   ├── ReferenceAvailabilityResult.php
 │   └── Exceptions/
 │       └── ReferenceNotFoundException.php
-└── Models/
-    └── ReferenceItem.php
+├── Models/
+│   └── ReferenceItem.php
+└── Services/
+    └── ReferenceAvailabilityChecker.php
 ```
 
 Contrat public :
@@ -714,11 +718,35 @@ Contrat public :
 
 namespace App\Domains\ReferenceProvider\Contracts;
 
+use App\Domains\ReferenceProvider\Services\ReferenceAvailabilityChecker;
+
+final class ReferenceAvailability
+{
+    public function __construct(
+        private readonly ReferenceAvailabilityChecker $checker,
+    ) {}
+
+    public function check(ReferenceAvailabilityQuery $query): ReferenceAvailabilityResult
+    {
+        return $this->checker->check($query);
+    }
+}
+```
+
+Implémentation interne :
+
+```php
+<?php
+
+namespace App\Domains\ReferenceProvider\Services;
+
 use App\Domains\ReferenceProvider\Contracts\Exceptions\ReferenceNotFoundException;
+use App\Domains\ReferenceProvider\Contracts\ReferenceAvailabilityQuery;
+use App\Domains\ReferenceProvider\Contracts\ReferenceAvailabilityResult;
 use App\Domains\ReferenceProvider\Models\ReferenceItem;
 use DateTimeImmutable;
 
-final class ReferenceAvailability
+final class ReferenceAvailabilityChecker
 {
     public function check(ReferenceAvailabilityQuery $query): ReferenceAvailabilityResult
     {
@@ -810,12 +838,12 @@ final class ReferenceItem extends Model
 }
 ```
 
-> **Note sur la variante concrète.** Le `use ReferenceItem` ci-dessus est un détail d'implémentation de la classe concrète. Il n'apparaît dans aucune signature publique : le consommateur n'importe que `ReferenceAvailability`, ses DTO et son exception. Si cette proximité avec la persistance devient gênante, ou si l'implémentation doit être substituée, passer à la variante B.
+> **Note sur la variante concrète.** La classe publique délègue à un Service interne ; le consommateur n'importe que `ReferenceAvailability`, ses DTO et son exception. Aucun binding n'est nécessaire : le container autowire la classe concrète et son Service interne. Si l'implémentation doit être substituée, passer à la variante B.
 
 Dans cette variante :
 
 - le consommateur peut importer `ReferenceAvailability`, `ReferenceAvailabilityQuery`, `ReferenceAvailabilityResult` et `ReferenceNotFoundException` ;
-- il ne peut pas importer `ReferenceItem` ;
+- il ne peut pas importer `ReferenceItem` ni `ReferenceAvailabilityChecker` ;
 - aucun binding n'est nécessaire ;
 - aucun provider de domaine n'est créé.
 
