@@ -4,7 +4,7 @@ Ce répertoire accueille les **domaines métier** de C2ME Chantier. Chaque sous-
 
 ## Finalité
 
-`app/Domains` constitue le point d'entrée unique du code métier de l'application. Il permet de :
+`app/Domains` constitue l'emplacement cible pour l'organisation du code métier par domaine. Il permet de :
 
 - regrouper par domaine les règles, modèles et traitements qui partagent le même langage métier ;
 - rendre explicites les frontières entre domaines ;
@@ -17,12 +17,12 @@ Le répertoire `app/Core` reste réservé aux composants **techniques transverse
 
 Les domaines sont placés dans `app/Domains`, et non dans un dossier racine `modules/`.
 
-Le mapping PSR-4 existant `App\` vers `app/` couvre déjà ces répertoires. Un domaine `Identity` situé dans `app/Domains/Identity` correspond donc au namespace `App\Domains\Identity\`. Aucune modification de `composer.json` n'est nécessaire.
+Le mapping PSR-4 existant `App\\` vers `app/` couvre déjà ces répertoires. Un domaine `Identity` situé dans `app/Domains/Identity` correspond donc au namespace `App\\Domains\\Identity\\`. Aucune modification de `composer.json` n'est nécessaire.
 
 ## Convention de nommage
 
 - Un domaine par répertoire, nommé en `PascalCase`.
-- Le nom du répertoire est identique au segment de namespace : `App\Domains\{Domaine}\`.
+- Le nom du répertoire est identique au segment de namespace : `App\\Domains\\{Domaine}\\`.
 - Le nom décrit une responsabilité métier, pas un type technique.
 - Pas d'abréviation ni de préfixe/suffixe décoratif (`Domain`, `Module`, `Bounded`, etc.).
 
