@@ -838,7 +838,7 @@ final class ReferenceItem extends Model
 }
 ```
 
-> **Note sur la variante concrète.** La classe publique délègue à un Service interne ; le consommateur n'importe que `ReferenceAvailability`, ses DTO et son exception. Aucun binding n'est nécessaire : le container autowire la classe concrète et son Service interne. Si l'implémentation doit être substituée, passer à la variante B.
+> **Note sur la variante concrète.** La classe publique délègue à un Service interne ; le consommateur n'importe que `ReferenceAvailability`, ses DTO et son exception. Aucun binding n'est nécessaire : le container autowire la classe concrète et son Service interne. Le test de substitution par `implements` n'est **pas applicable** à cette variante : le test consommateur doit utiliser la classe concrète réelle (§11.5). Si une substitution est nécessaire, passer à la variante B.
 
 Dans cette variante :
 
@@ -953,6 +953,8 @@ return [
 
 Ce fichier n'est **pas modifié** dans le Lot 2. Il le sera uniquement lors de l'implémentation réelle de la première interface de contrat.
 
+La substitution n'est possible que parce que le contrat est une interface. Le test correspondant est donc **propre à la variante B** (§11.5).
+
 ### 11.3 Appel depuis le consommateur
 
 Le consommateur n'importe que les éléments publics :
@@ -985,7 +987,12 @@ final class CheckReferenceBeforeUse
 }
 ```
 
-Cette classe fonctionne avec la variante A (classe concrète autowirée) comme avec la variante B (interface liée dans le provider). Le consommateur ne sait pas laquelle est utilisée.
+Le code ci-dessus est **commun dans sa forme**, mais `ReferenceAvailability` ne désigne pas le même symbole selon la variante :
+
+- **variante A** : la classe concrète `final` `ReferenceAvailability` ;
+- **variante B** : l'interface `ReferenceAvailability`.
+
+Les deux variantes sont des exemples **alternatifs**, pas deux implémentations simultanées. En variante A, le consommateur reçoit la classe concrète ; en variante B, il reçoit l'implémentation liée à l'interface par le provider. Une même déclaration de type ne peut pas être à la fois la classe concrète et l'interface.
 
 ### 11.4 Gestion d'une erreur métier
 
@@ -995,7 +1002,11 @@ Cette classe fonctionne avec la variante A (classe concrète autowirée) comme a
 
 ### 11.5 Tests représentatifs
 
-Test du contrat côté fournisseur :
+Les tests ci-dessous sont rattachés explicitement à une variante. Ils ne sont pas interchangeables : le test par `implements` de la variante B ne compile pas si `ReferenceAvailability` est la classe finale de la variante A.
+
+#### Test du contrat côté fournisseur
+
+Ce test vérifie le comportement du contrat et son intégration avec la persistance du fournisseur. Il s'applique aux deux variantes : `app(ReferenceAvailability::class)` résout la classe concrète en variante A, ou l'interface liée en variante B.
 
 ```php
 <?php
@@ -1024,7 +1035,44 @@ it('throws a business exception for an unknown reference', function () {
 });
 ```
 
-Test du consommateur avec une implémentation de test :
+#### Variante A — test du consommateur avec la classe concrète
+
+Le consommateur reçoit la **véritable classe concrète**. Ce test est un test de comportement et d'intégration : il ne substitue pas l'implémentation, n'utilise pas `implements` et ne tente pas de mocker la classe `final`.
+
+```php
+<?php
+
+use App\Domains\ReferenceConsumer\Actions\CheckReferenceBeforeUse;
+use App\Domains\ReferenceProvider\Contracts\ReferenceAvailability;
+use App\Domains\ReferenceProvider\Models\ReferenceItem;
+
+it('uses the real concrete contract in the consumer', function () {
+    ReferenceItem::factory()->create([
+        'code' => 'REF-001',
+        'is_available' => true,
+    ]);
+
+    $action = new CheckReferenceBeforeUse(
+        app(ReferenceAvailability::class),
+    );
+
+    expect($action->handle('REF-001'))->toBeTrue();
+});
+
+it('maps an unknown reference to false through the real contract', function () {
+    $action = new CheckReferenceBeforeUse(
+        app(ReferenceAvailability::class),
+    );
+
+    expect($action->handle('REF-404'))->toBeFalse();
+});
+```
+
+Si un test unitaire isolé est nécessaire, tester séparément le composant interne approprié — par exemple le Service interne du fournisseur — sans créer une abstraction publique uniquement pour permettre le test.
+
+#### Variante B — test du consommateur avec une implémentation de test
+
+Ce test n'est valide que dans la **variante B**, où `ReferenceAvailability` est une interface. Il ne peut pas être utilisé avec la classe finale de la variante A. L'implémentation anonyme est un double de test de l'interface ; elle n'existe pas dans l'application réelle.
 
 ```php
 <?php
@@ -1049,7 +1097,7 @@ it('maps a missing reference to false', function () {
 });
 ```
 
-Test de résolution du binding (variante B) :
+#### Variante B — test de résolution du binding
 
 ```php
 <?php
