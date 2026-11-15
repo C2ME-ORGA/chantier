@@ -110,7 +110,7 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 
 | ID | Source | Destinataire | Motif | Informations concernées | Moment | Nature | Processus |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| INT-006 | D02 Clients | D03 Projects | Identifier le client, le donneur d'ordre et les conditions | Identité légale, contacts, rôles, adresses, conditions cadre, statut | Étude, devis, ouverture d'affaire | Référentiel | P01, P02 |
+| INT-006 | D02 Clients | D03 Projects | Identifier le client, le donneur d'ordre et les conditions | Référence du tiers (selon Q-05), contacts, rôles, adresses, conditions cadre, statut | Étude, devis, ouverture d'affaire | Référentiel | P01, P02 |
 | INT-007 | D03 Projects | D02 Clients | Mettre à jour la relation et le statut du client | Affaire ouverte, commande, réception, clôture, incident relationnel | Cycle de vie de l'affaire | Notification | P01, P02, P12 |
 | INT-008 | D02 Clients | D03 Projects | Lancer une étude à partir d'un prospect qualifié | Besoin, contacts, maturité, échéance, documents disponibles | Qualification commerciale | Demande | P01 |
 | INT-009 | D02 Clients | D17 Handover | Identifier les représentants du client à la réception | Contacts, rôles, coordonnées, pouvoirs de réception | Préparation de la réception | Référentiel | P12 |
@@ -121,20 +121,20 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 
 | ID | Source | Destinataire | Motif | Informations concernées | Moment | Nature | Processus |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| INT-012 | D03 Projects | D04 Planning | Fournir le périmètre et les jalons à planifier | Affaire, chantier, lots, jalons contractuels, priorités, contraintes de site | Préparation et replanification | Référentiel | P03, P04, P09 |
-| INT-013 | D04 Planning | D03 Projects | Alimenter le pilotage contractuel | Planning, dates prévisionnelles, avancement des activités, conflits | Préparation et suivi | Notification | P04, P10 |
-| INT-014 | D03 Projects | D05 Budgets | Établir ou réviser l'enveloppe budgétaire | Périmètre, lots, montant du contrat, avenants, besoin budgétaire | Ouverture et révision | Demande | P01, P03 |
-| INT-015 | D05 Budgets | D03 Projects | Valider et suivre l'enveloppe | Budget validé, disponible, seuils, écarts, alertes | Ouverture et suivi | Décision | P01, P03, P10 |
-| INT-016 | D03 Projects | D06 Costing | Fournir la référence contractuelle et analytique | Affaire, lots, montants contractuels, avenants, avancement, événements | Tout le cycle | Référentiel | P01–P12 |
-| INT-017 | D06 Costing | D03 Projects | Alerter sur la marge et les dérives | Coût réel, EAC, marge, écarts, alertes | Suivi et clôture | Notification | P10, P12 |
-| INT-018 | D03 Projects | D09 Workshop | Demander une fabrication ou une étude d'atelier | Besoin, lot, dossier technique, dates, priorités | Préparation et lancement | Demande | P03, P06 |
-| INT-019 | D09 Workshop | D03 Projects | Informer sur la fabrication | Avancement, disponibilité, contraintes, retards, achèvement | Exécution | Notification | P06, P09 |
-| INT-020 | D03 Projects | D10 Procurement | Exprimer un besoin d'achat ou de sous-traitance non couvert par l'atelier | Prestation, spécifications, quantité, date, lot, budget | Préparation et exécution | Demande | P03, P09 |
-| INT-021 | D10 Procurement | D03 Projects | Informer sur les engagements et livraisons | Commande, fournisseur, montant, dates, statut, retards | Approvisionnement | Notification | P05, P09 |
-| INT-022 | D03 Projects | D14 Quality | Fournir les exigences de conformité | Périmètre, spécifications, exigences contractuelles, jalons, points d'arrêt | Préparation et exécution | Référentiel | P03, P11 |
-| INT-023 | D14 Quality | D03 Projects | Informer sur la conformité et les blocages | Résultats de contrôle, NCR, gravité, blocage, certificats | Exécution et réception | Notification | P11 |
-| INT-024 | D03 Projects | D15 Safety | Fournir les sites, activités et intervenants à couvrir | Sites, activités, planning, sous-traitants, risques connus | Préparation et exécution | Référentiel | P03, P09 |
-| INT-025 | D15 Safety | D03 Projects | Informer sur la prévention et les incidents | Plan de prévention, consignes, inspections, incidents, autorisations | Exécution et réception | Notification | P09, P11 |
+| INT-012 | D03 Projects | D04 Planning | Fournir le périmètre et les jalons à planifier | Affaire, chantier, lots, jalons contractuels, priorités, contraintes de site | Préparation et replanification | Référentiel | P02, P03, P04, P09 |
+| INT-013 | D04 Planning | D03 Projects | Alimenter le pilotage contractuel | Planning, dates prévisionnelles, avancement des activités, conflits | Préparation et suivi | Notification | P01, P02, P04, P10 |
+| INT-014 | D03 Projects | D05 Budgets | Établir ou réviser l'enveloppe budgétaire | Périmètre, lots, montant du contrat, avenants, besoin budgétaire | Ouverture et révision | Demande | P01, P02, P03 |
+| INT-015 | D05 Budgets | D03 Projects | Valider et suivre l'enveloppe | Budget validé, disponible, seuils, écarts, alertes | Ouverture et suivi | Décision | P01, P02, P03, P10 |
+| INT-016 | D03 Projects | D06 Costing | Demander la référence contractuelle, analytique et l'estimation | Affaire, lots, montants contractuels, avenants, avancement, événements, demande d'estimation rapide | Tout le cycle | Demande | P01–P12 |
+| INT-017 | D06 Costing | D03 Projects | Fournir une estimation économique, les risques et les alertes | Estimation, coût réel, EAC, marge, écarts, alertes de risque | Étude, suivi et clôture | Notification | P01, P02, P10, P12 |
+| INT-018 | D03 Projects | D09 Workshop | Demander une fabrication ou une étude d'atelier | Besoin, lot, dossier technique, dates, priorités | Préparation et lancement | Demande | P02, P03, P06 |
+| INT-019 | D09 Workshop | D03 Projects | Informer sur la fabrication | Avancement, disponibilité, contraintes, retards, achèvement | Exécution | Notification | P02, P06, P09 |
+| INT-020 | D03 Projects | D10 Procurement | Exprimer un besoin d'achat ou de sous-traitance non couvert par l'atelier | Prestation, spécifications, quantité, date, lot, budget | Préparation et exécution | Demande | P02, P03, P09 |
+| INT-021 | D10 Procurement | D03 Projects | Informer sur les engagements et livraisons | Commande, fournisseur, montant, dates, statut, retards | Approvisionnement | Notification | P02, P05, P09 |
+| INT-022 | D03 Projects | D14 Quality | Fournir les exigences de conformité | Périmètre, spécifications, exigences contractuelles, jalons, points d'arrêt | Préparation et exécution | Référentiel | P02, P03, P11 |
+| INT-023 | D14 Quality | D03 Projects | Informer sur les exigences, la conformité et les blocages | Exigences applicables, résultats de contrôle, NCR, gravité, blocage, certificats | Préparation, exécution et réception | Notification | P02, P03, P11 |
+| INT-024 | D03 Projects | D15 Safety | Fournir les sites, activités et intervenants à couvrir | Sites, activités, planning, sous-traitants, risques connus | Préparation et exécution | Référentiel | P02, P03, P09 |
+| INT-025 | D15 Safety | D03 Projects | Informer sur la prévention et les incidents | Plan de prévention, consignes, inspections, incidents, autorisations | Exécution et réception | Notification | P02, P09, P11 |
 | INT-026 | D03 Projects | D16 Documents | Verser les documents contractuels et d'exécution | Contrats, études, devis, plans, PV, documents de site | Tout le cycle | Document | P01–P12 |
 | INT-027 | D16 Documents | D03 Projects | Fournir les références documentaires contrôlées | Référence, version, statut, diffusion, liens | Tout le cycle | Référentiel | P01–P12 |
 | INT-028 | D03 Projects | D17 Handover | Demander la réception d'un lot ou de l'affaire | Périmètre, lots, client, dates, achèvement, documents | Achèvement | Demande | P12 |
@@ -151,16 +151,16 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 
 | ID | Source | Destinataire | Motif | Informations concernées | Moment | Nature | Processus |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| INT-037 | D04 Planning | D07 Workforce | Exprimer les besoins en ressources humaines | Activités, périodes, qualifications, charge, lieu | Planification | Demande | P04 |
-| INT-038 | D07 Workforce | D04 Planning | Fournir la disponibilité et les contraintes RH | Collaborateurs, équipes, qualifications, disponibilité, contrat | Planification | Référentiel | P04 |
-| INT-039 | D04 Planning | D12 Equipment | Exprimer les besoins en équipements | Équipement, activité, période, site, conditions | Planification | Demande | P04 |
-| INT-040 | D12 Equipment | D04 Planning | Fournir la disponibilité des équipements | Disponibilité, maintenance, inspections, affectations | Planification | Référentiel | P04 |
-| INT-041 | D04 Planning | D09 Workshop | Réserver des créneaux d'atelier | OF, activité, période, priorité, contraintes | Planification | Demande | P04, P06 |
-| INT-042 | D09 Workshop | D04 Planning | Fournir la capacité et l'avancement atelier | Capacité, durées, charge, avancement, retards | Planification et suivi | Référentiel | P04, P06 |
-| INT-043 | D04 Planning | D10 Procurement | Exprimer les besoins datés et les délais critiques | Articles, services, dates, quantités, priorités | Planification | Demande | P04, P05 |
-| INT-044 | D10 Procurement | D04 Planning | Fournir les délais et dates de livraison | Délais, dates prévues, retards, alternatives | Planification | Référentiel | P04, P05 |
-| INT-045 | D04 Planning | D11 Inventory | Vérifier la disponibilité matière | Articles, quantités, dates, réservations | Planification | Demande | P04, P05 |
-| INT-046 | D11 Inventory | D04 Planning | Signaler les pénuries et disponibilités | Disponibilité, pénurie, réservation, réapprovisionnement | Planification et suivi | Notification | P04, P05 |
+| INT-037 | D04 Planning | D07 Workforce | Exprimer les besoins en ressources humaines | Activités, périodes, qualifications, charge, lieu | Planification | Demande | P02, P04 |
+| INT-038 | D07 Workforce | D04 Planning | Fournir la disponibilité et les contraintes RH | Collaborateurs, équipes, qualifications, disponibilité, contrat | Planification | Référentiel | P02, P04 |
+| INT-039 | D04 Planning | D12 Equipment | Exprimer les besoins en équipements | Équipement, activité, période, site, conditions | Planification | Demande | P02, P04 |
+| INT-040 | D12 Equipment | D04 Planning | Fournir la disponibilité des équipements | Disponibilité, maintenance, inspections, affectations | Planification | Référentiel | P02, P04 |
+| INT-041 | D04 Planning | D09 Workshop | Réserver des créneaux d'atelier | OF, activité, période, priorité, contraintes | Planification | Demande | P02, P04, P06 |
+| INT-042 | D09 Workshop | D04 Planning | Fournir la capacité et l'avancement atelier | Capacité, durées, charge, avancement, retards | Planification et suivi | Référentiel | P02, P04, P06 |
+| INT-043 | D04 Planning | D10 Procurement | Exprimer les besoins datés et les délais critiques | Articles, services, dates, quantités, priorités | Planification | Demande | P02, P04, P05 |
+| INT-044 | D10 Procurement | D04 Planning | Fournir les délais et dates de livraison | Délais, dates prévues, retards, alternatives | Planification | Référentiel | P02, P04, P05 |
+| INT-045 | D04 Planning | D11 Inventory | Vérifier la disponibilité matière | Articles, quantités, dates, réservations | Planification | Demande | P02, P04, P05 |
+| INT-046 | D11 Inventory | D04 Planning | Signaler les pénuries et disponibilités | Disponibilité, pénurie, réservation, réapprovisionnement | Planification et suivi | Notification | P02, P04, P05 |
 | INT-047 | D04 Planning | D13 Logistics | Exprimer les besoins de transport | Colis, dates, destinations, contraintes | Planification logistique | Demande | P04, P08 |
 | INT-048 | D13 Logistics | D04 Planning | Fournir les contraintes et dates de transport | Délais, capacités, accès, incidents | Planification | Référentiel | P04, P08 |
 | INT-049 | D04 Planning | D08 TimeTracking | Fournir les activités à pointer | Activité, affaire, lot, période, responsable | Saisie des temps | Référentiel | P10 |
@@ -172,10 +172,10 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 
 | ID | Source | Destinataire | Motif | Informations concernées | Moment | Nature | Processus |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| INT-053 | D05 Budgets | D06 Costing | Fournir la référence budgétaire | Enveloppe, lignes, lots, natures, période | Élaboration et suivi | Référentiel | P03, P10 |
-| INT-054 | D06 Costing | D05 Budgets | Alimenter l'analyse budgétaire | Engagements, coûts constatés, EAC, écarts | Suivi et clôture | Notification | P10 |
+| INT-053 | D05 Budgets | D06 Costing | Fournir la référence budgétaire | Enveloppe, lignes, lots, natures, période | Élaboration et suivi | Référentiel | P02, P03, P10 |
+| INT-054 | D06 Costing | D05 Budgets | Alimenter l'analyse budgétaire | Engagements, coûts constatés, EAC, écarts | Suivi et clôture | Notification | P02, P10 |
 | INT-055 | D05 Budgets | D10 Procurement | Autoriser un engagement dans le disponible | Disponible, seuil, nature, lot, conditions | Validation d'achat | Décision | P05 |
-| INT-056 | D10 Procurement | D05 Budgets | Informer sur la consommation de l'enveloppe | Commande, montant, engagement, annulation, variation | Commande et suivi | Notification | P05 |
+| INT-056 | D10 Procurement | D05 Budgets | Informer sur la consommation de l'enveloppe | Commande, montant, engagement, annulation, variation | Commande et suivi | Notification | P02, P05 |
 | INT-057 | D05 Budgets | D18 Reporting | Alimenter le pilotage budgétaire | Budget, consommation, écarts, prévisions | Reporting | Consultation | P10 |
 
 ### 3.6 D06 — Costing
@@ -184,13 +184,13 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | INT-058 | D08 TimeTracking | D06 Costing | Valoriser la main-d'œuvre | Heures validées, affaire, lot, nature, taux | Période de coût | Notification | P10 |
 | INT-059 | D11 Inventory | D06 Costing | Valoriser la matière consommée | Article, quantité, lot, valorisation, affaire | Mouvement de stock | Notification | P05, P10 |
-| INT-060 | D10 Procurement | D06 Costing | Enregistrer les engagements et offres | Commande, montant, fournisseur, variations, offres | Étude, commande et suivi | Notification | P01, P05, P07 |
+| INT-060 | D10 Procurement | D06 Costing | Enregistrer les engagements et offres | Commande, montant, fournisseur, variations, offres | Étude, commande et suivi | Notification | P01, P02, P05, P07 |
 | INT-061 | D09 Workshop | D06 Costing | Valoriser la production atelier | Heures, matière, rebuts, coûts atelier, OF | Production | Notification | P06, P10 |
 | INT-062 | D12 Equipment | D06 Costing | Valoriser l'utilisation des équipements | Utilisation, maintenance, panne, location | Utilisation | Notification | P09, P10 |
 | INT-063 | D13 Logistics | D06 Costing | Valoriser le transport | Coût, affaire, lot, transporteur, incident | Livraison | Notification | P08, P10 |
 | INT-064 | D14 Quality | D06 Costing | Valoriser la non-qualité | NCR, reprise, rebut, temps, coût | Traitement qualité | Notification | P11 |
 | INT-065 | D15 Safety | D06 Costing | Valoriser la prévention et les incidents | Coût de prévention, arrêt, incident, action | Prévention et incident | Notification | P11 |
-| INT-066 | D07 Workforce | D06 Costing | Fournir les taux de référence | Taux horaire, poste, contrat, période | Valorisation | Référentiel | P10 |
+| INT-066 | D07 Workforce | D06 Costing | Fournir les taux de référence | Taux horaire, poste, contrat, période | Valorisation | Référentiel | P02, P10 |
 | INT-067 | D06 Costing | D18 Reporting | Alimenter le pilotage économique | Coûts, marges, écarts, EAC, tendances | Reporting | Consultation | P10 |
 
 ### 3.7 D07 — Workforce
@@ -199,7 +199,7 @@ Les interactions suivantes structurent les frontières et doivent être arbitré
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | INT-068 | D07 Workforce | D08 TimeTracking | Fournir les données nécessaires au pointage | Collaborateur, équipe, contrat, droits à absence, période | Saisie et validation | Référentiel | P10 |
 | INT-069 | D08 TimeTracking | D07 Workforce | Fournir les faits de temps nécessaires aux variables de paie | Temps validés, absences, heures supplémentaires | Cycle de paie | Notification | P10 |
-| INT-070 | D07 Workforce | D05 Budgets | Fournir les hypothèses de coût RH | Taux, postes, effectifs, disponibilité | Élaboration budgétaire | Référentiel | P01, P03 |
+| INT-070 | D07 Workforce | D05 Budgets | Fournir les hypothèses de coût RH | Taux, postes, effectifs, disponibilité | Élaboration budgétaire | Référentiel | P01, P02, P03 |
 | INT-071 | D07 Workforce | D15 Safety | Fournir les formations et qualifications | Formation, qualification, validité, preuve | Affectation et prévention | Référentiel | P04, P09 |
 | INT-072 | D15 Safety | D07 Workforce | Exprimer les exigences de formation et signaler les incidents | Exigence, habilitation, incident, restriction | Prévention | Demande | P04, P11 |
 | INT-073 | D07 Workforce | D14 Quality | Transmettre les formations et qualifications RH disponibles | Formations, qualifications RH, validité, preuves | Contrôle qualité | Référentiel | P11 |

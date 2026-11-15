@@ -90,7 +90,9 @@ Direction générale, direction commerciale, chargé d'affaires, bureau d'étude
 
 ### 3.4 Informations d'entrée
 
-- identité du prospect ou du client, contacts et rôles ;
+- référence du tiers (selon Q-05), contacts et rôles ;
+- informations de qualification du prospect et rôle commercial ;
+- acceptation, commande, contrat ou ordre de service ;
 - besoin, site, nature des travaux et contraintes ;
 - documents techniques, plans, cahier des charges, appel d'offres ;
 - exigences de qualité, de sécurité et de délais ;
@@ -111,18 +113,19 @@ Direction générale, direction commerciale, chargé d'affaires, bureau d'étude
 | 7 | Construire le devis | Projects | Costing, Clients, Documents | Définir le prix, les prestations, les hypothèses, les exclusions, les conditions et la validité ; vérifier la marge cible | Devis versionné (`PRJ-05`, `CST-05`) |
 | 8 | Valider le devis | Projects | Direction, Costing, Budgets, Identity | Vérifier les droits, la marge, les risques, les remises et les conditions ; tracer la validation | Devis validé (`PRJ-05`) |
 | 9 | Envoyer et négocier | Projects / Documents | Clients | Envoyer le devis, suivre les échanges, produire les révisions, conserver l'historique | Devis envoyé ou révisé (`PRJ-05`, `DOC-05`) |
-| 10 | Accepter ou commander | Clients / Projects | Direction, Budgets, Costing | Enregistrer l'acceptation, la commande ou l'ordre de service ; convertir le prospect en client si nécessaire | Acceptation ou commande enregistrée (`PRJ-06`, `CLI-02`) |
-| 11 | Ouvrir l'affaire et le chantier | Projects | Clients, Budgets, Planning, Costing | Créer l'affaire, rattacher le contrat et les lots, créer le ou les chantiers, nommer les acteurs, notifier les domaines | Affaire et chantier ouverts (`PRJ-01`, `PRJ-02`, `PRJ-03`) |
-| 12 | Établir le budget de l'affaire | Budgets | Costing, Projects, Procurement | Reprendre le chiffrage accepté, construire les lignes budgétaires, valider l'enveloppe et la marge cible | Budget validé (`BUD-01`, `BUD-02`) |
+| 10 | Qualifier et convertir le prospect | Clients | Projects | À réception de l'acceptation ou de la commande, vérifier la référence du tiers et les informations disponibles, mettre à jour le rôle commercial, convertir le prospect en client si nécessaire | Client et rôle commercial à jour (`CLI-02`, `CLI-04`) |
+| 11 | Enregistrer l'acceptation et la commande | Projects | Clients, Documents | Enregistrer l'acceptation commerciale, la commande, le contrat ou l'ordre de service ; ouvrir ou confirmer l'affaire | Acceptation et commande enregistrées, affaire confirmée (`PRJ-06`, `PRJ-01`) |
+| 12 | Ouvrir le chantier et les lots | Projects | Clients, Budgets, Planning, Costing | Créer le ou les chantiers, les lots et les phases, nommer les acteurs, notifier les domaines | Chantier et lots ouverts (`PRJ-02`, `PRJ-03`) |
+| 13 | Établir le budget de l'affaire | Budgets | Costing, Projects, Procurement | Reprendre le chiffrage accepté, construire les lignes budgétaires, valider l'enveloppe et la marge cible | Budget validé (`BUD-01`, `BUD-02`) |
 
 ### 3.6 Résultats
 
-- prospect qualifié et, si nécessaire, converti en client ;
+- prospect qualifié, converti si nécessaire, rôle commercial à jour ;
 - étude technique et dossier de référence ;
 - chiffrage prévisionnel et marge simulée ;
 - devis versionné, validé et diffusé ;
 - acceptation, commande ou ordre de service enregistré ;
-- affaire et chantier ouverts ;
+- affaire confirmée, chantier et lots ouverts ;
 - budget de l'affaire validé ;
 - premiers jalons contractuels et besoins de préparation identifiés.
 
@@ -131,7 +134,7 @@ Direction générale, direction commerciale, chargé d'affaires, bureau d'étude
 | Cas | Traitement proposé |
 | --- | --- |
 | Prospect non qualifié ou hors cible | Ne pas engager d'étude coûteuse ; documenter le motif de refus ou de mise en attente. |
-| Client inconnu ou non encore créé | Créer le prospect ou le client selon Q-04 ; ne pas ouvrir d'affaire sans identité vérifiée. |
+| Client inconnu ou non encore créé | Créer le prospect ou le client selon Q-04 ; ne pas ouvrir d'affaire sans référence de tiers vérifiée ; l'identité juridique reste à arbitrer (Q-05). |
 | Devis perdu ou expiré | Conserver l'étude et le chiffrage pour analyse ; ne pas ouvrir d'affaire. |
 | Acceptation partielle | Créer une version de devis ou un avenant ; ne pas considérer l'affaire comme complète. |
 | Commande directe sans devis | Basculer sur P02 et compléter les données manquantes. |
@@ -143,13 +146,13 @@ Direction générale, direction commerciale, chargé d'affaires, bureau d'étude
 
 ### 3.8 Interactions principales
 
-- Clients → Projects : identité, contacts, rôles, conditions commerciales.
-- Projects → Costing : périmètre, quantités, hypothèses et exigences.
-- Costing → Projects : chiffrage, marge, risques économiques.
-- Procurement → Costing : offres fournisseurs et sous-traitants.
-- Planning → Projects : faisabilité et délais.
-- Projects → Budgets : base du budget après acceptation.
-- Documents → tous : versions contrôlées des documents d'étude et de devis.
+- Clients ↔ Projects (`INT-006` / `INT-007`) : qualification, conversion, référence du tiers, contacts, rôles, conditions et acceptation/commande.
+- Clients → Projects (`INT-008`) : lancement de l'étude à partir d'un prospect qualifié.
+- Projects → Costing (`INT-016`) / Costing → Projects (`INT-017`) : périmètre, chiffrage, marge et risques économiques.
+- Procurement → Costing (`INT-060`) : offres fournisseurs et sous-traitants.
+- Planning → Projects (`INT-013`) : faisabilité et délais.
+- Projects ↔ Budgets (`INT-014` / `INT-015`) : besoin et base du budget après acceptation.
+- Projects ↔ Documents (`INT-026` / `INT-027`) : pièces contractuelles et versions contrôlées.
 
 ### 3.9 Points ouverts
 
@@ -173,12 +176,12 @@ Commande ou ordre de service → Création de l'affaire → Préparation → Ex�
 
 ### 4.3 Acteurs
 
-Direction, chargé d'affaires, assistant commercial, contrôleur de gestion, planificateur, acheteur, responsable atelier, chef de chantier, qualité, sécurité.
+Direction, chargé d'affaires, assistant commercial, contrôleur de gestion, planificateur, acheteur, responsable atelier, chef de chantier, qualité, sécurité, client ou donneur d'ordre.
 
 ### 4.4 Informations d'entrée
 
 - commande, ordre de service ou contrat ;
-- identité du donneur d'ordre et du client payeur ;
+- référence du tiers (selon Q-05), donneur d'ordre et client payeur ;
 - périmètre, quantités, prix, délais et conditions ;
 - site et contraintes d'accès ;
 - documents techniques disponibles ;
@@ -190,7 +193,7 @@ Direction, chargé d'affaires, assistant commercial, contrôleur de gestion, pla
 | # | Étape | Domaine(s) responsable(s) | Contributeurs (domaines ou acteurs) | Opérations métier | Résultat / interactions |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Réceptionner et enregistrer la commande | Projects / Documents | Clients | Enregistrer la commande ou l'OS, rattacher le document, identifier la référence et la date | Commande enregistrée (`PRJ-06`, `DOC-01`) |
-| 2 | Identifier et qualifier le donneur d'ordre | Clients | Projects | Retrouver ou créer le client/donneur d'ordre, vérifier les rôles et les contacts, détecter les doublons | Client et rôles identifiés (`CLI-02`, `CLI-04`) |
+| 2 | Identifier et qualifier le donneur d'ordre | Clients | Projects | Retrouver ou créer le client/donneur d'ordre, convertir le prospect si nécessaire, vérifier les rôles et les contacts, détecter les doublons | Client identifié ou prospect converti, rôles identifiés (`CLI-02`, `CLI-04`) |
 | 3 | Vérifier la cohérence contractuelle | Projects | Costing, Budgets | Vérifier le périmètre, le prix, les délais, les conditions et les écarts avec l'offre ou le tarif | Analyse des écarts et risques contractuels |
 | 4 | Ouvrir l'affaire et le chantier | Projects | Clients, Budgets, Planning, Costing | Créer l'affaire, le chantier, les lots, rattacher le contrat et les acteurs | Affaire ouverte (`PRJ-01`, `PRJ-02`, `PRJ-03`) |
 | 5 | Établir un budget provisoire | Budgets | Costing, Procurement, Workforce | Construire une enveloppe provisoire ou confirmer le budget existant ; identifier les engagements urgents | Budget provisoire validé (`BUD-01`) |
@@ -203,6 +206,7 @@ Direction, chargé d'affaires, assistant commercial, contrôleur de gestion, pla
 
 - commande ou OS enregistré ;
 - donneur d'ordre et client identifiés ;
+- prospect converti ou rôle commercial du tiers mis à jour ;
 - affaire, chantier et lots ouverts ;
 - budget provisoire ou confirmé ;
 - planning initial et besoins critiques identifiés ;
@@ -224,12 +228,25 @@ Direction, chargé d'affaires, assistant commercial, contrôleur de gestion, pla
 
 ### 4.8 Interactions principales
 
-- Clients → Projects : donneur d'ordre, contacts, rôles.
-- Projects → Budgets : besoin de budget provisoire.
-- Costing → Budgets : estimation rapide et risques.
-- Planning → Projects : faisabilité et délais.
-- Procurement / Inventory / Workshop → Planning : disponibilité et délais.
-- Projects → Quality / Safety : exigences à vérifier avant démarrage.
+Les interactions nécessaires à P02 sont couvertes par le registre existant. Aucune interaction nouvelle n'a été créée : la colonne `Processus` des interactions concernées a été complétée avec `P02`.
+
+| Interaction | Rôle dans P02 |
+| --- | --- |
+| INT-006 / INT-007 | Clients ↔ Projects : identification du donneur d'ordre, rôles, mise à jour de la relation. |
+| INT-026 / INT-027 | Projects ↔ Documents : pièces contractuelles, informations manquantes, versions. |
+| INT-014 / INT-015 | Projects ↔ Budgets : besoin de budget provisoire, validation et disponible. |
+| INT-016 / INT-017 | Projects ↔ Costing : estimation économique, risques, marge et alertes. |
+| INT-012 / INT-013 | Projects ↔ Planning : faisabilité, délais, capacité et planning initial. |
+| INT-037 à INT-046 | Planning ↔ Workforce / Equipment / Workshop / Procurement / Inventory : disponibilités et contraintes de capacité. |
+| INT-018 / INT-019 | Projects ↔ Workshop : faisabilité technique et capacité de fabrication. |
+| INT-020 / INT-021 | Projects ↔ Procurement : besoins urgents, engagements et délais. |
+| INT-022 / INT-023 | Projects ↔ Quality : exigences applicables et prérequis avant démarrage. |
+| INT-024 / INT-025 | Projects ↔ Safety : risques, prévention et autorisations avant démarrage. |
+| INT-053 / INT-054 | Budgets ↔ Costing : estimation, structure de coût et budget provisoire. |
+| INT-056 | Procurement → Budgets : engagements urgents et incidence budgétaire. |
+| INT-060 | Procurement → Costing : offres et estimations fournisseurs. |
+| INT-066 | Workforce → Costing : taux et coûts RH de référence. |
+| INT-070 | Workforce → Budgets : hypothèses de coût RH. |
 
 ### 4.9 Points ouverts
 

@@ -70,14 +70,14 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 | Responsabilités candidates | Domaine | Analyse |
 | --- | --- | --- |
-| Prospect, client, contacts, rôles, relation commerciale, conditions cadre | D02 Clients | Ces éléments décrivent le tiers et la relation durable. |
+| Rôles commerciaux (prospect, client, donneur d'ordre), contacts, relation commerciale, conditions cadre | D02 Clients | Ces éléments décrivent la relation durable et les rôles du tiers. |
 | Étude, devis, commande, contrat, affaire, chantier, avenants, jalons | D03 Projects | Ces éléments décrivent l'engagement et son exécution. |
 | Opportunité commerciale et pipeline | D02 ou D03 | La frontière dépend de l'organisation commerciale ; Q-03. |
 | Négociation du prix et des conditions de l'affaire | D02 et D03 | Clients porte la relation ; Projects porte l'offre et le contrat. |
 
 **Séparation recommandée.**
 
-- **Clients** est propriétaire du tiers, des contacts, des rôles (maître d'ouvrage, donneur d'ordre, payeur, maître d'œuvre), de la relation commerciale et des conditions cadre, sous réserve de Q-05.
+- **Clients** est propriétaire des rôles commerciaux (prospect, client, donneur d'ordre), des contacts, de la relation commerciale et des conditions cadre, sous réserve de Q-05. Il ne présume pas l'identité juridique du tiers.
 - **Projects** est propriétaire de l'étude, du devis, de la commande ou de l'ordre de service, du contrat, de l'affaire, du chantier, des lots, des avenants et des jalons contractuels.
 - Clients ne porte pas le devis ni l'affaire. Projects ne duplique pas la fiche client ; il référence le client et les rôles exposés par Clients.
 - Un prospect peut être étudié avant d'être converti en client ; la conversion intervient à la première commande ou au premier contrat, selon Q-04.
@@ -87,7 +87,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 | Sens | Informations | Moment |
 | --- | --- | --- |
-| Clients → Projects | Identité légale, contacts, rôles, conditions cadre, statut | Étude, devis, ouverture |
+| Clients → Projects | Référence du tiers (selon Q-05), contacts, rôles, conditions cadre, statut | Étude, devis, ouverture |
 | Projects → Clients | Affaire ouverte, commande, réception, clôture, incident relationnel | Cycle de vie |
 | Clients → Projects | Prospect qualifié, besoin, échéance | Prospection |
 | Projects → Clients | Devis, commande, affaire, statut | Négociation et exécution |
@@ -506,19 +506,29 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 **Responsabilités candidates.**
 
-| Domaine | Responsabilité |
+| Domaine ou statut | Responsabilité |
 | --- | --- |
-| Clients | Client, prospect, donneur d'ordre, contacts, relation commerciale. |
-| Procurement | Fournisseur, sous-traitant, contacts, relation d'achat. |
+| Identité juridique de l'entité | **Non arbitrée — Q-05.** Peut être portée par Clients, par Procurement ou par un référentiel partagé. |
+| Clients | Rôle commercial de prospect, client ou donneur d'ordre ; contacts et relation commerciale. |
+| Procurement | Rôle de fournisseur, rôle de sous-traitant, relation d'achat et commande. |
+| Procurement avec Quality et Safety | Qualification métier ou achat du tiers, selon la criticité de la prestation. |
 
-**Séparation recommandée.** Un même tiers peut être client, fournisseur et sous-traitant. Deux options sont possibles, sans créer de nouveau domaine :
+**Séparation recommandée.** La séparation ne choisit pas le portage de l'identité juridique. Elle distingue :
+
+- l'**identité juridique de l'entité**, dont le propriétaire reste à arbitrer (Q-05) ;
+- le **rôle commercial** de prospect, client ou donneur d'ordre, porté par Clients ;
+- le **rôle de fournisseur**, porté par Procurement ;
+- le **rôle de sous-traitant**, porté par Procurement ;
+- la **qualification métier ou achat**, portée par Procurement avec Quality et Safety selon le domaine.
+
+Un même tiers peut cumuler ces rôles. La présence de `CLI-02 Client`, `PRC-01 Fournisseur` et `PRC-02 SousTraitant` ne signifie pas qu'il existe trois entités juridiques distinctes : ce sont des rôles métier. Deux options restent ouvertes, sans nouveau domaine :
 
 - **Option A** : Clients porte le référentiel de l'entité légale (tiers), Procurement ajoute le rôle fournisseur/sous-traitant et ses données d'achat.
 - **Option B** : Clients et Procurement ont chacun leur référentiel, reliés par un identifiant légal (SIREN/SIRET) et une procédure de rapprochement.
 
 L'option A réduit les doublons mais élargit Clients au-delà de la relation commerciale. L'option B préserve l'autonomie mais impose une réconciliation. **Aucune option n'est tranchée.** Q-05.
 
-**Informations échangées.** Identité légale, rôles, contacts, statut, conditions.
+**Informations échangées.** Identité juridique (selon Q-05), rôle commercial, rôle fournisseur ou sous-traitant, contacts, qualification, statut, conditions.
 
 **À valider.** Q-05, Q-02.
 
@@ -634,7 +644,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 
 | ID | Décision proposée | Justification | Questions liées |
 | --- | --- | --- | --- |
-| PD-01 | Clients porte le tiers et la relation commerciale, sous réserve de Q-05 ; Projects porte l'étude, le devis, la commande, l'affaire et le chantier. | Évite de confondre relation durable et engagement contractuel. | Q-02, Q-03, Q-04, Q-05 |
+| PD-01 | Clients porte les rôles commerciaux et la relation commerciale, sous réserve de Q-05 ; Projects porte l'étude, le devis, la commande, l'affaire et le chantier. | Évite de confondre relation durable et engagement contractuel. | Q-02, Q-03, Q-04, Q-05 |
 | PD-02 | Une affaire peut couvrir plusieurs chantiers ou lots ; un chantier appartient à une seule affaire. | Reflète les affaires multi-sites ou multi-lots, sans imposer un modèle rigide. | Q-01 |
 | PD-03 | Budgets porte l'enveloppe autorisée ; Costing porte le chiffrage, les engagements financiers, les coûts constatés, l'EAC et la marge. | Sépare la décision budgétaire de la mesure économique. | Q-08, Q-09, Q-10 |
 | PD-04 | Procurement porte la commande et l'acte commercial ; Costing enregistre l'engagement financier ; Inventory porte la réception, le stock et les mouvements. | Sépare l'acte commercial, le suivi financier et le fait physique. | Q-17, Q-18, Q-19 |
@@ -648,7 +658,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | PD-12 | Reporting est un consommateur en lecture seule, sans écriture ni correction dans les domaines. | Évite un modèle d'écriture parallèle. | Q-34 |
 | PD-13 | Identity porte les comptes et droits ; Workforce porte les collaborateurs et contrats. | Sépare sécurité et RH. | Q-35 |
 | PD-14 | Safety porte les habilitations opérationnelles et autorisations ; Workforce porte les formations et qualifications RH ; Quality porte les qualifications techniques. | Évite trois sources concurrentes pour une même aptitude. | Q-16, Q-29 |
-| PD-15 | Procurement porte la relation fournisseur/sous-traitant, sous réserve de Q-05 ; Quality et Safety prononcent la conformité et l'aptitude. | Sépare relation commerciale et décision technique. | Q-05, Q-22, Q-23 |
+| PD-15 | Procurement porte les rôles fournisseur/sous-traitant et la relation d'achat, sous réserve de Q-05 ; Quality et Safety prononcent la conformité et l'aptitude. | Sépare relation commerciale et décision technique. | Q-05, Q-22, Q-23 |
 | PD-16 | Costing valorise les faits produits par les domaines opérationnels ; il ne les possède pas. | Évite la duplication des faits. | Q-09, Q-10, Q-20 |
 | PD-17 | Les références inter-domaines utilisent des identifiants publics stables, jamais des Models Eloquent. | Conforme à V-09 et V-10. | Q-36 |
 | PD-18 | Aucune transaction partagée n'est introduite par défaut ; le fournisseur d'une opération porte ses invariants et sa transaction. | Conforme à V-12. | — |
@@ -665,7 +675,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | Q-02 | Quelles différences entre client, donneur d'ordre, maître d'ouvrage, maître d'œuvre et payeur ? | Détermine les rôles portés par Clients et les destinataires de Handover. | Rôles multiples par tiers et par affaire. | Bloquant Lot 2 |
 | Q-03 | L'opportunité commerciale et le pipeline appartiennent-ils à Clients ou à Projects ? | Détermine qui pilote l'étude initiale et les échanges Clients ↔ Projects. | Clients qualifie le prospect ; Projects ouvre l'étude. | Important |
 | Q-04 | À quel moment un prospect devient-il client ? | Détermine la création et la conversion dans Clients. | À la première commande ou au premier contrat. | Important |
-| Q-05 | Existe-t-il un référentiel unique de tiers (client, fournisseur, sous-traitant) ? | Évite les doublons et les relations incohérentes. | Option A ou B de BD-16, à arbitrer. | Bloquant Lot 2 |
+| Q-05 | Existe-t-il un référentiel unique de tiers (client, fournisseur, sous-traitant) ? | Détermine le portage de l'identité juridique ; les rôles commerciaux et d'achat peuvent coexister. | Option A ou B de BD-16, à arbitrer ; aucune identité juridique n'est présumée par les objets de rôle. | Bloquant Lot 2 |
 | Q-06 | Les conditions de paiement, remises et limites de crédit relèvent-elles de Clients, Projects ou d'un traitement externe ? | Détermine le périmètre financier des domaines. | Conditions cadre dans Clients, conditions contractuelles dans Projects. | Important |
 | Q-07 | La facturation, les règlements et la comptabilité générale sont-ils hors périmètre des 18 domaines ? | Aucun domaine financier n'existe parmi les 18. | Documenter comme hors périmètre ou intégration externe. | Important |
 | Q-08 | Quels sont les seuils d'approbation budgétaire et d'engagement ? | Détermine les décisions de Budgets et Procurement. | Seuils par montant et par nature, à fixer par la direction. | Important |
@@ -747,7 +757,7 @@ Les questions suivantes sont considérées comme bloquantes pour la matrice tech
 
 | Décision | Options | Recommandation | Impact |
 | --- | --- | --- | --- |
-| Référentiel tiers | Clients maître / Procurement maître / deux référentiels reliés | À arbitrer, sans nouveau domaine | Détermine les échanges Clients ↔ Procurement et la qualité des données. |
+| Référentiel tiers | Clients maître / Procurement maître / deux référentiels reliés | À arbitrer, sans nouveau domaine ; les rôles commerciaux et d'achat restent distincts de l'identité juridique. | Détermine les échanges Clients ↔ Procurement et la qualité des données. |
 | Relation affaire/chantier | 1–1 / 1–N / N–N | Affaire 1–N chantiers | Détermine les axes de Planning, Budgets, Costing. |
 | Bureau d'études | Projects / Workshop / partagé | Projects contractuel, Workshop atelier | Détermine la propriété des études et plans. |
 | Sous-traitance reçue | Affaire Projects / commande Procurement | Affaire Projects | Détermine le parcours commercial et la réception. |

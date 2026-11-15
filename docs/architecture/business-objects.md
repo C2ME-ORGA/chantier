@@ -93,10 +93,10 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 
 | ID | Objet | Définition | Informations principales | Consommateurs potentiels |
 | --- | --- | --- | --- | --- |
-| CLI-01 | Prospect | Tiers non encore client, en phase de qualification commerciale. | Identité, contacts, origine, besoin, qualification, statut. | Projects, Reporting |
-| CLI-02 | Client | Tiers contractant ou susceptible de contracter avec C2ME. | Identité légale, adresses, conditions, statut, responsable commercial. | Projects, Handover, Reporting |
+| CLI-01 | Prospect | Rôle commercial de prospect exercé par un tiers, en phase de qualification. | Référence du tiers (selon Q-05), contacts, origine, besoin, qualification, statut. | Projects, Reporting |
+| CLI-02 | Client | Rôle commercial de client ou donneur d'ordre exercé par un tiers ; ne présume pas une identité juridique autonome. | Référence du tiers (selon Q-05), contacts, conditions, statut, responsable commercial. | Projects, Handover, Reporting |
 | CLI-03 | ContactClient | Personne de contact chez un prospect ou un client. | Nom, fonction, coordonnées, préférences, statut. | Projects, Handover |
-| CLI-04 | RôleTiers | Rôle exercé par un tiers dans une relation ou une affaire. | Type de rôle, tiers, affaire, période, statut. | Projects, Handover |
+| CLI-04 | RôleTiers | Rôle exercé par un tiers dans une relation ou une affaire ; ne présume pas une identité juridique autonome. | Type de rôle, tiers, affaire, période, statut. | Projects, Handover |
 | CLI-05 | RelationCommerciale | Suivi de la relation entre C2ME et un client ou prospect. | Responsable, segmentation, statut, historique, actions. | Projects, Reporting |
 | CLI-06 | ConditionsCommercialesCadre | Conditions commerciales négociées au niveau du client. | Paiement, remises, validité, clauses particulières, statut. | Projects |
 
@@ -192,8 +192,8 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 
 | ID | Objet | Définition | Informations principales | Consommateurs potentiels |
 | --- | --- | --- | --- | --- |
-| PRC-01 | Fournisseur | Tiers fournissant des biens ou services. | Identité, contacts, conditions, qualification, statut. | Procurement, Inventory, Costing |
-| PRC-02 | SousTraitant | Tiers réalisant une prestation pour C2ME. | Identité, spécialité, qualification, statut. | Procurement, Workshop, Quality, Safety |
+| PRC-01 | Fournisseur | Rôle de fournisseur exercé par un tiers ; ne présume pas une identité juridique autonome. Le rattachement au référentiel juridique dépend de Q-05. | Référence du tiers (selon Q-05), contacts, conditions d'achat, qualification, statut. | Procurement, Inventory, Costing |
+| PRC-02 | SousTraitant | Rôle de sous-traitant exercé par un tiers ; ne présume pas une identité juridique autonome. Le rattachement au référentiel juridique dépend de Q-05. | Référence du tiers (selon Q-05), spécialité, qualification, conditions, statut. | Procurement, Workshop, Quality, Safety |
 | PRC-03 | DemandeDAchat | Besoin d'achat exprimé par un domaine. | Article ou service, quantité, date, budget, statut. | Procurement, Budgets |
 | PRC-04 | OffreFournisseur | Proposition reçue d'un fournisseur. | Fournisseur, prix, délai, validité, statut. | Procurement, Costing |
 | PRC-05 | CommandeDAchat | Engagement d'achat auprès d'un fournisseur. | Numéro, fournisseur, lignes, montant, dates, statut. | Inventory, Costing, Budgets |
@@ -308,9 +308,9 @@ Certains concepts traversent plusieurs domaines. Ils ne doivent pas être dupliq
 | --- | --- | --- | --- |
 | Acteur / utilisateur | Identity | Tous | Identity fournit l'identité et les droits ; les domaines ne stockent pas de copie faisant autorité. |
 | Collaborateur | Workforce | Planning, TimeTracking, Costing, Safety | Workforce est la source RH ; Planning et TimeTracking référencent le collaborateur. |
-| Client / prospect | Clients (sous réserve Q-05) | Projects, Handover, Reporting | Clients est la source pressentie du client et de la relation ; l'unicité du référentiel tiers reste à arbitrer. |
+| Rôle commercial (prospect/client) | Clients (sous réserve Q-05) | Projects, Handover, Reporting | Clients porte le rôle commercial et la relation ; l'identité juridique reste à arbitrer. |
 | Donneur d'ordre | Clients | Projects, Handover | Le rôle est porté par Clients, contextualisé par affaire dans Projects ; le périmètre exact des rôles reste à valider Q-02. |
-| Fournisseur / sous-traitant | Procurement (sous réserve Q-05) | Inventory, Workshop, Quality, Safety, Costing | Procurement est la source pressentie de la relation et de la commande ; le lien avec un éventuel référentiel tiers unique reste à arbitrer. |
+| Rôle fournisseur / sous-traitant | Procurement (sous réserve Q-05) | Inventory, Workshop, Quality, Safety, Costing | Procurement porte les rôles d'achat et la relation ; l'identité juridique reste à arbitrer. |
 | Affaire | Projects | Tous | Projects est la source de l'affaire, de ses lots et de ses jalons. |
 | Chantier | Projects | Planning, Logistics, Safety, Quality, Handover | Projects est la source du site et de son cycle de vie. |
 | Lot / phase | Projects | Planning, Budgets, Costing, Quality, Handover | Projects est la source de la structure contractuelle ; les autres domaines l'utilisent comme axe. |
@@ -330,6 +330,20 @@ Certains concepts traversent plusieurs domaines. Ils ne doivent pas être dupliq
 3. Une copie d'affichage ou un cache ne devient jamais la source de vérité.
 4. Une donnée dupliquée doit être identifiée comme telle et rafraîchie selon une règle explicite.
 5. Une suppression dans le domaine propriétaire ne doit pas laisser les consommateurs dans un état incohérent ; les règles de conservation et de désactivation restent à définir.
+
+### 4.2 Référentiel des tiers
+
+Un même tiers peut cumuler plusieurs rôles. Le catalogue distingue cinq dimensions qui ne doivent pas être confondues :
+
+| Dimension | Propriétaire ou statut | Objets concernés | Règle de lecture |
+| --- | --- | --- | --- |
+| Identité juridique de l'entité | **Non arbitré — Q-05** | Aucun objet dédié dans ce lot | Peut être portée par Clients, par Procurement ou par un référentiel partagé. Aucune option n'est choisie. |
+| Rôle commercial de prospect, client ou donneur d'ordre | Clients | `CLI-01`, `CLI-02`, `CLI-04` | Le rôle décrit la relation commerciale ; il ne prouve pas à lui seul l'identité juridique. |
+| Rôle de fournisseur | Procurement | `PRC-01` | Le rôle décrit la relation d'achat ; il ne prouve pas à lui seul l'identité juridique. |
+| Rôle de sous-traitant | Procurement | `PRC-02` | Le rôle décrit la relation de sous-traitance ; il ne prouve pas à lui seul l'identité juridique. |
+| Qualification métier ou achat du tiers | Procurement, avec Quality et Safety selon le domaine | `PRC-02`, `PRC-08`, qualification fournisseur | La qualification porte sur l'aptitude à réaliser une prestation, pas sur l'identité juridique. |
+
+La présence simultanée de `CLI-02 Client`, `PRC-01 Fournisseur` et `PRC-02 SousTraitant` ne signifie donc pas que le même tiers possède trois identités juridiques. Ces objets représentent des rôles métier. Le portage définitif du référentiel juridique — option A, option B ou autre solution — reste explicitement ouvert tant que Q-05 n'est pas tranchée.
 
 ## 5. Objets non retenus ou à confirmer
 

@@ -286,12 +286,12 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 ### D02 — Clients
 
-**Mission.** Gérer les prospects, les clients, les donneurs d'ordre, leurs contacts et la relation commerciale, ainsi que les rôles des tiers dans les affaires.
+**Mission.** Gérer les rôles commerciaux des tiers (prospect, client, donneur d'ordre), leurs contacts et la relation commerciale, sans présumer l'identité juridique unique du tiers (Q-05).
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Prospection, qualification, fiche client, contacts, rôles (maître d'ouvrage, donneur d'ordre, payeur, maître d'œuvre, prescripteur), relation commerciale, conditions commerciales cadre, statut et historique relationnel. |
-| Périmètre exclu | Étude technique, devis, commande, affaire et chantier (Projects), fournisseurs et sous-traitants (Procurement), facturation et paiement (hors périmètre des 18 domaines), comptes utilisateurs (Identity). |
+| Périmètre inclus | Prospection, qualification, référence de tiers (selon Q-05), rôles commerciaux (prospect, client, donneur d'ordre, maître d'ouvrage, payeur, maître d'œuvre, prescripteur), contacts, relation commerciale, conditions commerciales cadre, statut et historique relationnel. |
+| Périmètre exclu | Étude technique, devis, commande, affaire et chantier (Projects), rôles fournisseur et sous-traitant (Procurement), facturation et paiement (hors périmètre des 18 domaines), comptes utilisateurs (Identity). |
 | Objets métier | `CLI-01` Prospect, `CLI-02` Client, `CLI-03` ContactClient, `CLI-04` RôleTiers, `CLI-05` RelationCommerciale, `CLI-06` ConditionsCommercialesCadre. |
 | Acteurs | Direction commerciale, chargé d'affaires, assistant commercial, direction générale, client, donneur d'ordre, maître d'ouvrage. |
 
@@ -299,8 +299,8 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Règle | Statut |
 | --- | --- |
-| Un client est identifié par une identité légale unique ; les doublons doivent être détectés et fusionnés selon une procédure tracée. | Proposition |
-| Un tiers peut porter plusieurs rôles et disposer de plusieurs contacts, éventuellement sur des affaires différentes. | Proposition |
+| Un client est identifié par une référence de tiers stable ; l'unicité et le portage de l'identité juridique restent à arbitrer dans Q-05. | Proposition |
+| Un tiers peut porter un rôle commercial, un rôle fournisseur et un rôle sous-traitant ; ces rôles ne créent pas nécessairement des identités juridiques distinctes. | Proposition |
 | Un prospect devient client à la première commande ou au premier contrat ; l'historique de prospection est conservé. | Proposition, cohérent avec le cycle validé |
 | Un client avec des affaires actives ne peut pas être supprimé ; il peut être désactivé ou bloqué. | Proposition |
 | Un client bloqué ne peut pas recevoir de nouvelle affaire sans dérogation autorisée. | Proposition, seuil et autorité à valider |
@@ -323,11 +323,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Entrée | Identity | Responsable commercial et acteurs autorisés | Attribution de la relation |
 | Entrée | Projects | Ouverture, changement d'état ou clôture d'une affaire | Cycle de vie de l'affaire |
 | Entrée | Handover | Réception, réserves, garanties | Réception et garantie |
-| Sortie | Projects | Identité du client, contacts, rôles, conditions cadre | Étude, devis, ouverture d'affaire |
+| Sortie | Projects | Référence du tiers (selon Q-05), contacts, rôles, conditions cadre | Étude, devis, ouverture d'affaire |
 | Sortie | Handover | Contacts et représentants du client pour la réception | Préparation de la réception |
 | Sortie | Reporting | Portefeuille clients, prospects, relation commerciale | Analyse commerciale |
 
-**Limites et chevauchements.** Clients porte la relation et le tiers, sous réserve de Q-05 ; Projects porte l'étude, le devis, la commande, l'affaire et le chantier. La frontière exacte entre prospection et étude est analysée en BD-01. Un tiers peut être à la fois client, fournisseur ou sous-traitant : ce cas est analysé en BD-16 et Q-05.
+**Limites et chevauchements.** Clients porte les rôles commerciaux et la relation commerciale, sous réserve de Q-05. L'identité juridique de l'entité n'est pas arbitrée : elle peut être portée par Clients, par Procurement ou par un référentiel partagé à définir. Projects porte l'étude, le devis, la commande, l'affaire et le chantier. Un tiers peut être client, fournisseur ou sous-traitant sans que cela implique plusieurs identités juridiques. Voir BD-01 et BD-16.
 
 **Questions ouvertes.** Q-02 (client, donneur d'ordre, maître d'ouvrage), Q-03 (opportunité commerciale), Q-04 (création du client), Q-05 (référentiel tiers partagé), Q-06 (conditions financières et crédit).
 
@@ -737,11 +737,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 ### D10 — Procurement
 
-**Mission.** Sourcer, contractualiser et suivre les achats de biens, services et sous-traitance nécessaires aux affaires, à l'atelier et au fonctionnement de C2ME.
+**Mission.** Sourcer, contractualiser et suivre les achats de biens, services et sous-traitance nécessaires aux affaires, à l'atelier et au fonctionnement de C2ME, en portant les rôles fournisseur et sous-traitant des tiers.
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Fournisseurs, sous-traitants, demandes d'achat, consultations, offres, commandes d'achat, lignes de commande, commandes de sous-traitance, engagements, échéanciers, performance fournisseur, accords-cadres, références fournisseur, garanties fournisseurs et sous-traitants. |
+| Périmètre inclus | Rôles fournisseur et sous-traitant, demandes d'achat, consultations, offres, commandes d'achat, lignes de commande, commandes de sous-traitance, engagements, échéanciers, performance fournisseur, accords-cadres, références fournisseur, garanties fournisseurs et sous-traitants. |
 | Périmètre exclu | Stock, réception physique et mouvements (Inventory), transport (Logistics), qualité technique (Quality), budget (Budgets), coûts (Costing), facturation et paiement (hors périmètre), sous-traitance reçue par C2ME (Projects/Clients). |
 | Objets métier | `PRC-01` Fournisseur, `PRC-02` SousTraitant, `PRC-03` DemandeDAchat, `PRC-04` OffreFournisseur, `PRC-05` CommandeDAchat, `PRC-06` LigneDeCommande, `PRC-07` CommandeDeSousTraitance, `PRC-08` ÉvaluationFournisseur, `PRC-09` AccordCadre, `PRC-10` GarantieFournisseur. |
 | Acteurs | Acheteur, responsable achats, chargé d'affaires, responsable atelier, magasinier, qualité, sécurité, direction. |
@@ -752,6 +752,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- |
 | Une demande d'achat précise le besoin, la quantité, la date, le lot, la nature et la référence budgétaire. | Proposition |
 | Une commande est créée après validation du besoin, du disponible budgétaire et des seuils d'approbation. | Proposition, seuils Q-08 |
+| Un fournisseur ou un sous-traitant est un rôle d'achat exercé par un tiers ; il ne présume pas une identité juridique autonome. Le rattachement au référentiel juridique dépend de Q-05. | Proposition |
 | Un fournisseur ou sous-traitant est qualifié selon la criticité de la prestation, avec Quality et Safety. | Proposition |
 | Une commande constitue un acte commercial qui crée un engagement financier, suivi par Costing ; ses versions, annulations et réceptions partielles sont tracées. | Proposition |
 | La réception physique ne vaut pas acceptation qualité ; Inventory enregistre, Quality accepte ou refuse. | Proposition |
@@ -789,9 +790,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Workshop | Statut des commandes de fabrication externe | Sous-traitance |
 | Sortie | Reporting | Achats, engagements, performance fournisseur | Pilotage |
 
-**Limites et chevauchements.** Procurement porte la relation fournisseur et l'engagement ; Inventory porte le stock et la réception ; Costing valorise ; Budgets autorise ; Quality et Safety qualifient. Voir BD-05, BD-10, BD-16 et BD-19.
+**Limites et chevauchements.** Procurement porte les rôles d'achat et la relation fournisseur/sous-traitant, sans présumer l'identité juridique du tiers (Q-05). Inventory porte le stock et la réception ; Costing valorise ; Budgets autorise ; Quality et Safety qualifient. Voir BD-05, BD-10, BD-16 et BD-19.
 
-**Questions ouvertes.** Q-07, Q-08, Q-17 (article), Q-18 (catalogue), Q-22 (qualification sous-traitant), Q-41 (sous-traitance dans les deux sens), Q-44 (garanties fournisseurs).
+**Questions ouvertes.** Q-05 (identité juridique et référentiel tiers), Q-07, Q-08, Q-17 (article), Q-18 (catalogue), Q-22 (qualification sous-traitant), Q-41 (sous-traitance dans les deux sens), Q-44 (garanties fournisseurs).
 
 ---
 
