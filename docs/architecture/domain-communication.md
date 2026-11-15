@@ -4,24 +4,32 @@ Ce document définit les conventions applicables aux **échanges entre domaines 
 
 - les **contrats synchrones** (Lot 2), lorsqu'un domaine demande une capacité à un autre et attend une réponse immédiate ;
 - les **événements inter-domaines** (Lot 3), lorsqu'un domaine annonce un fait métier accompli auquel d'autres domaines peuvent réagir indépendamment ;
-- la **fiabilité, le synchronisme et l'évolution** (Lot 4), qui fixent les politiques transversales de choix, d'erreur, de reprise, d'idempotence, de traçabilité et de décision d'infrastructure.
+- la **fiabilité, le synchronisme et l'évolution** (Lot 4), qui fixent les politiques transversales de choix, d'erreur, de reprise, d'idempotence, de traçabilité et de décision d'infrastructure ;
+- la **consolidation finale** (Lot 5), qui vérifie la cohérence de l'ensemble sans ajouter de règle métier.
 
 **Repères.**
 
 - Ticket : CHAN-28 — Définir les contrats et règles de communication inter-domaines.
 - Ticket parent : CHAN-10 — Mettre en place l'architecture Modular Monolith.
-- Portée : contrats synchrones (sections 1 à 14), événements inter-domaines (sections 15 à 22), fiabilité, synchronisme et évolution (sections 23 à 32), propriété, structure, publication, consommation, idempotence, erreurs et tests.
+- Portée : contrats synchrones (sections 1 à 14), événements inter-domaines (sections 15 à 22), fiabilité, synchronisme et évolution (sections 23 à 32), synthèse finale (section 33), sujets différés et références (sections 34 et 35).
 - Hors portée : mise en œuvre d'une file d'attente supervisée, d'une Outbox, d'un broker externe ou d'une architecture distribuée, matrice de dépendances CHAN-29, tests d'architecture CHAN-31 et harmonisation générale de `AGENTS.md` CHAN-30.
 
-> **Statut : document de travail — Lots 2, 3 et 4.**
+> **Statut : document consolidé — Lots 2 à 5.**
 >
-> Le Lot 2 formalise les contrats synchrones. Le Lot 3 formalise les événements inter-domaines. Le Lot 4 consolide les règles de fiabilité, de synchronisme, de reprise, d'idempotence, de traçabilité et d'évolution. Aucun contrat, DTO, Model de domaine, Action, Service, événement, listener, job, worker, Outbox ou provider de domaine n'est implémenté à ce stade : les exemples sont **fictifs et pédagogiques**. Ils ne représentent ni un besoin métier validé, ni une fonctionnalité existante.
+> Le Lot 2 formalise les contrats synchrones. Le Lot 3 formalise les événements inter-domaines. Le Lot 4 consolide les règles de fiabilité, de synchronisme, de reprise, d'idempotence, de traçabilité et d'évolution. Le Lot 5 vérifie la cohérence de l'ensemble et prépare la validation finale du ticket. Aucun contrat, DTO, Model de domaine, Action, Service, événement, listener, job, worker, Outbox ou provider de domaine n'est implémenté à ce stade : les exemples sont **fictifs et pédagogiques**. Ils ne représentent ni un besoin métier validé, ni une fonctionnalité existante.
 >
-> Les Lots 3 et 4 sont **documentaires**. Ils ne créent aucune classe PHP, aucun test applicatif, aucune migration, aucune dépendance, aucun broker, aucune file d'attente supervisée, aucune Outbox, aucun worker et aucune configuration. Les règles ci-dessous décrivent la cible à respecter lors de l'implémentation réelle des premiers échanges.
+> Les Lots 3, 4 et 5 sont **documentaires**. Ils ne créent aucune classe PHP, aucun test applicatif, aucune migration, aucune dépendance, aucun broker, aucune file d'attente supervisée, aucune Outbox, aucun worker et aucune configuration. Les règles ci-dessous décrivent la cible à respecter lors de l'implémentation réelle des premiers échanges.
 
 Les conventions internes d'un domaine restent définies par [`domain-conventions.md`](domain-conventions.md) (CHAN-27). Ce document ne les remplace pas ; il les complète pour la frontière entre domaines.
 
-Les sections 1 à 14 sont la référence des contrats synchrones et ne sont pas rouvertes par les Lots 3 et 4. Les sections 15 à 22 sont la référence des événements inter-domaines. Les sections 23 à 32 sont la référence transversale de la fiabilité, du synchronisme et de l'évolution. Les règles communes sont référencées, pas recopiées : propriété du contrat, interdiction d'importer l'implémentation interne, payload typé, absence de Model Eloquent dans les signatures publiques, autorisation côté fournisseur et discipline d'évolution.
+| Partie | Sections | Périmètre |
+| --- | --- | --- |
+| **I — Contrats synchrones** | 1 à 14 | Demander une capacité à un domaine fournisseur et obtenir une réponse immédiate, typée et testable. |
+| **II — Événements inter-domaines** | 15 à 22 | Annoncer un fait métier accompli, publié après commit, consommé par des listeners explicites. |
+| **III — Fiabilité, synchronisme et évolution** | 23 à 32 | Choisir synchrone ou asynchrone, gérer erreurs, retry, idempotence, traçabilité, compatibilité et infrastructure future. |
+| **Synthèse et compléments** | 33 à 35 | Synthèse finale, checklist d'un nouvel échange, sujets différés et références. |
+
+Les sections 1 à 14 sont la référence des contrats synchrones et ne sont pas rouvertes par les Lots 3, 4 et 5. Les sections 15 à 22 sont la référence des événements inter-domaines. Les sections 23 à 32 sont la référence transversale de la fiabilité, du synchronisme et de l'évolution. La section 33 est une synthèse finale sans nouvelle règle ; les sections 34 et 35 recensent les sujets différés et les références. Les règles communes sont référencées, pas recopiées : propriété du contrat, interdiction d'importer l'implémentation interne, payload typé, absence de Model Eloquent dans les signatures publiques, autorisation côté fournisseur et discipline d'évolution.
 
 ---
 
@@ -94,9 +102,9 @@ Ces décisions sont celles validées pour CHAN-28. Elles ne sont pas rouvertes p
 | Forme | Interface non imposée ; classe concrète par défaut lorsque cela suffit. |
 | Données | Entrées et sorties typées ; pas de Model Eloquent dans les signatures publiques. |
 | Identité | Pas de `App\Models\User` dans l'API publique ; représentation minimale explicite si nécessaire. |
-| Périmètre | Contrats synchrones (sections 1 à 14) ; événements inter-domaines (sections 15 à 22) ; fiabilité, synchronisme et évolution (sections 23 à 32). |
+| Périmètre | Contrats synchrones (sections 1 à 14) ; événements inter-domaines (sections 15 à 22) ; fiabilité, synchronisme et évolution (sections 23 à 32) ; synthèse finale (section 33). |
 
-Les décisions propres aux événements inter-domaines sont formalisées en section 15.10. Les politiques de fiabilité, de synchronisme et d'évolution sont formalisées dans la Partie III (sections 23 à 32). Elles complètent ce tableau sans rouvrir les décisions des contrats synchrones.
+Les décisions propres aux événements inter-domaines sont formalisées en section 15.10. Les politiques de fiabilité, de synchronisme et d'évolution sont formalisées dans la Partie III (sections 23 à 32), puis synthétisées en section 33. Elles complètent ce tableau sans rouvrir les décisions des contrats synchrones.
 
 ## 4. Structure et namespaces
 
@@ -1762,7 +1770,7 @@ Les doublons peuvent venir :
 
 - d'un double appel de l'Action (double clic, retry utilisateur, job rejoué) ;
 - d'un rejeu manuel de l'événement ;
-- d'une future file d'attente à livraison au moins une fois ;
+- d'une future file d'attente pouvant exécuter un traitement plusieurs fois ;
 - d'un listener enregistré deux fois ;
 - d'un événement dispatché deux fois par une Action mal structurée.
 
@@ -1790,8 +1798,8 @@ Laravel ne fournit aucun rejeu automatique d'un événement synchrone. Rejouer u
 | Publication immédiate hors transaction | Oui, c'est le comportement Laravel | — |
 | Livraison durable après un crash du processus | Non | Outbox ou event store |
 | Rejeu automatique d'un listener synchrone | Non | Mécanisme dédié |
-| Retry automatique d'un listener en file après échec | Oui, via la queue | Worker supervisé, politique de retry, `failed_jobs` |
-| Exactly-once | Non | Non garanti ; au mieux at-least-once + idempotence |
+| Retry automatique d'un listener en file après échec | Oui, si file et worker | Worker supervisé, politique de retry, `failed_jobs` |
+| Exactly-once | Non | Non garanti ; exécution possible plusieurs fois, avec idempotence |
 | Ordre global des événements | Non | Ordre de file éventuel, non global |
 | Déduplication | Non | Contrainte métier, table de déduplication ou clé d'idempotence |
 | Piste d'audit des traitements | Non, seulement des logs | Event store ou table d'audit |
@@ -1901,7 +1909,7 @@ Le mécanisme dépend aussi du gestionnaire de transactions : sans transaction a
 Un listener `ShouldQueue` sans worker supervisé accumule des jobs dans la table `jobs` sans être exécuté. Le Lot 3 ne l'autorise donc pas. Si une file est introduite plus tard :
 
 - le worker doit être supervisé, surveillé et documenté ;
-- la livraison est au moins une fois, jamais exactly-once ;
+- l'exécution peut avoir lieu plusieurs fois ; la livraison effective et le succès du consommateur ne sont pas garantis ; jamais exactly-once ;
 - les listeners doivent être idempotents ;
 - les échecs vont dans `failed_jobs` selon la configuration ;
 - l'ordre n'est pas garanti globalement ;
@@ -1965,7 +1973,7 @@ Un listener synchrone doit rester court et limiter ses effets de bord. Un traite
 | --- | --- |
 | Prérequis | File configurée et worker supervisé. |
 | Latence | Traitement différé ; le fait métier n'attend pas le listener. |
-| Livraison | Au moins une fois ; doublons possibles. |
+| Livraison | Exécution possible plusieurs fois ; livraison effective non garantie ; doublons possibles. |
 | Erreur | Retry selon la configuration, puis `failed_jobs`. |
 | Ordre | Non garanti globalement. |
 | Sérialisation | L'événement doit être sérialisable et ne contenir aucun Model. |
@@ -2164,7 +2172,7 @@ Les logs ne prouvent pas qu'un événement a été livré ou traité une seule f
 | --- | --- |
 | Double appel de l'Action | Deux événements, deux effets si le listener n'est pas idempotent. |
 | Rejeu manuel | Effet répété. |
-| File à livraison au moins une fois | Doublon après retry ou redélivrance. |
+| File pouvant exécuter plusieurs fois | Doublon après retry ou redélivrance. |
 | Email ou notification | Doublon visible par l'utilisateur. |
 | Mouvement de stock sans clé unique | Quantité doublée. |
 | Écriture financière sans clé unique | Écriture comptable dupliquée. |
@@ -3984,7 +3992,107 @@ Une contrainte d'unicité en base protège la création. Le stock négatif est i
 - [ ] Les prérequis d'idempotence, de supervision, de rétention et de rejeu sont réunis avant toute Outbox.
 - [ ] Le tableau des garanties est à jour et ne promet pas de livraison durable sans infrastructure.
 
-## 33. Sujets différés
+## 33. Synthèse finale et checklist d'un nouvel échange
+
+> **Cette synthèse ne crée aucune règle.** Elle résume les décisions déjà formalisées et fournit une checklist de revue. En cas de divergence, les sections détaillées font foi.
+
+### 33.1 Règles obligatoires à retenir
+
+| Statut | Lecture |
+| --- | --- |
+| **Décision validée** | Règle marquée « Obligatoire » dans les sections 1 à 32, ou décision explicitement validée par un lot. |
+| **Recommandation** | Règle marquée « Recommandé » ; une alternative est acceptable si elle est justifiée. |
+| **Conditionnel** | Règle applicable uniquement lorsqu'un besoin concret est présent. |
+| **Sujet différé** | Point non tranché, recensé en section 34. |
+| **Exemple** | Illustration fictive et pédagogique, jamais une règle validée. |
+
+**Contrats synchrones**
+
+- Le domaine fournisseur possède le contrat et le place dans `Contracts/`.
+- Le consommateur n'importe jamais un Model, une Action, un Service, un DTO interne, une Policy ou une table du fournisseur.
+- Les entrées et sorties sont typées ; aucun Model Eloquent, Builder ou Collection Eloquent ne traverse la frontière.
+- Le fournisseur applique ses autorisations et ses invariants ; le consommateur gère les erreurs déclarées.
+- Aucune transaction partagée implicite n'est introduite.
+
+**Événements inter-domaines**
+
+- Le domaine émetteur possède l'événement et le place dans `Events/Integration/`.
+- Le nom décrit un fait accompli ; le payload est minimal, typé et sans détail interne.
+- L'événement est publié après commit avec `ShouldDispatchAfterCommit` lorsqu'une transaction est active.
+- Les listeners sont enregistrés explicitement chez les consommateurs.
+- Le consommateur est idempotent ; aucun exactly-once n'est promis.
+- Un événement n'est ni un RPC déguisé, ni un journal technique, ni une source de vérité.
+
+**Fiabilité**
+
+- Une réponse immédiate nécessaire impose un contrat synchrone.
+- Un fait accompli dont la réaction peut être différée relève d'un événement.
+- L'asynchrone exige une file, un worker supervisé, un monitoring et une idempotence.
+- Le retry ne s'applique qu'à une erreur temporaire et à une opération idempotente.
+- Les logs ne sont pas un audit métier ni un journal durable d'événements.
+- Une évolution de contrat est additive ou coordonnée avec les consommateurs connus.
+- Aucune Outbox, file supervisée ou broker n'est introduit sans décision fondée sur la section 29.
+
+### 33.2 Mécanismes disponibles et état réel
+
+| Besoin | Mécanisme documenté | État réel | Limite principale |
+| --- | --- | --- | --- |
+| Décision ou réponse immédiate | Contrat synchrone | Documenté, aucun contrat implémenté | Pas de transaction partagée ; le consommateur gère l'échec. |
+| Fait accompli, réaction indépendante | Événement après commit | Documenté, aucun événement implémenté | Pas de durabilité après crash ; listeners synchrones par défaut. |
+| Traitement long ou différé | File supervisée | Non démontrée | Worker, supervision et idempotence nécessaires. |
+| Publication durable et rejeu | Outbox | Non implémentée | Relais, rétention, monitoring et idempotence nécessaires. |
+| Audit métier | Audit du domaine ou event store | Non implémenté | Les logs ne remplacent pas l'audit. |
+| Observabilité | `Log` et `Context` | Natif Laravel | Pas d'APM ni de tracing externe décidé. |
+
+### 33.3 Garanties et limites en une page
+
+| Mécanisme | Garanti ou possible | Non garanti |
+| --- | --- | --- |
+| Contrat synchrone | Si l'appel se termine, une réponse ou une exception est retournée dans le cadre de l'appel. | Succès de l'opération consommatrice, reprise automatique, transaction partagée. |
+| Événement, listener synchrone | Les listeners sont invoqués après le commit lorsque la transaction et le gestionnaire sont actifs. | Durabilité après crash, exécution si le processus s'arrête, succès des listeners. |
+| Événement, listener asynchrone | Une exécution peut avoir lieu plusieurs fois après mise en file, si un worker traite la file. | Livraison effective, ordre global, succès du consommateur, absence de doublons. |
+| Job Laravel | Le job peut être retenté selon sa configuration et la file. | Exécution garantie, succès métier, exactly-once. |
+| Outbox future | Le message peut être persisté avec le fait et publié par un relais. | Exactly-once, succès du consommateur, ordre global, audit métier. |
+| Logs et `Context` | Le diagnostic et la corrélation sont possibles. | Audit durable, preuve de livraison, source de vérité. |
+
+### 33.4 Sujets nécessitant une décision ou une infrastructure
+
+| Sujet | État | Référence |
+| --- | --- | --- |
+| Worker supervisé et file d'attente | Non démontré | Sections 23, 25 et 29 |
+| Outbox, relais et event store | Non implémentés | Section 29 |
+| Broker ou transport dédié | Hors périmètre à ce stade | Section 29 |
+| Table de déduplication générique | Non imposée | Section 26 |
+| Corrélation, tracing et APM | Convention cible, aucun outil externe | Section 27 |
+| Rétention des logs et `failed_jobs` | À décider par l'exploitation | Sections 27 et 34 |
+| Nombres de tentatives, backoff, SLA, volumétrie | À décider par job et environnement | Sections 25 et 34 |
+| Identifiants UUID/ULID et devise | Décisions transverses | Sections 6.3 et 34 |
+| Matrice des dépendances | CHAN-29 | Section 34 |
+| Harmonisation `AGENTS.md` | CHAN-30 | Section 34 |
+
+### 33.5 Checklist finale d'un nouvel échange
+
+- [ ] Le mécanisme est choisi et justifié : contrat synchrone ou événement.
+- [ ] Le domaine propriétaire est identifié.
+- [ ] Un consommateur réel est identifié.
+- [ ] L'emplacement respecte `Contracts/` ou `Events/Integration/`.
+- [ ] Le payload ou le DTO est typé, minimal et sans Model Eloquent.
+- [ ] Le fournisseur ou l'émetteur applique ses autorisations et invariants.
+- [ ] Les frontières de transaction sont explicites ; aucune transaction partagée implicite.
+- [ ] Un événement est publié après commit avec `ShouldDispatchAfterCommit`.
+- [ ] Les listeners sont enregistrés explicitement chez les consommateurs.
+- [ ] L'idempotence et la déduplication sont définies pour chaque effet de bord.
+- [ ] Les erreurs sont catégorisées ; le retry est réservé au temporaire et à l'idempotent.
+- [ ] La traçabilité est prévue sans donnée sensible ; les logs ne sont pas un audit.
+- [ ] Les consommateurs connus et l'impact de compatibilité sont documentés.
+- [ ] Aucun cycle de dépendance ou de boucle d'événements n'est introduit.
+- [ ] Si l'asynchrone est retenu, file, worker supervisé, monitoring et reprise existent.
+- [ ] Aucune livraison effective, exécution unique ou exactly-once n'est promise.
+- [ ] Les tests prévus couvrent le contrat ou l'événement, l'après-commit, le rollback et l'idempotence.
+- [ ] Une Outbox, un broker ou un transport dédié ne sont introduits que selon les critères de la section 29.
+- [ ] Aucune dépendance inter-domaines non validée par CHAN-29 n'est introduite.
+
+## 34. Sujets différés
 
 | Sujet | Ticket, lot ou décision |
 | --- | --- |
@@ -4005,7 +4113,7 @@ Une contrainte d'unicité en base protège la création. Le stock négatif est i
 | Catalogue exhaustif des contrats et des événements | À remplir au premier contrat et au premier événement réels |
 | Audit opposable des traitements | À définir avec l'exploitation et les besoins métier |
 
-## 34. Références
+## 35. Références
 
 - [`docs/architecture/domain-conventions.md`](domain-conventions.md) — conventions internes CHAN-27, notamment les événements locaux et l'orchestration.
 - [`docs/architecture/domain-responsibilities.md`](domain-responsibilities.md) — responsabilités et périmètres des 18 domaines, notamment Projects, Budgets, Costing, TimeTracking, Procurement, Inventory, Logistics et Handover.
