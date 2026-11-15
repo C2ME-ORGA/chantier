@@ -7,7 +7,7 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | Document | Ticket | Objet |
 | --- | --- | --- |
 | [`domain-conventions.md`](domain-conventions.md) | CHAN-27 | Conventions internes d'un domaine : Models, Actions, Services, DTO, Events, Policies, validation, orchestration et nommage. |
-| [`domain-communication.md`](domain-communication.md) | CHAN-28 | Contrats synchrones inter-domaines : forme, DTO publics, erreurs, injection, transactions et tests. |
+| [`domain-communication.md`](domain-communication.md) | CHAN-28 | Communication inter-domaines : contrats synchrones (forme, DTO publics, erreurs, injection, transactions) et événements (propriété, payload, publication après commit, listeners, idempotence, évolution). |
 | [`domain-responsibilities.md`](domain-responsibilities.md) | CHAN-29 Lot 1 | Catalogue des 18 domaines : responsabilités, périmètres, objets, acteurs, règles, états, entrées et sorties. |
 | [`business-processes.md`](business-processes.md) | CHAN-29 Lot 1 | Cartographie des 12 processus métier : déclencheurs, acteurs, étapes, résultats, exceptions et interactions. |
 | [`business-objects.md`](business-objects.md) | CHAN-29 Lot 1 | Catalogue des objets métier, de leur propriétaire pressenti et de leurs consommateurs. |
@@ -25,6 +25,8 @@ Pour comprendre les frontières métier :
 5. [`domain-boundary-decisions.md`](domain-boundary-decisions.md) — quelles ambiguïtés restent à trancher.
 
 Pour les règles de code et de contrat, consulter d'abord [`domain-conventions.md`](domain-conventions.md) et [`domain-communication.md`](domain-communication.md).
+
+Les contrats synchrones sont traités dans les sections 1 à 14 de `domain-communication.md` ; les événements inter-domaines dans les sections 15 à 22. Le Lot 3 de CHAN-28 est documentaire : aucun événement ni listener n'est implémenté à ce stade.
 
 ## Statut des documents CHAN-29
 
