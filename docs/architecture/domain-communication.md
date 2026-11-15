@@ -2935,7 +2935,7 @@ Une interface ne doit pas écrire « envoyé », « enregistré » ou « clôtur
 | Échec du traitement | Visible par l'appelant ; rollback possible avant commit. | Différé ; retry, `failed_jobs` ou reprise manuelle. |
 | Impact sur l'opération initiale | Peut l'empêcher ou la refuser. | Ne peut pas annuler un fait déjà commité. |
 | Latence | Ajoutée à la réponse. | Retirée de la réponse, subie plus tard. |
-| Retry | Décidé par l'appelant ; jamais aveugle. | Politique de file ; livraison au moins une fois. |
+| Retry | Décidé par l'appelant ; jamais aveugle. | Politique de file ; exécution possible plusieurs fois, sans garantie de succès. |
 | Supervision | Requête, base, logs et erreurs applicatives. | Worker, file, `failed_jobs`, alertes et procédure de reprise. |
 | Idempotence | Nécessaire si l'appelant peut rejouer. | Obligatoire pour tout effet de bord. |
 | Traçabilité | Logs de requête, corrélation, résultat. | Logs de job, contexte de file, `failed_jobs`, corrélation. |
@@ -3258,7 +3258,7 @@ Sans ces réponses, le rejeu est une opération à risque et doit être escalad�
 | --- | --- | --- | --- |
 | Contrat synchrone | Non | Décision de l'appelant, opération idempotente | Double effet si la commande n'est pas idempotente. |
 | Listener synchrone | Non | Rejeu manuel documenté | Effet partiel et doublons. |
-| Listener asynchrone | Oui, si file | Worker, tentatives, idempotence | Livraison au moins une fois. |
+| Listener asynchrone | Oui, si file | Worker, tentatives, idempotence | Exécution possible plusieurs fois, sans garantie de succès. |
 | Job Laravel | Oui, si file | Configuration du job | Retry storm, doublons, `failed_jobs`. |
 | Appel externe | Selon l'adaptateur | Idempotence ou clé fournisseur | Effet externe dupliqué. |
 | Outbox future | Relais + consommateur | Conception dédiée | Complexité, doublons, messages bloqués. |
@@ -3653,7 +3653,7 @@ Avec une Outbox, le message est écrit dans la même transaction que le fait. Si
 | Croyance | Réalité |
 | --- | --- |
 | « L'Outbox garantit exactly-once. » | Non. Le relais peut publier deux fois ou le consommateur peut être relancé. |
-| « L'Outbox garantit que le consommateur réussit. » | Non. Elle garantit seulement que le message est persisté et pourra être publié. |
+| « L'Outbox garantit que le consommateur réussit. » | Non. Elle apporte la persistance du message et sa mise à disposition pour publication, sans garantir l'exécution ni le succès du consommateur. |
 | « L'Outbox supprime les doublons. » | Non. Les consommateurs doivent rester idempotents. |
 | « L'Outbox garantit l'ordre global. » | Non, sauf conception explicite de l'ordre et du partitionnement. |
 | « L'Outbox est un audit métier. » | Non, sauf si elle est conçue et conservée comme telle. |
@@ -3683,8 +3683,8 @@ Aucun seuil numérique (volume, durée, nombre d'incidents, SLA) n'est fixé par
 | Notification non critique, perte tolérée | Événement après commit + listener synchrone | Possible mais non nécessaire | Non | Non |
 | Traitement long sans réponse immédiate | Non recommandé (bloque la réponse) | Oui, avec worker supervisé | Possible avec relais | Non nécessaire dans le monolithe |
 | Perte après commit inacceptable | Insuffisant | Insuffisant seul : la mise en file peut être perdue | Oui, message persisté dans la transaction | Possible si multi-services |
-| Rejeu et durabilité d'un fait | Insuffisant | Partiel : `failed_jobs` ne restaure pas un événement perdu | Oui, si conçu avec rétention et rejeu | Oui si besoin externe |
-| Consommateur durablement indisponible | Insuffisant | Oui si la file est durable et le worker supervisé | Oui, plus robuste | Oui si hors monolithe |
+| Rejeu et durabilité d'un fait | Insuffisant | Partiel : `failed_jobs` ne restaure pas un événement perdu | Possible si conçu avec rétention et rejeu | Possible si besoin externe |
+| Consommateur durablement indisponible | Insuffisant | Traitement différé possible si la file est durable et le worker supervisé | Possible, plus robuste | Possible si hors monolithe |
 | Ordre ou partitionnement | Non | Limité, non global | À concevoir | Oui |
 | Audit métier opposable | Non | Non | Non par défaut | Non par défaut |
 | Exactly-once | Non | Non | Non | Non |
@@ -3755,9 +3755,20 @@ Aucune Outbox, table de messages, file supervisée, configuration de worker ou b
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Contrat synchrone | Réponse immédiate ou exception | Aucune garantie de reprise de l'appel | Aucun retry automatique ; appelant responsable | Ordre des appels | Requise si l'appelant peut rejouer | Logs de requête, corrélation | Le fournisseur peut avoir commité ; le consommateur gère | Web, base, domaine fournisseur |
 | Événement, listener synchrone | Listeners en processus après commit | Aucune ; callbacks en mémoire | Aucun retry automatique | Ordre d'enregistrement seulement | Requise chez le consommateur | Logs, clé métier, listener | Fait commité ; erreur après commit ; listeners suivants ignorés | Web/commande, domaine consommateur |
-| Événement, listener asynchrone | Au moins une fois si file et worker | File persistante, mais perte possible avant mise en file | Politique de file | Non garanti globalement | Obligatoire | Contexte de job, logs, `failed_jobs` | Job retry/failed ; fait commité | Worker, file, exploitation |
-| Job Laravel | Au moins une fois si file et worker | File persistante selon connexion | Oui, selon configuration | Non garanti globalement | Obligatoire | Contexte de job, logs, `failed_jobs` | Job retry/failed ; état métier à vérifier | Worker, file, exploitation |
-| Outbox future | Au moins une fois après relais | Message persisté avec le fait | Relais et consommateur | À concevoir | Obligatoire | Outbox, logs, relais | Message bloqué, relais en échec, doublon possible | Relais, worker, purge, supervision |
+| Événement, listener asynchrone | Exécution possible plusieurs fois après mise en file ; livraison effective non garantie | File persistante, mais perte possible avant mise en file | Politique de file | Non garanti globalement | Obligatoire | Contexte de job, logs, `failed_jobs` | Job retry/failed ; fait commité | Worker, file, exploitation |
+| Job Laravel | Exécution possible plusieurs fois après mise en file ; livraison effective non garantie | File persistante selon connexion | Oui, selon configuration | Non garanti globalement | Obligatoire | Contexte de job, logs, `failed_jobs` | Job retry/failed ; état métier à vérifier | Worker, file, exploitation |
+| Outbox future | Exécution possible plusieurs fois après publication durable ; livraison effective non garantie | Message persisté avec le fait | Relais et consommateur | À concevoir | Obligatoire | Outbox, logs, relais | Message bloqué, relais en échec, doublon possible | Relais, worker, purge, supervision |
+
+> **Lecture de la colonne « Livraison ».** Une exécution peut avoir lieu une ou plusieurs fois après mise en file ou publication durable. La livraison effective dépend de la persistance, de la disponibilité des workers ou du relais, de la politique de retry et de l'absence d'épuisement définitif des tentatives. Aucun succès du consommateur n'est garanti.
+
+| Étape | Ce que le mécanisme peut assurer | Ce qu'il ne garantit pas |
+| --- | --- | --- |
+| Persistance du message | Une Outbox écrit le message dans la transaction métier ; une file persistante conserve le job après mise en file. | La persistance avant la mise en file, la conservation éternelle ou la publication. |
+| Mise à disposition | Le message ou le job est disponible pour un worker ou un relais. | Qu'un worker ou un relais le prenne en charge. |
+| Exécution | Un worker peut exécuter le job ; un relais peut publier le message. | Que l'exécution commence, termine ou réussisse. |
+| Réussite du consommateur | Le consommateur peut traiter le message et produire son effet. | Le succès métier, l'absence de doublons et l'exactly-once. |
+
+Ces quatre états sont distincts : la persistance ne prouve pas la mise à disposition, la mise à disposition ne prouve pas l'exécution, et l'exécution ne prouve pas le succès métier.
 
 ### 30.2 Garanties natives et infrastructure
 
@@ -3777,7 +3788,7 @@ Aucune Outbox, table de messages, file supervisée, configuration de worker ou b
 
 ### 30.3 Règles de lecture
 
-- « Livraison » ne signifie jamais exactly-once.
+- « Livraison » ne signifie jamais exactly-once ni une garantie de succès du consommateur.
 - « Durabilité » ne signifie pas que le consommateur a réussi.
 - « Retry » ne signifie pas que l'effet est sans danger.
 - « Ordre » n'est pas une garantie globale.
@@ -3869,7 +3880,7 @@ Aucune Outbox, table de messages, file supervisée, configuration de worker ou b
 1. Logistics valide le plan de transport et le commit.
 2. Le job est mis en file après commit.
 3. Le worker est indisponible : le job reste dans la file.
-4. À la reprise du worker, le job est exécuté.
+4. À la reprise du worker, le job peut être exécuté.
 5. Le stockage ou l'API externe échoue temporairement : retry selon la politique du job.
 6. Une erreur permanente (template invalide, adresse manquante) envoie le job dans `failed_jobs`.
 7. L'opérateur corrige la donnée, vérifie que le PDF n'a pas déjà été envoyé, puis rejoue avec la même clé.
@@ -3924,7 +3935,7 @@ Une contrainte d'unicité en base protège la création. Le stock négatif est i
 
 1. La clôture et le message `AffaireClosed` sont écrits dans la même transaction.
 2. Le commit rend les deux durables.
-3. Un relais publie le message vers les consommateurs.
+3. Un relais peut publier le message vers les consommateurs.
 4. Un message non publié reste visible et peut être repris.
 5. Les consommateurs restent idempotents par `affaireId` et type de fait.
 
