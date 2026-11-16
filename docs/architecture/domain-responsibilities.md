@@ -373,7 +373,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Règle | Statut |
 | --- | --- |
-| Une affaire est ouverte après acceptation d'un devis ou réception d'une commande ou d'un ordre de service. | Validé par le cycle commercial du ticket |
+| Une affaire est ouverte après acceptation d'un devis et validation explicite de l'utilisateur, ou après réception d'une commande ou d'un ordre de service. | Validé — V-30 |
 | Le parcours direct peut ouvrir une affaire sans devis préalable, mais les données contractuelles manquantes doivent être identifiées et complétées. | Validé par le ticket ; modalités à préciser |
 | Une affaire porte un numéro unique, un client, un donneur d'ordre et un périmètre contractuel. | Proposition |
 | Une affaire peut couvrir un ou plusieurs chantiers ou lots ; un chantier appartient à une seule affaire. | Proposition, à valider Q-01 |
