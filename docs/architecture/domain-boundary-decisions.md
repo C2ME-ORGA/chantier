@@ -85,9 +85,11 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Responsabilités candidates | Domaine | Analyse |
 | --- | --- | --- |
 | Rôles commerciaux (prospect, client, donneur d'ordre), contacts, relation commerciale, conditions cadre | D02 Clients | Ces éléments décrivent la relation durable et les rôles du tiers. |
-| Devis complet et conditions commerciales cadre | D02 Clients | Le devis est produit et possédé par Clients jusqu'à sa signature. |\n| Étude, commande/ordre de service, contrat, affaire, chantier, avenants, jalons | D03 Projects | Ces éléments décrivent l'engagement et son exécution après signature. |
+| Devis complet et conditions commerciales cadre | D02 Clients | Le devis est produit et possédé par Clients jusqu'à sa signature. |
+| Étude technique, commande/ordre de service, contrat, affaire, chantier, avenants, jalons | D03 Projects | L'étude technique est distincte du devis ; les autres éléments décrivent l'engagement et son exécution après signature. |
 | Opportunité commerciale et pipeline | D02 ou D03 | La frontière dépend de l'organisation commerciale ; Q-03. |
-| Conditions commerciales générales/cadre et prix du devis | D02 Clients | Clients construit et possède le devis complet. |\n| Conditions contractuelles propres à l'affaire | D03 Projects | Projects prend le relais après signature. |
+| Conditions commerciales générales/cadre et prix du devis | D02 Clients | Clients construit et possède le devis complet. |
+| Conditions contractuelles propres à l'affaire | D03 Projects | Projects prend le relais après signature. |
 
 **Séparation recommandée.**
 
@@ -542,7 +544,7 @@ Un même tiers peut cumuler ces rôles. La présence de `CLI-02 Client`, `PRC-01
 
 L'option A réduit les doublons mais élargit Clients au-delà de la relation commerciale. L'option B préserve l'autonomie mais impose une réconciliation. **Aucune option n'est tranchée.** Q-05.
 
-**Informations échangées.** Identité juridique (selon Q-05), rôle commercial, rôle fournisseur ou sous-traitant, contacts, qualification, statut, conditions.
+**Informations échangées.** Identifiant public du tiers, rôle commercial, rôle fournisseur ou sous-traitant, contacts, qualification, statut et conditions propres à chaque relation.
 
 **À valider.** Q-05, Q-02.
 
