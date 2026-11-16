@@ -14,6 +14,7 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | [`domain-interactions-register.md`](domain-interactions-register.md) | CHAN-29 Lot 1 | Registre des interactions métier entre domaines : source, destinataire, motif, informations et moment. |
 | [`domain-boundary-decisions.md`](domain-boundary-decisions.md) | CHAN-29 Lot 1 | Chevauchements, arbitrages proposés, décisions validées et questions ouvertes. |
 | [`domain-dependency-matrix.md`](domain-dependency-matrix.md) | CHAN-29 Lot 2 | Matrice technique des dépendances inter-domaines — document de travail à qualifier et valider. |
+| [`domain-dependency-register.md`](domain-dependency-register.md) | CHAN-29 Lot 2 | Registre de traçabilité des 125 interactions métier et de leur qualification technique. |
 
 ## Ordre de lecture recommandé
 
