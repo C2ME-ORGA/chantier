@@ -63,7 +63,7 @@ Les autres domaines fournissent une information ou consomment le résultat ; ils
 | P09 | Réalisation des travaux sur chantier | Autorisation de démarrer | Projects | Travaux exécutés et suivis |
 | P10 | Suivi des temps, de l'avancement et des coûts | Exécution quotidienne et périodes de suivi | TimeTracking / Planning / Costing | Temps, avancement et coûts fiables |
 | P11 | Contrôle qualité, sécurité et non-conformités | Point de contrôle, inspection ou incident | Quality / Safety | Conformité et actions traitées |
-| P12 | Réception, réserves, DOE et clôture | Achèvement des travaux | Projects / Handover | Réception contractuelle et affaire clôturée |
+| P12 | Réception, réserves, DOE et clôture | Achèvement des travaux | Projects / Handover | Réception contractuelle et clôture administrative prononcée |
 
 ## 3. P01 — Prospection, étude, devis et ouverture d'affaire
 
@@ -632,13 +632,13 @@ Les étapes dépendent de la configuration. Les deux variantes ci-dessous ne son
 | 5 | Exécuter | Projects / Workshop | Planning, Logistics, Quality, Safety | Réaliser les travaux ou fabrications selon le contrat | Travaux exécutés |
 | 6 | Contrôler et documenter | Quality | Projects, Documents | Appliquer les contrôles, produire les preuves et les documents exigés | Dossier de conformité (`QUA-03`, `DOC-01`) |
 | 7 | Réceptionner avec le donneur d'ordre | Projects | Handover, Quality | Organiser la réception contractuelle, constater les réserves et préparer le DOE | Réception contractuelle, dossier de réception (`HND-01`), DOE (`HND-04`) |
-| 8 | Clôturer et valoriser | Projects / Costing | Budgets, Handover | Clôturer l'affaire, calculer la marge et solder les engagements | Affaire clôturée (`PRJ-01`, `CST-05`) |
+| 8 | Clôturer les coûts et clôturer administrativement | Costing / Service administratif | Projects, Budgets, Handover, domaines concernés | Solder les engagements, calculer la marge, vérifier les conditions et prononcer la clôture administrative | Marge finale et clôture administrative (`CST-05`, `PRJ-01`) |
 
 ### 9.6 Résultats
 
 **Variante A :** dossier technique externe, commande de sous-traitance, suivi, réception, acceptation technique, NCR éventuelle, coût et clôture.
 
-**Variante B :** affaire de sous-traitance, exécution conforme au contrat, preuves, réception par le donneur d'ordre, clôture et marge.
+**Variante B :** affaire de sous-traitance, exécution conforme au contrat, preuves, réception par le donneur d'ordre, clôture administrative et marge.
 
 ### 9.7 Exceptions et cas particuliers
 
@@ -993,7 +993,7 @@ Q-15, Q-16, Q-23, Q-25, Q-29, Q-30.
 
 ### 14.1 Contexte
 
-La réception contractuelle clôt la relation d'exécution avec le client. Elle ne se confond ni avec le contrôle qualité technique ni avec la clôture administrative de l'affaire. Projects organise et porte la réception contractuelle ainsi que la clôture de l'affaire ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; Costing porte la clôture des coûts.
+La réception contractuelle clôt la relation d'exécution avec le client. Elle ne se confond ni avec le contrôle qualité technique ni avec la clôture administrative de l'affaire. Projects organise et porte la réception contractuelle et conserve la responsabilité du cycle de vie de l'affaire ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; le service administratif vérifie les conditions et prononce la clôture administrative (V-59) ; Costing porte la clôture des coûts.
 
 ### 14.2 Déclencheur
 
@@ -1029,9 +1029,9 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 | 7 | Traiter les réserves | Quality / Workshop / Projects | Handover | Corriger, reprendre, documenter, demander la levée | Travaux de levée |
 | 8 | Vérifier et lever les réserves | Projects | Client, Handover, Quality | Contrôler la preuve, prononcer la levée ou refuser | Levée (`HND-03`) |
 | 9 | Remettre le DOE et les garanties | Handover | Documents, Clients | Compiler, diffuser, faire accuser réception, remettre les garanties clientes | DOE et garanties clientes (`HND-04`, `HND-05`) |
-| 10 | Clôturer contractuellement | Projects | Handover, Costing, Budgets, Clients | Vérifier les conditions, prononcer la clôture contractuelle | Clôture contractuelle |
+| 10 | Coordonner les confirmations des domaines | Projects | Handover, Costing, Budgets, Clients | Recueillir les confirmations et préparer les éléments de clôture | Confirmations réunies |
 | 11 | Clôturer les coûts | Costing / Budgets | Projects, Procurement | Solder les engagements, calculer la marge finale, clôturer la période | Marge finale (`CST-05`) |
-| 12 | Clôturer l'affaire | Projects | Handover, Costing, Budgets | Vérifier les conditions, clôturer l'affaire et les lots | Affaire clôturée (`PRJ-01`) |
+| 12 | Clôturer administrativement l'affaire | Service administratif | Projects, Handover, Costing, Budgets, domaines concernés | Vérifier les conditions, prononcer la clôture administrative | Clôture administrative prononcée (`PRJ-01`) |
 | 13 | Capitaliser | Reporting | Projects, Quality, Safety | Produire les indicateurs et retours d'expérience | Rapport de clôture (`RPT-01`) |
 
 ### 14.6 Résultats
@@ -1042,7 +1042,7 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 - réception prononcée avec ou sans réserves ;
 - réserves levées et vérifiées ;
 - garanties constituées ;
-- clôture contractuelle, clôture des coûts et clôture d'affaire ;
+- conditions contractuelles de clôture vérifiées, clôture des coûts et clôture administrative prononcée ;
 - retour d'expérience.
 
 ### 14.7 Exceptions et cas particuliers
@@ -1050,7 +1050,7 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 | Cas | Traitement proposé |
 | --- | --- |
 | Réserves non levées | Ne pas clôturer ; suivre les délais et les responsabilités. |
-| DOE incomplet | Bloquer la clôture contractuelle ; lister les pièces manquantes. |
+| DOE incomplet | Bloquer la clôture de l'affaire ; lister les pièces manquantes. |
 | Client indisponible | Reporter la réception, tracer les relances et l'impact. |
 | Réception partielle | Prononcer par lot ou zone, avec réserves et dates distinctes. |
 | Refus de réception | Documenter les motifs, traiter, reproposer. |

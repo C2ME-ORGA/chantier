@@ -227,7 +227,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | **Lot / phase** | Subdivision technique ou temporelle d'une affaire ou d'un chantier, utilisée comme axe de planification, de budget, de coût et de qualité. |
 | **Avenant** | Modification contractuelle du périmètre, du prix ou des délais d'une affaire. |
 | **Commande client / ordre de service** | Acte par lequel le client engage C2ME sur un périmètre et des conditions. |
-| **Réserve** | Écart contractuel constaté à la réception, à lever avant la clôture contractuelle. |
+| **Réserve** | Écart contractuel constaté à la réception, à lever avant la clôture de l'affaire. |
 | **DOE** | Dossier des ouvrages exécutés, remis au client à la réception. |
 | **NCR** | Non-conformité technique constatée par Quality, distincte d'une réserve contractuelle. |
 | **Sous-traitance donnée** | C2ME confie une fabrication ou une prestation à un tiers ; Procurement porte la commande. |
@@ -381,6 +381,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Les jalons contractuels et les dates engagées sont la référence pour Planning ; toute modification est tracée. | Proposition |
 | L'avancement contractuel est déclaré par lot ou phase ; il ne se confond pas avec l'avancement des activités planifiées. | Proposition |
 | La clôture de l'affaire intervient après réception, levée des réserves, constitution du DOE, clôture des coûts et clôture du budget. | Validé — V-28 |
+| La clôture administrative de l'affaire est prononcée par le service administratif après confirmation des domaines concernés ; Projects conserve la responsabilité du cycle de vie de l'affaire et coordonne la vérification des conditions contractuelles de clôture. | Validé — V-59 |
 | Projects organise et porte la réception contractuelle, y compris ses décisions contractuelles ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties. | Validé — V-55 |
 | Une suspension ou une annulation exige un motif, une validation et une trace. | Proposition |
 
@@ -392,6 +393,8 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Affaire | Préparation, en cours, suspendue, réceptionnée, clôturée, annulée | Ouvrir, démarrer, suspendre, reprendre, réceptionner, clôturer, annuler. |
 | Chantier | Préparé, démarré, en cours, suspendu, réceptionné, clôturé | Démarrer, suspendre, reprendre, réceptionner, clôturer. |
 | Avenant | Proposé, validé, refusé | Proposer, valider, refuser. |
+
+La transition « clôturer » de l'affaire s'appuie sur la clôture administrative prononcée par le service administratif après confirmation des domaines concernés (V-59) ; Projects conserve le cycle de vie de l'affaire.
 
 **Entrées et sorties.**
 
@@ -411,7 +414,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Handover | Demande de réception, périmètre, lots, client, dates | Achèvement |
 | Sortie | Reporting | Portefeuille, avancement, engagements, clôtures | Pilotage |
 
-**Limites et chevauchements.** Projects est propriétaire de l'engagement et du pilotage contractuel, de la réception contractuelle et des décisions de clôture de l'affaire ; il ne possède pas le planning détaillé, le budget, les coûts, la fabrication, les achats, le stock, la qualité, la sécurité, ni la préparation documentaire de réception et le DOE. Voir BD-01, BD-02, BD-03, BD-17 et BD-19.
+**Limites et chevauchements.** Projects est propriétaire de l'engagement et du pilotage contractuel, de la réception contractuelle et de la coordination des conditions contractuelles de clôture ; il ne possède pas le planning détaillé, le budget, les coûts, la fabrication, les achats, le stock, la qualité, la sécurité, la préparation documentaire de réception, le DOE, ni la décision administrative finale de clôture. Voir BD-01, BD-02, BD-03, BD-17 et BD-19.
 
 **Questions ouvertes.** Q-45 (avenants), Q-46 (suspension), Q-47 (annulation), Q-50 (bureau d'études), Q-51 (risques d'affaire), Q-52 (permis et autorisations). La distinction des avancements contractuel, opérationnel et des temps est validée (V-25).
 
@@ -500,7 +503,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Le budget ne se confond pas avec le prix de vente ; la marge cible est validée par la direction. | Proposition |
 | Le budget ne contient pas les coûts constatés : il fixe l'enveloppe et analyse les écarts avec Costing. | Proposition, arbitrage BD-03 |
 | La prévision budgétaire porte sur l'enveloppe et sa consommation ; le coût final estimé (EAC) est calculé et actualisé par Costing à partir des faits opérationnels et engagements. | Validé — V-20, V-34, V-39 |
-| La clôture budgétaire intervient après la clôture des coûts et la clôture contractuelle. | Validé — V-28 |
+| La clôture budgétaire intervient après la clôture des coûts et avant la clôture administrative de l'affaire. | Validé — V-28, V-59 |
 
 **États et transitions.**
 
@@ -942,7 +945,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Rubrique | Contenu |
 | --- | --- |
 | Périmètre inclus | Demandes et plans de transport, tournées, transporteurs, expéditions et colis, livraisons, preuves de livraison, réceptions physiques sur site, retours, accès chantier, incidents de transport, coûts transport. |
-| Périmètre exclu | Stock et mouvements (Inventory), achats et contrats fournisseurs (Procurement), production (Workshop), équipements (Equipment), réception contractuelle et décisions de clôture (Projects), qualité (Quality), planning global (Planning), exécution des travaux (Projects). |
+| Périmètre exclu | Stock et mouvements (Inventory), achats et contrats fournisseurs (Procurement), production (Workshop), équipements (Equipment), réception contractuelle et coordination des conditions de clôture (Projects), décision administrative de clôture (service administratif), qualité (Quality), planning global (Planning), exécution des travaux (Projects). |
 | Objets métier | `LOG-01` DemandeDeTransport, `LOG-02` PlanDeTransport, `LOG-03` Tournée, `LOG-04` Livraison, `LOG-05` RéceptionChantier, `LOG-06` Retour, `LOG-07` AccèsChantier. |
 | Acteurs | Logisticien, magasinier, chef de chantier, conducteur de travaux, transporteur, chauffeur, qualité, sécurité. |
 
@@ -1001,7 +1004,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Rubrique | Contenu |
 | --- | --- |
 | Périmètre inclus | Plans qualité et de contrôle, points de contrôle, inspections, essais, mesures, non-conformités, actions correctives et préventives, audits, certificats, qualifications techniques, dossiers de conformité. |
-| Périmètre exclu | Réception contractuelle et décisions de clôture (Projects), préparation documentaire de réception, réserves, DOE et garanties (Handover), production (Workshop), achats (Procurement), sécurité (Safety), stockage documentaire (Documents), coûts (Costing). |
+| Périmètre exclu | Réception contractuelle et coordination des conditions de clôture (Projects), décision administrative de clôture (service administratif), préparation documentaire de réception, réserves, DOE et garanties (Handover), production (Workshop), achats (Procurement), sécurité (Safety), stockage documentaire (Documents), coûts (Costing). |
 | Objets métier | `QUA-01` PlanQualité, `QUA-02` PlanDeContrôle, `QUA-03` ContrôleQualité, `QUA-04` NonConformité, `QUA-05` ActionCorrective, `QUA-06` AuditQualité, `QUA-07` CertificatQualité, `QUA-08` QualificationTechnique. |
 | Acteurs | Responsable qualité, contrôleur qualité, chef de chantier, responsable atelier, soudeur, sous-traitant, client, organisme de contrôle. |
 
@@ -1175,7 +1178,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Rubrique | Contenu |
 | --- | --- |
 | Périmètre inclus | Préparation documentaire des réceptions partielles et finales, centralisation des pièces et livrables, dossier de réception, suivi documentaire des réserves et levées, procès-verbaux, DOE, garanties clientes, périodes de garantie, dossier de clôture, attestations. L'organisation et la responsabilité contractuelles de la réception relèvent de Projects. |
-| Périmètre exclu | Décision contractuelle de réception et cycle de vie de l'affaire (Projects), conformité technique (Quality), exécution des travaux (Projects), budget et coûts (Budgets/Costing), stock (Inventory), stockage documentaire (Documents), propriété des garanties fournisseurs (Procurement), contentieux (hors périmètre). |
+| Périmètre exclu | Décision contractuelle de réception et cycle de vie de l'affaire (Projects), décision administrative de clôture (service administratif), conformité technique (Quality), exécution des travaux (Projects), budget et coûts (Budgets/Costing), stock (Inventory), stockage documentaire (Documents), propriété des garanties fournisseurs (Procurement), contentieux (hors périmètre). |
 | Objets métier | `HND-01` DossierDeRéception, `HND-02` Réserve, `HND-03` LevéeDeRéserve, `HND-04` DOE, `HND-05` GarantieClient, `HND-06` DossierDeClôture. |
 | Acteurs | Responsable réception/handover, chargé d'affaires, chef de chantier, qualité, client, maître d'ouvrage, maître d'œuvre, gestionnaire documentaire. |
 
@@ -1187,9 +1190,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Une réception partielle est possible par lot, zone ou phase. | Proposition |
 | Une réserve est un écart contractuel décrit, localisé, daté, avec un responsable et un délai. | Proposition |
 | La levée d'une réserve est vérifiée avec preuve et décidée par Projects ; elle peut être refusée. Handover en assure le suivi documentaire. | Proposition |
-| Le DOE doit être complet avant la clôture contractuelle ; les fichiers sont gérés par Documents. | Proposition |
+| Le DOE doit être complet avant la clôture de l'affaire ; les fichiers sont gérés par Documents. | Proposition |
 | Le procès-verbal signé constate le fait contractuel de réception prononcé par Projects et fixe les dates de garantie ; Handover en assure la préparation et la conservation documentaire. | Proposition |
-| La clôture contractuelle de l'affaire est portée par Projects ; elle intervient après levée des réserves, DOE complet et garanties constituées. | Proposition |
+| Handover prépare et clôt le dossier documentaire de clôture (`HND-06`) ; il ne prononce pas la clôture de l'affaire. | Proposition |
+| Projects conserve la responsabilité du cycle de vie de l'affaire et coordonne la vérification des conditions contractuelles de clôture définies par V-28 : réception, levée des réserves, DOE, clôture des coûts et clôture du budget. | Validé — V-28, V-59 |
+| Les domaines concernés confirment que leurs obligations respectives sont satisfaites ; le service administratif vérifie les conditions et prononce la clôture administrative. | Validé — V-59 |
 | Les garanties clientes et les garanties fournisseurs/sous-traitants sont distinguées ; ces dernières relèvent de Procurement. | Proposition |
 | Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la non-conformité correspondante avant sa clôture. Les deux objets restent distincts. | Validé — V-26 |
 
@@ -1203,7 +1208,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | GarantieClient (`HND-05`) | Active, expirée | Activer, expirer. |
 | DossierDeClôture (`HND-06`) | En préparation, clos documentairement | Compléter, clore le dossier documentaire. |
 
-**Décisions contractuelles hors machine d'états Handover.** Les états contractuels de la réception (demandée, planifiée, prononcée, acceptée, refusée) et les décisions de lever ou refuser une réserve relèvent de Projects. Handover ne les prononce pas ; il enregistre et suit les pièces, preuves et justificatifs correspondants. La nomenclature des états documentaires de `HND-01` reste à qualifier et n'est pas fixée par V-55.
+**Décisions contractuelles hors machine d'états Handover.** Les états contractuels de la réception (demandée, planifiée, prononcée, acceptée, refusée) et les décisions de lever ou refuser une réserve relèvent de Projects. Handover ne les prononce pas ; il enregistre et suit les pièces, preuves et justificatifs correspondants. La nomenclature des états documentaires de `HND-01` reste à qualifier et n'est pas fixée par V-55. La clôture du `DossierDeClôture` (`HND-06`) est exclusivement documentaire : elle ne vaut pas clôture administrative de l'affaire. Projects conserve le cycle de vie de l'affaire et le service administratif prononce la clôture administrative (V-59).
 
 **Entrées et sorties.**
 
@@ -1224,7 +1229,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Projects organise et porte la réception contractuelle ainsi que le cycle de vie de l'affaire ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves ; Quality porte la conformité technique et les NCR ; Documents assure le stockage et le versionnement. Voir BD-07, BD-08 et BD-17.
 
-**Questions ouvertes.** Q-31 (DOE), Q-44 (garanties). Le traitement des réserves et NCR suit V-26 ; la condition générale de clôture est validée par V-28.
+**Questions ouvertes.** Q-31 (DOE), Q-44 (garanties). Le traitement des réserves et NCR suit V-26 ; la condition générale de clôture est validée par V-28 et la décision administrative par V-59.
 
 ---
 
@@ -1281,7 +1286,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- | --- |
 | Identity | Comptes, rôles, permissions, périmètres, délégations | Données RH, contacts clients, fournisseurs |
 | Clients | Référentiel maître des tiers, prospects, clients, contacts, rôles commerciaux, relation commerciale, devis complet et conditions commerciales cadre | Affaire, chantier, exécution contractuelle, fournisseurs |
-| Projects | Études techniques, commande/contrat après signature, affaire, chantier, lots, avenants, jalons, avancement contractuel, réception contractuelle et décisions de clôture | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, préparation documentaire de réception, DOE |
+| Projects | Études techniques, commande/contrat après signature, affaire, chantier, lots, avenants, jalons, avancement contractuel, réception contractuelle et coordination des conditions contractuelles de clôture | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, préparation documentaire de réception, DOE, décision administrative finale de clôture |
 | Planning | Plans, activités, affectations, capacité, conflits, avancement planning | Données RH, actifs, capacité atelier, pointages |
 | Budgets | Budget, versions, lignes, enveloppe, contingence, révisions | Chiffrage détaillé, engagements, coûts constatés, prix de vente |
 | Costing | Chiffrage, coûts, engagements, imputations, marge, écarts, EAC | Budget, commandes, temps, stock, production, paie |

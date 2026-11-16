@@ -338,7 +338,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Contenu, validité métier, décision de publier | Domaine propriétaire | Le document n'a de sens que rattaché à un objet métier. |
 | Stockage, version, métadonnées, classification, diffusion, conservation, archive | D16 Documents | Gestion documentaire transverse. |
 | Validation de conformité d'un document | D14 Quality | Quality valide la conformité technique, pas le stockage. |
-| Réception contractuelle et décisions de clôture | D03 Projects | Projects organise et porte la réception contractuelle, prononce l'acceptation contractuelle et clôt l'affaire. |
+| Réception contractuelle et coordination des conditions de clôture | D03 Projects | Projects organise et porte la réception contractuelle, prononce l'acceptation contractuelle et coordonne la vérification des conditions de clôture ; le service administratif prononce la clôture administrative (V-59). |
 | Préparation documentaire de réception et DOE | D17 Handover | Handover prépare et centralise les documents et livrables de réception et vérifie la complétude documentaire du DOE, sans décider de la réception contractuelle. |
 
 **Séparation recommandée.**
@@ -554,16 +554,17 @@ Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiqu
 
 | Domaine | Responsabilité |
 | --- | --- |
-| Projects | Organisation et responsabilité de la réception contractuelle, statut contractuel et décision de clôture de l'affaire. |
+| Projects | Organisation et responsabilité de la réception contractuelle, statut contractuel, coordination des conditions contractuelles de clôture et cycle de vie de l'affaire. |
+| Service administratif (acteur transverse) | Vérification des conditions de clôture et décision de clôture administrative, après confirmation des domaines concernés (V-59). |
 | Handover | Préparation et centralisation des documents et livrables de réception, suivi documentaire des réserves, DOE et garanties clientes. |
 | Costing | Coût final, marge, clôture de la période analytique. |
 | Budgets | Écart final, clôture budgétaire. |
 
-**Séparation retenue.** Projects organise et porte la réception contractuelle, puis clôt l'affaire lorsque les conditions de V-28 sont réunies. Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; il ne se substitue pas à Projects pour la responsabilité contractuelle. Costing clôt les coûts et calcule la marge finale ; Budgets clôt le budget. Les confirmations des domaines concernés précèdent la clôture de l'affaire.
+**Séparation retenue.** Projects organise et porte la réception contractuelle et conserve la responsabilité du cycle de vie de l'affaire. Il coordonne la vérification des conditions contractuelles de clôture définies par V-28. Les domaines concernés confirment leurs obligations ; le service administratif vérifie les conditions et prononce la clôture administrative (V-59). Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; il ne se substitue pas à Projects pour la responsabilité contractuelle et ne prononce pas la clôture. Costing clôt les coûts et calcule la marge finale ; Budgets clôt le budget.
 
 **Informations échangées.** Réception, réserves, DOE, garanties clientes, coûts finaux, marge, écarts.
 
-**À qualifier.** Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; les conditions de clôture de l'affaire sont validées par V-28.
+**À qualifier.** Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; les conditions de clôture de l'affaire sont validées par V-28 et la clôture administrative par V-59.
 
 **Statut.** Séparation retenue, conforme à V-28, V-55 et V-59 ; Q-44 reste ouvert.
 
