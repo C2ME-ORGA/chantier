@@ -543,7 +543,7 @@ Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiqu
 
 **À qualifier.** Les détails des données propres aux relations d'achat et des qualifications métier restent à préciser ; la propriété du référentiel maître est validée par V-15.
 
-**Statut.** Question ouverte.
+**Statut.** Référentiel maître validé par V-15 ; les détails des données propres aux relations d'achat et des qualifications restent à qualifier.
 
 ---
 
@@ -553,12 +553,12 @@ Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiqu
 
 | Domaine | Responsabilité |
 | --- | --- |
-| Projects | Décision de clôture de l'affaire, statut contractuel, synthèse. |
-| Handover | Réception contractuelle, réserves, DOE, garanties clientes. |
+| Projects | Organisation et responsabilité de la réception contractuelle, statut contractuel et décision de clôture de l'affaire. |
+| Handover | Préparation et centralisation des documents et livrables de réception, suivi documentaire des réserves, DOE et garanties clientes. |
 | Costing | Coût final, marge, clôture de la période analytique. |
 | Budgets | Écart final, clôture budgétaire. |
 
-**Séparation retenue.** Handover prononce la réception et la clôture contractuelle ; Projects clôt l'affaire lorsque les conditions de V-28 sont réunies ; Costing clôt les coûts et calcule la marge finale ; Budgets clôt le budget. Aucun domaine ne clôt seul l'ensemble : les confirmations et l'orchestration respectent la séquence validée par V-28.
+**Séparation retenue.** Projects organise et porte la réception contractuelle, puis clôt l'affaire lorsque les conditions de V-28 sont réunies. Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; il ne se substitue pas à Projects pour la responsabilité contractuelle. Costing clôt les coûts et calcule la marge finale ; Budgets clôt le budget. Les confirmations des domaines concernés précèdent la clôture de l'affaire.
 
 **Informations échangées.** Réception, réserves, DOE, garanties clientes, coûts finaux, marge, écarts.
 
@@ -647,11 +647,11 @@ Une seule décision ne remplace pas les autres. Une acceptation technique ne vau
 
 **À valider.** Q-20, Q-37.
 
-**Statut.** Proposition.
+**Statut.** Responsabilité de clôture validée par V-28 ; la répartition opérationnelle entre Projects et Handover est précisée par les arbitrages du questionnaire Lot 2.
 
-## 5. Décisions proposées
+## 5. Décisions proposées et propositions historiques
 
-Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas validées.
+Le tableau conserve les identifiants PD historiques pour assurer la traçabilité. PD-01 et PD-02 sont remplacées par des décisions validées ; PD-15 est partiellement remplacée par V-15 et V-24. Les autres lignes restent des propositions de cadrage, sauf lorsqu'une décision V ultérieure en précise déjà une partie. Les décisions V prévalent toujours sur les propositions antérieures.
 
 | ID | Décision proposée | Justification | Questions liées |
 | --- | --- | --- | --- |
@@ -669,7 +669,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | PD-12 | Reporting est un consommateur en lecture seule, sans écriture ni correction dans les domaines. | Évite un modèle d'écriture parallèle. | Q-34 |
 | PD-13 | Identity porte les comptes et droits ; Workforce porte les collaborateurs et contrats. | Sépare sécurité et RH. | Q-35 |
 | PD-14 | Safety porte les habilitations opérationnelles et autorisations ; Workforce porte les formations et qualifications RH ; Quality porte les qualifications techniques. | Évite trois sources concurrentes pour une même aptitude. | Q-16, Q-29 |
-| PD-15 | Procurement porte les rôles fournisseur/sous-traitant et la relation d'achat ; Clients porte l'identité maître du tiers ; Quality et Safety prononcent la conformité et l'aptitude. | Décision désormais validée par V-15 ; la qualification reste distincte de l'identité du tiers. | V-15, Q-22, Q-23 |
+| PD-15 | Procurement porte la relation d'achat et les données fournisseur ; Clients porte l'identité maître du tiers ; Quality et Safety interviennent sur la qualification et l'aptitude selon leur périmètre. | La propriété du tiers est validée par V-15 ; l'acceptation technique externe et la conformité sont réparties selon V-24. Les détails de qualification restent à instruire. | V-15, V-24, Q-22 |
 | PD-16 | Costing valorise les faits produits par les domaines opérationnels ; il ne les possède pas. | Évite la duplication des faits. | Q-09, Q-10, Q-20 |
 | PD-17 | Les références inter-domaines utilisent des identifiants publics stables, jamais des Models Eloquent. | Conforme à V-09 et V-10. | Q-36 |
 | PD-18 | Aucune transaction partagée n'est introduite par défaut ; le fournisseur d'une opération porte ses invariants et sa transaction. | Conforme à V-12. | — |
