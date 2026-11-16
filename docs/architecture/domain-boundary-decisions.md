@@ -301,9 +301,9 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Responsabilités candidates | Domaine | Analyse |
 | --- | --- | --- |
 | Plan qualité, contrôles, essais, NCR, actions, certificats, qualifications techniques | D14 Quality | Conformité technique aux exigences. |
-| Préparation documentaire de réception, centralisation des livrables, réserves documentaires, DOE et garanties | D17 Handover | Préparation et suivi documentaire ; Projects porte la responsabilité contractuelle. |
-| Réserve | D17 Handover | Écart contractuel constaté à la réception. |
-| Non-conformité | D14 Quality | Écart technique à une exigence. |
+| Préparation documentaire de réception, centralisation des livrables, suivi documentaire des réserves et des garanties, DOE | D17 Handover | Handover prépare et centralise les documents et livrables, le DOE, et assure le suivi documentaire des réserves et de leurs justificatifs ; il ne décide pas de la réception contractuelle. |
+| Réception contractuelle, décisions de réception et de levée des réserves | D03 Projects | Projects organise et porte la réception contractuelle, prononce l'acceptation ou le refus de la réception et décide de la levée ou du refus de levée d'une réserve. |
+| Non-conformité technique | D14 Quality | Quality porte l'écart technique à une exigence, son analyse et son traitement ; la NCR reste distincte de la réserve contractuelle (V-26). |
 
 **Séparation recommandée.**
 
@@ -311,7 +311,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - **Projects** organise et porte la réception contractuelle. **Handover** prépare et centralise les documents et livrables, le DOE et le suivi documentaire des réserves et garanties (V-55).
 - Une réserve peut exister sans NCR (par exemple un document contractuel manquant) et une NCR peut exister sans réserve (par exemple un écart corrigé avant réception).
 - Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la NCR correspondante avant sa clôture. Les objets Réserve et NCR restent distincts (V-26).
-- Projects porte la responsabilité de la réception contractuelle ; Handover ne prononce pas l'acceptation contractuelle. Quality statue sur la conformité technique.
+- Projects porte la responsabilité de la réception contractuelle et des décisions de levée des réserves ; Handover ne prononce ni l'acceptation contractuelle ni la levée ; Quality statue sur la conformité technique et traite la NCR lorsque la cause est technique.
 - Handover prépare et centralise le DOE ; Documents stocke et versionne les pièces. Projects conserve la responsabilité contractuelle de la réception (V-55).
 
 **Informations échangées.**
@@ -320,7 +320,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | --- | --- | --- |
 | Quality → Handover | Contrôles, essais, certificats, NCR clôturées | Réception |
 | Handover → Quality | Réserves à traiter techniquement | Réception |
-| Handover → Projects | Réception, réserves, levées, PV | Réception et clôture |
+| Handover → Projects | Dossier de réception, réserves, preuves de levée, PV, garanties | Réception et clôture |
 | Handover → Documents | Pièces du DOE à compiler et diffuser | Réception |
 
 **Points à qualifier.** Q-31 (DOE), Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; la répartition Projects/Handover est validée par V-55.

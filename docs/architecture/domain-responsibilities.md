@@ -1197,11 +1197,13 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Objet | États | Transitions principales |
 | --- | --- | --- |
-| Réception | Demandée, planifiée, prononcée, avec réserves, acceptée, refusée | Planifier, prononcer, accepter, refuser. |
-| Réserve | Ouverte, levée demandée, levée, refusée | Demander la levée, vérifier, lever ou refuser. |
-| DOE | Incomplet, complet, validé | Compléter, valider. |
-| GarantieClient | Active, expirée | Activer, expirer. |
-| DossierDeClôture | En préparation, clos | Compléter, clore. |
+| DossierDeRéception (`HND-01`) | États documentaires non arbitrés — à qualifier | Ouvrir et tenir le dossier, enregistrer les pièces, signaler les pièces manquantes, clôturer le dossier documentaire. |
+| Réserve (`HND-02`) | États documentaires non arbitrés — à qualifier | Enregistrer la réserve et les justificatifs, suivre la demande de levée, enregistrer la preuve et l'issue décidée par Projects ; Handover ne décide ni la levée ni le refus. |
+| DOE (`HND-04`) | Incomplet, complet, validé documentairement | Compléter, valider la complétude documentaire. |
+| GarantieClient (`HND-05`) | Active, expirée | Activer, expirer. |
+| DossierDeClôture (`HND-06`) | En préparation, clos documentairement | Compléter, clore le dossier documentaire. |
+
+**Décisions contractuelles hors machine d'états Handover.** Les états contractuels de la réception (demandée, planifiée, prononcée, acceptée, refusée) et les décisions de lever ou refuser une réserve relèvent de Projects. Handover ne les prononce pas ; il enregistre et suit les pièces, preuves et justificatifs correspondants. La nomenclature des états documentaires de `HND-01` reste à qualifier et n'est pas fixée par V-55.
 
 **Entrées et sorties.**
 
@@ -1213,7 +1215,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Entrée | Clients | Représentants, coordonnées, exigences de réception | Réception |
 | Entrée | Procurement | Garanties fournisseurs et sous-traitants | Clôture |
 | Entrée | Costing | Situation finale des coûts | Clôture |
-| Sortie | Projects | Statut du dossier de réception, réserves, levées, PV, garanties | Réception et clôture |
+| Sortie | Projects | Statut du dossier de réception, réserves, justificatifs de levée, PV, garanties | Réception et clôture |
 | Sortie | Quality | Réserves à traiter techniquement | Réception |
 | Sortie | Documents | Pièces à compiler, diffuser, archiver | Réception |
 | Sortie | Clients | PV, DOE, garanties clientes, attestations | Réception |
