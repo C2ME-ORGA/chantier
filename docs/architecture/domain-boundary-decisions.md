@@ -7,8 +7,8 @@ Ce document analyse les chevauchements de responsabilité entre les 18 domaines 
 - Portée : chevauchements métier, séparations recommandées, informations échangées, décisions proposées et questions ouvertes.
 - Hors portée : matrice technique définitive des dépendances (Lot 2), contrats et événements (CHAN-28), conventions internes de code (CHAN-27), tests d'architecture (CHAN-31).
 
-> **Statut du document — Lot 1.**
-> Les arbitrages présentés sont des **propositions**. Seules les décisions listées en section 2 sont validées. Les questions ouvertes ne sont pas tranchées artificiellement : elles doivent être arbitrées par le responsable du projet avant de figer la matrice du Lot 2.
+> **Statut du document — Lot 1 / préparation du Lot 2.**
+> Les décisions validées sont listées en section 2 et dans la section 6.4. Les questions bloquantes Q-01, Q-02, Q-05, Q-09, Q-10, Q-12, Q-17, Q-19, Q-23, Q-27, Q-30, Q-36, Q-41 et Q-53 ont été arbitrées par le responsable du projet le 16/11/2026. Les autres propositions et questions restent ouvertes et ne doivent pas être considérées comme validées.
 
 ## 1. Méthode
 
@@ -61,6 +61,20 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | V-12 | Aucune transaction partagée entre domaines n'est introduite sans décision explicite. | `domain-communication.md`, CHAN-28 |
 | V-13 | Le Lot 1 est documentaire : aucun code, modèle, service, action, événement, migration, dépendance ou workflow CI/CD n'est modifié. | Ticket CHAN-29 |
 | V-14 | La matrice technique détaillée des dépendances autorisées et interdites relève du Lot 2. | Ticket CHAN-29 |
+| V-15 | Clients est propriétaire du référentiel maître unique des tiers (identité juridique et données communes). Procurement reste propriétaire de la relation d'achat, des données fournisseurs propres aux achats et des références fournisseur liées aux articles Inventory. | Arbitrage responsable projet, 16/11/2026 (Q-05) |
+| V-16 | Les références publiques inter-domaines utilisent des UUID stables. La version et le format précis de génération restent à préciser au niveau des conventions techniques d'implémentation. | Arbitrage responsable projet, 16/11/2026 (Q-36) |
+| V-17 | Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | Arbitrage responsable projet, 16/11/2026 (Q-01) |
+| V-18 | Un tiers peut cumuler plusieurs rôles dans une même affaire (client, donneur d'ordre, maître d'ouvrage, payeur), ces rôles étant explicitement distingués. | Arbitrage responsable projet, 16/11/2026 (Q-02) |
+| V-19 | Un engagement financier est reconnu à l'approbation de la commande fournisseur. | Arbitrage responsable projet, 16/11/2026 (Q-09) |
+| V-20 | Costing est propriétaire de l'EAC, calculé à partir des faits opérationnels et des engagements. | Arbitrage responsable projet, 16/11/2026 (Q-10) |
+| V-21 | TimeTracking constate les événements et durées d'absence ; Workforce qualifie le motif RH. | Arbitrage responsable projet, 16/11/2026 (Q-12) |
+| V-22 | Inventory est propriétaire du référentiel maître des articles ; Procurement porte les références et données d'achat propres aux fournisseurs. | Arbitrage responsable projet, 16/11/2026 (Q-17) |
+| V-23 | Le stock de chantier est un emplacement temporaire du stock central, géré par Inventory, et non un référentiel autonome. | Arbitrage responsable projet, 16/11/2026 (Q-19) |
+| V-24 | Pour une fabrication externe, Workshop porte l'acceptation technique, Quality statue sur la conformité et Procurement clôt l'aspect commercial. | Arbitrage responsable projet, 16/11/2026 (Q-23) |
+| V-25 | Projects porte l'avancement contractuel ; Planning porte l'avancement des activités ; TimeTracking porte les temps réalisés. | Arbitrage responsable projet, 16/11/2026 (Q-27) |
+| V-26 | Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la non-conformité correspondante avant sa clôture. | Arbitrage responsable projet, 16/11/2026 (Q-30) |
+| V-27 | La sous-traitance confiée par C2ME suit le parcours Procurement ; la sous-traitance reçue par C2ME suit le parcours commercial Projects/Clients. Les deux parcours restent distincts. | Arbitrage responsable projet, 16/11/2026 (Q-41) |
+| V-28 | La clôture d'une affaire intervient après réception, levée des réserves, constitution du DOE, clôture des coûts et clôture du budget. | Arbitrage responsable projet, 16/11/2026 (Q-53) |
 
 ## 3. Chevauchements obligatoires
 
@@ -671,47 +685,47 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 
 | ID | Question | Pourquoi elle compte | Proposition de travail | Priorité |
 | --- | --- | --- | --- | --- |
-| Q-01 | Une affaire peut-elle couvrir plusieurs chantiers ou lots ? Un chantier peut-il appartenir à plusieurs affaires ? | Détermine les axes échangés entre Projects, Planning, Budgets, Costing, Handover. | Affaire 1..N chantiers ; chantier 1..1 affaire. | Bloquant Lot 2 |
-| Q-02 | Quelles différences entre client, donneur d'ordre, maître d'ouvrage, maître d'œuvre et payeur ? | Détermine les rôles portés par Clients et les destinataires de Handover. | Rôles multiples par tiers et par affaire. | Bloquant Lot 2 |
+| Q-01 | Une affaire peut-elle couvrir plusieurs chantiers ou lots ? Un chantier peut-il appartenir à plusieurs affaires ? | Détermine les axes échangés entre Projects, Planning, Budgets, Costing, Handover. | Affaire 1..N chantiers ; chantier 1..1 affaire. | Validé — V-17 |
+| Q-02 | Quelles différences entre client, donneur d'ordre, maître d'ouvrage, maître d'œuvre et payeur ? | Détermine les rôles portés par Clients et les destinataires de Handover. | Rôles multiples par tiers et par affaire. | Validé — V-18 |
 | Q-03 | L'opportunité commerciale et le pipeline appartiennent-ils à Clients ou à Projects ? | Détermine qui pilote l'étude initiale et les échanges Clients ↔ Projects. | Clients qualifie le prospect ; Projects ouvre l'étude. | Important |
 | Q-04 | À quel moment un prospect devient-il client ? | Détermine la création et la conversion dans Clients. | À la première commande ou au premier contrat — proposition de travail, non validée. | Important |
-| Q-05 | Existe-t-il un référentiel unique de tiers (client, fournisseur, sous-traitant) ? | Détermine le portage de l'identité juridique ; les rôles commerciaux et d'achat peuvent coexister. | Option A ou B de BD-16, à arbitrer ; aucune identité juridique n'est présumée par les objets de rôle. | Bloquant Lot 2 |
+| Q-05 | Existe-t-il un référentiel unique de tiers (client, fournisseur, sous-traitant) ? | Détermine le portage de l'identité juridique ; les rôles commerciaux et d'achat peuvent coexister. | Clients est le référentiel maître unique ; Procurement conserve les données de relation d'achat et les références fournisseur spécifiques. | Validé — V-15 |
 | Q-06 | Les conditions de paiement, remises et limites de crédit relèvent-elles de Clients, Projects ou d'un traitement externe ? | Détermine le périmètre financier des domaines. | Conditions cadre dans Clients, conditions contractuelles dans Projects. | Important |
 | Q-07 | La facturation, les règlements et la comptabilité générale sont-ils hors périmètre des 18 domaines ? | Aucun domaine financier n'existe parmi les 18. | Documenter comme hors périmètre ou intégration externe. | Important |
 | Q-08 | Quels sont les seuils d'approbation budgétaire et d'engagement ? | Détermine les décisions de Budgets et Procurement. | Seuils par montant et par nature, à fixer par la direction. | Important |
-| Q-09 | À quel moment un engagement est-il reconnu : demande, commande, réception ou facture ? | Détermine le moment de l'échange Procurement → Costing. | À la validation de la commande. | Bloquant Lot 2 |
-| Q-10 | Qui possède le coût final estimé (EAC) : Budgets, Costing ou Projects ? | Détermine la source de la prévision économique. | Costing, à partir des faits et des engagements. | Bloquant Lot 2 |
+| Q-09 | À quel moment un engagement est-il reconnu : demande, commande, réception ou facture ? | Détermine le moment de l'échange Procurement → Costing. | À la validation de la commande. | Validé — V-19 |
+| Q-10 | Qui possède le coût final estimé (EAC) : Budgets, Costing ou Projects ? | Détermine la source de la prévision économique. | Costing, à partir des faits et des engagements. | Validé — V-20 |
 | Q-11 | Qui porte les taux horaires de référence : Workforce, Costing ou Budgets ? | Détermine la valorisation de la main-d'œuvre. | Workforce fournit le taux RH ; Costing l'utilise. | Important |
-| Q-12 | Qui qualifie une absence : Workforce ou TimeTracking ? | Détermine la frontière RH / temps. | TimeTracking constate ; Workforce qualifie. | Bloquant Lot 2 |
+| Q-12 | Qui qualifie une absence : Workforce ou TimeTracking ? | Détermine la frontière RH / temps. | TimeTracking constate ; Workforce qualifie. | Validé — V-21 |
 | Q-13 | Quelles règles pour les temps de trajet, astreintes et heures supplémentaires ? | Détermine les événements de temps et les variables de paie. | À définir avec les conventions collectives et le prestataire. | Important |
 | Q-14 | Quel est le périmètre exact transmis au prestataire de paie ? | Détermine les données RH, temps et paie échangées. | Variables, absences, contrats, centres de coût ; pas de calcul interne. | Important |
 | Q-15 | Les intérimaires et prestataires de main-d'œuvre relèvent-ils de Workforce ou de Procurement ? | Détermine la relation contractuelle et le suivi des heures. | À arbitrer ; envisager Workforce pour la personne, Procurement pour le contrat. | Important |
 | Q-16 | Qui porte les qualifications techniques (soudeur, procédé, contrôle) ? | Détermine la frontière Workforce / Quality / Safety. | Quality pour la qualification technique ; Workforce pour la formation RH. | Important |
-| Q-17 | Qui est propriétaire de l'article : Inventory ou Procurement ? | Détermine le référentiel de stock et les achats. | Inventory porte l'article ; Procurement porte la référence fournisseur. | Bloquant Lot 2 |
+| Q-17 | Qui est propriétaire de l'article : Inventory ou Procurement ? | Détermine le référentiel de stock et les achats. | Inventory porte l'article ; Procurement porte la référence fournisseur. | Validé — V-22 |
 | Q-18 | Qui porte le catalogue fournisseur et les références achetées ? | Détermine la relation article ↔ fournisseur. | Procurement, avec lien vers l'article Inventory. | Important |
-| Q-19 | Existe-t-il un stock de chantier autonome ou un simple emplacement temporaire ? | Détermine les mouvements, la responsabilité et la traçabilité. | Emplacement temporaire sous contrôle d'Inventory. | Bloquant Lot 2 |
+| Q-19 | Existe-t-il un stock de chantier autonome ou un simple emplacement temporaire ? | Détermine les mouvements, la responsabilité et la traçabilité. | Emplacement temporaire sous contrôle d'Inventory. | Validé — V-23 |
 | Q-20 | Quelle méthode de valorisation du stock : FIFO, coût moyen, coût standard ? | Détermine la valeur des sorties et le coût matière. | À fixer avec la comptabilité ; Costing applique. | Important |
 | Q-21 | Comment traiter les livraisons directes fournisseur sur chantier ? | Détermine la frontière Procurement / Inventory / Logistics. | Inventory enregistre la réception ; Logistics constate ; Quality contrôle. | Important |
 | Q-22 | Qui qualifie un sous-traitant : Procurement, Quality ou Safety ? | Détermine les exigences et les échanges de qualification. | Procurement porte la relation ; Quality et Safety prononcent leurs conformités. | Important |
-| Q-23 | Qui accepte techniquement une fabrication externe ? | Détermine la frontière Workshop / Quality / Procurement. | Quality prononce la conformité ; Workshop l'acceptation technique ; Procurement clôture. | Bloquant Lot 2 |
+| Q-23 | Qui accepte techniquement une fabrication externe ? | Détermine la frontière Workshop / Quality / Procurement. | Quality prononce la conformité ; Workshop l'acceptation technique ; Procurement clôture. | Validé — V-24 |
 | Q-24 | Qui possède la capacité d'atelier : Workshop ou Planning ? | Détermine la planification de la production. | Workshop fournit la capacité ; Planning arbitre le planning. | Important |
 | Q-25 | La calibration des équipements de mesure relève-t-elle d'Equipment ou de Quality ? | Détermine la conformité métrologique. | À arbitrer ; Equipment porte l'actif, Quality l'exigence. | Différé |
 | Q-26 | Qui gère les chauffeurs et l'affectation des véhicules ? | Détermine la frontière Equipment / Logistics / Workforce. | Workforce chauffeur ; Equipment véhicule ; Logistics tournée. | Important |
-| Q-27 | Qui déclare l'avancement : Projects, Planning ou TimeTracking ? | Détermine la source de l'avancement contractuel et opérationnel. | Projects contractuel ; Planning activités ; TimeTracking temps. | Bloquant Lot 2 |
+| Q-27 | Qui déclare l'avancement : Projects, Planning ou TimeTracking ? | Détermine la source de l'avancement contractuel et opérationnel. | Projects contractuel ; Planning activités ; TimeTracking temps. | Validé — V-25 |
 | Q-28 | Quel horizon de planning est ferme et qui arbitre les conflits ? | Détermine la stabilité du planning et les responsabilités. | Horizon à définir ; arbitrage direction. | Important |
 | Q-29 | Qui gère les EPI et les autorisations de travail : Safety ou Workforce ? | Détermine la frontière sécurité / RH. | Safety pour l'opérationnel ; Workforce pour la formation. | Important |
-| Q-30 | Une réserve peut-elle être levée sans clôture d'une NCR ? | Détermine le lien Handover ↔ Quality. | Non si la réserve a une cause technique ; oui si elle est documentaire. | Bloquant Lot 2 |
+| Q-30 | Une réserve peut-elle être levée sans clôture d'une NCR ? | Détermine le lien Handover ↔ Quality. | Non si la réserve a une cause technique ; oui si elle est documentaire. | Validé — V-26 |
 | Q-31 | Qui possède le DOE : Handover ou Documents ? | Détermine la constitution et le stockage du DOE. | Handover pour la complétude contractuelle ; Documents pour le stockage. | Important |
 | Q-32 | Comment distinguer le statut métier et le statut documentaire ? | Évite deux validations concurrentes. | Deux dimensions distinctes, propriétaires différents. | Important |
 | Q-33 | Quelle valeur légale donner à la signature électronique et à l'archivage ? | Détermine les exigences de preuve et de conservation. | À définir avec le juridique. | Différé |
 | Q-34 | Quelles exigences de fraîcheur, de lignée et d'accès pour Reporting ? | Détermine le modèle de reporting et les contrats de lecture. | Documenter source, formule, période, propriétaire. | Important |
 | Q-35 | Quels rôles, périmètres et comptes externes pour Identity ? | Détermine l'autorisation et les accès clients/fournisseurs. | Rôles explicites, comptes externes sur décision. | Important |
-| Q-36 | Quelle stratégie d'identifiants : auto-incrément, UUID, ULID ? | Détermine les références inter-domaines. | À trancher avant les premiers contrats. | Bloquant Lot 2 |
+| Q-36 | Quelle stratégie d'identifiants : auto-incrément, UUID, ULID ? | Détermine les références inter-domaines. | À trancher avant les premiers contrats. | Validé — V-16 |
 | Q-37 | Quelle unité monétaire, devise et règle d'arrondi ? | Détermine tous les échanges financiers. | Montants en unité entière ou décimale fixe, devise EUR. | Important |
 | Q-38 | C2ME est-elle une seule entité juridique ou plusieurs établissements ? | Détermine les périmètres et les rapports. | À clarifier avec la direction. | Différé |
 | Q-39 | Quel périmètre hors connexion et quelle stratégie de conflit ? | Détermine les interactions de saisie et d'idempotence. | Serveur autorité ; conflits explicites. | Important |
 | Q-40 | Quelles règles de confidentialité et de conservation pour RH, paie, sécurité et documents ? | Détermine les accès et la rétention. | À définir avec le juridique et la direction. | Important |
-| Q-41 | Comment formaliser la sous-traitance dans les deux sens ? | Détermine les objets et les flux Clients/Projects/Procurement/Handover. | Deux parcours distincts, sans objet unique ambigu. | Bloquant Lot 2 |
+| Q-41 | Comment formaliser la sous-traitance dans les deux sens ? | Détermine les objets et les flux Clients/Projects/Procurement/Handover. | Deux parcours distincts, sans objet unique ambigu. | Validé — V-27 |
 | Q-42 | Comment imputer les coûts de qualité, de sécurité et de non-qualité ? | Détermine les échanges Quality/Safety → Costing. | Axes analytiques dédiés, à valider. | Important |
 | Q-43 | Comment traiter les matériaux fournis par le client ? | Détermine la propriété, le stock et la responsabilité. | À arbitrer : stock sous contrôle, hors valorisation ou valorisation spécifique. | Important |
 | Q-44 | Comment distinguer les garanties clientes et les garanties fournisseurs ? | Détermine la frontière Handover / Procurement. | Handover pour les garanties clientes ; Procurement pour les garanties fournisseurs. | Important |
@@ -723,26 +737,13 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | Q-50 | Le bureau d'études relève-t-il de Projects, de Workshop ou des deux ? | Détermine la propriété des études et des plans. | Projects pour les études contractuelles ; Workshop pour l'exécution atelier. | Important |
 | Q-51 | Le registre des risques d'affaire est-il un objet de Projects, de Reporting ou un attribut de l'étude ? | Détermine la propriété et le suivi des risques. | À arbitrer ; envisager un attribut de l'étude et de l'affaire. | Important |
 | Q-52 | Qui suit les permis et autorisations administratives nécessaires aux travaux ? | Détermine la responsabilité et les échéances. | À arbitrer ; souvent porté par le client, avec suivi par Projects. | Important |
-| Q-53 | Quelles conditions exactes autorisent la clôture d'une affaire et dans quel ordre ? | Détermine l'enchaînement Handover / Costing / Budgets / Projects. | Réception, réserves levées, DOE, coûts et budget clôturés, puis affaire clôturée. | Bloquant Lot 2 |
+| Q-53 | Quelles conditions exactes autorisent la clôture d'une affaire et dans quel ordre ? | Détermine l'enchaînement Handover / Costing / Budgets / Projects. | Réception, réserves levées, DOE, coûts et budget clôturés, puis affaire clôturée. | Validé — V-28 |
 
 ### 6.2 Questions à traiter avant le Lot 2
 
-Les questions suivantes sont considérées comme bloquantes pour la matrice technique :
+Les questions suivantes étaient bloquantes pour la matrice technique ; elles ont toutes été arbitrées et validées (voir section 6.4) :
 
-- Q-01 : relation affaire/chantier ;
-- Q-02 : rôles client/donneur d'ordre ;
-- Q-05 : référentiel tiers ;
-- Q-09 : reconnaissance des engagements ;
-- Q-10 : propriété de l'EAC ;
-- Q-12 : qualification des absences ;
-- Q-17 : propriétaire de l'article ;
-- Q-19 : stock de chantier ;
-- Q-23 : acceptation technique externe ;
-- Q-27 : source de l'avancement ;
-- Q-30 : réserve vs NCR ;
-- Q-36 : stratégie d'identifiants ;
-- Q-41 : sous-traitance dans les deux sens ;
-- Q-53 : conditions de clôture d'une affaire.
+- Q-01, Q-02, Q-05, Q-09, Q-10, Q-12, Q-17, Q-19, Q-23, Q-27, Q-30, Q-36, Q-41 et Q-53 sont désormais arbitrées (section 6.4).
 
 ### 6.3 Questions pouvant être différées
 
@@ -750,6 +751,27 @@ Les questions suivantes sont considérées comme bloquantes pour la matrice tech
 - Q-33 : signature électronique et archivage légal ;
 - Q-38 : structure juridique multi-établissements ;
 - Q-48 : données de santé et restrictions d'aptitude.
+
+### 6.4 Arbitrages des 14 questions bloquantes — validés le 16/11/2026
+
+| Question | Décision validée | Décision |
+| --- | --- | --- |
+| Q-01 | Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | V-17 |
+| Q-02 | Un même tiers peut cumuler plusieurs rôles par affaire : client, donneur d'ordre, maître d'ouvrage et/ou payeur. | V-18 |
+| Q-05 | Clients est propriétaire du référentiel maître unique des tiers. Procurement conserve la relation d'achat et les données fournisseur spécifiques, sans dupliquer l'identité du tiers. | V-15 |
+| Q-09 | L'engagement financier est reconnu à l'approbation de la commande fournisseur. | V-19 |
+| Q-10 | Costing possède l'EAC et le calcule à partir des faits opérationnels et engagements. | V-20 |
+| Q-12 | TimeTracking constate les événements et durées ; Workforce qualifie le motif RH. | V-21 |
+| Q-17 | Inventory possède le référentiel maître des articles ; Procurement possède les références d'achat propres aux fournisseurs. | V-22 |
+| Q-19 | Le stock de chantier est un emplacement temporaire du stock central sous contrôle d'Inventory. | V-23 |
+| Q-23 | Workshop porte l'acceptation technique ; Quality statue sur la conformité ; Procurement clôt l'aspect commercial. | V-24 |
+| Q-27 | Projects porte l'avancement contractuel ; Planning l'avancement des activités ; TimeTracking les temps réalisés. | V-25 |
+| Q-30 | Une réserve documentaire peut être clôturée sans NCR ; une réserve technique requiert le traitement de la NCR correspondante. | V-26 |
+| Q-36 | Les références publiques inter-domaines utilisent des UUID stables ; la version de génération reste à préciser lors de l'implémentation. | V-16 |
+| Q-41 | Sous-traitance confiée : Procurement ; sous-traitance reçue : Projects/Clients. | V-27 |
+| Q-53 | Clôture après réception, levée des réserves, DOE, clôture des coûts et clôture du budget. | V-28 |
+
+**Contrôle de cohérence.** Ces arbitrages ne créent aucun domaine supplémentaire et respectent les 18 domaines figés (V-01). Le choix Clients comme référentiel maître des tiers ne transfère pas à Clients les commandes fournisseurs : Procurement conserve la relation d'achat, les conditions et références spécifiques. L'identité du tiers est référencée par UUID public. Le stock de chantier reste dans le référentiel central Inventory. Les responsabilités d'avancement et de sous-traitance restent séparées selon leur nature métier. Aucun arbitrage ne crée à lui seul un contrat, un événement, une transaction partagée ou un composant applicatif.
 
 ## 7. Décisions restant à valider
 
@@ -825,7 +847,7 @@ Ces sujets relèvent du Lot 2, de CHAN-28, de CHAN-30, de CHAN-31 ou de tickets 
 - [ ] Les deux parcours commerciaux sont documentés.
 - [ ] L'atelier interne et la fabrication externe sont distingués.
 - [ ] La sous-traitance dans les deux sens est distinguée.
-- [ ] Le stock central est la référence ; le stock de chantier reste une question ouverte.
+- [x] Le stock central est la référence ; le stock de chantier est un emplacement temporaire sous contrôle d'Inventory.
 - [ ] La paie externalisée est respectée ; Workforce ne calcule pas les bulletins.
 - [ ] TimeTracking reste propriétaire des événements de temps.
 - [ ] Les chevauchements obligatoires sont analysés.
