@@ -205,3 +205,7 @@ Le Lot 2 reste documentaire. Il ne doit pas :
 - CHAN-31 — Tests d'architecture (ticket Jira)
 - [AGENTS.md](../../AGENTS.md)
 - [Organisation des domaines](../../app/Domains/README.md)
+
+## 11. Consolidation du Lot C
+
+La matrice détaillée et la qualification technique des 130 identifiants uniques sont maintenues dans [domain-dependency-matrix-lot-c.md](domain-dependency-matrix-lot-c.md). Ce livrable distingue le statut métier source de la classe technique CHAN-29 et du mode CHAN-28 pressenti. En l'absence de preuve d'un contrat public ou d'un événement conforme, la classe technique reste « À qualifier ». Les orientations de mécanisme sont indicatives et ne prouvent aucune implémentation.
