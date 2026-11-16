@@ -169,6 +169,31 @@ La décision validée pour la suite de CHAN-29 est une politique stricte :
 
 Ce Lot 1 identifie les **besoins d'échange métier**. Il ne définit pas la matrice technique détaillée, qui relève du Lot 2.
 
+## 2.8 Arbitrages métier complémentaires — questionnaire Lot 2
+
+Les décisions V-29 à V-59 de `domain-boundary-decisions.md` précisent les responsabilités cibles. Elles prévalent sur les propositions antérieures incompatibles, notamment pour la propriété du devis. Elles restent des décisions métier et ne définissent pas les contrats techniques.
+
+| Domaine(s) | Responsabilité ou règle validée |
+| --- | --- |
+| Clients | Porte le cycle commercial jusqu'à la signature ; produit et possède manuellement le devis complet (prix et lignes de travaux) ; possède les conditions commerciales générales/cadre. |
+| Projects | Prend le relais après signature ; l'ouverture d'affaire depuis un devis accepté exige une validation explicite ; possède les conditions propres à l'affaire, le chantier principal, l'avancement contractuel et l'organisation de la réception contractuelle. |
+| Budgets | Crée le budget initial depuis les lignes du devis accepté ; les avenants acceptés révisent automatiquement le budget avec historique ; alerte si une commande fournisseur dépasse le disponible, sans blocage automatique des achats. |
+| Costing | Calcule et actualise l'EAC à partir des engagements, commandes/factures, temps, main-d'œuvre, consommations, avancement et reste à faire ; ne produit pas le devis commercial. |
+| Planning | Crée le planning initial lors de la création de l'affaire ; fournit les besoins opérationnels à Workforce. |
+| Workforce | Décide des affectations de salariés à partir des besoins de Planning. |
+| TimeTracking / service administratif-RH | Les salariés et chefs d'équipe peuvent saisir les temps ; le service administratif/RH les valide. |
+| Workshop | Les ordres de fabrication sont créés manuellement par le bureau d'études ou le responsable atelier ; le responsable atelier valide techniquement les fabrications. |
+| Procurement | Reçoit les demandes d'achat créées par le responsable travaux ou atelier et les transforme en commandes fournisseurs. |
+| Inventory | Les salariés autorisés peuvent enregistrer les mouvements ; l'auteur est tracé. |
+| Quality | Tout salarié autorisé peut déclarer une non-conformité ; Quality la qualifie et valide sa clôture avec le responsable travaux ou atelier concerné. |
+| Safety | Définit les règles et contrôles ; les responsables de chantier exécutent les contrôles et déclarent les écarts. |
+| Documents / domaines métier / Projects | Tout salarié autorisé peut déposer un document avec classement et métadonnées ; le domaine métier valide le contenu et le responsable de l'affaire donne l'approbation finale. |
+| Handover | Prépare et centralise les livrables et documents de réception ; Projects organise la réception contractuelle. |
+| Reporting | Combine les données publiées par les domaines et les consultations via contrats publics ; aucun accès direct aux tables internes. |
+| Service administratif / Projects / domaines concernés | Les domaines confirment leurs obligations ; le service administratif vérifie et prononce la clôture administrative ; Projects reste propriétaire du cycle de vie de l'affaire. |
+
+**Règles transverses de processus.** La création automatique du chantier principal et du planning initial est déclenchée à la création de l'affaire. Un avenant accepté notifie uniquement les domaines réellement concernés. La création d'une affaire à partir d'un devis accepté reste soumise à validation explicite. Ces automatismes métier n'autorisent pas de dépendance technique directe entre les domaines.
+
 ## 3. Convention de lecture du catalogue
 
 ### 3.1 Propriété métier
@@ -286,12 +311,12 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 ### D02 — Clients
 
-**Mission.** Gérer les rôles commerciaux des tiers (prospect, client, donneur d'ordre), leurs contacts et la relation commerciale, sans présumer l'identité juridique unique du tiers (Q-05).
+**Mission.** Gérer les rôles commerciaux des tiers, la relation commerciale et le cycle commercial jusqu'à la signature ; produire et posséder le devis complet, y compris ses prix et lignes de travaux. Clients reste propriétaire des conditions commerciales générales/cadre et du référentiel maître des tiers (V-15, V-29, V-31, V-35).
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Prospection, qualification, référence de tiers (selon Q-05), rôles commerciaux (prospect, client, donneur d'ordre, maître d'ouvrage, payeur, maître d'œuvre, prescripteur), contacts, relation commerciale, conditions commerciales cadre, statut et historique relationnel. |
-| Périmètre exclu | Étude technique, devis, commande, affaire et chantier (Projects), rôles fournisseur et sous-traitant (Procurement), facturation et paiement (hors périmètre des 18 domaines), comptes utilisateurs (Identity). |
+| Périmètre inclus | Prospection, qualification, référence maître des tiers, rôles commerciaux, contacts, relation commerciale, conditions commerciales générales/cadre, construction et propriété du devis complet (prix et lignes de travaux), statut et historique relationnel. |
+| Périmètre exclu | Étude technique et exécution contractuelle après signature, commande client/contrat, affaire et chantier (Projects), rôles fournisseur et sous-traitant (Procurement), facturation et paiement (hors périmètre des 18 domaines), comptes utilisateurs (Identity). |
 | Objets métier | `CLI-01` Prospect, `CLI-02` Client, `CLI-03` ContactClient, `CLI-04` RôleTiers, `CLI-05` RelationCommerciale, `CLI-06` ConditionsCommercialesCadre. |
 | Acteurs | Direction commerciale, chargé d'affaires, assistant commercial, direction générale, client, donneur d'ordre, maître d'ouvrage. |
 
@@ -335,12 +360,12 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 ### D03 — Projects
 
-**Mission.** Porter l'engagement contractuel et le pilotage global d'une affaire, depuis l'étude et le devis jusqu'à la clôture, et organiser ses chantiers.
+**Mission.** Prendre le relais après signature du devis ou réception d'une commande/OS, porter l'engagement contractuel et le pilotage global de l'affaire jusqu'à sa clôture, et organiser ses chantiers. Projects ne produit ni ne possède le devis commercial, qui relève de Clients (V-29, V-35, V-40).
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Étude d'affaire, devis, commande client ou ordre de service, contrat, affaire, chantier, lots et phases, avenants, jalons contractuels, acteurs de l'affaire, site, avancement contractuel, demande de clôture. |
-| Périmètre exclu | Planning détaillé et affectations (Planning), budget (Budgets), chiffrage et coûts (Costing), fabrication (Workshop), achats (Procurement), stock (Inventory), qualité (Quality), sécurité (Safety), réception contractuelle et DOE (Handover), stockage documentaire (Documents). |
+| Périmètre inclus | Réception des éléments commerciaux signés, commande client ou ordre de service, conditions contractuelles propres à l'affaire, contrat, affaire, création du chantier principal, lots et phases, avenants, jalons contractuels, acteurs de l'affaire, site, avancement contractuel, demande de clôture. |
+| Périmètre exclu | Construction et propriété du devis commercial (Clients), planning détaillé et affectations (Planning/Workforce), budget (Budgets), chiffrage et coûts (Costing), fabrication (Workshop), achats (Procurement), stock (Inventory), qualité (Quality), sécurité (Safety), préparation documentaire de réception et DOE (Handover), stockage documentaire (Documents). |
 | Objets métier | `PRJ-01` Affaire, `PRJ-02` Chantier, `PRJ-03` LotPhase, `PRJ-04` Étude, `PRJ-05` Devis, `PRJ-06` CommandeClient, `PRJ-07` Avenant, `PRJ-08` Contrat, `PRJ-09` JalonContractuel, `PRJ-10` ActeurAffaire. |
 | Acteurs | Direction, chargé d'affaires, conducteur de travaux, chef de chantier, bureau d'études, métreur/économiste, responsable juridique, client, donneur d'ordre. |
 
@@ -1253,8 +1278,8 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Domaine | Possède | Ne possède pas |
 | --- | --- | --- |
 | Identity | Comptes, rôles, permissions, périmètres, délégations | Données RH, contacts clients, fournisseurs |
-| Clients | Prospects, clients, contacts, rôles de tiers, relation commerciale | Étude, devis, affaire, chantier, fournisseurs |
-| Projects | Étude, devis, commande, contrat, affaire, chantier, lots, avenants, jalons | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, réception |
+| Clients | Prospects, clients, contacts, rôles de tiers, relation commerciale, devis complet et conditions commerciales cadre | Affaire, chantier, exécution contractuelle, fournisseurs |
+| Projects | Commande/contrat après signature, affaire, chantier, lots, avenants, jalons, avancement contractuel | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, réception |
 | Planning | Plans, activités, affectations, capacité, conflits, avancement planning | Données RH, actifs, capacité atelier, pointages |
 | Budgets | Budget, versions, lignes, enveloppe, contingence, révisions | Chiffrage détaillé, engagements, coûts constatés, prix de vente |
 | Costing | Chiffrage, coûts, engagements, imputations, marge, écarts, EAC | Budget, commandes, temps, stock, production, paie |
