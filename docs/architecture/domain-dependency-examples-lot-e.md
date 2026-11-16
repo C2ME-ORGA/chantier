@@ -35,9 +35,9 @@ Les diagrammes montrent les responsabilités et les transferts de faits métier.
 
 **Séquence métier :**
 1. Clients fournit la référence du tiers, ses contacts et rôles commerciaux.
-2. Après acceptation du devis commercial ou réception d'une commande, Projects enregistre l'engagement contractuel et décide de l'ouverture de l'affaire.
-3. Projects crée l'affaire, le chantier, les lots et les jalons contractuels dont il est propriétaire.
-4. Budgets établit et valide l'enveloppe budgétaire à partir du périmètre accepté ; Projects ne modifie pas le budget.
+2. Après signature du devis commercial ou réception de la commande, Projects constate l'engagement contractuel ; cette acceptation ne transforme pas automatiquement le devis en affaire.
+3. Projects sollicite une validation explicite de l'utilisateur avant toute ouverture. Ce n'est qu'après cette validation que Projects crée l'affaire, le chantier, les lots et les jalons contractuels dont il est propriétaire.
+4. À partir du devis accepté, le budget initial est créé avec répartition automatique de ses lignes (V-32), dans le cadre de l'ouverture validée ; Budgets reste propriétaire de l'enveloppe et de ses versions, que Projects ne modifie pas.
 5. Planning construit le planning détaillé et les affectations planifiées à partir des besoins et jalons communiqués ; Projects conserve les jalons contractuels.
 6. Documents conserve les pièces contractuelles et leurs versions ; il ne décide ni de l'acceptation ni de l'ouverture de l'affaire.
 
@@ -45,11 +45,13 @@ Les diagrammes montrent les responsabilités et les transferts de faits métier.
 
 ```mermaid
 flowchart TD
-    C[Clients\nTiers et devis commercial] -->|Référence tiers / acceptation| P[Projects\nContrat, affaire, chantier]
-    P -->|Périmètre accepté et besoin budgétaire| B[Budgets\nEnveloppe et versions]
-    P -->|Jalons contractuels et besoins| PL[Planning\nActivités et affectations]
-    P -->|Pièces à conserver| D[Documents\nVersions et diffusion]
-    B -->|Budget validé / disponible| P
+    C[Clients\nTiers et devis commercial] -->|Référence tiers / devis signé| P[Projects\nContrat et engagement]
+    P -->|Demande de validation explicite| U[Utilisateur\nConfirmation d'ouverture]
+    U -->|Validation explicite (V-30)| P2[Projects\nAffaire et chantier]
+    P2 -->|Devis accepté / lignes du budget initial (V-32)| B[Budgets\nEnveloppe et versions]
+    P2 -->|Jalons contractuels et besoins| PL[Planning\nActivités et affectations]
+    P2 -->|Pièces à conserver| D[Documents\nVersions et diffusion]
+    B -->|Budget validé / disponible| P2
     PL -->|Planning publié / alertes| P
 ```
 
@@ -131,22 +133,26 @@ flowchart TD
 1. Projects ou Workshop identifie une opération à faire réaliser à l'extérieur et transmet le besoin, le périmètre, les spécifications et l'échéance.
 2. Procurement consulte le marché, sélectionne le sous-traitant et porte la commande/prestation et les engagements.
 3. Workshop conserve la responsabilité de la préparation technique et de l'intégration de la fabrication dans le processus atelier lorsque cela relève de son périmètre ; le sous-traitant exécute la prestation commandée.
-4. Quality définit/porte les contrôles et statue sur les non-conformités techniques selon le plan applicable.
-5. Logistics organise les enlèvements/livraisons si nécessaire.
-6. Inventory constate la réception physique des composants dans le stock lorsque ceux-ci entrent dans son périmètre.
-7. Costing suit les coûts et écarts ; il ne prononce pas l'acceptation technique.
+4. Quality définit/porte les contrôles et statue sur la conformité technique ainsi que sur les éventuelles NCR selon le plan applicable.
+5. Workshop prononce l'acceptation technique de la fabrication externe dans son périmètre, distinctement de la décision de conformité de Quality.
+6. Procurement clôt l'aspect commercial de la prestation, distinctement des décisions techniques et qualité.
+7. Logistics organise les enlèvements/livraisons si nécessaire ; Inventory constate la réception physique des composants dans le stock lorsque ceux-ci entrent dans son périmètre.
+8. Costing suit les coûts et écarts ; il ne prononce ni l'acceptation technique ni la conformité.
 
 **Propriétaires :** Procurement (relation d'achat et commande), Workshop (OF/gamme/opérations internes), Quality (contrôles/NCR), Logistics (transport), Inventory (réception et stock), Costing (coûts).
 
 ```mermaid
 flowchart TD
     P[Projects / Workshop\nBesoin externe] -->|Spécification et échéance| PR[Procurement\nConsultation et commande]
-    PR -->|Commande / engagement| C[Costing\nSuivi économique]
     PR -->|Ordre fournisseur| EXT[Sous-traitant\nExécution externe]
     W[Workshop\nPréparation / intégration] -->|Dossier technique applicable| EXT
     EXT -->|Composants ou prestation livrés| L[Logistics\nTransport]
     L --> I[Inventory\nRéception physique si stock]
-    Q[Quality\nContrôles / NCR] -->|Décision qualité| I
+    I -->|Éléments réceptionnés pour examen| W[Workshop\nAcceptation technique]
+    Q[Quality\nContrôles / NCR] -->|Décision de conformité| W
+    W -->|Résultat d'acceptation technique| PR
+    Q -->|Décision de conformité| PR
+    PR -->|Clôture commerciale de la prestation| C[Costing\nSuivi économique]
 ```
 
 **Frontières à préserver :**
@@ -176,7 +182,7 @@ flowchart TD
     P[Planning\nAffectations prévues] -->|Prévision / activité| T
     T -->|Événement et durée constatés| W
     T -->|Temps imputés| C[Costing\nValorisation des coûts]
-    W -->|Taux / règles RH autorisés| C
+    Q11[Q-11\nSource des taux horaires non arbitrée] -.-> C
     T -->|Faits publiables minimisés| R[Reporting\nAgrégats en lecture seule]
 ```
 
@@ -227,7 +233,7 @@ flowchart TD
 **Séquence métier :**
 1. Quality planifie les contrôles, enregistre les résultats et porte les non-conformités techniques (NCR), actions et preuves.
 2. Projects porte la réception contractuelle, enregistre les réserves contractuelles et décide de leur issue/levée.
-3. Une réserve contractuelle ayant une cause technique renvoie au traitement de la NCR correspondante ; la clôture documentaire d'une réserve ne clôture pas la NCR par elle-même.
+3. Une réserve contractuelle ayant une cause technique reste ouverte tant que la NCR correspondante n'a pas été traitée ; sa clôture ne peut intervenir avant ce traitement. Une réserve uniquement documentaire peut être clôturée sans NCR. Dans tous les cas, la clôture documentaire opérée par Handover ne clôture pas la NCR, qui reste sous la responsabilité de Quality.
 4. Handover prépare et centralise le dossier de réception, les réserves/levées et les preuves documentaires ; il ne prononce pas la réception ni la levée contractuelle.
 5. Documents conserve les fichiers, versions et métadonnées ; le propriétaire métier valide le fond.
 6. Projects organise la réception ; le PV constate la décision contractuelle portée par Projects.
@@ -235,6 +241,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     Q[Quality\nContrôles et NCR] -->|Résultat / preuve technique| P[Projects\nRéception et réserve contractuelle]
+    Q -->|Traitement de la NCR technique| P
     P -->|Périmètre et décision contractuelle| H[Handover\nDossier et suivi documentaire]
     Q -->|Certificats / preuves qualité| H
     H -->|Pièces, versions, DOE| D[Documents\nConservation et diffusion]
@@ -243,7 +250,7 @@ flowchart TD
 ```
 
 **Frontières à préserver :**
-- V-26 : réserve contractuelle et NCR technique sont deux objets distincts.
+- V-26 : réserve contractuelle et NCR technique sont deux objets distincts ; une réserve à cause technique ne peut être clôturée avant le traitement de la NCR correspondante, tandis qu'une réserve uniquement documentaire peut être clôturée sans NCR.
 - V-55 : Projects organise et porte la réception contractuelle ; Handover prépare/centralise les livrables.
 - Quality reste propriétaire de la conformité technique et des NCR.
 - Documents ne valide ni la conformité technique ni la décision contractuelle.
