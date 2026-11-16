@@ -10,14 +10,23 @@
 
 ## 1. Méthode de lecture et d'orientation
 
-Le registre Lot 1 utilise les colonnes « Source » et « Destinataire ». Pour rendre visible le sens de dépendance consommateur → fournisseur dans le Lot 2, l'orientation candidate est déduite de la nature métier :
+Les colonnes « Source », « Destinataire » et « Nature » du Lot 1 décrivent l'interaction métier. Elles ne suffisent pas, isolément, à établir une dépendance technique. Le sens consommateur → fournisseur est donc une **hypothèse à instruire pour chaque INT**, à partir de quatre éléments :
 
-- **Demande** : le domaine source formule une demande au destinataire ; le source est donc le consommateur de la capacité du destinataire.
-- **Référentiel, Consultation, Notification, Décision, Document** : le destinataire consomme l'information, la décision, le fait ou le document produit/transmis par la source.
-- **Portée « Tous les domaines »** : aucune dépendance générique n'est créée. La relation doit être décomposée par consommateur réel et cas d'usage (notamment Identity, Documents et Reporting).
+1. le motif métier et l'action réellement demandée ;
+2. le processus et le moment de l'échange ;
+3. la donnée, la capacité ou la décision effectivement consommée ;
+4. le domaine propriétaire selon les responsabilités et les arbitrages V-15 à V-28.
 
-Cette orientation est une **hypothèse de travail à confirmer** à la lecture du processus et de l'interaction. Si le motif ou le contenu de l'INT contredit la nature déclarée, l'orientation doit être corrigée avant toute qualification.
+Règles de prudence :
 
+- **Demande** : le domaine qui demande une capacité est généralement consommateur, mais le sens doit être confirmé par le motif et le propriétaire de la capacité.
+- **Référentiel, Notification, Consultation, Décision et Document** : ne pas déduire automatiquement le sens à partir de la seule nature. Il faut déterminer qui produit la donnée ou la décision et qui la consomme.
+- **Échanges transverses** : « Tous les domaines » n'est jamais un consommateur ou fournisseur concret. Décomposer par cas d'usage et domaines réels ; ne pas créer de dépendance universelle.
+- **Documents (INT-114)** : les domaines déposants consomment la capacité de dépôt de Documents ; l'orientation candidate est donc domaines déposants → Documents, à décomposer.
+- **Reporting (INT-123)** : Reporting consomme les données/événements produits par les domaines sources ; l'orientation candidate est Reporting → domaines fournisseurs, à décomposer.
+- **Identity (INT-001)** : distinguer les contrôles transverses d'authentification/autorisation technique des dépendances métier. Aucun couplage métier universel n'est créé.
+
+Une orientation candidate erronée doit être corrigée avant toute classification. Les lignes du tableau restent des hypothèses de travail et ne valent ni autorisation technique ni décision d'architecture.
 ## 2. Résumé de couverture
 
 | Indicateur | Résultat |
@@ -35,7 +44,6 @@ Les 125 lignes sont conservées pour assurer la traçabilité. Certaines pourron
 ## 3. Registre détaillé des interactions candidates
 
 | INT | Dépendance candidate (consommateur → fournisseur) | Processus | Nature Lot 1 | Motif métier | Informations concernées | Moment | Qualification |
-| --- | --- | --- | --- | --- | --- | --- | --- |
 | INT-001 | Tous les domaines → D01 Identity | P01–P12 | Référentiel | Identifier l'acteur et vérifier ses droits | Identifiant d'acteur, rôles, permissions, périmètre, statut | Authentification et chaque opération autorisée | À décomposer — portée transverse |
 | INT-002 | D18 Reporting → D01 Identity | P10 | Référentiel | Restreindre l'accès aux rapports | Périmètre, rôles, droits de consultation | Consultation d'un rapport | À qualifier |
 | INT-003 | D01 Identity → D07 Workforce | P03, P09 | Notification | Aligner le compte avec la vie du collaborateur | Arrivée, départ, changement de poste ou d'unité, date d'effet | Cycle de vie RH | À qualifier |
@@ -149,7 +157,7 @@ Les 125 lignes sont conservées pour assurer la traçabilité. Certaines pourron
 | INT-111 | D09 Workshop → D15 Safety | P06, P09 | Notification | Fournir les consignes et inspections atelier | Risques, consignes, inspection, incident, action | Exécution atelier | À qualifier |
 | INT-112 | D16 Documents → D15 Safety | P11 | Document | Verser les preuves de sécurité | Analyses, inspections, incidents, actions, autorisations | Prévention et incident | À qualifier |
 | INT-113 | D18 Reporting → D15 Safety | P10 | Consultation | Alimenter le pilotage sécurité | Fréquence, gravité, conformité, actions | Reporting | À qualifier |
-| INT-114 | D16 Documents → Tous les domaines | P01–P12 | Document | Verser un document et ses métadonnées | Contenu, type, propriétaire, classification, statut, liens | Production ou réception | À décomposer — portée transverse |
+| INT-114 | Tous les domaines → D16 Documents | P01–P12 | Document | Verser un document et ses métadonnées | Contenu, type, propriétaire, classification, statut, liens | Production ou réception | À décomposer — domaines déposants consommateurs de la capacité documentaire |
 | INT-115 | Tous les domaines → D16 Documents | P01–P12 | Référentiel | Fournir les références et versions contrôlées | Référence, version, statut, diffusion, droits | Consultation | À décomposer — portée transverse |
 | INT-116 | D17 Handover → D16 Documents | P12 | Référentiel | Fournir la complétude et les versions du DOE | Pièces, versions, statut, diffusion, accusés | Réception | À qualifier |
 | INT-117 | D18 Reporting → D16 Documents | P10 | Consultation | Alimenter le pilotage documentaire | Volume, versions, diffusion, archivage | Reporting | À qualifier |
@@ -158,7 +166,7 @@ Les 125 lignes sont conservées pour assurer la traçabilité. Certaines pourron
 | INT-120 | D06 Costing → D17 Handover | P12 | Notification | Fournir les dates de réception et de garantie | Réception, réserves, garantie, clôture | Réception et clôture | À qualifier |
 | INT-121 | D18 Reporting → D17 Handover | P10 | Consultation | Alimenter le pilotage des réceptions | Délais, réserves, levées, garanties | Reporting | À qualifier |
 | INT-122 | D17 Handover → D10 Procurement | P12 | Document | Fournir les garanties fournisseurs et sous-traitants nécessaires aux garanties clientes | Garantie, fournisseur, objet, durée, conditions | Clôture | À qualifier |
-| INT-123 | D18 Reporting → Tous les domaines | P10 | Notification | Alimenter les indicateurs et rapports | Données, événements, indicateurs source, période | Génération | À décomposer — portée transverse |
+| INT-123 | D18 Reporting ← domaines sources | P10 | Notification | Alimenter les indicateurs et rapports | Données, événements, indicateurs source, période | Génération | À décomposer — Reporting consomme les données et événements des domaines sources |
 | INT-124 | Tous les domaines → D18 Reporting | P10 | Consultation | Fournir les rapports et alertes | Rapport, tableau de bord, indicateur, seuil, période | Pilotage | À décomposer — portée transverse |
 | INT-125 | D16 Documents → D18 Reporting | P10 | Document | Archiver ou diffuser un rapport | Rapport, export, période, destinataire | Publication | À qualifier |
 
