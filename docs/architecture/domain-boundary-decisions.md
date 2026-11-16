@@ -537,16 +537,11 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - le **rôle de sous-traitant**, porté par Procurement ;
 - la **qualification métier ou achat**, portée par Procurement avec Quality et Safety selon le domaine.
 
-Un même tiers peut cumuler ces rôles. La présence de `CLI-02 Client`, `PRC-01 Fournisseur` et `PRC-02 SousTraitant` ne signifie pas qu'il existe trois entités juridiques distinctes : ce sont des rôles métier. Deux options restent ouvertes, sans nouveau domaine :
-
-- **Option A** : Clients porte le référentiel de l'entité légale (tiers), Procurement ajoute le rôle fournisseur/sous-traitant et ses données d'achat.
-- **Option B** : Clients et Procurement ont chacun leur référentiel, reliés par un identifiant légal (SIREN/SIRET) et une procédure de rapprochement.
-
-L'option A réduit les doublons mais élargit Clients au-delà de la relation commerciale. L'option B préserve l'autonomie mais impose une réconciliation. **Aucune option n'est tranchée.** Q-05.
+Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiques. Clients reste la source de vérité de l'identité et des données communes ; Procurement conserve les données propres à la relation d'achat et les références fournisseur associées aux articles Inventory (V-15, V-22).
 
 **Informations échangées.** Identifiant public du tiers, rôle commercial, rôle fournisseur ou sous-traitant, contacts, qualification, statut et conditions propres à chaque relation.
 
-**À valider.** Q-05, Q-02.
+**À qualifier.** Les détails des données propres aux relations d'achat et des qualifications métier restent à préciser ; la propriété du référentiel maître est validée par V-15.
 
 **Statut.** Question ouverte.
 
@@ -660,8 +655,8 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 
 | ID | Décision proposée | Justification | Questions liées |
 | --- | --- | --- | --- |
-| PD-01 | Clients porte le référentiel maître des tiers, les rôles commerciaux, la relation commerciale et le devis complet ; Projects porte l'étude technique, la commande/contrat après signature, l'affaire et le chantier. | Évite de confondre relation durable et engagement contractuel. | Q-02, Q-03, Q-04, Q-05 |
-| PD-02 | Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | Reflète les affaires multi-sites ou multi-lots, sans imposer un modèle rigide. | Q-01 |
+| PD-01 | Clients porte le référentiel maître des tiers, les rôles commerciaux, la relation commerciale et le devis complet ; Projects porte l'étude technique, la commande/contrat après signature, l'affaire et le chantier. | Décision remplacée et précisée par V-15, V-18 et V-29 à V-40. | V-15, V-18, V-29 à V-40 |
+| PD-02 | Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | Décision désormais validée par V-17 ; cette proposition historique est remplacée. | V-17 |
 | PD-03 | Budgets porte l'enveloppe autorisée ; Costing porte le chiffrage, les engagements financiers, les coûts constatés, l'EAC et la marge. | Sépare la décision budgétaire de la mesure économique. | Q-08, Q-09, Q-10 |
 | PD-04 | Procurement porte la commande et l'acte commercial ; Costing enregistre l'engagement financier ; Inventory porte la réception, le stock et les mouvements. | Sépare l'acte commercial, le suivi financier et le fait physique. | Q-17, Q-18, Q-19 |
 | PD-05 | Workshop porte l'OF et la production ; Inventory porte la réservation, la sortie et la consommation matière. | Évite que l'atelier écrive directement dans le stock. | Q-19, Q-20 |
@@ -674,7 +669,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | PD-12 | Reporting est un consommateur en lecture seule, sans écriture ni correction dans les domaines. | Évite un modèle d'écriture parallèle. | Q-34 |
 | PD-13 | Identity porte les comptes et droits ; Workforce porte les collaborateurs et contrats. | Sépare sécurité et RH. | Q-35 |
 | PD-14 | Safety porte les habilitations opérationnelles et autorisations ; Workforce porte les formations et qualifications RH ; Quality porte les qualifications techniques. | Évite trois sources concurrentes pour une même aptitude. | Q-16, Q-29 |
-| PD-15 | Procurement porte les rôles fournisseur/sous-traitant et la relation d'achat ; Clients porte l'identité maître du tiers ; Quality et Safety prononcent la conformité et l'aptitude. | Sépare relation commerciale et décision technique. | Q-05, Q-22, Q-23 |
+| PD-15 | Procurement porte les rôles fournisseur/sous-traitant et la relation d'achat ; Clients porte l'identité maître du tiers ; Quality et Safety prononcent la conformité et l'aptitude. | Décision désormais validée par V-15 ; la qualification reste distincte de l'identité du tiers. | V-15, Q-22, Q-23 |
 | PD-16 | Costing valorise les faits produits par les domaines opérationnels ; il ne les possède pas. | Évite la duplication des faits. | Q-09, Q-10, Q-20 |
 | PD-17 | Les références inter-domaines utilisent des identifiants publics stables, jamais des Models Eloquent. | Conforme à V-09 et V-10. | Q-36 |
 | PD-18 | Aucune transaction partagée n'est introduite par défaut ; le fournisseur d'une opération porte ses invariants et sa transaction. | Conforme à V-12. | — |
