@@ -112,7 +112,7 @@ Le tableau ci-dessous reprend les principaux consommateurs indiqués dans la vue
 - Les responsabilités distinctes de l'avancement, des absences et de la fabrication externe doivent être conservées (V-21, V-24, V-25).
 - Reporting ne devient pas une autorité métier ; il consomme et consolide.
 
-## 4.1 Contraintes métier supplémentaires issues du questionnaire
+## 4.2 Contraintes métier supplémentaires issues du questionnaire
 
 Les décisions V-29 à V-59 de `domain-boundary-decisions.md` s'imposent à la qualification de la matrice :
 
