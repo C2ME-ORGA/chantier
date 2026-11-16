@@ -91,9 +91,9 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 **Séparation recommandée.**
 
-- **Clients** est propriétaire des rôles commerciaux (prospect, client, donneur d'ordre), des contacts, de la relation commerciale et des conditions cadre, sous réserve de Q-05. Il ne présume pas l'identité juridique du tiers.
-- **Projects** est propriétaire de l'étude, du devis, de la commande ou de l'ordre de service, du contrat, de l'affaire, du chantier, des lots, des avenants et des jalons contractuels.
-- Clients ne porte pas le devis ni l'affaire. Projects ne duplique pas la fiche client ; il référence le client et les rôles exposés par Clients.
+- **Clients** est propriétaire du référentiel maître des tiers (V-15), des rôles commerciaux, des contacts, de la relation commerciale, des conditions commerciales cadre et du devis complet (V-29, V-31, V-35, V-40).
+- **Projects** prend le relais après signature ; il est propriétaire de la commande ou de l'ordre de service reçu, du contrat, de l'affaire, du chantier, des lots, des avenants, des jalons et des conditions contractuelles propres à l'affaire.
+- L'ouverture d'une affaire à partir d'un devis accepté exige une validation explicite ; elle n'est pas automatique (V-30). Projects référence le tiers et le devis exposés par Clients, sans dupliquer leurs données maîtres.
 - Un prospect peut être étudié avant d'être converti en client ; le moment exact de conversion reste à arbitrer dans Q-04 (proposition de travail : première commande ou premier contrat).
 - La relation commerciale est mise à jour par les faits de Projects (ouverture, réception, clôture), sans que Projects modifie directement la fiche client.
 
@@ -101,10 +101,10 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 | Sens | Informations | Moment |
 | --- | --- | --- |
-| Clients → Projects | Référence du tiers (selon Q-05), contacts, rôles, conditions cadre, statut | Étude, devis, ouverture |
+| Clients → Projects | Référence du tiers, contacts, rôles, conditions cadre, devis accepté et éléments commerciaux signés | Après signature et validation explicite d'ouverture |
 | Projects → Clients | Affaire ouverte, commande, réception, clôture, incident relationnel | Cycle de vie |
 | Clients → Projects | Prospect qualifié, besoin, échéance | Prospection |
-| Projects → Clients | Devis, commande, affaire, statut | Négociation et exécution |
+| Projects → Clients | Statut de l'affaire, commande, réception, clôture | Exécution et relation commerciale |
 
 **Points à valider.** Q-02 (client, donneur d'ordre, maître d'ouvrage), Q-03 (opportunité), Q-04 (création du client), Q-05 (référentiel tiers), Q-06 (conditions financières et crédit).
 
@@ -819,8 +819,8 @@ Les décisions V-29 à V-59 ci-dessous proviennent des réponses explicites du r
 
 | Décision | Options | Recommandation | Impact |
 | --- | --- | --- | --- |
-| Référentiel tiers | Clients maître / Procurement maître / deux référentiels reliés | À arbitrer, sans nouveau domaine ; les rôles commerciaux et d'achat restent distincts de l'identité juridique. | Détermine les échanges Clients ↔ Procurement et la qualité des données. |
-| Relation affaire/chantier | 1–1 / 1–N / N–N | Affaire 1–N chantiers | Détermine les axes de Planning, Budgets, Costing. |
+| Référentiel tiers | Clients maître / Procurement maître / deux référentiels reliés | Clients est le référentiel maître unique (V-15). | Détermine les échanges Clients ↔ Procurement et la qualité des données. |
+| Relation affaire/chantier | 1–1 / 1–N / N–N | Affaire 1–N chantiers (V-17). | Détermine les axes de Planning, Budgets, Costing. |
 | Bureau d'études | Projects / Workshop / partagé | Projects contractuel, Workshop atelier | Détermine la propriété des études et plans. |
 | Sous-traitance reçue | Affaire Projects / commande Procurement | Affaire Projects | Détermine le parcours commercial et la réception. |
 | Sous-traitance donnée | Commande Procurement / OF Workshop | Commande Procurement, dossier Workshop | Détermine la frontière achat/fabrication. |
