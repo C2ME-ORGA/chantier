@@ -349,8 +349,37 @@ if ($tests !== []) {
         'Le job mariadb doit exécuter la suite Pest MariaDB dédiée.'
     );
 
-    $phpunit = (string) file_get_contents($projectRoot.'/phpunit.xml');
-    check(str_contains($phpunit, '<env name="DB_CONNECTION" value="sqlite"/>'), 'phpunit.xml doit conserver SQLite pour les tests rapides.');
+    $phpunitPath = $projectRoot.'/phpunit.xml';
+    $phpunitXml = new DOMDocument();
+    $phpunitXml->resolveExternals = false;
+    $phpunitXml->substituteEntities = false;
+
+    $phpunitLoaded = $phpunitXml->load($phpunitPath, LIBXML_NONET);
+    check($phpunitLoaded, 'phpunit.xml doit être un document XML valide.');
+
+    if ($phpunitLoaded) {
+        $xpath = new DOMXPath($phpunitXml);
+        $expectedEnvironment = [
+            'APP_ENV' => 'testing',
+            'DB_CONNECTION' => 'sqlite',
+            'DB_DATABASE' => ':memory:',
+            'DB_URL' => '',
+        ];
+
+        foreach ($expectedEnvironment as $name => $value) {
+            $nodes = $xpath->query('/phpunit/php/env[@name="'.$name.'"]');
+            $node = $nodes !== false && $nodes->length === 1 ? $nodes->item(0) : null;
+
+            check(
+                $node instanceof DOMElement && $node->getAttribute('value') === $value,
+                "phpunit.xml doit définir {$name} avec la valeur attendue."
+            );
+            check(
+                $node instanceof DOMElement && $node->getAttribute('force') === 'true',
+                "phpunit.xml doit forcer {$name} pour isoler les tests SQLite."
+            );
+        }
+    }
 
     $mariaDbConfigPath = $projectRoot.'/phpunit.mariadb.xml';
     check(is_file($mariaDbConfigPath), 'phpunit.mariadb.xml doit exister pour la suite MariaDB.');
