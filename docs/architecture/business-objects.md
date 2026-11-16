@@ -314,7 +314,7 @@ Certains concepts traversent plusieurs domaines. Ils ne doivent pas être dupliq
 | Acteur / utilisateur | Identity | Tous | Identity fournit l'identité et les droits ; les domaines ne stockent pas de copie faisant autorité. |
 | Collaborateur | Workforce | Planning, TimeTracking, Costing, Safety | Workforce est la source RH ; Planning et TimeTracking référencent le collaborateur. |
 | Rôle commercial (prospect/client) | Clients | Projects, Handover, Reporting | Clients possède le référentiel maître des tiers, les rôles commerciaux et la relation. |
-| Donneur d'ordre | Clients | Projects, Handover | Le rôle est porté par Clients, contextualisé par affaire dans Projects ; le périmètre exact des rôles reste à valider Q-02. |
+| Donneur d'ordre | Clients | Projects, Handover | Le rôle est porté par Clients ; les rôles contextualisés dans une affaire suivent V-18. |
 | Rôle fournisseur / sous-traitant | Procurement | Inventory, Workshop, Quality, Safety, Costing | Procurement porte la relation d'achat et les données fournisseur propres aux achats ; l'identité maître reste chez Clients. |
 | Affaire | Projects | Tous | Projects est la source de l'affaire, de ses lots et de ses jalons. |
 | Chantier | Projects | Planning, Logistics, Safety, Quality, Handover | Projects est la source du site et de son cycle de vie. |
