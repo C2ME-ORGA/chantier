@@ -57,8 +57,8 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | Domaine | Nombre d'objets | Objets principaux |
 | --- | ---: | --- |
 | D01 Identity | 6 | Utilisateur, Rôle, Permission |
-| D02 Clients | 6 | Prospect, Client, Contact, RôleTiers |
-| D03 Projects | 10 | Affaire, Chantier, Devis, Avenant |
+| D02 Clients | 7 | Prospect, Client, Contact, RôleTiers, DevisCommercial |
+| D03 Projects | 9 | Affaire, Chantier, LotPhase, Avenant |
 | D04 Planning | 6 | PlanDeCharge, Activité, Affectation |
 | D05 Budgets | 5 | Budget, LigneBudgétaire, Révision |
 | D06 Costing | 8 | Chiffrage, Coût, Engagement, Marge |
@@ -98,7 +98,7 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | CLI-03 | ContactClient | Personne de contact chez un prospect ou un client. | Nom, fonction, coordonnées, préférences, statut. | Projects, Handover |
 | CLI-04 | RôleTiers | Rôle exercé par un tiers dans une relation ou une affaire ; ne présume pas une identité juridique autonome. | Type de rôle, tiers, affaire, période, statut. | Projects, Handover |
 | CLI-05 | RelationCommerciale | Suivi de la relation entre C2ME et un client ou prospect. | Responsable, segmentation, statut, historique, actions. | Projects, Reporting |
-| CLI-06 | ConditionsCommercialesCadre | Conditions commerciales négociées au niveau du client. | Paiement, remises, validité, clauses particulières, statut. | Projects |
+| CLI-06 | ConditionsCommercialesCadre | Conditions commerciales générales/cadre négociées au niveau du client. | Paiement, remises, validité, clauses particulières, statut. | Projects |\n| CLI-07 | DevisCommercial | Proposition commerciale complète construite et possédée par Clients, comprenant les lignes de travaux, quantités, prix et conditions commerciales. | Version, lignes de travaux, quantités, prix, conditions, validité, statut, acceptation. | Projects, Budgets, Documents |
 
 ### 3.3 D03 — Projects
 
@@ -108,14 +108,17 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | PRJ-02 | Chantier | Lieu physique d'exécution des travaux d'une affaire. | Adresse, accès, dates, responsable, statut, contraintes. | Planning, Logistics, Safety, Quality |
 | PRJ-03 | LotPhase | Subdivision technique ou temporelle d'une affaire ou d'un chantier. | Code, description, quantité, montant, dates, statut. | Planning, Budgets, Costing, Quality |
 | PRJ-04 | Étude | Dossier technique préalable à une offre ou à une exécution. | Périmètre, hypothèses, plans, calculs, statut, version. | Costing, Workshop, Documents |
-| PRJ-05 | Devis | Proposition commerciale chiffrée adressée à un client. | Version, périmètre, prix, conditions, validité, statut. | Clients, Costing, Budgets, Documents |
+
 | PRJ-06 | CommandeClient | Commande ou ordre de service reçu d'un client. | Référence, date, montant, périmètre, délais, statut. | Budgets, Costing, Planning |
 | PRJ-07 | Avenant | Modification contractuelle du périmètre, du prix ou des délais. | Référence, objet, montant, délai, statut, validation. | Budgets, Costing, Planning, Handover |
 | PRJ-08 | Contrat | Engagement juridique encadrant une affaire. | Parties, objet, montant, clauses, dates, documents. | Clients, Documents, Costing |
 | PRJ-09 | JalonContractuel | Événement daté engageant contractuellement l'affaire. | Libellé, date, condition, statut, responsable. | Planning, Handover, Reporting |
 | PRJ-10 | ActeurAffaire | Rôle d'un acteur sur une affaire. | Acteur, rôle, période, responsabilité, statut. | Identity, Projects, Reporting |
 
-### 3.4 D04 — Planning
+
+
+**Évolution de propriété issue de V-29, V-35 et V-40.** Le devis commercial est désormais l'objet `CLI-07 DevisCommercial`, propriétaire Clients. L'ancien identifiant candidat `PRJ-05 Devis` n'est plus un objet de Projects et ne doit pas être réutilisé ; les identifiants PRJ-06 et suivants sont conservés pour éviter de renuméroter les références existantes. Le total du catalogue reste de 132 objets : un objet est transféré de D03 vers D02.
+\n### 3.4 D04 — Planning
 
 | ID | Objet | Définition | Informations principales | Consommateurs potentiels |
 | --- | --- | --- | --- | --- |
