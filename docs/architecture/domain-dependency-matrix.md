@@ -209,3 +209,8 @@ Le Lot 2 reste documentaire. Il ne doit pas :
 ## 11. Consolidation du Lot C
 
 La matrice détaillée et la qualification technique des 130 identifiants uniques sont maintenues dans [domain-dependency-matrix-lot-c.md](domain-dependency-matrix-lot-c.md). Ce livrable distingue le statut métier source de la classe technique CHAN-29 et du mode CHAN-28 pressenti. En l'absence de preuve d'un contrat public ou d'un événement conforme, la classe technique reste « À qualifier ». Les orientations de mécanisme sont indicatives et ne prouvent aucune implémentation.
+
+
+## 12. Matrice consolidée et analyse des cycles — Lot D
+
+Le livrable [domain-dependency-matrix-lot-d.md](domain-dependency-matrix-lot-d.md) consolide les 95 paires de domaines explicitement identifiées dans les 130 interactions du Lot C, recense les 17 paires réciproques candidates et analyse les composantes cycliques du graphe documentaire. Il distingue les cycles apparents du graphe métier des cycles techniques réellement démontrés. Les six interactions sans paire de domaines déterminée restent à décomposer ou relèvent d'une dépendance externe/transverse. Les 130 classes techniques restent « À qualifier » et l'audit des accès internes sera à reprendre lorsque les domaines contiendront du code.

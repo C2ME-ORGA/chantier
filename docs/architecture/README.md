@@ -13,8 +13,10 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | [`business-objects.md`](business-objects.md) | CHAN-29 Lot 1 | Catalogue des objets métier, de leur propriétaire pressenti et de leurs consommateurs. |
 | [`domain-interactions-register.md`](domain-interactions-register.md) | CHAN-29 Lot 1 | Registre des interactions métier entre domaines : source, destinataire, motif, informations et moment. |
 | [`domain-boundary-decisions.md`](domain-boundary-decisions.md) | CHAN-29 Lot 1 | Chevauchements, arbitrages proposés, décisions validées et questions ouvertes. |
-| [`domain-dependency-matrix.md`](domain-dependency-matrix.md) | CHAN-29 Lot 2 | Matrice technique des dépendances inter-domaines — document de travail à qualifier et valider. |
-| [`domain-dependency-register.md`](domain-dependency-register.md) | CHAN-29 Lot 2 / Lot B | Registre de qualification métier des 125 interactions d'origine (130 lignes actives après cinq scissions réelles et correction de `INT-072`) ; la classification technique reste au Lot C. |
+| [`domain-dependency-matrix.md`](domain-dependency-matrix.md) | CHAN-29 Lot 2 | Matrice technique de référence et liens vers les livrables de qualification. |
+| [`domain-dependency-register.md`](domain-dependency-register.md) | CHAN-29 Lot 2 / Lot B | Registre de qualification métier des 125 interactions d'origine (130 lignes actives après cinq scissions réelles et correction de `INT-072`). |
+| [`domain-dependency-matrix-lot-c.md`](domain-dependency-matrix-lot-c.md) | CHAN-29 Lot C | Qualification technique des 130 interactions ; les 130 classes restent « À qualifier » faute de preuve d'implémentation. |
+| [`domain-dependency-matrix-lot-d.md`](domain-dependency-matrix-lot-d.md) | CHAN-29 Lot D | Matrice consolidée des relations candidates, analyse des 17 paires réciproques, cycles documentaires et limites de l'audit des accès internes. |
 
 ## Ordre de lecture recommandé
 
@@ -32,15 +34,13 @@ Les contrats synchrones sont traités dans les sections 1 à 14 de `domain-commu
 
 ## Statut des documents CHAN-29
 
-Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le **Lot B** qualifie métier les interactions : 125 interactions d'origine, 130 lignes actives après cinq scissions réelles et correction de `INT-072`, dont 106 qualifiées, 11 à préciser, 4 à décomposer, 7 à arbitrer et 2 hors matrice inter-domaines. Aucune classification technique n'est prononcée. Les arbitrages V-29 à V-59 affinent les responsabilités et les interactions, mais ne classent pas à eux seuls les dépendances techniques.
+Le Lot 1 décrit l'inventaire et la cartographie des responsabilités métier. Le Lot B qualifie métier les interactions : 125 interactions d'origine, 130 lignes actives après cinq scissions réelles et correction de `INT-072`, dont 106 qualifiées, 11 à préciser, 4 à décomposer, 7 à arbitrer et 2 hors matrice inter-domaines.
 
-> **Lot 1 — documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites.
->
-> **Lot B — documentaire.** La qualification métier ne vaut pas autorisation technique. Elle ne crée aucune classe, aucun contrat, aucun événement, aucune migration et aucun test d'architecture.
->
-> **Lot C — à venir.** La classification technique « Autorisée », « Conditionnelle » ou « Interdite » et le choix des mécanismes CHAN-28 restent à instruire après revue du Lot B.
+Le Lot C sépare le statut métier de la classe technique et du mécanisme CHAN-28 pressenti. Les 130 interactions restent « À qualifier » techniquement, car les sources ne démontrent pas de contrats publics ou d'événements effectivement implémentés.
 
-Le dépôt ne contient pas encore de code métier dans `app/Domains/` : les domaines sont matérialisés par des répertoires et des fichiers `.gitkeep`.
+Le Lot D consolide les relations candidates et analyse les cycles du graphe documentaire. Les cycles apparents ne prouvent pas des cycles d'appels ou de dépendances PHP. Les 18 répertoires `app/Domains/` ne contenant encore que des fichiers `.gitkeep`, l'audit des imports et accès directs aux tables reste à refaire après implémentation.
+
+> **Garde-fou :** la qualification métier, la matrice candidate et l'analyse de graphe ne valent pas autorisation technique. Aucune dépendance n'est déclarée autorisée, conditionnelle ou interdite sans preuve et validation explicites.
 
 ## Conventions de lecture
 
@@ -56,7 +56,6 @@ Le dépôt ne contient pas encore de code métier dans `app/Domains/` : les doma
 | Préfixe d'objet | Objet métier, par exemple `PRJ-01` Affaire ou `INV-05` MouvementDeStock. |
 
 Les documents distinguent explicitement :
-
 - les **décisions validées** ;
 - les **constats** vérifiables dans le dépôt ;
 - les **propositions** de cadrage ;
