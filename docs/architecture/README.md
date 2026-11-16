@@ -19,6 +19,7 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | [`domain-dependency-matrix-lot-d.md`](domain-dependency-matrix-lot-d.md) | CHAN-29 Lot D | Matrice consolidée des relations candidates, analyse des 17 paires réciproques, cycles documentaires et limites de l'audit des accès internes. |
 | [`domain-dependency-examples-lot-e.md`](domain-dependency-examples-lot-e.md) | CHAN-29 Lot E | Neuf scénarios métier illustrés par des schémas, règles de propriété et checklist documentaire par domaine et transversale. |
 | [`domain-dependency-final-review-lot-f.md`](domain-dependency-final-review-lot-f.md) | CHAN-29 Lot F | Revue finale croisée, état des quatre critères d'acceptation, vérification des PR/CI et points restant à démontrer avant clôture. |
+| [`domain-dependency-qualification-lot-g.md`](domain-dependency-qualification-lot-g.md) | CHAN-29 Lot G | Qualification technique cible des 130 interactions, conditions, périmètres hors matrice et limites de preuve d'implémentation. |
 
 ## Ordre de lecture recommandé
 
@@ -36,6 +37,7 @@ Pour comprendre les relations candidates et leurs exemples :
 2. [`domain-dependency-matrix-lot-d.md`](domain-dependency-matrix-lot-d.md) — matrice consolidée et analyse des cycles.
 3. [`domain-dependency-examples-lot-e.md`](domain-dependency-examples-lot-e.md) — scénarios, schémas et checklist.
 4. [`domain-dependency-final-review-lot-f.md`](domain-dependency-final-review-lot-f.md) — revue finale et préparation de clôture.
+5. [`domain-dependency-qualification-lot-g.md`](domain-dependency-qualification-lot-g.md) — qualification technique cible des 130 interactions.
 
 Pour les règles de code et de contrat, consulter d'abord [`domain-conventions.md`](domain-conventions.md) et [`domain-communication.md`](domain-communication.md).
 
@@ -51,9 +53,11 @@ Le Lot D consolide les relations candidates et analyse les cycles du graphe docu
 
 Le Lot E illustre neuf parcours métier et les frontières de propriété associées. Ses schémas représentent des flux conceptuels et non des appels techniques implémentés. Sa checklist aide à relire la documentation ; elle ne remplace pas les tests d'architecture CHAN-31.
 
-Le Lot F présente la revue finale des documents, des références CHAN-27/28/31, de l'organisation Core/Domains, des critères Jira et des PR/CI. Il conclut que le critère relatif à la classification des dépendances reste partiellement démontré : les 130 interactions demeurent « À qualifier » faute de preuve d'implémentations techniques. Le rapport ne propose donc pas la clôture automatique de CHAN-29.
+Le Lot F présente la revue finale des documents, des références CHAN-27/28/31, de l'organisation Core/Domains, des critères Jira et des PR/CI. Il conclut que le critère relatif à la classification des dépendances reste partiellement démontré faute de preuve d'implémentations techniques.
 
-> **Garde-fou :** la qualification métier, la matrice candidate, l'analyse de graphe et les scénarios illustratifs ne valent pas autorisation technique. Aucune dépendance n'est déclarée autorisée, conditionnelle ou interdite sans preuve et validation explicites.
+Le Lot G qualifie les 130 interactions pour l'architecture cible : dépendances autorisées sous contrat public, cas conditionnels, interactions à décomposer et périmètres transverses/externes. Cette qualification ne certifie pas le code existant ; les dépendances implémentées restent à vérifier lorsque les domaines seront développés.
+
+> **Garde-fou :** la qualification métier, la matrice candidate, l'analyse de graphe et les scénarios illustratifs ne valent pas preuve d'implémentation. Le Lot G qualifie la cible d'architecture sous contrats publics CHAN-28 ; les dépendances PHP réellement implémentées restent non vérifiables tant que les domaines ne contiennent pas de code.
 
 ## Conventions de lecture
 
