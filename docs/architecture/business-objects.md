@@ -98,7 +98,8 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | CLI-03 | ContactClient | Personne de contact chez un prospect ou un client. | Nom, fonction, coordonnées, préférences, statut. | Projects, Handover |
 | CLI-04 | RôleTiers | Rôle exercé par un tiers dans une relation ou une affaire ; ne présume pas une identité juridique autonome. | Type de rôle, tiers, affaire, période, statut. | Projects, Handover |
 | CLI-05 | RelationCommerciale | Suivi de la relation entre C2ME et un client ou prospect. | Responsable, segmentation, statut, historique, actions. | Projects, Reporting |
-| CLI-06 | ConditionsCommercialesCadre | Conditions commerciales générales/cadre négociées au niveau du client. | Paiement, remises, validité, clauses particulières, statut. | Projects |\n| CLI-07 | DevisCommercial | Proposition commerciale complète construite et possédée par Clients, comprenant les lignes de travaux, quantités, prix et conditions commerciales. | Version, lignes de travaux, quantités, prix, conditions, validité, statut, acceptation. | Projects, Budgets, Documents |
+| CLI-06 | ConditionsCommercialesCadre | Conditions commerciales générales/cadre négociées au niveau du client. | Paiement, remises, validité, clauses particulières, statut. | Projects |
+| CLI-07 | DevisCommercial | Proposition commerciale complète construite et possédée par Clients, comprenant les lignes de travaux, quantités, prix et conditions commerciales. | Version, lignes de travaux, quantités, prix, conditions, validité, statut, acceptation. | Projects, Budgets, Documents |
 
 ### 3.3 D03 — Projects
 
@@ -118,7 +119,8 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 
 
 **Évolution de propriété issue de V-29, V-35 et V-40.** Le devis commercial est désormais l'objet `CLI-07 DevisCommercial`, propriétaire Clients. L'ancien identifiant candidat `PRJ-05 Devis` n'est plus un objet de Projects et ne doit pas être réutilisé ; les identifiants PRJ-06 et suivants sont conservés pour éviter de renuméroter les références existantes. Le total du catalogue reste de 132 objets : un objet est transféré de D03 vers D02.
-\n### 3.4 D04 — Planning
+
+### 3.4 D04 — Planning
 
 | ID | Objet | Définition | Informations principales | Consommateurs potentiels |
 | --- | --- | --- | --- | --- |
@@ -195,8 +197,8 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 
 | ID | Objet | Définition | Informations principales | Consommateurs potentiels |
 | --- | --- | --- | --- | --- |
-| PRC-01 | Fournisseur | Rôle de fournisseur exercé par un tiers ; ne présume pas une identité juridique autonome. Le tiers est référencé dans le référentiel maître unique détenu par Clients ; Procurement conserve les données de relation d'achat propres à ses opérations (V-15). | Référence du tiers (selon Q-05), contacts, conditions d'achat, qualification, statut. | Procurement, Inventory, Costing |
-| PRC-02 | SousTraitant | Rôle de sous-traitant exercé par un tiers ; ne présume pas une identité juridique autonome. Le rattachement au référentiel juridique dépend de Q-05. | Référence du tiers (selon Q-05), spécialité, qualification, conditions, statut. | Procurement, Workshop, Quality, Safety |
+| PRC-01 | Fournisseur | Rôle de fournisseur exercé par un tiers ; ne présume pas une identité juridique autonome. Le tiers est référencé dans le référentiel maître unique détenu par Clients ; Procurement conserve les données de relation d'achat propres à ses opérations (V-15). | Identifiant public du tiers maître, contacts, conditions d'achat, qualification, statut. | Procurement, Inventory, Costing |
+| PRC-02 | SousTraitant | Rôle de sous-traitant exercé par un tiers ; ne présume pas une identité juridique autonome. Le tiers est référencé dans le référentiel maître unique détenu par Clients ; Procurement conserve les données de relation d'achat propres à ses opérations (V-15). | Identifiant public du tiers maître, spécialité, qualification, conditions propres à la relation d'achat, statut. | Procurement, Workshop, Quality, Safety |
 | PRC-03 | DemandeDAchat | Besoin d'achat exprimé par un domaine. | Article ou service, quantité, date, budget, statut. | Procurement, Budgets |
 | PRC-04 | OffreFournisseur | Proposition reçue d'un fournisseur. | Fournisseur, prix, délai, validité, statut. | Procurement, Costing |
 | PRC-05 | CommandeDAchat | Engagement d'achat auprès d'un fournisseur. | Numéro, fournisseur, lignes, montant, dates, statut. | Inventory, Costing, Budgets |
