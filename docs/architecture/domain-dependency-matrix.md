@@ -191,7 +191,7 @@ Le Lot 2 reste documentaire. Il ne doit pas :
 - implémenter les tests d'architecture (CHAN-31) ;
 - modifier les conventions internes CHAN-27 ou réécrire CHAN-28 ;
 - transformer les interactions métier en interfaces techniques sans qualification ;
-- valider les propositions ou questions ouvertes du Lot 1 autres que les décisions déjà marquées V-01 à V-28.
+- valider les propositions ou questions ouvertes du Lot 1 autres que les décisions déjà arbitrées. Les décisions métier V-29 à V-59 du Lot 2 s'appliquent également, sans valoir autorisation technique.
 
 ## 10. Références
 
