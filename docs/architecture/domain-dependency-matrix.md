@@ -112,6 +112,21 @@ Le tableau ci-dessous reprend les principaux consommateurs indiqués dans la vue
 - Les responsabilités distinctes de l'avancement, des absences et de la fabrication externe doivent être conservées (V-21, V-24, V-25).
 - Reporting ne devient pas une autorité métier ; il consomme et consolide.
 
+## 4.1 Contraintes métier supplémentaires issues du questionnaire
+
+Les décisions V-29 à V-59 de `domain-boundary-decisions.md` s'imposent à la qualification de la matrice :
+
+- Clients est propriétaire du devis complet ; Projects ne possède plus le devis dans la cible métier, mais possède l'affaire et le contrat après signature.
+- L'ouverture d'une affaire depuis un devis accepté nécessite une validation explicite.
+- La création du chantier principal et du planning initial est déclenchée à la création de l'affaire ; les dépendances correspondantes restent à qualifier.
+- Workforce décide des affectations à partir des besoins de Planning.
+- Le responsable atelier valide techniquement les fabrications ; Quality conserve la qualification et la validation des non-conformités.
+- Reporting ne peut accéder directement aux bases/tables des domaines : publications et contrats publics uniquement.
+- La validation documentaire est répartie entre domaine propriétaire du contenu et responsable d'affaire pour l'approbation finale.
+- La clôture administrative appartient au service administratif après confirmations métier ; Projects conserve la responsabilité du cycle de vie de l'affaire.
+
+Ces décisions ne changent pas le statut des lignes de la matrice. Aucune interaction n'est « autorisée » du seul fait qu'un processus métier a été validé.
+
 ## 5. Travail de qualification à mener
 
 Pour chaque interaction retenue dans `domain-interactions-register.md`, documenter :
