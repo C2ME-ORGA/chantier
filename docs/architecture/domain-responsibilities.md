@@ -388,7 +388,6 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Objet | États | Transitions principales |
 | --- | --- | --- |
 | Étude | Brouillon, en revue, validée, abandonnée | Soumettre, valider, abandonner. |
-
 | Affaire | Préparation, en cours, suspendue, réceptionnée, clôturée, annulée | Ouvrir, démarrer, suspendre, reprendre, réceptionner, clôturer, annuler. |
 | Chantier | Préparé, démarré, en cours, suspendu, réceptionné, clôturé | Démarrer, suspendre, reprendre, réceptionner, clôturer. |
 | Avenant | Proposé, validé, refusé | Proposer, valider, refuser. |
