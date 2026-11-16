@@ -8,7 +8,7 @@ Ce document analyse les chevauchements de responsabilité entre les 18 domaines 
 - Hors portée : matrice technique définitive des dépendances (Lot 2), contrats et événements (CHAN-28), conventions internes de code (CHAN-27), tests d'architecture (CHAN-31).
 
 > **Statut du document — Lot 1 / préparation du Lot 2.**
-> Les décisions validées sont listées en section 2 et dans la section 6.4. Les questions bloquantes Q-01, Q-02, Q-05, Q-09, Q-10, Q-12, Q-17, Q-19, Q-23, Q-27, Q-30, Q-36, Q-41 et Q-53 ont été arbitrées par le responsable du projet le 16/11/2026. Les autres propositions et questions restent ouvertes et ne doivent pas être considérées comme validées.
+> Les décisions validées sont listées en section 2 et dans la section 6.4. Les questions bloquantes du Lot 1 (V-15 à V-28) et les 31 arbitrages du questionnaire métier du Lot 2 (V-29 à V-59) ont été validés le 16/11/2026. Les autres propositions et questions restent ouvertes et ne doivent pas être considérées comme validées.
 
 ## 1. Méthode
 
@@ -108,7 +108,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 **Points à valider.** Q-02 (client, donneur d'ordre, maître d'ouvrage), Q-03 (opportunité), Q-04 (création du client), Q-05 (référentiel tiers), Q-06 (conditions financières et crédit).
 
-**Statut.** Proposition.
+**Statut.** Remplacé par les décisions validées V-29, V-31 et V-35 : Clients possède le devis complet et les conditions cadre ; Projects prend le relais après signature et possède les conditions propres à l'affaire.
 
 ---
 
@@ -772,6 +772,46 @@ Les questions suivantes étaient bloquantes pour la matrice technique ; elles on
 | Q-53 | Clôture après réception, levée des réserves, DOE, clôture des coûts et clôture du budget. | V-28 |
 
 **Contrôle de cohérence.** Ces arbitrages ne créent aucun domaine supplémentaire et respectent les 18 domaines figés (V-01). Le choix Clients comme référentiel maître des tiers ne transfère pas à Clients les commandes fournisseurs : Procurement conserve la relation d'achat, les conditions et références spécifiques. L'identité du tiers est référencée par UUID public. Le stock de chantier reste dans le référentiel central Inventory. Les responsabilités d'avancement et de sous-traitance restent séparées selon leur nature métier. Aucun arbitrage ne crée à lui seul un contrat, un événement, une transaction partagée ou un composant applicatif.
+
+## 6.5 Arbitrages métier complémentaires — questionnaire Lot 2 (16/11/2026)
+
+Les décisions V-29 à V-59 ci-dessous proviennent des réponses explicites du responsable du projet au questionnaire de clarification métier (31 réponses). Elles complètent les décisions V-01 à V-28. Lorsqu'elles contredisent une ancienne proposition du Lot 1, la décision validée ci-dessous prévaut. Elles définissent des responsabilités métier et des règles de processus ; elles ne valent pas autorisation technique d'accès direct.
+
+| ID | Question | Décision validée |
+| --- | --- | --- |
+| V-29 | Q1 — Fin du cycle commercial | Clients porte le cycle commercial jusqu'à la signature du devis accepté ; Projects prend le relais après signature. |
+| V-30 | Q2 — Ouverture d'affaire | La transformation d'un devis accepté en affaire exige une validation explicite de l'utilisateur ; elle n'est pas automatique. |
+| V-31 | Q3 — Conditions | Clients possède les conditions commerciales générales/cadre ; Projects possède les conditions contractuelles propres à l'affaire. |
+| V-32 | Q4 — Budget initial | Le budget initial est créé à partir du devis accepté, avec répartition automatique des lignes du devis. |
+| V-33 | Q5 — Dépassement d'achat | Une commande fournisseur dépassant le disponible budgétaire déclenche une alerte Budgets ; aucun blocage automatique de Procurement n'est imposé. |
+| V-34 | Q6 — EAC | Costing calcule automatiquement et actualise continuellement l'EAC à partir des faits opérationnels et engagements disponibles. |
+| V-35 | Q7 — Propriété du devis | Clients produit et possède le devis complet, y compris les prix et les lignes de travaux. |
+| V-36 | Q8 — Structure du budget | Le budget est structuré par lignes de travaux du devis accepté. |
+| V-37 | Q9 — Avenant | Un avenant accepté révise automatiquement le budget initial, en conservant l'historique des versions et modifications. |
+| V-38 | Q10 — Alerte budgétaire | L'alerte budgétaire retenue concerne le dépassement du disponible par une commande fournisseur. |
+| V-39 | Q11 — Sources EAC | L'EAC prend en compte les commandes et factures, les temps et coûts de main-d'œuvre, les consommations de stock, l'avancement et le reste à faire. |
+| V-40 | Q12 — Construction du devis | Clients construit manuellement le devis ; Costing ne produit pas le devis et intervient sur le suivi économique/rentabilité. |
+| V-41 | Q13 — Chantier principal | Le chantier principal est créé automatiquement lors de la création de l'affaire. |
+| V-42 | Q14 — Avancement contractuel | Seul Projects peut modifier l'avancement contractuel, après validation d'un responsable. |
+| V-43 | Q15 — Avenant et notifications | Un avenant accepté notifie les domaines concernés par les changements de périmètre, selon les besoins réels ; pas de diffusion systématique à tous. |
+| V-44 | Q16 — Planning initial | Le planning initial est créé automatiquement lors de la création de l'affaire. |
+| V-45 | Q17 — Affectation des salariés | Workforce décide des affectations ; Planning fournit les besoins opérationnels. |
+| V-46 | Q18 — Saisie des temps | Les salariés et les chefs d'équipe peuvent tous deux saisir les temps. |
+| V-47 | Q19 — Validation des temps | Le service administratif/RH valide les temps avant leur utilisation dans les processus aval. |
+| V-48 | Q20 — Ordres de fabrication | Les ordres de fabrication sont créés manuellement par le bureau d'études ou le responsable atelier. |
+| V-49 | Q21 — Validation technique atelier | Le responsable atelier (Workshop) valide techniquement les fabrications. |
+| V-50 | Q22 — Demande d'achat | Le responsable travaux ou atelier crée la demande ; Procurement la transforme en commande fournisseur. |
+| V-51 | Q23 — Mouvements de stock | Tout salarié disposant des droits requis peut enregistrer un mouvement de stock ; l'auteur doit être traçable. |
+| V-52 | Q24 — Déclaration NCR | Tout salarié autorisé peut déclarer une non-conformité ; Quality en assure la qualification et le suivi. |
+| V-53 | Q25 — Clôture NCR | Le responsable travaux ou atelier, selon l'origine, clôture la non-conformité avec validation de Quality. |
+| V-54 | Q26 — Contrôles sécurité | Safety définit les règles et contrôles ; les responsables de chantier les exécutent et déclarent les écarts. |
+| V-55 | Q27 — Réception | Projects organise la réception contractuelle ; Handover prépare et centralise les livrables et documents de réception. |
+| V-56 | Q28 — Dépôt documentaire | Tout salarié autorisé peut déposer des documents, avec classement et métadonnées obligatoires. |
+| V-57 | Q29 — Validation documentaire | Le domaine métier propriétaire valide le contenu ; le responsable de l'affaire donne l'approbation finale. |
+| V-58 | Q30 — Reporting | Reporting combine les publications de données/indicateurs des domaines et les consultations via leurs contrats publics. Tout accès direct aux tables internes est interdit. |
+| V-59 | Q31 — Clôture administrative | Le service administratif vérifie les conditions et prononce la clôture après confirmation des domaines concernés. Projects conserve la responsabilité du cycle de vie de l'affaire. |
+
+**Contrôle de cohérence.** V-29, V-35 et V-40 remplacent la proposition antérieure qui attribuait le devis à Projects : Clients est désormais propriétaire du devis complet. Projects conserve l'affaire, le contrat, le chantier et l'avancement contractuel. V-58 confirme l'interdiction d'accès direct aux bases des domaines et reste conforme à V-09/V-10 et CHAN-28. V-59 attribue la décision administrative finale au service administratif, sans transférer à celui-ci la propriété du cycle de vie de l'affaire. Les décisions de création automatique d'un chantier et d'un planning définissent des déclenchements métier ; elles n'autorisent aucun accès direct aux composants internes des domaines concernés.
 
 ## 7. Décisions restant à valider
 
