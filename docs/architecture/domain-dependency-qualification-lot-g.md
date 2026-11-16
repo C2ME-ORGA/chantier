@@ -1,0 +1,242 @@
+# Lot G — Qualification technique des interactions inter-domaines
+
+- Ticket : CHAN-29 — Documenter les frontières et dépendances autorisées.
+- Base : branche `develop`, matrice Lot C et décisions de frontière disponibles au démarrage du Lot G.
+- Périmètre : 130 identifiants INT.
+- Nature : qualification de l'architecture cible ; ce document ne prétend pas constater des dépendances PHP déjà implémentées.
+
+## 1. Conclusion exécutive
+
+Le Lot G distingue quatre résultats qui ne doivent pas être confondus :
+
+1. **Autorisée sous contrat public** : la dépendance cible est cohérente avec les responsabilités et les décisions de frontière. Son implémentation reste soumise à un contrat ou événement public conforme à CHAN-28.
+2. **Conditionnelle** : un arbitrage ou une condition opérationnelle doit être levé avant de figer le contrat.
+3. **À décomposer** : l'interaction générique ne permet pas de désigner un consommateur ou fournisseur concret.
+4. **Hors périmètre inter-domaines** : service transverse ou intégration externe, qui ne doit pas être compté comme dépendance métier entre deux des 18 domaines.
+
+**Aucune dépendance technique implémentée n'est déclarée vérifiée.** L'inspection de l'arborescence sur `develop` montre que les 18 répertoires `app/Domains/*` ne contiennent que des `.gitkeep`. `app/Core/` contient son README ; les seuls éléments applicatifs observés hors domaines sont le contrôleur Laravel, `Models/User.php` et les providers. Il n'existe donc pas de contrat de domaine, événement, listener, job ou import inter-domaines à auditer dans le code actuel.
+
+## 2. Résultat quantitatif
+
+| Résultat de qualification cible | Nombre |
+|---|---:|
+| Autorisée sous contrat public | 109 |
+| Conditionnelle | 15 |
+| À décomposer | 4 |
+| Hors périmètre inter-domaines | 2 |
+| **Total** | **130** |
+
+La classe « Autorisée sous contrat public » est une décision d'architecture cible, pas une autorisation d'importer une classe interne. Elle signifie uniquement que le consommateur identifié peut dépendre de la capacité publiée par le propriétaire, dans le cadre précis décrit par le registre. Les interactions conditionnelles ne doivent pas être implémentées avant résolution de leur condition.
+
+## 3. Matrice de qualification — 130 interactions
+
+| INT | Qualification cible | Justification / condition | Preuve d'implémentation |
+|---|---|---|---|
+| INT-001 | Hors périmètre métier | Service transverse Identity ; qualifier chaque point d'entrée séparément. | Non implémentée / non vérifiable à ce stade |
+| INT-002 | Conditionnelle | Accès Reporting protégé par Identity ; contrôle du périmètre à chaque consultation. | Non implémentée / non vérifiable à ce stade |
+| INT-003 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-004 | Conditionnelle | Dépend de la décision d'ouvrir un portail client ; Clients reste propriétaire du tiers/contact. | Non implémentée / non vérifiable à ce stade |
+| INT-005 | Conditionnelle | Dépend de la décision d'ouvrir un portail fournisseur ; Procurement reste propriétaire de la relation d'achat. | Non implémentée / non vérifiable à ce stade |
+| INT-006 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-007 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-008 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-009 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-010 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-010a | Conditionnelle | Q-44 ouvert : séparer garantie client et garantie fournisseur ; Handover ne possède que le suivi documentaire. | Non implémentée / non vérifiable à ce stade |
+| INT-011 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-012 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-013 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-014 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-015 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-016 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-016a | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-017 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-018 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-019 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-020 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-021 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-022 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-023 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-023a | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-024 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-025 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-026 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-027 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-028 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-029 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-030 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-031 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-032 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-033 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-034 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-035 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-036 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-037 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-038 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-039 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-040 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-041 | Conditionnelle | Q-24 ouvert : préciser la propriété de la capacité et des réservations atelier avant contrat. | Non implémentée / non vérifiable à ce stade |
+| INT-042 | Conditionnelle | Q-24 ouvert : distinguer capacité atelier (Workshop) et planification/ordonnancement (Planning). | Non implémentée / non vérifiable à ce stade |
+| INT-043 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-044 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-045 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-046 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-047 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-048 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-049 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-050 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-051 | Conditionnelle | Q-29 ouvert : définir la source de vérité des habilitations et restrictions opérationnelles. | Non implémentée / non vérifiable à ce stade |
+| INT-052 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-053 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-054 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-055 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-056 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-057 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-058 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-059 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-060 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-061 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-062 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-063 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-064 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-065 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-066 | Conditionnelle | Q-11 ouvert : ne pas exposer un taux horaire tant que le propriétaire et le périmètre RH/analytique ne sont pas arbitrés. | Non implémentée / non vérifiable à ce stade |
+| INT-067 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-068 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-069 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-070 | Conditionnelle | Q-11 ouvert : séparer hypothèses d'effectif/disponibilité des taux de valorisation. | Non implémentée / non vérifiable à ce stade |
+| INT-071 | Conditionnelle | Q-29 ouvert : préciser la propriété des formations, habilitations et preuves avant exposition. | Non implémentée / non vérifiable à ce stade |
+| INT-072a | Conditionnelle | Q-29 ouvert : définir qui possède les exigences et restrictions sécurité opérationnelles. | Non implémentée / non vérifiable à ce stade |
+| INT-073 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-074 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-075 | Hors périmètre inter-domaines | Échange Workforce avec le prestataire de paie externe ; à traiter comme intégration externe. | Non implémentée / non vérifiable à ce stade |
+| INT-076 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-077 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-078 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-079 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-080 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-081 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-082 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-083 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-084 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-085 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-086 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-087 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-088 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-089 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-090 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-091 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-092 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-093 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-094 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-095 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-096 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-097 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-098 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-099 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-100 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-101 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-102 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-103 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-104 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-105 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-106 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-107 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-108 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-109 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-110 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-111 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-112 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-113 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-114 | À décomposer | Identifier chaque domaine déposant ; aucun contrat générique « tous domaines ». | Non implémentée / non vérifiable à ce stade |
+| INT-115 | À décomposer | Identifier chaque consommateur et cas de consultation ; aucun accès documentaire universel. | Non implémentée / non vérifiable à ce stade |
+| INT-116 | Conditionnelle | Q-31 ouvert : Documents possède le contenant/version ; préciser la responsabilité DOE de Handover. | Non implémentée / non vérifiable à ce stade |
+| INT-117 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-118 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-119 | Conditionnelle | Q-31 ouvert : distinguer compilation métier du DOE et stockage/diffusion documentaire. | Non implémentée / non vérifiable à ce stade |
+| INT-120 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-120a | Conditionnelle | Q-44 ouvert : répartir garanties clients/fournisseurs ; Q-31 concerne le DOE, pas la propriété des garanties. | Non implémentée / non vérifiable à ce stade |
+| INT-121 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-121a | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+| INT-122 | Conditionnelle | Q-44 ouvert : confirmer la propriété des garanties fournisseurs chez Procurement et le suivi documentaire Handover. | Non implémentée / non vérifiable à ce stade |
+| INT-123 | À décomposer | Décomposer par domaine source, indicateur, donnée publiée et consommateur Reporting. | Non implémentée / non vérifiable à ce stade |
+| INT-124 | À décomposer | Identifier chaque consommateur, rapport et usage ; ne pas créer de dépendance universelle vers Reporting. | Non implémentée / non vérifiable à ce stade |
+| INT-125 | Autorisée sous contrat public | Besoin et propriétaire explicitement identifiés dans le registre ; accès limité à une API publique/événement CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. | Non implémentée / non vérifiable à ce stade |
+
+## 4. Règles techniques obligatoires pour les dépendances autorisées
+
+Les dépendances autorisées ci-dessus ne sont valables que sous les règles suivantes :
+
+- Le sens reste **consommateur → fournisseur**, déterminé par la capacité ou la donnée consommée et son propriétaire.
+- Le consommateur n'importe jamais les Models, Actions, Services, DTO internes, Policies ou tables du fournisseur.
+- Le fournisseur conserve la maîtrise de ses données, invariants, validations et transitions d'état.
+- Les références inter-domaines utilisent les identifiants publics stables prévus par V-16 ; aucun Model Eloquent ne traverse la frontière.
+- Une lecture passe par une projection ou un contrat public minimal ; une demande nécessitant une réponse immédiate passe par un contrat synchrone ; un fait accompli sans réponse attendue peut être publié comme événement.
+- Aucun événement ne doit être utilisé pour masquer une commande nécessitant une réponse, et aucun contrat synchrone ne doit être créé pour une simple notification.
+- Pas de transaction partagée implicite entre domaines. Les garanties de publication, idempotence, reprise et évolution relèvent de CHAN-28.
+- Reporting est un consommateur en lecture seule ; Documents gère le contenant, les versions et la diffusion, sans devenir propriétaire de la validité métier du document.
+- Les dépendances transverses Identity et Core ne constituent pas des dépendances métier uniformes entre les 18 domaines.
+
+Une dépendance « Interdite » n'est pas attribuée à une INT métier en l'absence d'un contournement démontré. En revanche, les accès directs aux composants internes et aux tables d'un autre domaine sont interdits par les règles générales V-09/V-10, indépendamment de l'INT qui aurait motivé l'accès.
+
+## 5. Traitement des questions ouvertes
+
+| Question | INT concernées | Décision attendue pour lever la condition |
+|---|---|---|
+| Q-11 — taux horaires de référence | INT-066, INT-070 | Distinguer les données RH détenues par Workforce des règles de valorisation détenues par Costing ; préciser si un taux est réellement partagé. |
+| Q-24 — capacité atelier | INT-041, INT-042 | Workshop demeure propriétaire des capacités et faits de production ; Planning porte l'ordonnancement global. Définir la réservation et les conflits. |
+| Q-29 — habilitations / sécurité | INT-051, INT-071, INT-072a | Déterminer la source de vérité des qualifications RH, habilitations opérationnelles et restrictions sécurité ; éviter les doubles maîtrises. |
+| Q-31 — DOE | INT-116, INT-119 | Handover porte la préparation et la complétude métier du DOE ; Documents porte le stockage, les versions et la diffusion. |
+| Q-44 — garanties | INT-010a, INT-120a, INT-122 | Distinguer garanties clients et garanties fournisseurs ; confirmer la répartition Handover / Procurement. |
+
+Les questions ouvertes ne bloquent pas les dépendances sans lien avec ces sujets. Elles bloquent uniquement la formalisation des contrats concernés.
+
+## 6. Interactions génériques et périmètres externes
+
+- **INT-001** : Identity est un service transverse d'authentification/autorisation. Les points d'entrée concernés le consomment selon leurs besoins ; il n'existe pas de dépendance métier uniforme des 18 domaines.
+- **INT-075** : Workforce échange avec un prestataire de paie externe. Cette intégration est hors graphe inter-domaines des 18 domaines et doit être spécifiée séparément.
+- **INT-114** : identifier les déposants réels vers Documents. Les cas déjà matérialisés dans le registre (Projects, Workshop, Quality, Safety, Handover) doivent rester des relations distinctes.
+- **INT-115** : identifier les consommateurs documentaires et leurs cas de lecture. Le principe « tous les domaines » n'autorise pas un accès global.
+- **INT-123** : identifier chaque source Reporting, l'indicateur, la projection et la fréquence utile.
+- **INT-124** : identifier les consommateurs réels de rapports/alertes et les usages ; ne pas créer un lien universel depuis tous les domaines.
+
+## 7. Vérification du code et limites
+
+Arborescence vérifiée sur `develop` :
+
+- `app/Domains/` : 18 domaines présents, chacun limité à `.gitkeep`.
+- `app/Core/` : README de cadrage uniquement.
+- `app/Http/Controllers/Controller.php`, `app/Models/User.php` et les providers Laravel/Filament constituent les éléments applicatifs visibles hors domaines.
+
+Conséquences :
+
+- aucune dépendance PHP inter-domaines n'est actuellement démontrable ;
+- aucun contrat public ou événement de domaine n'est implémenté ;
+- aucun accès direct aux tables internes d'un domaine ne peut être confirmé ou infirmé puisqu'il n'existe pas encore de tables métier de domaine dans cette arborescence ;
+- aucune conclusion de conformité d'exécution ne doit être tirée de la seule documentation cible.
+
+Cette vérification est un contrôle de l'arborescence applicative observée, pas une analyse statique exhaustive de tous les fichiers du dépôt.
+
+## 8. Cohérence avec les tickets voisins
+
+- **CHAN-27** : les responsabilités internes (Models, Actions, Services, DTO, événements locaux, Policies) restent définies par les conventions internes.
+- **CHAN-28** : les mécanismes de contrats, événements, transaction, publication après commit, idempotence et reprise restent exclusivement définis par CHAN-28. Le Lot G ne les implémente pas.
+- **CHAN-31** : les règles automatiques de détection des dépendances interdites et de respect des frontières restent à tester dans ce ticket distinct.
+- **CHAN-30** : l'écart de référence `modules/` dans `AGENTS.md` reste hors du périmètre du Lot G.
+
+## 9. Critères de sortie du Lot G
+
+- [x] Les 130 identifiants INT sont repris une seule fois.
+- [x] Les interactions métier, les services transverses et les intégrations externes sont distingués.
+- [x] Les dépendances cibles autorisées sont conditionnées à un contrat public conforme à CHAN-28.
+- [x] Les interactions dépendantes de Q-11, Q-24, Q-29, Q-31 et Q-44 sont identifiées.
+- [x] Les interactions génériques sont maintenues « À décomposer » au lieu de créer des dépendances universelles.
+- [x] L'état de l'implémentation est séparé de la cible d'architecture.
+- [ ] Revue croisée et validation du livrable en Pull Request.
+- [ ] Vérification CI de la PR.
+
+## 10. Conclusion
+
+Le Lot G apporte une qualification d'architecture cible suffisamment explicite pour distinguer les dépendances cohérentes, les dépendances conditionnelles, les interactions à décomposer et les échanges hors périmètre. Il ne prétend pas certifier une implémentation qui n'existe pas encore.
+
+La prochaine étape est la revue du livrable, puis le Lot H pourra vérifier les règles cibles sur le code au fur et à mesure de l'implémentation des domaines, en documentant clairement les éléments encore non vérifiables.
