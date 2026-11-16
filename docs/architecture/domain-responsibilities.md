@@ -244,7 +244,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- | --- | --- | --- |
 | D01 | Identity | Identité, authentification et autorisation des acteurs | Utilisateur, Rôle, Permission, Périmètre | Tous |
 | D02 | Clients | Prospects, clients, donneurs d'ordre et relation commerciale | Prospect, Client, Contact, RôleTiers | Projects, Handover, Reporting |
-| D03 | Projects | Engagement contractuel, affaire, chantier et pilotage global | Affaire, Chantier, Étude, CommandeClient, Avenant, Jalon | Planning, Budgets, Costing, Workshop, Procurement, Inventory, Quality, Safety, Handover |
+| D03 | Projects | Engagement contractuel, affaire, chantier, réception contractuelle et pilotage global | Affaire, Chantier, Étude, CommandeClient, Avenant, Jalon | Planning, Budgets, Costing, Workshop, Procurement, Inventory, Quality, Safety, Handover |
 | D04 | Planning | Organisation dans le temps et affectation des ressources | PlanDeCharge, Activité, Affectation | Projects, Workforce, Equipment, Logistics |
 | D05 | Budgets | Enveloppe budgétaire, versions et contrôle de consommation | Budget, LigneBudgétaire, Révision | Projects, Costing, Procurement |
 | D06 | Costing | Chiffrage, coûts, engagements, marge et écarts | Chiffrage, Coût, Engagement, Marge | Projects, Budgets, Reporting |
@@ -258,7 +258,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | D14 | Quality | Conformité technique, contrôles et non-conformités | PlanQualité, Contrôle, NonConformité | Projects, Workshop, Handover |
 | D15 | Safety | Prévention, sécurité, incidents et autorisations | AnalyseDeRisques, Incident, Habilitation | Projects, Workshop, Workforce |
 | D16 | Documents | Cycle de vie documentaire, versions et diffusion | Document, Version, Diffusion | Tous |
-| D17 | Handover | Réception contractuelle, réserves, DOE et garanties | Réception, Réserve, DOE, Garantie | Projects, Clients, Quality |
+| D17 | Handover | Préparation documentaire de réception, réserves, DOE et garanties | DossierDeRéception, Réserve, DOE, Garantie | Projects, Clients, Quality |
 | D18 | Reporting | Indicateurs, rapports et tableaux de bord consolidés | Rapport, Indicateur, Snapshot | Direction, tous les domaines |
 
 ## 5. Catalogue détaillé des domaines
@@ -346,8 +346,8 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sens | Domaine | Informations | Moment |
 | --- | --- | --- | --- |
 | Entrée | Identity | Responsable commercial et acteurs autorisés | Attribution de la relation |
-| Entrée | Projects | Ouverture, changement d'état ou clôture d'une affaire | Cycle de vie de l'affaire |
-| Entrée | Handover | Réception, réserves, garanties | Réception et garantie |
+| Entrée | Projects | Ouverture, changement d'état ou clôture d'une affaire, réception contractuelle | Cycle de vie de l'affaire |
+| Entrée | Handover | Dossier de réception, réserves, garanties clientes | Réception et garantie |
 | Sortie | Projects | Référence maître du tiers, contacts, rôles, conditions commerciales cadre et devis signé | Validation d'ouverture et création de l'affaire |
 | Sortie | Handover | Contacts et représentants du client pour la réception | Préparation de la réception |
 | Sortie | Reporting | Portefeuille clients, prospects, relation commerciale | Analyse commerciale |
@@ -360,11 +360,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 ### D03 — Projects
 
-**Mission.** Prendre le relais après signature du devis ou réception d'une commande/OS, porter l'engagement contractuel et le pilotage global de l'affaire jusqu'à sa clôture, et organiser ses chantiers. Projects ne produit ni ne possède le devis commercial, qui relève de Clients (V-29, V-35, V-40).
+**Mission.** Prendre le relais après signature du devis ou réception d'une commande/OS, porter l'engagement contractuel et le pilotage global de l'affaire jusqu'à sa clôture, organiser ses chantiers et porter la réception contractuelle. Projects ne produit ni ne possède le devis commercial, qui relève de Clients (V-29, V-35, V-40).
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Réception des éléments commerciaux signés, commande client ou ordre de service, conditions contractuelles propres à l'affaire, contrat, affaire, création du chantier principal, lots et phases, avenants, jalons contractuels, acteurs de l'affaire, site, avancement contractuel, demande de clôture. |
+| Périmètre inclus | Réception des éléments commerciaux signés, commande client ou ordre de service, conditions contractuelles propres à l'affaire, contrat, affaire, création du chantier principal, lots et phases, avenants, jalons contractuels, acteurs de l'affaire, site, avancement contractuel, organisation et décision de réception contractuelle, demande de clôture, clôture de l'affaire. |
 | Périmètre exclu | Construction et propriété du devis commercial (Clients), planning détaillé et affectations (Planning/Workforce), budget (Budgets), chiffrage et coûts (Costing), fabrication (Workshop), achats (Procurement), stock (Inventory), qualité (Quality), sécurité (Safety), préparation documentaire de réception et DOE (Handover), stockage documentaire (Documents). |
 | Objets métier | `PRJ-01` Affaire, `PRJ-02` Chantier, `PRJ-03` LotPhase, `PRJ-04` Étude, `PRJ-06` CommandeClient, `PRJ-07` Avenant, `PRJ-08` Contrat, `PRJ-09` JalonContractuel, `PRJ-10` ActeurAffaire. |
 | Acteurs | Direction, chargé d'affaires, conducteur de travaux, chef de chantier, bureau d'études, métreur/économiste, responsable juridique, client, donneur d'ordre. |
@@ -381,6 +381,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Les jalons contractuels et les dates engagées sont la référence pour Planning ; toute modification est tracée. | Proposition |
 | L'avancement contractuel est déclaré par lot ou phase ; il ne se confond pas avec l'avancement des activités planifiées. | Proposition |
 | La clôture de l'affaire intervient après réception, levée des réserves, constitution du DOE, clôture des coûts et clôture du budget. | Validé — V-28 |
+| Projects organise et porte la réception contractuelle, y compris ses décisions contractuelles ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties. | Validé — V-55 |
 | Une suspension ou une annulation exige un motif, une validation et une trace. | Proposition |
 
 **États et transitions.**
@@ -401,7 +402,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Entrée | Costing | Coûts, EAC, marge et alertes économiques | Pilotage économique de l'affaire |
 | Entrée | Planning | Planning, dates prévisionnelles, conflits, avancement | Préparation et exécution |
 | Entrée | Quality / Safety | Conformité, non-conformités, incidents, contraintes | Exécution et réception |
-| Entrée | Handover | Réception, réserves, levées, PV | Réception et clôture |
+| Entrée | Handover | Dossier de réception, réserves, levées, PV, garanties | Réception et clôture |
 | Sortie | Planning | Périmètre, lots, jalons, priorités, contraintes de site | Préparation et replanification |
 | Sortie | Budgets | Périmètre, montant du contrat, avenants, besoin budgétaire | Ouverture et révision |
 | Sortie | Costing | Affaire, lots, montants contractuels, avancement, avenants | Tout le cycle |
@@ -410,7 +411,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Handover | Demande de réception, périmètre, lots, client, dates | Achèvement |
 | Sortie | Reporting | Portefeuille, avancement, engagements, clôtures | Pilotage |
 
-**Limites et chevauchements.** Projects est propriétaire de l'engagement et du pilotage contractuel, pas du planning détaillé, du budget, des coûts, de la fabrication, des achats, du stock, de la qualité, de la sécurité ni de la réception contractuelle. Voir BD-01, BD-02, BD-03, BD-17 et BD-19.
+**Limites et chevauchements.** Projects est propriétaire de l'engagement et du pilotage contractuel, de la réception contractuelle et des décisions de clôture de l'affaire ; il ne possède pas le planning détaillé, le budget, les coûts, la fabrication, les achats, le stock, la qualité, la sécurité, ni la préparation documentaire de réception et le DOE. Voir BD-01, BD-02, BD-03, BD-17 et BD-19.
 
 **Questions ouvertes.** Q-45 (avenants), Q-46 (suspension), Q-47 (annulation), Q-50 (bureau d'études), Q-51 (risques d'affaire), Q-52 (permis et autorisations). La distinction des avancements contractuel, opérationnel et des temps est validée (V-25).
 
@@ -941,7 +942,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Rubrique | Contenu |
 | --- | --- |
 | Périmètre inclus | Demandes et plans de transport, tournées, transporteurs, expéditions et colis, livraisons, preuves de livraison, réceptions physiques sur site, retours, accès chantier, incidents de transport, coûts transport. |
-| Périmètre exclu | Stock et mouvements (Inventory), achats et contrats fournisseurs (Procurement), production (Workshop), équipements (Equipment), réception contractuelle (Handover), qualité (Quality), planning global (Planning), exécution des travaux (Projects). |
+| Périmètre exclu | Stock et mouvements (Inventory), achats et contrats fournisseurs (Procurement), production (Workshop), équipements (Equipment), réception contractuelle et décisions de clôture (Projects), qualité (Quality), planning global (Planning), exécution des travaux (Projects). |
 | Objets métier | `LOG-01` DemandeDeTransport, `LOG-02` PlanDeTransport, `LOG-03` Tournée, `LOG-04` Livraison, `LOG-05` RéceptionChantier, `LOG-06` Retour, `LOG-07` AccèsChantier. |
 | Acteurs | Logisticien, magasinier, chef de chantier, conducteur de travaux, transporteur, chauffeur, qualité, sécurité. |
 
@@ -1000,7 +1001,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Rubrique | Contenu |
 | --- | --- |
 | Périmètre inclus | Plans qualité et de contrôle, points de contrôle, inspections, essais, mesures, non-conformités, actions correctives et préventives, audits, certificats, qualifications techniques, dossiers de conformité. |
-| Périmètre exclu | Réception contractuelle, réserves, DOE et garanties (Handover), production (Workshop), achats (Procurement), sécurité (Safety), stockage documentaire (Documents), coûts (Costing). |
+| Périmètre exclu | Réception contractuelle et décisions de clôture (Projects), préparation documentaire de réception, réserves, DOE et garanties (Handover), production (Workshop), achats (Procurement), sécurité (Safety), stockage documentaire (Documents), coûts (Costing). |
 | Objets métier | `QUA-01` PlanQualité, `QUA-02` PlanDeContrôle, `QUA-03` ContrôleQualité, `QUA-04` NonConformité, `QUA-05` ActionCorrective, `QUA-06` AuditQualité, `QUA-07` CertificatQualité, `QUA-08` QualificationTechnique. |
 | Acteurs | Responsable qualité, contrôleur qualité, chef de chantier, responsable atelier, soudeur, sous-traitant, client, organisme de contrôle. |
 
@@ -1061,7 +1062,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Rubrique | Contenu |
 | --- | --- |
 | Périmètre inclus | Analyses de risques, plans de prévention, inspections, constats, incidents et accidents, presqu'accidents, actions sécurité, habilitations et autorisations, EPI, inductions, plan d'urgence, conformité des sous-traitants. |
-| Périmètre exclu | Données RH et contrats (Workforce), qualité technique (Quality), maintenance des équipements (Equipment), transport (Logistics), réception (Handover), assurances et contentieux (hors périmètre), données médicales individuelles (confidentialité). |
+| Périmètre exclu | Données RH et contrats (Workforce), qualité technique (Quality), maintenance des équipements (Equipment), transport (Logistics), réception contractuelle (Projects), préparation documentaire de réception (Handover), assurances et contentieux (hors périmètre), données médicales individuelles (confidentialité). |
 | Objets métier | `SAF-01` AnalyseDeRisques, `SAF-02` PlanDePrévention, `SAF-03` InspectionSécurité, `SAF-04` Incident, `SAF-05` ActionSécurité, `SAF-06` HabilitationSécurité, `SAF-07` AutorisationDeTravail, `SAF-08` InductionSécurité. |
 | Acteurs | Responsable sécurité, préventeur, chef de chantier, responsable atelier, collaborateur, sous-traitant, médecin du travail (lien externe), client. |
 
@@ -1121,7 +1122,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Rubrique | Contenu |
 | --- | --- |
 | Périmètre inclus | Documents, versions, dossiers, types, métadonnées, diffusion, accusés de réception, règles de conservation, archives, modèles, liens aux objets métier, droits d'accès. |
-| Périmètre exclu | Contenu et validation métier (domaines propriétaires), propriété des contrats (Projects), des données RH (Workforce), de la réception contractuelle (Handover), de la conformité technique (Quality), décisions métier. |
+| Périmètre exclu | Contenu et validation métier (domaines propriétaires), propriété des contrats (Projects), des données RH (Workforce), de la réception contractuelle et de ses décisions (Projects), de la préparation documentaire de réception (Handover), de la conformité technique (Quality), décisions métier. |
 | Objets métier | `DOC-01` Document, `DOC-02` VersionDocument, `DOC-03` DossierDocumentaire, `DOC-04` TypeDocument, `DOC-05` DiffusionDocument, `DOC-06` RègleDeConservation. |
 | Acteurs | Gestionnaire documentaire, chargé d'affaires, bureau d'études, qualité, sécurité, RH, direction, client, sous-traitant. |
 
@@ -1161,7 +1162,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Handover | Complétude et versions des pièces du DOE | Réception |
 | Sortie | Reporting | Volume, diffusion, archivage | Pilotage |
 
-**Limites et chevauchements.** Documents porte le contenant et le cycle de vie documentaire ; chaque domaine porte le contenu, la validité métier et la décision. Handover porte la constitution contractuelle du DOE ; Quality porte la preuve de conformité. Voir BD-08, BD-07 et Q-31, Q-32.
+**Limites et chevauchements.** Documents porte le contenant et le cycle de vie documentaire ; chaque domaine porte le contenu, la validité métier et la décision. Handover porte la constitution et la complétude documentaire du DOE ; Quality porte la preuve de conformité. Voir BD-08, BD-07 et Q-31, Q-32.
 
 **Questions ouvertes.** Q-31 (DOE), Q-32 (statut documentaire et validation métier), Q-33 (signature et archivage légal), Q-40 (confidentialité et conservation).
 
@@ -1174,21 +1175,21 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Rubrique | Contenu |
 | --- | --- |
 | Périmètre inclus | Préparation documentaire des réceptions partielles et finales, centralisation des pièces et livrables, dossier de réception, suivi documentaire des réserves et levées, procès-verbaux, DOE, garanties clientes, périodes de garantie, dossier de clôture, attestations. L'organisation et la responsabilité contractuelles de la réception relèvent de Projects. |
-| Périmètre exclu | Conformité technique (Quality), exécution des travaux (Projects), budget et coûts (Budgets/Costing), stock (Inventory), stockage documentaire (Documents), propriété des garanties fournisseurs (Procurement), contentieux (hors périmètre). |
-| Objets métier | `HND-01` Réception, `HND-02` Réserve, `HND-03` LevéeDeRéserve, `HND-04` DOE, `HND-05` GarantieClient, `HND-06` DossierDeClôture. |
+| Périmètre exclu | Décision contractuelle de réception et cycle de vie de l'affaire (Projects), conformité technique (Quality), exécution des travaux (Projects), budget et coûts (Budgets/Costing), stock (Inventory), stockage documentaire (Documents), propriété des garanties fournisseurs (Procurement), contentieux (hors périmètre). |
+| Objets métier | `HND-01` DossierDeRéception, `HND-02` Réserve, `HND-03` LevéeDeRéserve, `HND-04` DOE, `HND-05` GarantieClient, `HND-06` DossierDeClôture. |
 | Acteurs | Responsable réception/handover, chargé d'affaires, chef de chantier, qualité, client, maître d'ouvrage, maître d'œuvre, gestionnaire documentaire. |
 
 **Règles métier portées par le domaine.**
 
 | Règle | Statut |
 | --- | --- |
-| Une réception est demandée après achèvement, autocontrôle et disponibilité des preuves qualité. | Proposition |
+| Une réception est organisée par Projects après achèvement, autocontrôle et disponibilité des preuves qualité ; Handover prépare le dossier documentaire correspondant. | Proposition |
 | Une réception partielle est possible par lot, zone ou phase. | Proposition |
 | Une réserve est un écart contractuel décrit, localisé, daté, avec un responsable et un délai. | Proposition |
-| La levée d'une réserve est vérifiée avec preuve ; elle peut être refusée. | Proposition |
+| La levée d'une réserve est vérifiée avec preuve et décidée par Projects ; elle peut être refusée. Handover en assure le suivi documentaire. | Proposition |
 | Le DOE doit être complet avant la clôture contractuelle ; les fichiers sont gérés par Documents. | Proposition |
-| Le procès-verbal signé constitue le fait contractuel de réception et fixe les dates de garantie. | Proposition |
-| La clôture contractuelle intervient après levée des réserves, DOE complet et garanties constituées. | Proposition |
+| Le procès-verbal signé constate le fait contractuel de réception prononcé par Projects et fixe les dates de garantie ; Handover en assure la préparation et la conservation documentaire. | Proposition |
+| La clôture contractuelle de l'affaire est portée par Projects ; elle intervient après levée des réserves, DOE complet et garanties constituées. | Proposition |
 | Les garanties clientes et les garanties fournisseurs/sous-traitants sont distinguées ; ces dernières relèvent de Procurement. | Proposition |
 | Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la non-conformité correspondante avant sa clôture. Les deux objets restent distincts. | Validé — V-26 |
 
@@ -1212,7 +1213,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Entrée | Clients | Représentants, coordonnées, exigences de réception | Réception |
 | Entrée | Procurement | Garanties fournisseurs et sous-traitants | Clôture |
 | Entrée | Costing | Situation finale des coûts | Clôture |
-| Sortie | Projects | Statut de réception, réserves, levées, PV | Réception et clôture |
+| Sortie | Projects | Statut du dossier de réception, réserves, levées, PV, garanties | Réception et clôture |
 | Sortie | Quality | Réserves à traiter techniquement | Réception |
 | Sortie | Documents | Pièces à compiler, diffuser, archiver | Réception |
 | Sortie | Clients | PV, DOE, garanties clientes, attestations | Réception |
@@ -1278,7 +1279,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- | --- |
 | Identity | Comptes, rôles, permissions, périmètres, délégations | Données RH, contacts clients, fournisseurs |
 | Clients | Référentiel maître des tiers, prospects, clients, contacts, rôles commerciaux, relation commerciale, devis complet et conditions commerciales cadre | Affaire, chantier, exécution contractuelle, fournisseurs |
-| Projects | Études techniques, commande/contrat après signature, affaire, chantier, lots, avenants, jalons, avancement contractuel | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, réception |
+| Projects | Études techniques, commande/contrat après signature, affaire, chantier, lots, avenants, jalons, avancement contractuel, réception contractuelle et décisions de clôture | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, préparation documentaire de réception, DOE |
 | Planning | Plans, activités, affectations, capacité, conflits, avancement planning | Données RH, actifs, capacité atelier, pointages |
 | Budgets | Budget, versions, lignes, enveloppe, contingence, révisions | Chiffrage détaillé, engagements, coûts constatés, prix de vente |
 | Costing | Chiffrage, coûts, engagements, imputations, marge, écarts, EAC | Budget, commandes, temps, stock, production, paie |
@@ -1292,7 +1293,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Quality | Plans qualité, contrôles, essais, NCR, actions, audits, certificats, qualifications techniques | Réception contractuelle, réserves, DOE, production, sécurité |
 | Safety | Analyses de risques, plans de prévention, inspections, incidents, actions, habilitations, autorisations | RH, qualité technique, maintenance, assurances |
 | Documents | Documents, versions, dossiers, métadonnées, diffusion, conservation, archives | Contenu métier, validation de fond, décisions |
-| Handover | Réceptions, réserves, levées, PV, DOE, garanties, clôture contractuelle | Conformité technique, exécution, budget, coûts |
+| Handover | Préparation et suivi documentaire des réceptions, réserves, levées, PV, DOE, garanties clientes, dossier de clôture | Décision contractuelle de réception, cycle de vie de l'affaire, conformité technique, exécution, budget, coûts |
 | Reporting | Définitions d'indicateurs, rapports, tableaux de bord, snapshots, exports | Données source, règles métier, écritures |
 
 ### 6.2 Règles de propriété à retenir

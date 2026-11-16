@@ -325,7 +325,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 **Points à qualifier.** Q-31 (DOE), Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; la répartition Projects/Handover est validée par V-55.
 
-**Statut.** Proposition.
+**Statut.** Séparation retenue, conforme à V-26 et V-55 ; Q-31 et Q-44 restent ouverts.
 
 ---
 
@@ -338,7 +338,8 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Contenu, validité métier, décision de publier | Domaine propriétaire | Le document n'a de sens que rattaché à un objet métier. |
 | Stockage, version, métadonnées, classification, diffusion, conservation, archive | D16 Documents | Gestion documentaire transverse. |
 | Validation de conformité d'un document | D14 Quality | Quality valide la conformité technique, pas le stockage. |
-| Réception contractuelle et DOE | D17 Handover | Handover décide de la complétude contractuelle. |
+| Réception contractuelle et décisions de clôture | D03 Projects | Projects organise et porte la réception contractuelle, prononce l'acceptation contractuelle et clôt l'affaire. |
+| Préparation documentaire de réception et DOE | D17 Handover | Handover prépare et centralise les documents et livrables de réception et vérifie la complétude documentaire du DOE, sans décider de la réception contractuelle. |
 
 **Séparation recommandée.**
 
@@ -346,7 +347,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - **Documents** possède le contenant : fichier, version, métadonnées, type, dossier, diffusion, accusé de réception, règle de conservation, archive.
 - Documents ne prononce jamais la validité métier d'un document. Il peut vérifier des métadonnées obligatoires et la complétude d'un dossier.
 - Le statut métier (approuvé, refusé, conforme) et le statut documentaire (brouillon, publié, remplacé, archivé) sont deux dimensions distinctes. Q-32.
-- Handover porte la constitution contractuelle du DOE ; Documents stocke, versionne et diffuse les pièces.
+- Handover porte la constitution et la complétude documentaire du DOE ; Projects reste responsable du fait contractuel de réception ; Documents stocke, versionne et diffuse les pièces.
 - Quality porte les preuves de conformité ; Documents les conserve.
 - L'accès aux documents sensibles (RH, paie, sécurité, contrats) est contrôlé par Identity et les règles du domaine propriétaire.
 
@@ -564,7 +565,7 @@ Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiqu
 
 **À qualifier.** Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; les conditions de clôture de l'affaire sont validées par V-28.
 
-**Statut.** Proposition.
+**Statut.** Séparation retenue, conforme à V-28, V-55 et V-59 ; Q-44 reste ouvert.
 
 ---
 

@@ -72,7 +72,7 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | D14 Quality | 8 | PlanQualité, Contrôle, NonConformité |
 | D15 Safety | 8 | AnalyseDeRisques, Incident, Habilitation |
 | D16 Documents | 6 | Document, Version, Diffusion |
-| D17 Handover | 6 | Réception, Réserve, DOE, GarantieClient |
+| D17 Handover | 6 | DossierDeRéception, Réserve, DOE, GarantieClient |
 | D18 Reporting | 5 | Rapport, Indicateur, Snapshot |
 | **Total** | **132** | — |
 
@@ -116,6 +116,8 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | PRJ-10 | ActeurAffaire | Rôle d'un acteur sur une affaire. | Acteur, rôle, période, responsabilité, statut. | Identity, Projects, Reporting |
 
 **Évolution de propriété issue de V-29, V-35 et V-40.** Le devis commercial est désormais l'objet `CLI-07 DevisCommercial`, propriétaire Clients. L'ancien identifiant candidat `PRJ-05 Devis` n'est plus un objet de Projects et ne doit pas être réutilisé ; les identifiants PRJ-06 et suivants sont conservés pour éviter de renuméroter les références existantes. Le total du catalogue reste de 132 objets : un objet est transféré de D03 vers D02.
+
+**Réception contractuelle.** Projects porte le fait contractuel de réception, organise le processus et prend les décisions contractuelles associées (V-55). Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves, levées et garanties. Les objets documentaires correspondants sont décrits en 3.17 ; aucun d'eux ne transfère à Handover la propriété du fait contractuel de réception.
 
 ### 3.4 D04 — Planning
 
@@ -285,12 +287,14 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 
 | ID | Objet | Définition | Informations principales | Consommateurs potentiels |
 | --- | --- | --- | --- | --- |
-| HND-01 | Réception | Réception contractuelle totale ou partielle des travaux. | Affaire, lots, date, participants, statut, PV. | Projects, Clients |
-| HND-02 | Réserve | Écart contractuel constaté à la réception. | Description, localisation, délai, responsable, statut. | Quality, Projects |
-| HND-03 | LevéeDeRéserve | Preuve et décision de levée d'une réserve. | Réserve, preuve, date, vérificateur, statut. | Handover, Quality |
-| HND-04 | DOE | Dossier des ouvrages exécutés remis au client. | Affaire, pièces, complétude, statut. | Clients, Documents |
-| HND-05 | GarantieClient | Garantie cliente attachée à un ouvrage ou à une fourniture. | Type, objet, début, fin, conditions, statut. | Clients, Projects |
-| HND-06 | DossierDeClôture | Ensemble des pièces et vérifications nécessaires à la clôture contractuelle. | Affaire, réception, réserves levées, DOE, garanties, statut. | Projects, Handover, Costing |
+| HND-01 | DossierDeRéception | Dossier et suivi documentaire de la réception contractuelle totale ou partielle des travaux ; le fait contractuel et la décision de réception sont portés par Projects. | Affaire, lots, date, participants, pièces, PV, statut du dossier. | Projects, Clients |
+| HND-02 | Réserve | Écart contractuel constaté à la réception, suivi documentairement par Handover ; la décision contractuelle de réception reste portée par Projects. | Description, localisation, délai, responsable, statut. | Quality, Projects |
+| HND-03 | LevéeDeRéserve | Preuve et décision de levée d'une réserve ; Handover en assure le suivi documentaire, Projects porte la décision contractuelle. | Réserve, preuve, date, vérificateur, statut. | Handover, Quality |
+| HND-04 | DOE | Dossier des ouvrages exécutés remis au client ; Handover en porte la constitution et la complétude documentaire, Documents assure le stockage. | Affaire, pièces, complétude, statut. | Clients, Documents |
+| HND-05 | GarantieClient | Garantie cliente attachée à un ouvrage ou à une fourniture ; Handover en assure le suivi documentaire. | Type, objet, début, fin, conditions, statut. | Clients, Projects |
+| HND-06 | DossierDeClôture | Ensemble des pièces et vérifications nécessaires à la clôture contractuelle ; Projects prononce la clôture, Handover en centralise le dossier. | Affaire, réception, réserves levées, DOE, garanties, statut. | Projects, Handover, Costing |
+
+**Distinction entre fait contractuel et livrable documentaire.** Le fait de réception contractuelle, sa décision et la clôture de l'affaire appartiennent à Projects (`PRJ-01` Affaire et son cycle de vie). Handover possède les objets documentaires de réception (`HND-01` DossierDeRéception, `HND-04` DOE, `HND-06` DossierDeClôture) ainsi que le suivi documentaire des réserves, levées et garanties (`HND-02`, `HND-03`, `HND-05`) ; les décisions contractuelles correspondantes restent portées par Projects. Le PV signé constate le fait prononcé par Projects ; il est préparé et conservé documentairement par Handover et Documents.
 
 ### 3.18 D18 — Reporting
 
@@ -319,7 +323,7 @@ Certains concepts traversent plusieurs domaines. Ils ne doivent pas être dupliq
 | Article / référence | Inventory | Procurement, Workshop, Costing | Inventory est la source de l'article et du stock ; Procurement gère les références fournisseur. |
 | Équipement | Equipment | Planning, Logistics, Safety, Quality, Costing | Equipment est la source de l'actif et de sa disponibilité. |
 | Document | Documents | Tous | Documents porte le contenant et la version ; le domaine propriétaire porte le contenu et la validité métier. |
-| Réception contractuelle | Handover | Projects, Clients, Quality | Handover est la source du fait contractuel ; Quality fournit les preuves techniques. |
+| Réception contractuelle | Projects | Handover, Clients, Quality | Projects est la source du fait contractuel et des décisions de réception ; Handover centralise les documents et livrables, le DOE et le suivi documentaire des réserves et garanties ; Quality fournit les preuves techniques. |
 | Coût / engagement | Costing | Projects, Budgets, Procurement, Reporting | Costing est la source des coûts et engagements financiers ; Procurement reste propriétaire de la commande et de l'acte commercial. |
 | Budget | Budgets | Projects, Costing, Procurement | Budgets est la source de l'enveloppe autorisée. |
 | Planning | Planning | Projects, Workforce, Equipment, Workshop | Planning est la source des activités et affectations datées. |

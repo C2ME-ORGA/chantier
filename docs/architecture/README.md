@@ -14,7 +14,7 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | [`domain-interactions-register.md`](domain-interactions-register.md) | CHAN-29 Lot 1 | Registre des interactions métier entre domaines : source, destinataire, motif, informations et moment. |
 | [`domain-boundary-decisions.md`](domain-boundary-decisions.md) | CHAN-29 Lot 1 | Chevauchements, arbitrages proposés, décisions validées et questions ouvertes. |
 | [`domain-dependency-matrix.md`](domain-dependency-matrix.md) | CHAN-29 Lot 2 | Matrice technique des dépendances inter-domaines — document de travail à qualifier et valider. |
-| [`domain-dependency-register.md`](domain-dependency-register.md) | CHAN-29 Lot 2 | Registre de traçabilité des 125 interactions métier et de leur qualification technique. |
+| [`domain-dependency-register.md`](domain-dependency-register.md) | CHAN-29 Lot 2 | Registre de traçabilité des 125 interactions métier d'origine (128 lignes après scissions) et de leur qualification technique. |
 
 ## Ordre de lecture recommandé
 
@@ -32,7 +32,7 @@ Les contrats synchrones sont traités dans les sections 1 à 14 de `domain-commu
 
 ## Statut des documents CHAN-29
 
-Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le **Lot 2** ajoute la qualification des dépendances : les arbitrages métier V-29 à V-59 affinent désormais les responsabilités et les interactions candidates, mais ne classent pas à eux seuls les dépendances techniques.
+Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le **Lot 2** ajoute la qualification des dépendances : les arbitrages métier V-29 à V-59 affinent désormais les responsabilités et les interactions candidates, mais ne classent pas à eux seuls les dépendances techniques. Le registre distingue les 125 interactions d'origine des 128 lignes présentes après les scissions `INT-010a`, `INT-120a` et `INT-121a` ; ces suffixes ne créent pas de nouvelles interactions d'origine.
 
 > **Lot 1 — documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites.
 >

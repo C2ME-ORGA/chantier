@@ -2,7 +2,7 @@
 
 - Ticket : CHAN-29 — Documenter les frontières et dépendances autorisées.
 - Lot : Lot 2 — Qualification détaillée des interactions du Lot 1.
-- Source : `domain-interactions-register.md` (Lot 1, 125 interactions).
+- Source : `domain-interactions-register.md` (Lot 1, 125 interactions d'origine).
 - Statut : **inventaire de dépendances candidates — aucune autorisation technique n'est prononcée ici**.
 - Référence de cadrage : `domain-dependency-matrix.md`.
 
@@ -31,15 +31,31 @@ Une orientation candidate erronée doit être corrigée avant toute classificati
 
 | Indicateur | Résultat |
 | --- | ---: |
-| Interactions reprises du Lot 1 | 125 |
-| Interactions conservées avec identifiant INT | 125 |
+| Interactions d'origine reprises du Lot 1 | 125 |
+| Lignes actuellement présentes dans le registre | 128 |
+| Lignes supplémentaires issues des scissions | 3 |
+| Identifiants d'origine conservés | 125 |
+| Déclinaisons suffixées rattachées à une interaction d'origine | 3 |
 | Classe technique attribuée | Aucune |
 | Dépendances autorisées | 0 |
 | Dépendances conditionnelles validées | 0 |
 | Dépendances interdites validées | 0 |
-| Lignes restant à qualifier | 125 |
+| Lignes restant à qualifier | 128 |
 
-Les 125 lignes sont conservées pour assurer la traçabilité. Certaines pourront être regroupées, scindées, écartées comme dépendances techniques ou décomposées en plusieurs relations réelles. Le nombre final de dépendances ne sera donc pas nécessairement 125.
+Les 125 interactions d'origine sont conservées ; le registre contient 128 lignes après les trois scissions documentées ci-dessous. Une déclinaison suffixée n'est pas une nouvelle interaction d'origine et ne doit pas être ajoutée au compteur de 125.
+
+Sur ces 128 lignes, 118 portent un statut « À qualifier » (dont 6 avec une précision), 4 sont « À scinder avant qualification », 5 sont « À décomposer » et 1 est une interface externe hors matrice inter-domaines. Aucune ligne ne porte de classe « Autorisée », « Conditionnelle » ou « Interdite ».
+
+### 2.1 Traçabilité des scissions
+
+| Interaction d'origine | Déclinaisons présentes | Lignes | Objet de la scission |
+| --- | --- | ---: | --- |
+| `INT-010` | `INT-010`, `INT-010a` | 2 | Séparer les faits contractuels de réception portés par Projects des éléments documentaires préparés par Handover. |
+| `INT-120` | `INT-120`, `INT-120a` | 2 | Séparer les dates et décisions contractuelles de Projects des dates de garantie et références documentaires de Handover. |
+| `INT-121` | `INT-121`, `INT-121a` | 2 | Séparer le pilotage contractuel des réceptions de Projects du pilotage documentaire des réserves, levées et garanties de Handover. |
+| **Total** | **3 interactions d'origine, 6 lignes** | **6** | **3 lignes supplémentaires, soit 128 lignes pour 125 interactions d'origine.** |
+
+Les identifiants historiques sont conservés. Le suffixe `a` identifie une déclinaison d'une interaction existante ; il ne crée ni un nouvel identifiant d'origine ni une interaction supplémentaire au sens du Lot 1. Toute scission ultérieure doit suivre la même convention et être ajoutée à ce tableau.
 
 ## 3. Registre détaillé des interactions candidates
 
@@ -160,15 +176,15 @@ Les 125 lignes sont conservées pour assurer la traçabilité. Certaines pourron
 | INT-113 | D18 Reporting → D15 Safety | P10 | Consultation | Reporting consomme les données de fréquence, gravité, conformité et actions produites par Safety pour établir les indicateurs de prévention. Safety reste propriétaire des événements et décisions de sécurité ; Reporting agrège ces informations en lecture seule. | Alimenter le pilotage sécurité | Fréquence, gravité, conformité, actions | Reporting | À qualifier |
 | INT-114 | Domaines déposants → D16 Documents | P01–P12 | Document | Chaque domaine déposant consomme la capacité de dépôt, de classement, de versionnement et de diffusion de Documents. Le domaine métier déposant reste propriétaire du contenu, de sa validité et de ses métadonnées métier ; Documents est propriétaire du cycle de vie documentaire. Cette relation transverse doit être décomposée par domaine déposant et cas d'usage avant toute qualification technique. | Verser un document et ses métadonnées | Contenu, type, propriétaire, classification, statut, liens | Production ou réception | À décomposer — consommateurs/fournisseurs à préciser |
 | INT-115 | Tous les domaines → D16 Documents | P01–P12 | Référentiel | Les domaines qui doivent consulter une pièce consomment les références, versions, statuts et droits exposés par Documents. Documents reste propriétaire du référentiel documentaire ; chaque domaine consommateur reste propriétaire de l'interprétation métier de la pièce. « Tous les domaines » ne constitue pas un consommateur concret : décomposer par usage réel. | Fournir les références et versions contrôlées | Référence, version, statut, diffusion, droits | Consultation | À décomposer — consommateurs/fournisseurs à préciser |
-| INT-116 | D17 Handover → D16 Documents | P12 | Référentiel | Handover consomme les références, versions, statuts et informations de complétude des pièces du DOE détenues par Documents pour vérifier le dossier de réception. Documents porte le référentiel et le versionnement ; Handover porte les exigences de réception et la complétude attendue. | Fournir la complétude et les versions du DOE | Pièces, versions, statut, diffusion, accusés | Réception | À qualifier |
+| INT-116 | D17 Handover → D16 Documents | P12 | Référentiel | Handover consomme les références, versions, statuts et informations de complétude des pièces du DOE détenues par Documents pour vérifier le dossier de réception. Documents porte le référentiel et le versionnement ; Handover porte les exigences documentaires de réception et la complétude attendue du DOE. | Fournir la complétude et les versions du DOE | Pièces, versions, statut, diffusion, accusés | Réception | À qualifier |
 | INT-117 | D18 Reporting → D16 Documents | P10 | Consultation | Reporting consomme les métadonnées et événements documentaires (volumes, versions, diffusion, archivage) produits par Documents pour établir les indicateurs documentaires. Documents reste propriétaire du cycle de vie documentaire ; Reporting agrège les mesures sans modifier les documents. | Alimenter le pilotage documentaire | Volume, versions, diffusion, archivage | Reporting | À qualifier |
 | INT-118 | D17 Handover → D14 Quality | P12 | Demande | Handover sollicite Quality pour instruire les réserves suivies documentairement dont la cause est technique et consomme son analyse, sa décision de conformité et les preuves de traitement. Quality porte la NCR et le traitement technique ; Projects conserve la responsabilité contractuelle de la réception et des décisions de clôture ; Handover assure le suivi documentaire de la réserve et de ses justificatifs (V-26, V-55). | Demander le traitement technique d'une réserve | Réserve, localisation, description, délai, preuve attendue | Réception | À qualifier |
-| INT-119 | D17 Handover → D16 Documents | P12 | Document | Handover consomme la capacité de compilation, de versionnement et de diffusion de Documents pour constituer et transmettre le DOE. Handover définit le contenu attendu et les destinataires de réception ; Documents organise les pièces et leurs versions. L'orientation initiale Documents → Handover est inversée pour la demande de compilation. | Demander la compilation et la diffusion du DOE | Pièces, ordre, destinataires, versions | Réception | À qualifier |
+| INT-119 | D17 Handover → D16 Documents | P12 | Document | Handover consomme la capacité de compilation, de versionnement et de diffusion de Documents pour constituer et transmettre le DOE. Handover définit le contenu documentaire attendu et les destinataires du DOE ; Projects reste responsable du fait contractuel de réception ; Documents organise les pièces et leurs versions. L'orientation initiale Documents → Handover est inversée pour la demande de compilation. | Demander la compilation et la diffusion du DOE | Pièces, ordre, destinataires, versions | Réception | À qualifier |
 | INT-120 | D06 Costing → D03 Projects | P12 | Notification | Costing consomme les dates et décisions de réception contractuelle et de clôture détenues par Projects pour dater les coûts, engagements et analyses de fin d'affaire. Projects reste propriétaire des faits contractuels de réception et de clôture ; Costing reste propriétaire des coûts et de l'EAC selon V-20 et V-28. | Fournir les dates et décisions contractuelles de réception et de clôture | Réception, réserves, décision de clôture | Réception et clôture | À qualifier |
 | INT-120a | D06 Costing → D17 Handover | P12 | Notification | Costing consomme les dates de garantie et éléments documentaires centralisés par Handover pour dater les coûts, engagements et analyses de fin d'affaire. Handover assure le suivi documentaire des garanties ; Costing reste propriétaire des coûts et de l'EAC selon V-20 et V-55. | Fournir les dates de garantie et les références documentaires associées | Dates de garantie, pièces et références documentaires | Réception et clôture | À qualifier |
 | INT-121 | D18 Reporting → D03 Projects | P10 | Consultation | Reporting consomme les délais et décisions de réception contractuelle publiés par Projects pour établir les indicateurs de clôture et de réception. Projects reste propriétaire du processus contractuel de réception ; Reporting agrège les données sans clôturer l'affaire. | Alimenter le pilotage contractuel des réceptions | Délais et décisions de réception contractuelle, clôture | Reporting | À qualifier |
 | INT-121a | D18 Reporting → D17 Handover | P10 | Consultation | Reporting consomme les données de suivi documentaire des réserves, levées et garanties centralisées par Handover pour établir les indicateurs de clôture et de réception. Handover fournit les faits de suivi documentaire ; Reporting agrège les données sans clôturer l'affaire. | Alimenter le pilotage documentaire des réceptions et garanties | Suivi des réserves, levées, garanties et complétude documentaire | Reporting | À qualifier |
-| INT-122 | D17 Handover → D10 Procurement | P12 | Document | Handover consomme les garanties fournisseurs et sous-traitants détenues par Procurement afin de rapprocher les garanties amont des engagements de garantie client. Procurement reste propriétaire des garanties contractuelles liées aux achats et sous-traitants ; Handover porte le suivi de réception et des garanties clientes. | Fournir les garanties fournisseurs et sous-traitants nécessaires aux garanties clientes | Garantie, fournisseur, objet, durée, conditions | Clôture | À qualifier |
+| INT-122 | D17 Handover → D10 Procurement | P12 | Document | Handover consomme les garanties fournisseurs et sous-traitants détenues par Procurement afin de rapprocher les garanties amont des engagements de garantie client. Procurement reste propriétaire des garanties contractuelles liées aux achats et sous-traitants ; Handover assure le suivi documentaire de la réception et des garanties clientes ; Projects porte le fait contractuel de réception. | Fournir les garanties fournisseurs et sous-traitants nécessaires aux garanties clientes | Garantie, fournisseur, objet, durée, conditions | Clôture | À qualifier |
 | INT-123 | D18 Reporting → domaines sources | P10 | Notification | Reporting consomme les données et événements publiés par les domaines sources afin de calculer les indicateurs et rapports. Chaque domaine source reste propriétaire de ses faits métier ; Reporting est propriétaire des agrégations, indicateurs et restitutions, sans réécriture des données sources. La relation générique doit être décomposée par domaine producteur, jeu de données et indicateur réel. | Alimenter les indicateurs et rapports | Données, événements, indicateurs source, période | Génération | À décomposer — consommateurs/fournisseurs à préciser |
 | INT-124 | Tous les domaines → D18 Reporting | P10 | Consultation | Les domaines qui ont un besoin de pilotage consomment les rapports, tableaux de bord et alertes produits par Reporting. Reporting est propriétaire des restitutions et seuils calculés ; les domaines consommateurs restent propriétaires des décisions et actions métier qui en découlent. « Tous les domaines » doit être décomposé selon les usages réels, sans créer de dépendance universelle. | Fournir les rapports et alertes | Rapport, tableau de bord, indicateur, seuil, période | Pilotage | À décomposer — consommateurs/fournisseurs à préciser |
 | INT-125 | D18 Reporting → D16 Documents | P10 | Document | Documents consomme les rapports et exports produits par Reporting pour les archiver, versionner et diffuser selon les règles documentaires. Reporting reste propriétaire du contenu analytique et des indicateurs ; Documents porte le cycle de vie de la copie publiée. L'orientation initiale Documents → Reporting est inversée pour le dépôt/archivage. | Archiver ou diffuser un rapport | Rapport, export, période, destinataire | Publication | À qualifier |
@@ -179,7 +195,7 @@ Pour chaque ligne, documenter avant de décider :
 
 1. **Besoin réel** : la relation nécessite-t-elle un échange technique ou peut-elle rester une coordination de processus, une saisie, un document ou une projection ?
 2. **Consommateur et fournisseur** : confirmer le sens consommateur → fournisseur à partir du motif, du moment et des responsabilités métier.
-3. **Propriété** : identifier le domaine propriétaire de la donnée, de l'invariant et de la décision ; appliquer V-01 à V-28.
+3. **Propriété** : identifier le domaine propriétaire de la donnée, de l'invariant et de la décision ; appliquer V-01 à V-59.
 4. **Granularité** : isoler la capacité minimale consommée ; ne pas exposer un domaine entier.
 5. **Nature des données** : distinguer référence, consultation, fait accompli, demande, décision et document.
 6. **Mécanisme** : proposer contrat synchrone ou événement uniquement après avoir justifié le besoin, selon CHAN-28.
@@ -204,7 +220,7 @@ Les arbitrages V-29 à V-59 de `domain-boundary-decisions.md` doivent être appl
 - Reporting consomme exclusivement des données publiées ou exposées par contrats publics ; l'accès direct aux tables est interdit.
 - La clôture administrative est prononcée par le service administratif après confirmations des domaines ; Projects conserve le cycle de vie de l'affaire.
 
-**Statut.** Ces arbitrages affinent les propriétaires, consommateurs et déclencheurs métier. Ils ne classent pas automatiquement les interactions en dépendances autorisées ou conditionnelles. Les 125 interactions conservent leur statut individuel tant que leur capacité, leur donnée minimale, leur déclencheur, leur mode CHAN-28 et leurs restrictions ne sont pas qualifiés.
+**Statut.** Ces arbitrages affinent les propriétaires, consommateurs et déclencheurs métier. Ils ne classent pas automatiquement les interactions en dépendances autorisées ou conditionnelles. Les 125 interactions d'origine, représentées par 128 lignes après scissions, conservent leur statut individuel tant que leur capacité, leur donnée minimale, leur déclencheur, leur mode CHAN-28 et leurs restrictions ne sont pas qualifiés.
 
 ## 6. Points de vigilance à instruire
 
@@ -215,7 +231,7 @@ Les arbitrages V-29 à V-59 de `domain-boundary-decisions.md` doivent être appl
 - **INT-032 / INT-033 / INT-076** : appliquer V-21 et V-25 ; distinguer axes d'imputation, temps constatés, absence et qualification RH.
 - **INT-034 / INT-035 / INT-096 à INT-100** : appliquer V-22 et V-23 ; Inventory reste maître des articles et mouvements, y compris stock chantier.
 - **INT-077 à INT-087** : instruire les échanges atelier, matière, sous-traitance et acceptation externe selon V-24 et V-27.
-- **INT-108 à INT-122** : distinguer conformité Quality, réception contractuelle Projects, préparation et suivi documentaire Handover, et clôture de l'affaire Projects selon V-26, V-28 et V-55.
+- **INT-108 à INT-122, y compris INT-120a et INT-121a** : distinguer conformité Quality, réception contractuelle Projects, préparation et suivi documentaire Handover, et clôture de l'affaire Projects selon V-26, V-28 et V-55.
 - **INT-123 à INT-125** : Reporting est consommateur de données sources ; il ne devient pas autorité métier. Documents assure le stockage/diffusion documentaire sans s'approprier le contenu métier.
 
 Ces points sont des axes de revue, pas des décisions supplémentaires.
@@ -234,7 +250,7 @@ Le registre sera complété progressivement avec les colonnes suivantes, sans pe
 
 Les arbitrages non explicitement validés restent des propositions ou questions ouvertes. En particulier, ce registre ne valide aucune des propositions PD restantes du Lot 1.
 
-## 7. Références
+## 8. Références
 
 - [Matrice technique des dépendances](domain-dependency-matrix.md)
 - [Registre des interactions métier — Lot 1](domain-interactions-register.md)
