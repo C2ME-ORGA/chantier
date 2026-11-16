@@ -777,7 +777,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- |
 | Une demande d'achat précise le besoin, la quantité, la date, le lot, la nature et la référence budgétaire. | Proposition |
 | Une commande est créée après validation du besoin, du disponible budgétaire et des seuils d'approbation. | Proposition, seuils Q-08 |
-| Un fournisseur ou un sous-traitant est un rôle d'achat exercé par un tiers ; il ne présume pas une identité juridique autonome. Le tiers est référencé dans le référentiel maître unique détenu par Clients ; Procurement conserve les données de relation d'achat propres à ses opérations (V-15). | Proposition |
+| Un fournisseur ou un sous-traitant est un rôle d'achat exercé par un tiers ; le tiers est référencé dans le référentiel maître unique détenu par Clients. Procurement conserve les données de relation d'achat propres à ses opérations (V-15). | Validé — V-15 |
 | Un fournisseur ou sous-traitant est qualifié selon la criticité de la prestation, avec Quality et Safety. | Proposition |
 | Une commande constitue un acte commercial qui crée un engagement financier, suivi par Costing ; ses versions, annulations et réceptions partielles sont tracées. | Proposition |
 | La réception physique ne vaut pas acceptation qualité ; Inventory enregistre, Quality accepte ou refuse. | Proposition |
@@ -1222,7 +1222,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Handover porte la réception contractuelle et les réserves ; Quality porte la conformité technique et les NCR ; Projects porte l'exécution et la clôture de l'affaire ; Documents stocke le DOE. Voir BD-07, BD-08 et BD-17.
 
-**Questions ouvertes.** Q-30 (réserve vs NCR), Q-31 (DOE), Q-44 (garanties), Q-53 (conditions de clôture).
+**Questions ouvertes.** Q-30 (réserve vs NCR), Q-31 (DOE), Q-44 (garanties). La condition générale de clôture est validée par V-28.
 
 ---
 
