@@ -21,7 +21,7 @@ Sources consultées sur `develop` :
 - `docs/architecture/domain-interactions-register.md` — détail des interactions ;
 - `docs/architecture/domain-communication.md` — règles CHAN-28 relatives aux contrats, événements, transactions, publication après commit, idempotence et fiabilité.
 
-La direction est conservée telle qu'elle apparaît dans le registre : **consommateur → fournisseur**. Le propriétaire est recopié depuis la colonne source, y compris lorsque plusieurs propriétaires ou une question ouverte sont mentionnés.
+La direction est conservée telle qu'elle apparaît dans le registre de dépendances : **consommateur → fournisseur**. Elle est déterminée par la capacité ou la donnée consommée et son domaine propriétaire ; elle ne doit pas être confondue avec le flux matériel **Source → Destinataire** du registre des interactions métier. Le propriétaire est recopié depuis la colonne source, y compris lorsque plusieurs propriétaires ou une question ouverte sont mentionnés. Ainsi, INT-018 et INT-020 décrivent une capacité détenue par Workshop ou Procurement que Projects consomme, même si Projects fournit les données d'entrée nécessaires à son traitement.
 
 ## 3. Critères de classification technique
 
@@ -166,7 +166,7 @@ Le mode CHAN-28 proposé ci-dessous est indicatif. Il ne constitue pas une déci
 | INT-121a | D18 Reporting → D17 Handover | P10 | Alimenter le pilotage documentaire des réceptions et garanties — Suivi des réserves, levées, garanties et complétude documentaire | D17 Handover | Qualifiée | À qualifier | Contrat public de lecture à envisager ; Reporting peut utiliser une projection en lecture |
 | INT-122 | D17 Handover → D10 Procurement | P12 | Obtenir les garanties fournisseurs et sous-traitants — Garantie, fournisseur, objet, durée, conditions | D10 Procurement / D17 Handover (Q-44) | À préciser | À qualifier | Contrat public de consultation auprès de Procurement ; Handover consomme les garanties fournisseurs |
 | INT-123 | D18 Reporting → domaines sources | P10 | Alimenter les indicateurs et rapports — Données, événements, indicateurs source, période | Variable selon le domaine source | À décomposer | À qualifier | Événement d'intégration si fait accompli sans réponse attendue ; sinon requalifier le besoin |
-| INT-124 | Consommateurs à identifier → D18 Reporting | P10 | Fournir les rapports et alertes — Rapport, tableau de bord, indicateur, seuil, période | D18 Reporting | À décomposer | À qualifier | Consultation via contrat public de lecture vers Reporting ; décomposer par domaine et usage, sans dépendance universelle |
+| INT-124 | Consommateurs à identifier → D18 Reporting | P10 | Consulter les rapports et alertes produits par Reporting — Rapport, tableau de bord, indicateur, seuil, période | D18 Reporting | À décomposer | À qualifier | Consultation via contrat public de lecture vers Reporting ; décomposer par domaine et usage, sans dépendance universelle |
 | INT-125 | D16 Documents → D18 Reporting | P10 | Archiver ou diffuser un rapport — Rapport, export, période, destinataire | D18 Reporting | Qualifiée | À qualifier | Événement de publication du rapport par Reporting, consommé par Documents pour archivage et diffusion |
 
 ## 5. Points transverses à conserver
