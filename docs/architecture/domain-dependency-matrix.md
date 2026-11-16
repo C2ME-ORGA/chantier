@@ -187,6 +187,6 @@ Le Lot 2 reste documentaire. Il ne doit pas :
 - [Lot 1 — Arbitrages de frontières](domain-boundary-decisions.md)
 - [CHAN-28 — Communication inter-domaines](domain-communication.md)
 - [CHAN-27 — Conventions internes des domaines](domain-conventions.md)
-- [CHAN-31 — Tests d'architecture](../../AGENTS.md)
+- CHAN-31 — Tests d'architecture (ticket Jira)
 - [AGENTS.md](../../AGENTS.md)
 - [Organisation des domaines](../../app/Domains/README.md)
