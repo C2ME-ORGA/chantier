@@ -394,7 +394,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Prestataire → Workforce | Retour de paie, anomalies, confirmations | Cycle de paie |
 | Workforce → Costing | Taux et coûts RH agrégés | Valorisation |
 
-**Points à valider.** Q-11, Q-12, Q-13, Q-14, Q-40.
+**Points à qualifier.** Q-11, Q-13, Q-14, Q-40. La répartition TimeTracking / Workforce pour les absences est validée par V-21.
 
 **Statut.** Proposition, conforme à la décision validée V-07.
 
@@ -562,7 +562,7 @@ Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiqu
 
 **Informations échangées.** Réception, réserves, DOE, garanties clientes, coûts finaux, marge, écarts.
 
-**À qualifier.** Q-30 (réserve vs NCR) et Q-44 (garanties). Les conditions de clôture de l'affaire sont validées par V-28.
+**À qualifier.** Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; les conditions de clôture de l'affaire sont validées par V-28.
 
 **Statut.** Proposition.
 
@@ -674,7 +674,7 @@ Le tableau conserve les identifiants PD historiques pour assurer la traçabilit�
 | PD-17 | Les références inter-domaines utilisent des identifiants publics stables, jamais des Models Eloquent. | Les références publiques utilisent des UUID stables selon V-16 ; le format précis de génération reste à définir dans les conventions d'implémentation. | V-16 |
 | PD-18 | Aucune transaction partagée n'est introduite par défaut ; le fournisseur d'une opération porte ses invariants et sa transaction. | Conforme à V-12 et aux règles de communication CHAN-28. | — |
 | PD-19 | Un échange n'est créé que pour un consommateur réel ; le registre est un besoin, pas une autorisation technique. | Conforme à V-11 ; les interactions restent à qualifier individuellement avant toute autorisation. | — |
-| PD-20 | Les interactions prioritaires de la section 2.2 du registre sont arbitrées avant la matrice du Lot 2. | Réduit le risque de matrice incomplète. | Q-01 à Q-53 |
+| PD-20 | Les interactions prioritaires de la section 2.2 du registre sont arbitrées avant la matrice du Lot 2. | Réduit le risque de matrice incomplète. | Q-01 à Q-53 (références historiques ; plusieurs questions sont désormais arbitrées) |
 
 ## 6. Questions ouvertes
 
@@ -717,7 +717,7 @@ Le tableau conserve les identifiants PD historiques pour assurer la traçabilit�
 | Q-33 | Quelle valeur légale donner à la signature électronique et à l'archivage ? | Détermine les exigences de preuve et de conservation. | À définir avec le juridique. | Différé |
 | Q-34 | Quelles exigences de fraîcheur, de lignée et d'accès pour Reporting ? | Détermine le modèle de reporting et les contrats de lecture. | Documenter source, formule, période, propriétaire. | Important |
 | Q-35 | Quels rôles, périmètres et comptes externes pour Identity ? | Détermine l'autorisation et les accès clients/fournisseurs. | Rôles explicites, comptes externes sur décision. | Important |
-| Q-36 | Quelle stratégie d'identifiants : auto-incrément, UUID, ULID ? | Détermine les références inter-domaines. | À trancher avant les premiers contrats. | Validé — V-16 |
+| Q-36 | Quelle stratégie d'identifiants : auto-incrément, UUID, ULID ? | Détermine les références inter-domaines. | UUID stables pour les références publiques ; version et format de génération à préciser dans les conventions techniques. | Validé — V-16 |
 | Q-37 | Quelle unité monétaire, devise et règle d'arrondi ? | Détermine tous les échanges financiers. | Montants en unité entière ou décimale fixe, devise EUR. | Important |
 | Q-38 | C2ME est-elle une seule entité juridique ou plusieurs établissements ? | Détermine les périmètres et les rapports. | À clarifier avec la direction. | Différé |
 | Q-39 | Quel périmètre hors connexion et quelle stratégie de conflit ? | Détermine les interactions de saisie et d'idempotence. | Serveur autorité ; conflits explicites. | Important |
@@ -810,7 +810,7 @@ Les décisions V-29 à V-59 ci-dessous proviennent des réponses explicites du r
 
 **Contrôle de cohérence.** V-29, V-35 et V-40 remplacent la proposition antérieure qui attribuait le devis à Projects : Clients est désormais propriétaire du devis complet. Projects conserve l'affaire, le contrat, le chantier et l'avancement contractuel. V-58 confirme l'interdiction d'accès direct aux bases des domaines et reste conforme à V-09/V-10 et CHAN-28. V-59 attribue la décision administrative finale au service administratif, sans transférer à celui-ci la propriété du cycle de vie de l'affaire. Les décisions de création automatique d'un chantier et d'un planning définissent des déclenchements métier ; elles n'autorisent aucun accès direct aux composants internes des domaines concernés.
 
-## 7. Décisions restant à valider
+## 7. Décisions et points restant à qualifier
 
 ### 7.1 Décisions structurantes
 
