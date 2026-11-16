@@ -82,6 +82,15 @@ npm run build
 
 Ne pas créer de `tailwind.config.js` par réflexe : il n'est pas requis par la configuration CSS-first actuellement présente.
 
+### Organisation et conventions des tests
+
+- Organiser les tests selon leur dépendance réelle : `tests/Unit` pour la logique isolée, `tests/Feature` pour l'intégration Laravel sur SQLite en mémoire et `tests/MariaDb` pour les comportements spécifiques au moteur MariaDB.
+- Nommer les fichiers selon le sujet testé avec le suffixe `Test.php` ; éviter les noms génériques et les tests démonstratifs sans valeur de régression.
+- Écrire des tests indépendants, déterministes, ciblés et exécutables seuls comme dans la suite complète.
+- Nettoyer les ressources temporaires même en cas d'échec ; ne jamais dépendre de données réelles ou d'un service externe non maîtrisé.
+- Ne pas confondre la validation SQLite avec la validation MariaDB. Toute modification touchant SQL, contraintes, migrations ou comportement moteur doit être couverte par la suite MariaDB appropriée.
+- Le guide de référence des suites, conventions et commandes est [docs/development/testing.md](docs/development/testing.md).
+
 ## Sécurité et données
 
 - Appliquer le principe du moindre privilège.
