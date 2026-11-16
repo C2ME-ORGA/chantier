@@ -9,28 +9,36 @@
 
 Le Lot G distingue quatre résultats qui ne doivent pas être confondus :
 
-1. **Admissible sous contrat public (cible) (cible)** : admissibilité cible établie parce que l'interaction est qualifiée au Lot B, que le consommateur et le propriétaire sont explicitement identifiés et qu'aucune question de frontière ne reste ouverte pour cette relation. Cela n'autorise que la capacité publique minimale définie selon CHAN-28 ; le contrat concret reste à concevoir.
+1. **Admissible sous contrat public (cible)** : admissibilité cible établie parce que l'interaction est qualifiée au Lot B, que le consommateur et le propriétaire sont explicitement identifiés et qu'aucune question de frontière ne reste ouverte pour cette relation. Cela n'autorise que la capacité publique minimale définie selon CHAN-28 ; le contrat concret reste à concevoir.
 2. **Conditionnelle** : la relation est plausible, mais son statut métier, son propriétaire, son périmètre ou une condition opérationnelle doit être confirmé avant de figer le contrat.
 3. **À décomposer** : l'interaction générique ne permet pas de désigner un consommateur ou fournisseur concret.
 4. **Hors périmètre inter-domaines** : service transverse ou intégration externe, qui ne doit pas être compté comme dépendance métier entre deux des 18 domaines.
 
-**Règle de décision :** une interaction dont le statut métier source est « À préciser » ou « À arbitrer » ne peut pas être classée « Admissible sous contrat public (cible) (cible) », même si ses domaines semblent identifiables. Une interaction qualifiée au Lot B n'est pas automatiquement autorisée : le consommateur, le propriétaire et la capacité consommée doivent aussi être explicites et cohérents avec les décisions de frontière.
+**Règle de décision :** une interaction dont le statut métier source est « À préciser » ou « À arbitrer » ne peut pas être classée « Admissible sous contrat public (cible) », même si ses domaines semblent identifiables. Une interaction qualifiée au Lot B n'est pas automatiquement autorisée : le consommateur, le propriétaire et la capacité consommée doivent aussi être explicites et cohérents avec les décisions de frontière.
 
 **Aucune dépendance technique implémentée n'est déclarée vérifiée.** L'inspection de l'arborescence sur `develop` montre que les 18 répertoires `app/Domains/*` ne contiennent que des `.gitkeep`. `app/Core/` contient son README ; les seuls éléments applicatifs observés hors domaines sont le contrôleur Laravel, `Models/User.php` et les providers. Il n'existe donc pas de contrat de domaine, événement, listener, job ou import inter-domaines à auditer dans le code actuel.
 
-## 2. Résultat quantitatif
+## 2. Évolution des périmètres cibles au fil de la programmation
+
+La cartographie des 18 domaines, les responsabilités décrites au Lot 1 et les qualifications d'interactions de ce Lot G constituent un **cadre d'architecture cible initial**. Ils fixent les principes de propriété, d'isolation et de communication ; ils ne figent pas à l'avance l'intégralité du contenu fonctionnel et technique de chaque domaine.
+
+Les périmètres précis, les objets réellement détenus, les composants internes et les interactions nécessaires seront confirmés et affinés au fur et à mesure de la programmation, à partir des cas d'usage effectivement développés et des règles métier découvertes. Un domaine pourra être précisé, étendu, scindé ou réorganisé si les besoins le justifient. Toute évolution devra être documentée et rester cohérente avec les principes CHAN-27 et les contrats publics/événements CHAN-28.
+
+En conséquence, les qualifications de ce Lot G sont des orientations de cible, non une liste de contrats à implémenter immédiatement. Une interaction ne sera concrétisée que lorsqu'un besoin réel sera développé ; son consommateur, son propriétaire, sa capacité et son mode d'échange seront alors confirmés. L'absence actuelle de code métier dans les domaines est donc conforme à cette démarche progressive et ne constitue pas, à elle seule, une anomalie.
+
+## 3. Résultat quantitatif
 
 | Résultat de qualification cible | Nombre |
 |---|---:|
-| Admissible sous contrat public (cible) (cible) | 105 |
+| Admissible sous contrat public (cible) | 105 |
 | Conditionnelle | 19 |
 | À décomposer | 4 |
 | Hors périmètre inter-domaines | 2 |
 | **Total** | **130** |
 
-La classe « Admissible sous contrat public (cible) (cible) » exprime une admissibilité d'architecture, pas la preuve d'un contrat existant ni une autorisation d'importer une classe interne. Elle n'est retenue que pour les interactions qualifiées au Lot B, avec consommateur, propriétaire et capacité explicitement identifiés. Toute évolution du besoin ou de la propriété impose une nouvelle qualification. Les interactions conditionnelles ne doivent pas être implémentées avant résolution de leur condition.
+La classe « Admissible sous contrat public (cible) » exprime une admissibilité d'architecture, pas la preuve d'un contrat existant ni une autorisation d'importer une classe interne. Elle n'est retenue que pour les interactions qualifiées au Lot B, avec consommateur, propriétaire et capacité explicitement identifiés. Toute évolution du besoin ou de la propriété impose une nouvelle qualification. Les interactions conditionnelles ne doivent pas être implémentées avant résolution de leur condition.
 
-## 3. Matrice de qualification — 130 interactions
+## 4. Matrice de qualification — 130 interactions
 
 | INT | Qualification cible | Justification / condition | Preuve d'implémentation |
 |---|---|---|---|
@@ -165,9 +173,9 @@ La classe « Admissible sous contrat public (cible) (cible) » exprime une admis
 | INT-124 | À décomposer | Identifier chaque consommateur, rapport et usage ; ne pas créer de dépendance universelle vers Reporting. | Non implémentée / non vérifiable à ce stade |
 | INT-125 | Admissible sous contrat public (cible) | Interaction qualifiée au Lot B ; consommateur et propriétaire identifiés dans la matrice Lot C. Admissible uniquement via la capacité publique minimale définie selon CHAN-28, sans accès aux composants internes ni écriture chez le fournisseur. Le contrat concret reste à concevoir. | Non implémentée / non vérifiable à ce stade |
 
-## 4. Règles techniques obligatoires pour les dépendances autorisées
+## 5. Règles techniques obligatoires pour les dépendances autorisées
 
-Les dépendances classées « Admissible sous contrat public (cible) (cible) » ne sont admissibles que sous les règles suivantes. Cette classe ne dispense pas de concevoir et valider le contrat CHAN-28 avant implémentation :
+Les dépendances classées « Admissible sous contrat public (cible) » ne sont admissibles que sous les règles suivantes. Cette classe ne dispense pas de concevoir et valider le contrat CHAN-28 avant implémentation :
 
 - Le sens reste **consommateur → fournisseur**, déterminé par la capacité ou la donnée consommée et son propriétaire.
 - Le consommateur n'importe jamais les Models, Actions, Services, DTO internes, Policies ou tables du fournisseur.
@@ -181,7 +189,7 @@ Les dépendances classées « Admissible sous contrat public (cible) (cible) » 
 
 Une dépendance « Interdite » n'est pas attribuée à une INT métier en l'absence d'un contournement démontré. En revanche, les accès directs aux composants internes et aux tables d'un autre domaine sont interdits par les règles générales V-09/V-10, indépendamment de l'INT qui aurait motivé l'accès.
 
-## 5. Traitement des questions ouvertes
+## 6. Traitement des questions ouvertes
 
 | Question | INT concernées | Décision attendue pour lever la condition |
 |---|---|---|
@@ -193,7 +201,7 @@ Une dépendance « Interdite » n'est pas attribuée à une INT métier en l'abs
 
 Les questions ouvertes ne bloquent pas les dépendances sans lien avec ces sujets. Elles bloquent uniquement la formalisation des contrats concernés.
 
-## 6. Interactions génériques et périmètres externes
+## 7. Interactions génériques et périmètres externes
 
 - **INT-001** : Identity est un service transverse d'authentification/autorisation. Les points d'entrée concernés le consomment selon leurs besoins ; il n'existe pas de dépendance métier uniforme des 18 domaines.
 - **INT-075** : Workforce échange avec un prestataire de paie externe. Cette intégration est hors graphe inter-domaines des 18 domaines et doit être spécifiée séparément.
@@ -202,7 +210,7 @@ Les questions ouvertes ne bloquent pas les dépendances sans lien avec ces sujet
 - **INT-123** : identifier chaque source Reporting, l'indicateur, la projection et la fréquence utile.
 - **INT-124** : identifier les consommateurs réels de rapports/alertes et les usages ; ne pas créer un lien universel depuis tous les domaines.
 
-## 7. Vérification du code et limites
+## 8. Vérification du code et limites
 
 Arborescence vérifiée sur `develop` :
 
@@ -219,14 +227,14 @@ Conséquences :
 
 Cette vérification est un contrôle de l'arborescence applicative observée, pas une analyse statique exhaustive de tous les fichiers du dépôt.
 
-## 8. Cohérence avec les tickets voisins
+## 9. Cohérence avec les tickets voisins
 
 - **CHAN-27** : les responsabilités internes (Models, Actions, Services, DTO, événements locaux, Policies) restent définies par les conventions internes.
 - **CHAN-28** : les mécanismes de contrats, événements, transaction, publication après commit, idempotence et reprise restent exclusivement définis par CHAN-28. Le Lot G ne les implémente pas.
 - **CHAN-31** : les règles automatiques de détection des dépendances interdites et de respect des frontières restent à tester dans ce ticket distinct.
 - **CHAN-30** : l'écart de référence `modules/` dans `AGENTS.md` reste hors du périmètre du Lot G.
 
-## 9. Critères de sortie du Lot G
+## 10. Critères de sortie du Lot G
 
 - [x] Les 130 identifiants INT sont repris une seule fois.
 - [x] Les interactions métier, les services transverses et les intégrations externes sont distingués.
@@ -237,7 +245,7 @@ Cette vérification est un contrôle de l'arborescence applicative observée, pa
 - [x] Revue croisée documentaire : cohérence du statut métier source contrôlée pour les 130 lignes ; quatre interactions non qualifiées reclassées conditionnelles.
 - [ ] Vérification CI de la PR.
 
-## 10. Conclusion
+## 11. Conclusion
 
 Le Lot G apporte une qualification d'architecture cible suffisamment explicite pour distinguer les dépendances cohérentes, les dépendances conditionnelles, les interactions à décomposer et les échanges hors périmètre. Il ne prétend pas certifier une implémentation qui n'existe pas encore.
 
