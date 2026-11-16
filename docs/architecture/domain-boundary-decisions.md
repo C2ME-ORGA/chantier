@@ -647,7 +647,7 @@ Une seule décision ne remplace pas les autres. Une acceptation technique ne vau
 
 **À valider.** Q-20, Q-37.
 
-**Statut.** Responsabilité de clôture validée par V-28 ; la répartition opérationnelle entre Projects et Handover est précisée par les arbitrages du questionnaire Lot 2.
+**Statut.** Responsabilité de clôture validée par V-28 ; la répartition opérationnelle entre Projects et Handover est validée par V-55.
 
 ## 5. Décisions proposées et propositions historiques
 
