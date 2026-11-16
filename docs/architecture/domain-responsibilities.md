@@ -325,7 +325,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Règle | Statut |
 | --- | --- |
 | Un client est identifié par la référence du tiers maître détenue par Clients ; Clients porte le référentiel maître unique des tiers (V-15). | Validé |
-| Un tiers peut porter un rôle commercial, un rôle fournisseur et un rôle sous-traitant ; ces rôles ne créent pas nécessairement des identités juridiques distinctes. | Proposition |
+| Un même tiers peut cumuler plusieurs rôles dans une même affaire (client, donneur d'ordre, maître d'ouvrage, payeur), explicitement distingués ; les rôles ne créent pas plusieurs identités juridiques. | Validé — V-18 |
 | Un prospect devient client à la première commande ou au premier contrat ; l'historique de prospection est conservé. | Proposition de travail — à arbitrer dans Q-04 |
 | Un client avec des affaires actives ne peut pas être supprimé ; il peut être désactivé ou bloqué. | Proposition |
 | Un client bloqué ne peut pas recevoir de nouvelle affaire sans dérogation autorisée. | Proposition, seuil et autorité à valider |
@@ -496,7 +496,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Les lignes budgétaires sont rattachées à un lot, une nature et une période ; leur somme forme l'enveloppe. | Proposition |
 | Une révision au-delà d'un seuil exige une validation de la direction. | Proposition, seuil à définir Q-08 |
 | Un avenant validé entraîne une révision budgétaire tracée. | Proposition |
-| Un engagement supérieur au disponible budgétaire est bloqué ou soumis à une dérogation explicite. | Proposition, à valider |
+| Une commande fournisseur qui dépasse le disponible budgétaire déclenche une alerte émise par Budgets ; aucun blocage automatique de Procurement n'est imposé. | Validé — V-33, V-38 |
 | Le budget ne se confond pas avec le prix de vente ; la marge cible est validée par la direction. | Proposition |
 | Le budget ne contient pas les coûts constatés : il fixe l'enveloppe et analyse les écarts avec Costing. | Proposition, arbitrage BD-03 |
 | La prévision budgétaire porte sur l'enveloppe et sa consommation ; le coût final estimé (EAC) est porté par Costing. | Proposition |
@@ -1170,11 +1170,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 ### D17 — Handover
 
-**Mission.** Organiser la réception contractuelle des travaux, gérer les réserves, constituer le DOE et prononcer la clôture contractuelle des travaux.
+**Mission.** Préparer et centraliser les documents et livrables nécessaires à la réception contractuelle, constituer le DOE et assurer le suivi documentaire des réserves et garanties. Projects organise la réception contractuelle et conserve la responsabilité du cycle de vie de l'affaire (V-29 à V-59).
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Réceptions partielles et finales, réserves, levées de réserves, procès-verbaux, DOE, garanties clientes, périodes de garantie, dossier de clôture, attestations. |
+| Périmètre inclus | Préparation documentaire des réceptions partielles et finales, centralisation des pièces et livrables, dossier de réception, suivi documentaire des réserves et levées, procès-verbaux, DOE, garanties clientes, périodes de garantie, dossier de clôture, attestations. L'organisation et la responsabilité contractuelles de la réception relèvent de Projects. |
 | Périmètre exclu | Conformité technique (Quality), exécution des travaux (Projects), budget et coûts (Budgets/Costing), stock (Inventory), stockage documentaire (Documents), propriété des garanties fournisseurs (Procurement), contentieux (hors périmètre). |
 | Objets métier | `HND-01` Réception, `HND-02` Réserve, `HND-03` LevéeDeRéserve, `HND-04` DOE, `HND-05` GarantieClient, `HND-06` DossierDeClôture. |
 | Acteurs | Responsable réception/handover, chargé d'affaires, chef de chantier, qualité, client, maître d'ouvrage, maître d'œuvre, gestionnaire documentaire. |
@@ -1220,7 +1220,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Costing | Dates de réception et de garantie | Clôture |
 | Sortie | Reporting | Délais de réception, réserves, garanties | Pilotage |
 
-**Limites et chevauchements.** Handover porte la réception contractuelle et les réserves ; Quality porte la conformité technique et les NCR ; Projects porte l'exécution et la clôture de l'affaire ; Documents stocke le DOE. Voir BD-07, BD-08 et BD-17.
+**Limites et chevauchements.** Projects organise et porte la réception contractuelle ainsi que le cycle de vie de l'affaire ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves ; Quality porte la conformité technique et les NCR ; Documents assure le stockage et le versionnement. Voir BD-07, BD-08 et BD-17.
 
 **Questions ouvertes.** Q-30 (réserve vs NCR), Q-31 (DOE), Q-44 (garanties). La condition générale de clôture est validée par V-28.
 
