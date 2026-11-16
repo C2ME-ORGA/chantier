@@ -57,6 +57,8 @@ Le Lot F présente la revue finale des documents, des références CHAN-27/28/31
 
 Le Lot G qualifie les 130 interactions pour l'architecture cible : 105 admissibles sous contrat public, 19 conditionnelles, 4 à décomposer et 2 hors périmètre inter-domaines. Une admissibilité cible exige une interaction qualifiée au Lot B ainsi qu'un consommateur, un propriétaire et une capacité explicitement identifiés. Cette qualification ne certifie pas le code existant ; les dépendances implémentées restent à vérifier lorsque les domaines seront développés.
 
+**Principe de conception progressive :** les 18 domaines et leurs responsabilités constituent un cadre initial. Leurs périmètres fonctionnels et techniques détaillés seront décidés et affinés au fur et à mesure de la programmation, sur la base des besoins réellement implémentés. Les qualifications du Lot G orientent la cible sans imposer de créer immédiatement chaque contrat ou composant. Les évolutions de périmètre restent soumises aux règles de propriété, d'isolation et de communication CHAN-27/28.
+
 > **Garde-fou :** la qualification métier, la matrice candidate, l'analyse de graphe et les scénarios illustratifs ne valent pas preuve d'implémentation. Le Lot G qualifie la cible d'architecture sous contrats publics CHAN-28 ; les dépendances PHP réellement implémentées restent non vérifiables tant que les domaines ne contiennent pas de code.
 
 ## Conventions de lecture
