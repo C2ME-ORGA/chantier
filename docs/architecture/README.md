@@ -12,7 +12,7 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | [`business-processes.md`](business-processes.md) | CHAN-29 Lot 1 | Cartographie des 12 processus métier : déclencheurs, acteurs, étapes, résultats, exceptions et interactions. |
 | [`business-objects.md`](business-objects.md) | CHAN-29 Lot 1 | Catalogue des objets métier, de leur propriétaire pressenti et de leurs consommateurs. |
 | [`domain-interactions-register.md`](domain-interactions-register.md) | CHAN-29 Lot 1 | Registre des interactions métier entre domaines : source, destinataire, motif, informations et moment. |
-| [`domain-boundary-decisions.md`](domain-boundary-decisions.md) | CHAN-29 Lot 1 | Chevauchements, arbitrages proposés, décisions validées et questions ouvertes. |
+| [`domain-boundary-decisions.md`](domain-boundary-decisions.md) | CHAN-29 Lot 1 | Chevauchements, arbitrages proposés, décisions validées et questions ouvertes. |\n| [`domain-dependency-matrix.md`](domain-dependency-matrix.md) | CHAN-29 Lot 2 | Matrice technique des dépendances inter-domaines — document de travail à qualifier et valider. |
 
 ## Ordre de lecture recommandé
 
@@ -32,7 +32,7 @@ Les contrats synchrones sont traités dans les sections 1 à 14 de `domain-commu
 
 Les cinq documents CHAN-29 décrivent le **Lot 1** : inventaire et cartographie des responsabilités métier.
 
-> **Ce Lot 1 est documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites, qui relève du Lot 2. Il ne crée aucune classe, aucun contrat, aucun événement, aucune migration et aucun test d'architecture. Les responsabilités décrites sont des propositions de cadrage, sauf mention explicite d'une décision validée.
+ > **Lot 1 — documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites.\n>\n> **Lot 2 — documentaire.** La matrice candidate référence le Lot 1 et distingue les dépendances à qualifier des règles déjà validées. Elle ne crée aucune classe, aucun contrat, aucun événement, aucune migration et aucun test d'architecture. Les relations issues des consommateurs du Lot 1 ne valent pas autorisation technique.
 
 Le dépôt ne contient pas encore de code métier dans `app/Domains/` : les domaines sont matérialisés par des répertoires et des fichiers `.gitkeep`.
 
