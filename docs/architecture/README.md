@@ -55,7 +55,7 @@ Le Lot E illustre neuf parcours métier et les frontières de propriété associ
 
 Le Lot F présente la revue finale des documents, des références CHAN-27/28/31, de l'organisation Core/Domains, des critères Jira et des PR/CI. Il conclut que le critère relatif à la classification des dépendances reste partiellement démontré faute de preuve d'implémentations techniques.
 
-Le Lot G qualifie les 130 interactions pour l'architecture cible : dépendances autorisées sous contrat public, cas conditionnels, interactions à décomposer et périmètres transverses/externes. Cette qualification ne certifie pas le code existant ; les dépendances implémentées restent à vérifier lorsque les domaines seront développés.
+Le Lot G qualifie les 130 interactions pour l'architecture cible : 105 admissibles sous contrat public, 19 conditionnelles, 4 à décomposer et 2 hors périmètre inter-domaines. Une admissibilité cible exige une interaction qualifiée au Lot B ainsi qu'un consommateur, un propriétaire et une capacité explicitement identifiés. Cette qualification ne certifie pas le code existant ; les dépendances implémentées restent à vérifier lorsque les domaines seront développés.
 
 > **Garde-fou :** la qualification métier, la matrice candidate, l'analyse de graphe et les scénarios illustratifs ne valent pas preuve d'implémentation. Le Lot G qualifie la cible d'architecture sous contrats publics CHAN-28 ; les dépendances PHP réellement implémentées restent non vérifiables tant que les domaines ne contiennent pas de code.
 
