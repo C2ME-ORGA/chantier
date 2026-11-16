@@ -500,7 +500,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Le budget ne se confond pas avec le prix de vente ; la marge cible est validée par la direction. | Proposition |
 | Le budget ne contient pas les coûts constatés : il fixe l'enveloppe et analyse les écarts avec Costing. | Proposition, arbitrage BD-03 |
 | La prévision budgétaire porte sur l'enveloppe et sa consommation ; le coût final estimé (EAC) est porté par Costing. | Proposition |
-| La clôture budgétaire intervient après la clôture des coûts et la clôture contractuelle. | Proposition, Q-53 |
+| La clôture budgétaire intervient après la clôture des coûts et la clôture contractuelle. | Validé — V-28 |
 
 **États et transitions.**
 
