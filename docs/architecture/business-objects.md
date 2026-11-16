@@ -109,14 +109,11 @@ Le catalogue n'est pas un dictionnaire exhaustif de chaque terme employé dans l
 | PRJ-02 | Chantier | Lieu physique d'exécution des travaux d'une affaire. | Adresse, accès, dates, responsable, statut, contraintes. | Planning, Logistics, Safety, Quality |
 | PRJ-03 | LotPhase | Subdivision technique ou temporelle d'une affaire ou d'un chantier. | Code, description, quantité, montant, dates, statut. | Planning, Budgets, Costing, Quality |
 | PRJ-04 | Étude | Dossier technique préalable à une offre ou à une exécution. | Périmètre, hypothèses, plans, calculs, statut, version. | Costing, Workshop, Documents |
-
 | PRJ-06 | CommandeClient | Commande ou ordre de service reçu d'un client. | Référence, date, montant, périmètre, délais, statut. | Budgets, Costing, Planning |
 | PRJ-07 | Avenant | Modification contractuelle du périmètre, du prix ou des délais. | Référence, objet, montant, délai, statut, validation. | Budgets, Costing, Planning, Handover |
 | PRJ-08 | Contrat | Engagement juridique encadrant une affaire. | Parties, objet, montant, clauses, dates, documents. | Clients, Documents, Costing |
 | PRJ-09 | JalonContractuel | Événement daté engageant contractuellement l'affaire. | Libellé, date, condition, statut, responsable. | Planning, Handover, Reporting |
 | PRJ-10 | ActeurAffaire | Rôle d'un acteur sur une affaire. | Acteur, rôle, période, responsabilité, statut. | Identity, Projects, Reporting |
-
-
 
 **Évolution de propriété issue de V-29, V-35 et V-40.** Le devis commercial est désormais l'objet `CLI-07 DevisCommercial`, propriétaire Clients. L'ancien identifiant candidat `PRJ-05 Devis` n'est plus un objet de Projects et ne doit pas être réutilisé ; les identifiants PRJ-06 et suivants sont conservés pour éviter de renuméroter les références existantes. Le total du catalogue reste de 132 objets : un objet est transféré de D03 vers D02.
 
