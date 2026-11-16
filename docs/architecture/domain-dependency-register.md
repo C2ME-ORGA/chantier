@@ -185,7 +185,7 @@ Pour chaque ligne, documenter avant de décider :
 9. **Cycle** : vérifier l'absence de dépendance circulaire, de transaction partagée implicite et de boucle d'événements.
 10. **Décision** : attribuer « Autorisée », « Conditionnelle » ou « Interdite » uniquement après revue et validation explicite.
 
-## 5.1 Conséquences du questionnaire métier Lot 2
+## 5. Conséquences du questionnaire métier Lot 2
 
 Les arbitrages V-29 à V-59 de `domain-boundary-decisions.md` doivent être appliqués lors de la qualification individuelle des interactions, notamment :
 
