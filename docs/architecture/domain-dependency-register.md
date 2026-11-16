@@ -33,13 +33,15 @@ Une orientation candidate erronée doit être corrigée avant toute qualificatio
 | Indicateur | Résultat |
 | --- | ---: |
 | Interactions d'origine reprises du Lot 1 | 125 |
-| Lignes actuellement présentes dans le registre | 131 |
-| Scissions réalisées au Lot A | 3 |
-| Scissions réalisées au Lot B | 3 |
-| Lignes supplémentaires issues des scissions | 6 |
-| Identifiants d'origine conservés | 125 |
-| Déclinaisons suffixées rattachées à une interaction d'origine | 6 |
-| Lignes qualifiées métier | 118 |
+| Lignes actuellement présentes dans le registre | 130 |
+| Scissions réelles réalisées au Lot A | 3 |
+| Scissions réelles réalisées au Lot B | 2 |
+| Lignes supplémentaires issues des scissions | 5 |
+| Identifiants d'origine actifs dans le registre | 124 |
+| Interactions d'origine représentées par une déclinaison | 1 (`INT-072` → `INT-072a`) |
+| Identifiants historiques corrigés | 1 (`INT-072`) |
+| Déclinaisons suffixées conservées | 6 |
+| Lignes qualifiées métier | 117 |
 | Lignes à préciser | 4 |
 | Lignes à décomposer | 4 |
 | Lignes à arbitrer | 3 |
@@ -49,17 +51,17 @@ Une orientation candidate erronée doit être corrigée avant toute qualificatio
 | Classe technique attribuée | Aucune |
 | Dépendances autorisées / conditionnelles / interdites | 0 / 0 / 0 |
 
-Les 125 interactions d'origine sont conservées ; le registre contient 131 lignes après six scissions (trois du Lot A, trois du Lot B). Une déclinaison suffixée n'est pas une nouvelle interaction d'origine et ne doit pas être ajoutée au compteur de 125.
+Les 125 interactions d'origine restent représentées ; le registre contient 130 lignes actives après cinq scissions réelles et la correction de l'identifiant historique `INT-072`. Une déclinaison suffixée n'est pas une nouvelle interaction d'origine et ne doit pas être ajoutée au compteur de 125.
 
-La qualification métier ne vaut pas classification technique. Les 131 lignes restent hors de toute classe « Autorisée », « Conditionnelle » ou « Interdite ».
+La qualification métier ne vaut pas classification technique. Les 130 lignes restent hors de toute classe « Autorisée », « Conditionnelle » ou « Interdite ».
 
 ### 2.1 Nomenclature des statuts Lot B
 
 | Statut | Définition | Lignes concernées |
 | --- | --- | --- |
-| **Qualifiée** | Besoin métier, consommateur, fournisseur, propriétaire et périmètre suffisamment établis. La suite technique reste à instruire au Lot C. | 118 |
+| **Qualifiée** | Besoin métier, consommateur, fournisseur, propriétaire et périmètre suffisamment établis. La suite technique reste à instruire au Lot C. | 117 |
 | **À préciser** | Interaction réelle, mais description, périmètre ou source d'une donnée encore insuffisamment établie. | INT-056, INT-071, INT-076, INT-102 |
-| **À scinder** | Plusieurs interactions métier distinctes étaient regroupées. Les trois cas identifiés au Lot B ont été scindés ; aucun cas ne reste ouvert sous ce statut. | 0 restant ; scissions INT-016, INT-023, INT-072 |
+| **À scinder** | Plusieurs interactions métier distinctes étaient regroupées. Les deux scissions réelles du Lot B ont été réalisées ; aucun cas ne reste ouvert sous ce statut. `INT-072` a été corrigé en `INT-072a` et n'est pas compté comme une scission à deux lignes. | 0 restant ; scissions INT-016, INT-023 |
 | **À décomposer** | Destinataire ou besoin trop agrégé pour être exploitable en l'état ; la décomposition est documentée en 2.4. | INT-114, INT-115, INT-123, INT-124 |
 | **Coordination métier** | Coordination humaine ou organisationnelle sans dépendance technique démontrée. Aucun cas net n'a été identifié dans le registre. | 0 |
 | **Hors matrice inter-domaines** | Interaction qui ne correspond pas à une dépendance entre deux des 18 domaines. | INT-001, INT-075 |
@@ -74,22 +76,29 @@ Ces statuts sont des statuts de qualification métier. Ils ne préjugent ni du m
 | `INT-010` | `INT-010`, `INT-010a` | 2 | Séparer les faits contractuels de réception portés par Projects des éléments documentaires préparés par Handover. |
 | `INT-016` | `INT-016`, `INT-016a` | 2 | Séparer la demande d'estimation Projects → Costing des références contractuelles Costing → Projects. |
 | `INT-023` | `INT-023`, `INT-023a` | 2 | Séparer les exigences contractuelles Quality → Projects des résultats et NCR Projects → Quality. |
-| `INT-072` | `INT-072`, `INT-072a` | 2 | Séparer les qualifications RH Safety → Workforce des exigences et alertes sécurité Workforce → Safety. |
 | `INT-120` | `INT-120`, `INT-120a` | 2 | Séparer les dates et décisions contractuelles de Projects des dates de garantie et références documentaires de Handover. |
 | `INT-121` | `INT-121`, `INT-121a` | 2 | Séparer le pilotage contractuel des réceptions de Projects du pilotage documentaire des réserves, levées et garanties de Handover. |
-| **Total** | **6 interactions d'origine, 12 lignes** | **12** | **6 lignes supplémentaires, soit 131 lignes pour 125 interactions d'origine.** |
+| **Total** | **5 interactions d'origine, 10 lignes** | **10** | **5 lignes supplémentaires, soit 130 lignes pour 125 interactions d'origine.** |
 
-Les identifiants historiques sont conservés. Le suffixe `a` identifie une déclinaison d'une interaction existante ; il ne crée ni un nouvel identifiant d'origine ni une interaction supplémentaire au sens du Lot 1. Toute scission ultérieure doit suivre la même convention et être ajoutée à ce tableau.
+Les identifiants historiques des scissions réelles sont conservés. Le suffixe `a` identifie une déclinaison d'une interaction existante ; il ne crée ni un nouvel identifiant d'origine ni une interaction supplémentaire au sens du Lot 1.
+
+#### Identifiant historique corrigé
+
+| Identifiant historique | Représentation active | Lignes actives | Traitement |
+| --- | --- | ---: | --- |
+| `INT-072` | `INT-072a` | 1 | Erreur de qualification introduite lors de la scission : `INT-072` avait été rédigé comme un doublon de `INT-071`. Le besoin d'origine est porté par `INT-072a` (Workforce consomme les exigences et alertes de Safety). `INT-072` n'est pas une interaction active et ne doit pas être réutilisé. |
+
+`INT-072` est conservé uniquement dans cette table de traçabilité. Il ne figure pas dans le registre actif et ne compte pas comme une ligne supplémentaire. Le besoin d'origine est représenté par `INT-072a`, tandis que `INT-071` reste l'interaction distincte Safety → Workforce pour les formations et qualifications RH.
 
 ### 2.3 Audit global des anomalies
 
-L'audit des 131 lignes fait ressortir les familles d'anomalies suivantes :
+L'audit des 130 lignes actives fait ressortir les familles d'anomalies suivantes :
 
 - **Agrégats transverses** : INT-001, INT-114, INT-115 et INT-124 utilisent « Tous les domaines » ou un destinataire générique. Ils ne peuvent pas devenir des dépendances universelles et sont qualifiés « À décomposer » ou « Hors matrice ».
 - **Agrégats de Reporting** : INT-123 regroupe les flux vers Reporting déjà détaillés par INT-011, INT-036, INT-052, INT-057, INT-067, INT-074, INT-076, INT-087, INT-095, INT-100, INT-106, INT-107, INT-110, INT-113 et INT-117.
 - **Agrégats documentaires** : INT-114 et INT-115 recouvrent des dépôts et consultations déjà décrits par INT-026, INT-027, INT-085, INT-086, INT-108, INT-112, INT-116 et INT-119. Ils sont conservés comme méta-interactions à décomposer, sans créer de doublons.
-- **Échanges bidirectionnels ou multi-besoins** : INT-016, INT-023 et INT-072 ont été scindés. INT-050 a été requalifié en flux unique temps/absences, l'avancement des activités restant interne à Planning.
-- **Sens inversé ou description inversée** : INT-031 et INT-125 ont été corrigés. Les splits INT-016, INT-023 et INT-072 fixent également le sens consommateur → fournisseur.
+- **Échanges bidirectionnels ou multi-besoins** : INT-016 et INT-023 ont été scindés. INT-072 a été corrigé : il était un doublon de INT-071 et le besoin d'origine est porté par INT-072a. INT-050 a été requalifié en flux unique temps/absences, l'avancement des activités restant interne à Planning.
+- **Sens inversé ou description inversée** : INT-031 et INT-125 ont été corrigés. Les scissions INT-016 et INT-023 fixent également le sens consommateur → fournisseur ; INT-071 et INT-072a portent deux sens distincts et non dupliqués.
 - **Demandes avec consommation d'entrée** : INT-018 et INT-020 conservent Projects comme consommateur de la capacité de Workshop ou de Procurement ; le fournisseur consomme le besoin pour exécuter, ce qui ne constitue pas une inversion de sens.
 - **Qualité** : INT-022 décrit le flux Projects → Quality pour le plan qualité ; les exigences contractuelles en sens inverse sont couvertes par INT-023.
 - **Documents confondus avec décisions métier** : les flux documentaires (INT-026, INT-027, INT-085, INT-086, INT-108, INT-112, INT-116, INT-119, INT-125) distinguent désormais le contenant documentaire du contenu et de la décision métier.
@@ -186,8 +195,7 @@ Les lignes INT-114, INT-115, INT-123 et INT-124 restent dans le registre pour la
 | INT-069 | D07 Workforce → D08 TimeTracking | P10 | Notification | Workforce consomme les temps validés, absences constatées et heures supplémentaires issus de TimeTracking pour préparer les variables transmises au prestataire de paie. Selon V-21, TimeTracking constate les événements et durées ; Workforce qualifie le motif RH et prépare les éléments variables. | Fournir les faits de temps nécessaires aux variables de paie | Temps validés, absences, heures supplémentaires | Cycle de paie | D08 TimeTracking | Qualifiée |
 | INT-070 | D05 Budgets → D07 Workforce | P01, P02, P03 | Référentiel | Budgets consomme les hypothèses RH (taux, postes, effectifs et disponibilité) détenues par Workforce pour construire les enveloppes de personnel. Workforce est propriétaire des données RH et des hypothèses de ressources ; Budgets reste propriétaire de l'enveloppe autorisée. | Fournir les hypothèses de coût RH | Taux, postes, effectifs, disponibilité | Élaboration budgétaire | D07 Workforce | Qualifiée |
 | INT-071 | D15 Safety → D07 Workforce | P04, P09 | Référentiel | Safety consomme les formations et qualifications RH détenues par Workforce pour vérifier les compétences nécessaires à la prévention. Workforce reste propriétaire des qualifications RH ; Safety reste propriétaire des habilitations et restrictions de sécurité. Le partage exact entre qualification RH et habilitation sécurité reste à préciser. | Fournir les formations et qualifications | Formation, qualification, validité, preuve | Affectation et prévention | D07 Workforce | À préciser |
-| INT-072 | D15 Safety → D07 Workforce | P04, P09 | Référentiel | Safety consomme les formations et qualifications RH détenues par Workforce pour vérifier les compétences disponibles et les exigences de prévention. Workforce reste propriétaire du dossier RH et des qualifications ; Safety reste propriétaire des habilitations et restrictions de sécurité. | Vérifier les formations et qualifications disponibles | Formation, qualification, validité, preuve | Affectation et prévention | D07 Workforce | Qualifiée |
-| INT-072a | D07 Workforce → D15 Safety | P04, P11 | Notification | Workforce consomme les exigences de prévention, restrictions et alertes sécurité produites par Safety pour tenir à jour les données RH et les affectations. Safety reste propriétaire des exigences et décisions de prévention ; Workforce reste propriétaire du dossier RH. | Recevoir les exigences et alertes sécurité | Exigence, habilitation, incident, restriction | Prévention | D15 Safety | Qualifiée |
+| INT-072a | D07 Workforce → D15 Safety | P04, P11 | Notification | Workforce consomme les exigences de prévention, restrictions, habilitations opérationnelles et alertes sécurité produites par Safety pour tenir à jour les données RH et les affectations. Safety reste propriétaire des exigences et décisions de prévention ; Workforce reste propriétaire du dossier RH. | Recevoir les exigences et alertes sécurité | Exigences, restrictions, habilitations opérationnelles, alertes, dates d'effet | Prévention | D15 Safety | Qualifiée |
 | INT-073 | D14 Quality → D07 Workforce | P11 | Référentiel | Quality consomme les qualifications, formations, validités et preuves détenues par Workforce pour vérifier l'aptitude des intervenants aux opérations soumises à exigences qualité. Workforce reste propriétaire du dossier de compétence ; Quality définit les exigences qualité et statue sur la conformité du processus ou de l'opération. | Transmettre les formations et qualifications RH disponibles | Formations, qualifications RH, validité, preuves | Contrôle qualité | D07 Workforce | Qualifiée |
 | INT-074 | D18 Reporting → D07 Workforce | P10 | Consultation | Reporting consomme les effectifs, qualifications et absences détenus par Workforce pour produire les indicateurs RH. La source de la masse salariale doit être arbitrée entre Workforce, Costing et le prestataire de paie ; elle ne peut pas être présumée dans Workforce. | Alimenter le pilotage RH | Effectifs, qualifications, absences, masse salariale | Reporting | D07 Workforce | À arbitrer |
 | INT-075 | D07 Workforce → Prestataire de paie externe | P10 | Document | Workforce prépare et transmet au prestataire externe les variables, absences qualifiées, données contractuelles et périodes nécessaires à la production des bulletins. Le prestataire calcule la paie ; cette relation est une intégration externe, pas une dépendance entre deux des 18 domaines. | Transmettre les éléments de paie | Variables, absences, contrat, période, centre de coût | Cycle de paie | D07 Workforce / prestataire externe | Hors matrice inter-domaines |
@@ -275,7 +283,7 @@ Les arbitrages V-29 à V-59 de `domain-boundary-decisions.md` ont été appliqu�
 - Reporting consomme exclusivement des données publiées ou exposées par contrats publics ; l'accès direct aux tables est interdit.
 - La clôture administrative est prononcée par le service administratif après confirmations des domaines ; Projects conserve le cycle de vie de l'affaire.
 
-**Statut.** Ces arbitrages affinent les propriétaires, consommateurs et déclencheurs métier. Les 125 interactions d'origine, représentées par 131 lignes après scissions, sont qualifiées métier au Lot B ; leur classement technique et leur mode d'échange restent à instruire au Lot C et dans CHAN-28.
+**Statut.** Ces arbitrages affinent les propriétaires, consommateurs et déclencheurs métier. Les 125 interactions d'origine, représentées par 130 lignes actives après cinq scissions réelles et la correction de `INT-072`, sont qualifiées métier au Lot B ; leur classement technique et leur mode d'échange restent à instruire au Lot C et dans CHAN-28.
 
 ## 6. Points de vigilance et questions ouvertes
 
@@ -287,7 +295,7 @@ Les arbitrages V-29 à V-59 de `domain-boundary-decisions.md` ont été appliqu�
 - **INT-023 / INT-023a** : les exigences contractuelles Quality → Projects et les résultats/NCR Projects → Quality sont deux flux distincts.
 - **INT-031** : le sens retenu est Projects → Logistics pour les statuts de livraison ; Logistics reste propriétaire de l'exécution du transport.
 - **INT-050** : le flux retenu est Planning → TimeTracking pour les temps et absences ; l'avancement des activités reste interne à Planning.
-- **INT-072 / INT-072a** : les qualifications RH Safety → Workforce et les exigences/alertes sécurité Workforce → Safety sont deux flux distincts.
+- **INT-071 / INT-072 / INT-072a** : INT-071 reste l'interaction Safety → Workforce pour les formations et qualifications RH. `INT-072` était un doublon de INT-071 et ne figure plus dans le registre actif. Le besoin d'origine est porté par INT-072a, Workforce → Safety, pour les exigences et alertes de prévention.
 - **INT-114 / INT-115 / INT-123 / INT-124** : agrégats transverses à décomposer par consommateur, déposant ou source réelle ; ne pas créer de dépendance universelle.
 - **INT-125** : le sens retenu est Documents → Reporting pour l'archivage et la diffusion des rapports.
 - **Q-31 (DOE)** et **Q-44 (garanties)** restent ouvertes : les lignes documentaires et de garantie concernées ne tranchent pas leur propriété définitive.
@@ -318,15 +326,15 @@ Ces points sont des axes de revue, pas des décisions supplémentaires. Aucune q
 | **À arbitrer** | INT-004, INT-005, INT-074 | Décider de l'ouverture de portails externes et de la source de la masse salariale. |
 | **À décomposer** | INT-114, INT-115, INT-123, INT-124 | Identifier les déposants, consultants, sources Reporting et consommateurs de rapports réels. |
 | **Hors matrice inter-domaines** | INT-001, INT-075 | Service transverse Identity et interface externe de paie. |
-| **À scinder** | Aucune | Les trois scissions Lot B sont réalisées : INT-016, INT-023 et INT-072. |
+| **À scinder** | Aucune | Les deux scissions réelles du Lot B sont réalisées : INT-016 et INT-023. INT-072 a été corrigé en INT-072a et n'est pas compté comme une scission à deux lignes. |
 
 ## 7. Livrables du Lot B et suite Lot C
 
 Le Lot B a produit :
 
-- la qualification métier des 131 lignes du registre ;
+- la qualification métier des 130 lignes actives du registre ;
 - la propriété métier de chaque interaction ;
-- la traçabilité des six scissions et des identifiants historiques ;
+- la traçabilité des cinq scissions réelles, de l'identifiant historique corrigé `INT-072` et des déclinaisons suffixées ;
 - la nomenclature des statuts métier ;
 - la décomposition documentée des agrégats INT-114, INT-115, INT-123 et INT-124 ;
 - la liste des interactions à préciser, à arbitrer ou hors matrice ;
