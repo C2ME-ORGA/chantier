@@ -95,7 +95,7 @@ Le logiciel doit couvrir deux parcours :
 **Parcours commercial complet :**
 
 ```text
-Prospect → Client → Étude → Devis → Acceptation / Commande → Affaire → Chantier
+Prospect → Client → Étude technique (si nécessaire) → Devis Clients → Signature / Commande → Validation d'ouverture → Affaire → Chantier
 ```
 
 **Parcours direct :**
@@ -121,7 +121,7 @@ C2ME intervient dans deux situations distinctes :
 | Situation | Rôle de C2ME | Responsabilités principales |
 | --- | --- | --- |
 | C2ME donneur d'ordre | Client d'un sous-traitant | Procurement porte la commande de sous-traitance et l'engagement ; Projects/Workshop portent le besoin technique et l'acceptation ; Quality contrôle ; Costing enregistre le coût. |
-| C2ME sous-traitant | Intervenant pour un donneur d'ordre | Clients porte le donneur d'ordre et la relation commerciale ; Projects porte l'affaire et l'engagement reçu ; Procurement gère uniquement les achats propres de C2ME ; Handover porte la réception contractuelle par le donneur d'ordre. |
+| C2ME sous-traitant | Intervenant pour un donneur d'ordre | Clients porte le donneur d'ordre et la relation commerciale ; Projects porte l'affaire et l'engagement reçu ; Procurement gère uniquement les achats propres de C2ME ; Projects organise et porte la réception contractuelle par le donneur d'ordre ; Handover prépare et centralise les livrables documentaires. |
 
 La distinction est structurante : elle évite de traiter une commande reçue comme un achat, et une commande passée comme une vente.
 
@@ -138,7 +138,7 @@ Le référentiel principal de stock est centralisé. Les besoins à étudier com
 - livraisons vers les chantiers et l'atelier ;
 - traçabilité des mouvements.
 
-Ce document ne présume pas qu'un système complet de stock autonome par chantier existe déjà. Le stock de chantier est traité comme une question ouverte (Q-19), avec une hypothèse de stock temporaire sous contrôle d'Inventory, et non comme un domaine ou un stock autonome.
+Le stock de chantier est un emplacement temporaire du stock central, géré par Inventory (V-23). Il ne constitue ni un référentiel autonome ni un domaine distinct.
 
 ### 2.6 Paie externalisée
 
@@ -168,6 +168,31 @@ La décision validée pour la suite de CHAN-29 est une politique stricte :
 - le fournisseur d'une donnée, d'un invariant ou d'une décision en reste propriétaire.
 
 Ce Lot 1 identifie les **besoins d'échange métier**. Il ne définit pas la matrice technique détaillée, qui relève du Lot 2.
+
+## 2.8 Arbitrages métier complémentaires — questionnaire Lot 2
+
+Les décisions V-29 à V-59 de `domain-boundary-decisions.md` précisent les responsabilités cibles. Elles prévalent sur les propositions antérieures incompatibles, notamment pour la propriété du devis. Elles restent des décisions métier et ne définissent pas les contrats techniques.
+
+| Domaine(s) | Responsabilité ou règle validée |
+| --- | --- |
+| Clients | Porte le cycle commercial jusqu'à la signature ; produit et possède manuellement le devis complet (prix et lignes de travaux) ; possède les conditions commerciales générales/cadre. |
+| Projects | Prend le relais après signature ; l'ouverture d'affaire depuis un devis accepté exige une validation explicite ; possède les conditions propres à l'affaire, le chantier principal, l'avancement contractuel et l'organisation de la réception contractuelle. |
+| Budgets | Crée le budget initial depuis les lignes du devis accepté ; les avenants acceptés révisent automatiquement le budget avec historique ; alerte si une commande fournisseur dépasse le disponible, sans blocage automatique des achats. |
+| Costing | Calcule et actualise l'EAC à partir des engagements, commandes/factures, temps, main-d'œuvre, consommations, avancement et reste à faire ; ne produit pas le devis commercial. |
+| Planning | Crée le planning initial lors de la création de l'affaire ; fournit les besoins opérationnels à Workforce. |
+| Workforce | Décide des affectations de salariés à partir des besoins de Planning. |
+| TimeTracking / service administratif-RH | Les salariés et chefs d'équipe peuvent saisir les temps ; le service administratif/RH les valide. |
+| Workshop | Les ordres de fabrication sont créés manuellement par le bureau d'études ou le responsable atelier ; le responsable atelier valide techniquement les fabrications. |
+| Procurement | Reçoit les demandes d'achat créées par le responsable travaux ou atelier et les transforme en commandes fournisseurs. |
+| Inventory | Les salariés autorisés peuvent enregistrer les mouvements ; l'auteur est tracé. |
+| Quality | Tout salarié autorisé peut déclarer une non-conformité ; Quality la qualifie et valide sa clôture avec le responsable travaux ou atelier concerné. |
+| Safety | Définit les règles et contrôles ; les responsables de chantier exécutent les contrôles et déclarent les écarts. |
+| Documents / domaines métier / Projects | Tout salarié autorisé peut déposer un document avec classement et métadonnées ; le domaine métier valide le contenu et le responsable de l'affaire donne l'approbation finale. |
+| Handover | Prépare et centralise les livrables et documents de réception ; Projects organise la réception contractuelle. |
+| Reporting | Combine les données publiées par les domaines et les consultations via contrats publics ; aucun accès direct aux tables internes. |
+| Service administratif / Projects / domaines concernés | Les domaines confirment leurs obligations ; le service administratif vérifie et prononce la clôture administrative ; Projects reste propriétaire du cycle de vie de l'affaire. |
+
+**Règles transverses de processus.** La création automatique du chantier principal et du planning initial est déclenchée à la création de l'affaire. Un avenant accepté notifie uniquement les domaines réellement concernés. La création d'une affaire à partir d'un devis accepté reste soumise à validation explicite. Ces automatismes métier n'autorisent pas de dépendance technique directe entre les domaines.
 
 ## 3. Convention de lecture du catalogue
 
@@ -208,7 +233,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | **Sous-traitance donnée** | C2ME confie une fabrication ou une prestation à un tiers ; Procurement porte la commande. |
 | **Sous-traitance reçue** | C2ME intervient pour un donneur d'ordre ; Projects porte l'affaire et Clients porte le donneur d'ordre. |
 | **Atelier interne / fabrication externe** | Exécution d'une fabrication par C2ME ou par un prestataire, avec la même exigence de dossier technique et d'acceptation. |
-| **Stock central** | Référentiel unique des articles et des mouvements ; le stock de chantier est un emplacement temporaire à valider. |
+| **Stock central** | Référentiel unique des articles et des mouvements ; le stock de chantier est un emplacement temporaire géré par Inventory (V-23). |
 | **EAC** | *Estimate at Completion* : coût final estimé d'une affaire, porté par Costing. |
 | **Élément variable de paie** | Donnée préparée par Workforce et transmise au prestataire de paie (heures, absences, primes, etc.). |
 | **Habilitation / autorisation de travail** | Aptitude opérationnelle délivrée par Safety pour une tâche ou un site donné. |
@@ -219,7 +244,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- | --- | --- | --- |
 | D01 | Identity | Identité, authentification et autorisation des acteurs | Utilisateur, Rôle, Permission, Périmètre | Tous |
 | D02 | Clients | Prospects, clients, donneurs d'ordre et relation commerciale | Prospect, Client, Contact, RôleTiers | Projects, Handover, Reporting |
-| D03 | Projects | Engagement contractuel, affaire, chantier et pilotage global | Affaire, Chantier, Devis, Avenant, Jalon | Planning, Budgets, Costing, Workshop, Procurement, Inventory, Quality, Safety, Handover |
+| D03 | Projects | Engagement contractuel, affaire, chantier et pilotage global | Affaire, Chantier, Étude, CommandeClient, Avenant, Jalon | Planning, Budgets, Costing, Workshop, Procurement, Inventory, Quality, Safety, Handover |
 | D04 | Planning | Organisation dans le temps et affectation des ressources | PlanDeCharge, Activité, Affectation | Projects, Workforce, Equipment, Logistics |
 | D05 | Budgets | Enveloppe budgétaire, versions et contrôle de consommation | Budget, LigneBudgétaire, Révision | Projects, Costing, Procurement |
 | D06 | Costing | Chiffrage, coûts, engagements, marge et écarts | Chiffrage, Coût, Engagement, Marge | Projects, Budgets, Reporting |
@@ -280,27 +305,27 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Identity ne porte pas les données de la personne (Workforce), ni la relation client (Clients), ni la relation fournisseur (Procurement). Il fournit l'identité et les droits ; chaque domaine applique ses propres Policies et invariants métier. Voir BD-18 et Q-35.
 
-**Questions ouvertes.** Q-35 (cycle de vie des comptes et rôles), Q-36 (stratégie d'identifiants), Q-40 (confidentialité et conservation).
+**Questions ouvertes.** Q-35 (cycle de vie des comptes et rôles), Q-40 (confidentialité et conservation). Les références publiques inter-domaines utilisent des UUID stables (V-16) ; la version et le format précis de génération restent à préciser dans les conventions techniques.
 
 ---
 
 ### D02 — Clients
 
-**Mission.** Gérer les rôles commerciaux des tiers (prospect, client, donneur d'ordre), leurs contacts et la relation commerciale, sans présumer l'identité juridique unique du tiers (Q-05).
+**Mission.** Gérer les rôles commerciaux des tiers, la relation commerciale et le cycle commercial jusqu'à la signature ; produire et posséder le devis complet, y compris ses prix et lignes de travaux. Clients reste propriétaire des conditions commerciales générales/cadre et du référentiel maître des tiers (V-15, V-29, V-31, V-35).
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Prospection, qualification, référence de tiers (selon Q-05), rôles commerciaux (prospect, client, donneur d'ordre, maître d'ouvrage, payeur, maître d'œuvre, prescripteur), contacts, relation commerciale, conditions commerciales cadre, statut et historique relationnel. |
-| Périmètre exclu | Étude technique, devis, commande, affaire et chantier (Projects), rôles fournisseur et sous-traitant (Procurement), facturation et paiement (hors périmètre des 18 domaines), comptes utilisateurs (Identity). |
-| Objets métier | `CLI-01` Prospect, `CLI-02` Client, `CLI-03` ContactClient, `CLI-04` RôleTiers, `CLI-05` RelationCommerciale, `CLI-06` ConditionsCommercialesCadre. |
+| Périmètre inclus | Prospection, qualification, référence maître des tiers, rôles commerciaux, contacts, relation commerciale, conditions commerciales générales/cadre, construction et propriété du devis complet (prix et lignes de travaux), statut et historique relationnel. |
+| Périmètre exclu | Étude technique et exécution contractuelle après signature, commande client/contrat, affaire et chantier (Projects), rôles fournisseur et sous-traitant (Procurement), facturation et paiement (hors périmètre des 18 domaines), comptes utilisateurs (Identity). |
+| Objets métier | `CLI-01` Prospect, `CLI-02` Client, `CLI-03` ContactClient, `CLI-04` RôleTiers, `CLI-05` RelationCommerciale, `CLI-06` ConditionsCommercialesCadre, `CLI-07` DevisCommercial. |
 | Acteurs | Direction commerciale, chargé d'affaires, assistant commercial, direction générale, client, donneur d'ordre, maître d'ouvrage. |
 
 **Règles métier portées par le domaine.**
 
 | Règle | Statut |
 | --- | --- |
-| Un client est identifié par une référence de tiers stable ; l'unicité et le portage de l'identité juridique restent à arbitrer dans Q-05. | Proposition |
-| Un tiers peut porter un rôle commercial, un rôle fournisseur et un rôle sous-traitant ; ces rôles ne créent pas nécessairement des identités juridiques distinctes. | Proposition |
+| Un client est identifié par la référence du tiers maître détenue par Clients ; Clients porte le référentiel maître unique des tiers (V-15). | Validé |
+| Un même tiers peut cumuler plusieurs rôles dans une même affaire (client, donneur d'ordre, maître d'ouvrage, payeur), explicitement distingués ; les rôles ne créent pas plusieurs identités juridiques. | Validé — V-18 |
 | Un prospect devient client à la première commande ou au premier contrat ; l'historique de prospection est conservé. | Proposition de travail — à arbitrer dans Q-04 |
 | Un client avec des affaires actives ne peut pas être supprimé ; il peut être désactivé ou bloqué. | Proposition |
 | Un client bloqué ne peut pas recevoir de nouvelle affaire sans dérogation autorisée. | Proposition, seuil et autorité à valider |
@@ -323,39 +348,39 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Entrée | Identity | Responsable commercial et acteurs autorisés | Attribution de la relation |
 | Entrée | Projects | Ouverture, changement d'état ou clôture d'une affaire | Cycle de vie de l'affaire |
 | Entrée | Handover | Réception, réserves, garanties | Réception et garantie |
-| Sortie | Projects | Référence du tiers (selon Q-05), contacts, rôles, conditions cadre | Étude, devis, ouverture d'affaire |
+| Sortie | Projects | Référence maître du tiers, contacts, rôles, conditions commerciales cadre et devis signé | Validation d'ouverture et création de l'affaire |
 | Sortie | Handover | Contacts et représentants du client pour la réception | Préparation de la réception |
 | Sortie | Reporting | Portefeuille clients, prospects, relation commerciale | Analyse commerciale |
 
-**Limites et chevauchements.** Clients porte les rôles commerciaux et la relation commerciale, sous réserve de Q-05. L'identité juridique de l'entité n'est pas arbitrée : elle peut être portée par Clients, par Procurement ou par un référentiel partagé à définir. Projects porte l'étude, le devis, la commande, l'affaire et le chantier. Un tiers peut être client, fournisseur ou sous-traitant sans que cela implique plusieurs identités juridiques. Voir BD-01 et BD-16.
+**Limites et chevauchements.** Clients possède le référentiel maître unique des tiers, les rôles commerciaux, les contacts, la relation commerciale, les conditions commerciales cadre et le devis complet jusqu'à sa signature (V-15, V-18, V-29, V-35, V-40). Procurement conserve la relation d'achat, les données fournisseur propres aux achats et les références fournisseur liées aux articles, sans dupliquer l'identité du tiers. Projects prend le relais après signature et porte l'engagement contractuel, l'affaire et le chantier. L'étude technique reste un objet Projects distinct de la construction du devis commercial. Voir BD-01 et BD-16.
 
-**Questions ouvertes.** Q-02 (client, donneur d'ordre, maître d'ouvrage), Q-03 (opportunité commerciale), Q-04 (création du client), Q-05 (référentiel tiers partagé), Q-06 (conditions financières et crédit).
+**Questions ouvertes.** Q-03 (opportunité commerciale), Q-04 (moment de conversion du prospect), Q-06 (conditions financières et crédit). Q-02 et Q-05 sont arbitrées (V-18 et V-15).
 
 ---
 
 ### D03 — Projects
 
-**Mission.** Porter l'engagement contractuel et le pilotage global d'une affaire, depuis l'étude et le devis jusqu'à la clôture, et organiser ses chantiers.
+**Mission.** Prendre le relais après signature du devis ou réception d'une commande/OS, porter l'engagement contractuel et le pilotage global de l'affaire jusqu'à sa clôture, et organiser ses chantiers. Projects ne produit ni ne possède le devis commercial, qui relève de Clients (V-29, V-35, V-40).
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Étude d'affaire, devis, commande client ou ordre de service, contrat, affaire, chantier, lots et phases, avenants, jalons contractuels, acteurs de l'affaire, site, avancement contractuel, demande de clôture. |
-| Périmètre exclu | Planning détaillé et affectations (Planning), budget (Budgets), chiffrage et coûts (Costing), fabrication (Workshop), achats (Procurement), stock (Inventory), qualité (Quality), sécurité (Safety), réception contractuelle et DOE (Handover), stockage documentaire (Documents). |
-| Objets métier | `PRJ-01` Affaire, `PRJ-02` Chantier, `PRJ-03` LotPhase, `PRJ-04` Étude, `PRJ-05` Devis, `PRJ-06` CommandeClient, `PRJ-07` Avenant, `PRJ-08` Contrat, `PRJ-09` JalonContractuel, `PRJ-10` ActeurAffaire. |
+| Périmètre inclus | Réception des éléments commerciaux signés, commande client ou ordre de service, conditions contractuelles propres à l'affaire, contrat, affaire, création du chantier principal, lots et phases, avenants, jalons contractuels, acteurs de l'affaire, site, avancement contractuel, demande de clôture. |
+| Périmètre exclu | Construction et propriété du devis commercial (Clients), planning détaillé et affectations (Planning/Workforce), budget (Budgets), chiffrage et coûts (Costing), fabrication (Workshop), achats (Procurement), stock (Inventory), qualité (Quality), sécurité (Safety), préparation documentaire de réception et DOE (Handover), stockage documentaire (Documents). |
+| Objets métier | `PRJ-01` Affaire, `PRJ-02` Chantier, `PRJ-03` LotPhase, `PRJ-04` Étude, `PRJ-06` CommandeClient, `PRJ-07` Avenant, `PRJ-08` Contrat, `PRJ-09` JalonContractuel, `PRJ-10` ActeurAffaire. |
 | Acteurs | Direction, chargé d'affaires, conducteur de travaux, chef de chantier, bureau d'études, métreur/économiste, responsable juridique, client, donneur d'ordre. |
 
 **Règles métier portées par le domaine.**
 
 | Règle | Statut |
 | --- | --- |
-| Une affaire est ouverte après acceptation d'un devis ou réception d'une commande ou d'un ordre de service. | Validé par le cycle commercial du ticket |
+| Une affaire est ouverte après acceptation d'un devis et validation explicite de l'utilisateur, ou après réception d'une commande ou d'un ordre de service. | Validé — V-30 |
 | Le parcours direct peut ouvrir une affaire sans devis préalable, mais les données contractuelles manquantes doivent être identifiées et complétées. | Validé par le ticket ; modalités à préciser |
 | Une affaire porte un numéro unique, un client, un donneur d'ordre et un périmètre contractuel. | Proposition |
-| Une affaire peut couvrir un ou plusieurs chantiers ou lots ; un chantier appartient à une seule affaire. | Proposition, à valider Q-01 |
+| Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | Validé — V-17 |
 | Les travaux supplémentaires font l'objet d'un avenant validé avant exécution, sauf procédure d'urgence explicitement autorisée. | Proposition |
 | Les jalons contractuels et les dates engagées sont la référence pour Planning ; toute modification est tracée. | Proposition |
 | L'avancement contractuel est déclaré par lot ou phase ; il ne se confond pas avec l'avancement des activités planifiées. | Proposition |
-| La clôture de l'affaire exige la réception contractuelle, la levée des réserves, le DOE et la finalisation des coûts. | Proposition, conditions à valider Q-53 |
+| La clôture de l'affaire intervient après réception, levée des réserves, constitution du DOE, clôture des coûts et clôture du budget. | Validé — V-28 |
 | Une suspension ou une annulation exige un motif, une validation et une trace. | Proposition |
 
 **États et transitions.**
@@ -363,7 +388,6 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Objet | États | Transitions principales |
 | --- | --- | --- |
 | Étude | Brouillon, en revue, validée, abandonnée | Soumettre, valider, abandonner. |
-| Devis | Brouillon, envoyé, accepté, refusé, expiré | Envoyer, accepter, refuser, expirer. |
 | Affaire | Préparation, en cours, suspendue, réceptionnée, clôturée, annulée | Ouvrir, démarrer, suspendre, reprendre, réceptionner, clôturer, annuler. |
 | Chantier | Préparé, démarré, en cours, suspendu, réceptionné, clôturé | Démarrer, suspendre, reprendre, réceptionner, clôturer. |
 | Avenant | Proposé, validé, refusé | Proposer, valider, refuser. |
@@ -372,9 +396,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Sens | Domaine | Informations | Moment |
 | --- | --- | --- | --- |
-| Entrée | Clients | Identité, contacts, rôles, conditions commerciales | Étude, devis, ouverture |
+| Entrée | Clients | Référence maître du tiers, contacts, rôles, conditions commerciales cadre, devis accepté/signé | Reprise après signature et ouverture d'affaire |
 | Entrée | Budgets | Enveloppe validée, disponible, seuils | Ouverture et révision |
-| Entrée | Costing | Chiffrage, coût final estimé, marge, alertes | Étude, devis, suivi |
+| Entrée | Costing | Coûts, EAC, marge et alertes économiques | Pilotage économique de l'affaire |
 | Entrée | Planning | Planning, dates prévisionnelles, conflits, avancement | Préparation et exécution |
 | Entrée | Quality / Safety | Conformité, non-conformités, incidents, contraintes | Exécution et réception |
 | Entrée | Handover | Réception, réserves, levées, PV | Réception et clôture |
@@ -388,7 +412,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Projects est propriétaire de l'engagement et du pilotage contractuel, pas du planning détaillé, du budget, des coûts, de la fabrication, des achats, du stock, de la qualité, de la sécurité ni de la réception contractuelle. Voir BD-01, BD-02, BD-03, BD-17 et BD-19.
 
-**Questions ouvertes.** Q-01 (relation affaire/chantier), Q-27 (avancement), Q-45 (avenants), Q-46 (suspension), Q-47 (annulation), Q-50 (bureau d'études), Q-51 (risques d'affaire), Q-52 (permis et autorisations), Q-53 (conditions de clôture).
+**Questions ouvertes.** Q-45 (avenants), Q-46 (suspension), Q-47 (annulation), Q-50 (bureau d'études), Q-51 (risques d'affaire), Q-52 (permis et autorisations). La distinction des avancements contractuel, opérationnel et des temps est validée (V-25).
 
 ---
 
@@ -445,9 +469,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Procurement / Inventory / Logistics | Besoins datés et contraintes de disponibilité | Préparation |
 | Sortie | Reporting | Charge, respect des délais, conflits | Pilotage |
 
-**Limites et chevauchements.** Planning organise les interventions ; Projects porte l'engagement contractuel et les jalons. Workforce possède les personnes et leurs contraintes ; Equipment possède les actifs ; Workshop possède la capacité de production. Voir BD-02, BD-13 et Q-27, Q-28.
+**Limites et chevauchements.** Planning organise les activités et leur avancement ; Projects porte les jalons et l'avancement contractuel ; TimeTracking porte les temps réalisés ; Workforce décide des affectations à partir des besoins de Planning. Voir BD-02, BD-13, V-25 et Q-28.
 
-**Questions ouvertes.** Q-24 (capacité atelier), Q-27 (avancement), Q-28 (horizon et arbitrage des conflits).
+**Questions ouvertes.** Q-24 (capacité atelier), Q-28 (horizon et arbitrage des conflits). La répartition des responsabilités d'avancement est validée (V-25).
 
 ---
 
@@ -471,11 +495,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Les lignes budgétaires sont rattachées à un lot, une nature et une période ; leur somme forme l'enveloppe. | Proposition |
 | Une révision au-delà d'un seuil exige une validation de la direction. | Proposition, seuil à définir Q-08 |
 | Un avenant validé entraîne une révision budgétaire tracée. | Proposition |
-| Un engagement supérieur au disponible budgétaire est bloqué ou soumis à une dérogation explicite. | Proposition, à valider |
+| Une commande fournisseur qui dépasse le disponible budgétaire déclenche une alerte émise par Budgets ; aucun blocage automatique de Procurement n'est imposé. | Validé — V-33, V-38 |
 | Le budget ne se confond pas avec le prix de vente ; la marge cible est validée par la direction. | Proposition |
 | Le budget ne contient pas les coûts constatés : il fixe l'enveloppe et analyse les écarts avec Costing. | Proposition, arbitrage BD-03 |
-| La prévision budgétaire porte sur l'enveloppe et sa consommation ; le coût final estimé (EAC) est porté par Costing. | Proposition |
-| La clôture budgétaire intervient après la clôture des coûts et la clôture contractuelle. | Proposition, Q-53 |
+| La prévision budgétaire porte sur l'enveloppe et sa consommation ; le coût final estimé (EAC) est calculé et actualisé par Costing à partir des faits opérationnels et engagements. | Validé — V-20, V-34, V-39 |
+| La clôture budgétaire intervient après la clôture des coûts et la clôture contractuelle. | Validé — V-28 |
 
 **États et transitions.**
 
@@ -501,7 +525,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Budgets porte l'enveloppe autorisée ; Costing porte le chiffrage, les engagements, les coûts constatés, le coût final estimé et la marge. Procurement porte l'acte commercial d'engagement ; Costing en assure le suivi financier. Voir BD-03.
 
-**Questions ouvertes.** Q-08 (seuils et autorité de révision), Q-09 (reconnaissance des engagements), Q-10 (coût final estimé), Q-37 (unité monétaire et arrondis), Q-53 (clôture budgétaire).
+**Questions ouvertes.** Q-08 (seuils et autorité de révision), Q-37 (unité monétaire et arrondis). La reconnaissance des engagements (V-19) et la propriété/calcul de l'EAC (V-20, V-34, V-39) sont arbitrées ; la clôture budgétaire suit V-28.
 
 ---
 
@@ -521,10 +545,10 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Règle | Statut |
 | --- | --- |
 | Tout coût est imputé à une affaire, un chantier, un lot et une nature ; aucun coût ne reste orphelin. | Proposition |
-| Un engagement est reconnu à la validation de la commande ou du contrat qui le crée ; le point exact est à valider. | Proposition, Q-09 |
+| Un engagement financier est reconnu à l'approbation de la commande fournisseur. | Validé — V-19 |
 | Un coût constaté provient d'un fait source : temps validé, sortie de stock, réception, production, transport, facture lorsqu'elle sera traitée. | Proposition |
 | Un même coût n'est jamais compté deux fois ; tout ajustement est tracé et justifié. | Proposition |
-| Le coût final estimé (EAC) combine coûts constatés, engagements et reste à engager estimé. | Proposition, Q-10 |
+| Costing calcule automatiquement et actualise continuellement l'EAC à partir des faits opérationnels et engagements disponibles, notamment commandes et factures, temps et coûts de main-d'œuvre, consommations de stock, avancement et reste à faire. | Validé — V-20, V-34, V-39 |
 | La marge est calculée à partir du prix de vente contractuel et du coût ; l'unité, la devise et les arrondis restent à décider. | Proposition, Q-37 |
 | Une période analytique clôturée ne peut plus recevoir d'écriture sans réouverture autorisée et tracée. | Proposition |
 | Le chiffrage prévisionnel peut servir de base au budget après acceptation, sans devenir le budget lui-même. | Proposition, arbitrage BD-03 |
@@ -559,7 +583,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Costing ne possède pas les faits opérationnels : il les valorise. Il ne fixe pas le budget, n'approuve pas les achats, ne calcule pas la paie et ne remplace pas la comptabilité générale. Voir BD-03 et BD-21.
 
-**Questions ouvertes.** Q-09, Q-10, Q-11, Q-37, Q-42.
+**Questions ouvertes.** Q-11, Q-37, Q-42. La reconnaissance des engagements et la propriété/calcul de l'EAC sont arbitrées (V-19, V-20, V-34, V-39).
 
 ---
 
@@ -617,7 +641,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Workforce porte la relation contractuelle, les données RH et les qualifications RH (diplômes, formations). TimeTracking porte les événements de temps ; Planning porte les affectations opérationnelles. Les qualifications techniques de production (soudage, procédé, contrôle) relèvent de Quality, sous réserve de Q-16. La paie est produite par un prestataire externe. Voir BD-04, BD-09 et BD-15.
 
-**Questions ouvertes.** Q-11 (taux horaires), Q-12 (absences), Q-13 (temps de trajet et astreintes), Q-14 (périmètre de paie), Q-15 (intérimaires), Q-16 (qualifications techniques), Q-35 (comptes), Q-40 (données personnelles).
+**Questions ouvertes.** Q-11 (taux horaires), Q-13 (temps de trajet et astreintes), Q-14 (périmètre de paie), Q-15 (intérimaires), Q-16 (qualifications techniques), Q-35 (comptes), Q-40 (données personnelles). La frontière de responsabilité sur les absences est arbitrée (V-21).
 
 ---
 
@@ -642,7 +666,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Une période verrouillée ne peut plus être modifiée sans réouverture autorisée et tracée. | Proposition |
 | Une imputation doit référencer une affaire, un chantier ou une activité valide ; les activités non productives sont autorisées et catégorisées. | Proposition |
 | Le pointage hors connexion est idempotent et le serveur reste l'autorité. | Validé par `AGENTS.md` |
-| TimeTracking constate le temps d'absence ; Workforce qualifie le motif contractuel et administratif. | Proposition, Q-12 |
+| TimeTracking constate les événements et durées d'absence ; Workforce qualifie le motif RH. | Validé — V-21 |
 | Les règles de temps de trajet, d'astreinte et d'heures supplémentaires restent à définir. | Question ouverte Q-13 |
 
 **États et transitions.**
@@ -670,7 +694,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** TimeTracking porte les événements de temps ; Workforce porte les données RH et les variables de paie ; Planning porte les affectations prévisionnelles ; Costing valorise les heures. Voir BD-04.
 
-**Questions ouvertes.** Q-12, Q-13, Q-14, Q-39 (hors connexion), Q-40 (confidentialité).
+**Questions ouvertes.** Q-13, Q-14, Q-39 (hors connexion), Q-40 (confidentialité). La répartition TimeTracking / Workforce pour les absences est validée (V-21).
 
 ---
 
@@ -695,7 +719,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Les opérations critiques exigent une qualification valide du personnel et, si nécessaire, un contrôle Quality. | Proposition |
 | Un autocontrôle atelier précède la sollicitation de Quality ; une non-conformité est traitée par Quality. | Proposition |
 | Un OF est clôturé après production, contrôle, emballage et régularisation des mouvements matières. | Proposition |
-| En cas de fabrication externe, Workshop porte le dossier technique et l'acceptation technique ; Procurement porte la commande. | Proposition |
+| En cas de fabrication externe, Workshop porte le dossier technique et l'acceptation technique ; Quality statue sur la conformité ; Procurement porte la commande et clôt l'aspect commercial. | Validé — V-24 |
 | La capacité d'atelier est fournie à Planning ; Planning arbitre le planning global. | Proposition, Q-24 |
 | Le bureau d'études atelier porte les plans d'exécution et nomenclatures de fabrication ; Projects porte les études contractuelles. | Proposition, Q-50 |
 
@@ -731,7 +755,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Workshop porte la fabrication ; Inventory porte le stock ; Procurement porte les achats et la sous-traitance ; Quality porte la conformité ; Planning porte le planning global. Voir BD-06, BD-10, BD-11 et BD-19.
 
-**Questions ouvertes.** Q-16, Q-23, Q-24, Q-50.
+**Questions ouvertes.** Q-16, Q-24, Q-50. La répartition des responsabilités en fabrication externe est validée (V-24).
 
 ---
 
@@ -752,7 +776,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- |
 | Une demande d'achat précise le besoin, la quantité, la date, le lot, la nature et la référence budgétaire. | Proposition |
 | Une commande est créée après validation du besoin, du disponible budgétaire et des seuils d'approbation. | Proposition, seuils Q-08 |
-| Un fournisseur ou un sous-traitant est un rôle d'achat exercé par un tiers ; il ne présume pas une identité juridique autonome. Le rattachement au référentiel juridique dépend de Q-05. | Proposition |
+| Un fournisseur ou un sous-traitant est un rôle d'achat exercé par un tiers ; le tiers est référencé dans le référentiel maître unique détenu par Clients. Procurement conserve les données de relation d'achat propres à ses opérations (V-15). | Validé — V-15 |
 | Un fournisseur ou sous-traitant est qualifié selon la criticité de la prestation, avec Quality et Safety. | Proposition |
 | Une commande constitue un acte commercial qui crée un engagement financier, suivi par Costing ; ses versions, annulations et réceptions partielles sont tracées. | Proposition |
 | La réception physique ne vaut pas acceptation qualité ; Inventory enregistre, Quality accepte ou refuse. | Proposition |
@@ -790,9 +814,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Workshop | Statut des commandes de fabrication externe | Sous-traitance |
 | Sortie | Reporting | Achats, engagements, performance fournisseur | Pilotage |
 
-**Limites et chevauchements.** Procurement porte les rôles d'achat et la relation fournisseur/sous-traitant, sans présumer l'identité juridique du tiers (Q-05). Inventory porte le stock et la réception ; Costing valorise ; Budgets autorise ; Quality et Safety qualifient. Voir BD-05, BD-10, BD-16 et BD-19.
+**Limites et chevauchements.** Procurement porte la relation d'achat, les données fournisseur propres aux achats et les références fournisseur liées aux articles. Clients reste propriétaire de l'identité juridique et des données communes du tiers (V-15). Inventory porte le stock et la réception ; Costing valorise ; Budgets autorise ; Quality et Safety qualifient. Voir BD-05, BD-10, BD-16 et BD-19.
 
-**Questions ouvertes.** Q-05 (identité juridique et référentiel tiers), Q-07, Q-08, Q-17 (article), Q-18 (catalogue), Q-22 (qualification sous-traitant), Q-41 (sous-traitance dans les deux sens), Q-44 (garanties fournisseurs).
+**Questions ouvertes.** Q-07, Q-08, Q-18 (catalogue), Q-22 (qualification sous-traitant), Q-44 (garanties fournisseurs). Le référentiel article est arbitré par V-22 et les deux parcours de sous-traitance par V-27.
 
 ---
 
@@ -819,7 +843,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Une sortie vers chantier ou atelier s'appuie sur un bon de préparation et de sortie ; le transport est organisé par Logistics. | Proposition |
 | Un inventaire physique périodique analyse et valide les écarts. | Proposition |
 | La valorisation des quantités est fournie à Costing ; Inventory ne décide pas de la méthode comptable. | Proposition, Q-20 |
-| Le stock de chantier est un emplacement temporaire sous contrôle d'Inventory, et non un stock autonome. | Proposition, Q-19 |
+| Le stock de chantier est un emplacement temporaire du stock central sous contrôle d'Inventory, et non un stock autonome. | Validé — V-23 |
 | La traçabilité lot/numéro de série est obligatoire pour les articles critiques. | Proposition |
 
 **États et transitions.**
@@ -851,7 +875,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Inventory porte le stock et les mouvements ; Procurement porte la commande et le fournisseur ; Logistics porte le transport et la réception sur site ; Quality porte l'acceptation ; Costing valorise. Voir BD-05, BD-06, BD-12 et BD-21.
 
-**Questions ouvertes.** Q-17, Q-18, Q-19, Q-20, Q-21, Q-43 (matériaux fournis par le client).
+**Questions ouvertes.** Q-18 (catalogue fournisseur), Q-20 (valorisation), Q-21 (livraison directe), Q-43 (matériaux fournis par le client). La propriété du référentiel article et le stock de chantier sont arbitrés (V-22, V-23).
 
 ---
 
@@ -965,7 +989,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Logistics organise le transport ; Inventory porte le stock et le bon de sortie ; Projects porte le chantier et l'exécution ; Equipment porte les véhicules ; Procurement porte le transporteur. Voir BD-12 et BD-14.
 
-**Questions ouvertes.** Q-19, Q-21, Q-26.
+**Questions ouvertes.** Q-21, Q-26. Le stock de chantier est un emplacement temporaire Inventory (V-23).
 
 ---
 
@@ -1024,9 +1048,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Costing | Coûts de non-qualité | Traitement |
 | Sortie | Reporting | Taux de conformité, NCR, audits | Pilotage |
 
-**Limites et chevauchements.** Quality porte la conformité technique ; Handover porte la réception contractuelle et les réserves ; Workshop exécute et s'autocontrôle ; Procurement porte la relation fournisseur. Voir BD-07 et BD-19.
+**Limites et chevauchements.** Quality porte la conformité technique et les NCR ; Projects organise et porte la réception contractuelle ; Handover prépare et centralise les documents et livrables, le DOE et le suivi documentaire des réserves ; Workshop exécute et s'autocontrôle ; Procurement porte la relation fournisseur. Voir BD-07 et BD-19.
 
-**Questions ouvertes.** Q-16, Q-23, Q-25, Q-30.
+**Questions ouvertes.** Q-16 (qualification technique), Q-25 (calibration des équipements de mesure). Les responsabilités de fabrication externe (V-24) et le traitement des réserves/NCR (V-26) sont arbitrés.
 
 ---
 
@@ -1145,11 +1169,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 ### D17 — Handover
 
-**Mission.** Organiser la réception contractuelle des travaux, gérer les réserves, constituer le DOE et prononcer la clôture contractuelle des travaux.
+**Mission.** Préparer et centraliser les documents et livrables nécessaires à la réception contractuelle, constituer le DOE et assurer le suivi documentaire des réserves et garanties. Projects organise la réception contractuelle et conserve la responsabilité du cycle de vie de l'affaire (V-29 à V-59).
 
 | Rubrique | Contenu |
 | --- | --- |
-| Périmètre inclus | Réceptions partielles et finales, réserves, levées de réserves, procès-verbaux, DOE, garanties clientes, périodes de garantie, dossier de clôture, attestations. |
+| Périmètre inclus | Préparation documentaire des réceptions partielles et finales, centralisation des pièces et livrables, dossier de réception, suivi documentaire des réserves et levées, procès-verbaux, DOE, garanties clientes, périodes de garantie, dossier de clôture, attestations. L'organisation et la responsabilité contractuelles de la réception relèvent de Projects. |
 | Périmètre exclu | Conformité technique (Quality), exécution des travaux (Projects), budget et coûts (Budgets/Costing), stock (Inventory), stockage documentaire (Documents), propriété des garanties fournisseurs (Procurement), contentieux (hors périmètre). |
 | Objets métier | `HND-01` Réception, `HND-02` Réserve, `HND-03` LevéeDeRéserve, `HND-04` DOE, `HND-05` GarantieClient, `HND-06` DossierDeClôture. |
 | Acteurs | Responsable réception/handover, chargé d'affaires, chef de chantier, qualité, client, maître d'ouvrage, maître d'œuvre, gestionnaire documentaire. |
@@ -1166,7 +1190,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Le procès-verbal signé constitue le fait contractuel de réception et fixe les dates de garantie. | Proposition |
 | La clôture contractuelle intervient après levée des réserves, DOE complet et garanties constituées. | Proposition |
 | Les garanties clientes et les garanties fournisseurs/sous-traitants sont distinguées ; ces dernières relèvent de Procurement. | Proposition |
-| Une réserve n'est pas une non-conformité : elle peut référencer une NCR Quality, sans fusionner les deux objets. | Proposition, Q-30 |
+| Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la non-conformité correspondante avant sa clôture. Les deux objets restent distincts. | Validé — V-26 |
 
 **États et transitions.**
 
@@ -1195,9 +1219,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Costing | Dates de réception et de garantie | Clôture |
 | Sortie | Reporting | Délais de réception, réserves, garanties | Pilotage |
 
-**Limites et chevauchements.** Handover porte la réception contractuelle et les réserves ; Quality porte la conformité technique et les NCR ; Projects porte l'exécution et la clôture de l'affaire ; Documents stocke le DOE. Voir BD-07, BD-08 et BD-17.
+**Limites et chevauchements.** Projects organise et porte la réception contractuelle ainsi que le cycle de vie de l'affaire ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves ; Quality porte la conformité technique et les NCR ; Documents assure le stockage et le versionnement. Voir BD-07, BD-08 et BD-17.
 
-**Questions ouvertes.** Q-30 (réserve vs NCR), Q-31 (DOE), Q-44 (garanties), Q-53 (conditions de clôture).
+**Questions ouvertes.** Q-31 (DOE), Q-44 (garanties). Le traitement des réserves et NCR suit V-26 ; la condition générale de clôture est validée par V-28.
 
 ---
 
@@ -1253,8 +1277,8 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Domaine | Possède | Ne possède pas |
 | --- | --- | --- |
 | Identity | Comptes, rôles, permissions, périmètres, délégations | Données RH, contacts clients, fournisseurs |
-| Clients | Prospects, clients, contacts, rôles de tiers, relation commerciale | Étude, devis, affaire, chantier, fournisseurs |
-| Projects | Étude, devis, commande, contrat, affaire, chantier, lots, avenants, jalons | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, réception |
+| Clients | Référentiel maître des tiers, prospects, clients, contacts, rôles commerciaux, relation commerciale, devis complet et conditions commerciales cadre | Affaire, chantier, exécution contractuelle, fournisseurs |
+| Projects | Études techniques, commande/contrat après signature, affaire, chantier, lots, avenants, jalons, avancement contractuel | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, réception |
 | Planning | Plans, activités, affectations, capacité, conflits, avancement planning | Données RH, actifs, capacité atelier, pointages |
 | Budgets | Budget, versions, lignes, enveloppe, contingence, révisions | Chiffrage détaillé, engagements, coûts constatés, prix de vente |
 | Costing | Chiffrage, coûts, engagements, imputations, marge, écarts, EAC | Budget, commandes, temps, stock, production, paie |

@@ -8,7 +8,7 @@ Ce document analyse les chevauchements de responsabilité entre les 18 domaines 
 - Hors portée : matrice technique définitive des dépendances (Lot 2), contrats et événements (CHAN-28), conventions internes de code (CHAN-27), tests d'architecture (CHAN-31).
 
 > **Statut du document — Lot 1 / préparation du Lot 2.**
-> Les décisions validées sont listées en section 2 et dans la section 6.4. Les questions bloquantes Q-01, Q-02, Q-05, Q-09, Q-10, Q-12, Q-17, Q-19, Q-23, Q-27, Q-30, Q-36, Q-41 et Q-53 ont été arbitrées par le responsable du projet le 16/11/2026. Les autres propositions et questions restent ouvertes et ne doivent pas être considérées comme validées.
+> Les décisions validées sont listées en section 2 et dans la section 6.4. Les questions bloquantes du Lot 1 (V-15 à V-28) et les 31 arbitrages du questionnaire métier du Lot 2 (V-29 à V-59) ont été validés le 16/11/2026. Les autres propositions et questions restent ouvertes et ne doivent pas être considérées comme validées.
 
 ## 1. Méthode
 
@@ -85,15 +85,17 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Responsabilités candidates | Domaine | Analyse |
 | --- | --- | --- |
 | Rôles commerciaux (prospect, client, donneur d'ordre), contacts, relation commerciale, conditions cadre | D02 Clients | Ces éléments décrivent la relation durable et les rôles du tiers. |
-| Étude, devis, commande, contrat, affaire, chantier, avenants, jalons | D03 Projects | Ces éléments décrivent l'engagement et son exécution. |
+| Devis complet et conditions commerciales cadre | D02 Clients | Le devis est produit et possédé par Clients jusqu'à sa signature. |
+| Étude technique, commande/ordre de service, contrat, affaire, chantier, avenants, jalons | D03 Projects | L'étude technique est distincte du devis ; les autres éléments décrivent l'engagement et son exécution après signature. |
 | Opportunité commerciale et pipeline | D02 ou D03 | La frontière dépend de l'organisation commerciale ; Q-03. |
-| Négociation du prix et des conditions de l'affaire | D02 et D03 | Clients porte la relation ; Projects porte l'offre et le contrat. |
+| Conditions commerciales générales/cadre et prix du devis | D02 Clients | Clients construit et possède le devis complet. |
+| Conditions contractuelles propres à l'affaire | D03 Projects | Projects prend le relais après signature. |
 
 **Séparation recommandée.**
 
-- **Clients** est propriétaire des rôles commerciaux (prospect, client, donneur d'ordre), des contacts, de la relation commerciale et des conditions cadre, sous réserve de Q-05. Il ne présume pas l'identité juridique du tiers.
-- **Projects** est propriétaire de l'étude, du devis, de la commande ou de l'ordre de service, du contrat, de l'affaire, du chantier, des lots, des avenants et des jalons contractuels.
-- Clients ne porte pas le devis ni l'affaire. Projects ne duplique pas la fiche client ; il référence le client et les rôles exposés par Clients.
+- **Clients** est propriétaire du référentiel maître des tiers (V-15), des rôles commerciaux, des contacts, de la relation commerciale, des conditions commerciales cadre et du devis complet (V-29, V-31, V-35, V-40).
+- **Projects** prend le relais après signature ; il est propriétaire de la commande ou de l'ordre de service reçu, du contrat, de l'affaire, du chantier, des lots, des avenants, des jalons et des conditions contractuelles propres à l'affaire.
+- L'ouverture d'une affaire à partir d'un devis accepté exige une validation explicite ; elle n'est pas automatique (V-30). Projects référence le tiers et le devis exposés par Clients, sans dupliquer leurs données maîtres.
 - Un prospect peut être étudié avant d'être converti en client ; le moment exact de conversion reste à arbitrer dans Q-04 (proposition de travail : première commande ou premier contrat).
 - La relation commerciale est mise à jour par les faits de Projects (ouverture, réception, clôture), sans que Projects modifie directement la fiche client.
 
@@ -101,14 +103,14 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 | Sens | Informations | Moment |
 | --- | --- | --- |
-| Clients → Projects | Référence du tiers (selon Q-05), contacts, rôles, conditions cadre, statut | Étude, devis, ouverture |
+| Clients → Projects | Référence du tiers, contacts, rôles, conditions cadre, devis accepté et éléments commerciaux signés | Après signature et validation explicite d'ouverture |
 | Projects → Clients | Affaire ouverte, commande, réception, clôture, incident relationnel | Cycle de vie |
 | Clients → Projects | Prospect qualifié, besoin, échéance | Prospection |
-| Projects → Clients | Devis, commande, affaire, statut | Négociation et exécution |
+| Projects → Clients | Statut de l'affaire, commande, réception, clôture | Exécution et relation commerciale |
 
-**Points à valider.** Q-02 (client, donneur d'ordre, maître d'ouvrage), Q-03 (opportunité), Q-04 (création du client), Q-05 (référentiel tiers), Q-06 (conditions financières et crédit).
+**Points restant à qualifier.** Q-03 (opportunité commerciale), Q-04 (moment de conversion du prospect), Q-06 (conditions financières et crédit). Q-02 et Q-05 sont arbitrées par V-18 et V-15 ; la frontière devis/affaire est arbitrée par V-29 à V-35 et V-40.
 
-**Statut.** Proposition.
+**Statut.** Remplacé par les décisions validées V-29, V-31 et V-35 : Clients possède le devis complet et les conditions cadre ; Projects prend le relais après signature et possède les conditions propres à l'affaire.
 
 ---
 
@@ -140,7 +142,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Projects → Planning | Avenants et changements de priorité | Révision |
 | Planning → Projects | Impact des aléas sur les dates | Aléa |
 
-**Points à valider.** Q-27 (avancement contractuel vs planning), Q-28 (horizon ferme, arbitrage des conflits), Q-01 (relation affaire/chantier).
+**Points à qualifier.** Q-28 (horizon ferme, arbitrage des conflits). La relation affaire/chantier est arbitrée par V-17 et la distinction des avancements est validée par V-25.
 
 **Statut.** Proposition.
 
@@ -156,7 +158,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Chiffrage prévisionnel d'une offre | D06 Costing | Projects, Budgets | Estimation de coût, base du prix et du budget. |
 | Engagements financiers | D06 Costing (enregistrement et suivi) / D10 Procurement (acte commercial) | Budgets, Projects | Procurement crée la commande ; Costing enregistre et suit l'engagement financier. |
 | Coûts constatés | D06 Costing | Projects, Budgets, Reporting | Costing valorise les faits opérationnels. |
-| Coût final estimé (EAC) | D06 Costing | Projects, Budgets | Projection de coût, à valider Q-10. |
+| Coût final estimé (EAC) | D06 Costing | Projects, Budgets | Propriété et calcul par Costing validés (V-20, V-34, V-39). |
 | Marge | D06 Costing | Projects, Budgets, Reporting | Prix de vente - coût. |
 | Prix de vente | D03 Projects | Costing, Budgets | Prix contractuel, pas un coût. |
 | Révision budgétaire | D05 Budgets | Projects, Costing | Décision de Budgets, avec validation direction. |
@@ -179,7 +181,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Procurement → Costing | Commandes, montants, variations | Engagement |
 | Costing → Projects | Marge, EAC, alertes | Suivi |
 
-**Points à valider.** Q-08 (seuils et autorité de révision), Q-09 (reconnaissance des engagements), Q-10 (propriété de l'EAC), Q-37 (unité monétaire, devise, arrondis).
+**Points à qualifier.** Q-08 (seuils et autorité de révision), Q-37 (unité monétaire, devise, arrondis). La reconnaissance des engagements (V-19) et la propriété/calcul de l'EAC (V-20, V-34, V-39) sont validés.
 
 **Statut.** Proposition.
 
@@ -202,7 +204,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - **Workforce** possède le collaborateur, le contrat, le poste, les qualifications, les formations, l'équipe, la disponibilité RH, le dossier RH et les éléments variables de paie.
 - **TimeTracking** possède les pointages, feuilles de temps, imputations, périodes, validations, corrections, verrouillages et événements d'absence constatée.
 - TimeTracking fournit les temps validés à Workforce pour les variables de paie et à Costing pour la valorisation. Workforce ne recalcule pas les temps.
-- Workforce qualifie une absence (congé, maladie, absence autorisée) ; TimeTracking en constate la durée et l'impact planning. Q-12.
+- TimeTracking constate les événements et durées d'absence ; Workforce qualifie le motif RH (V-21).
 - Les règles de trajet, d'astreinte et d'heures supplémentaires restent à définir (Q-13).
 - Le calcul du bulletin, les déclarations sociales et le paiement restent au prestataire externe (BD-09).
 
@@ -215,7 +217,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | TimeTracking → Costing | Heures validées et imputations | Valorisation |
 | TimeTracking → Planning | Temps réels, absences | Replanification |
 
-**Points à valider.** Q-11 (taux horaires), Q-12 (absences), Q-13 (trajets/astreintes), Q-14 (périmètre de paie), Q-40 (données personnelles).
+**Points à qualifier.** Q-11 (taux horaires), Q-13 (trajets/astreintes), Q-14 (périmètre de paie), Q-40 (données personnelles). La répartition des responsabilités sur les absences est validée (V-21).
 
 **Statut.** Proposition.
 
@@ -230,7 +232,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Fournisseur, consultation, commande, engagement, échéancier, performance | D10 Procurement | Relation commerciale et engagement d'achat. |
 | Article, entrepôt, réception, mouvement, réservation, stock, inventaire | D11 Inventory | Référentiel et physique du stock. |
 | Réception | D11 Inventory | Inventory constate la réception physique ; Quality contrôle ; Procurement traite l'écart commercial. |
-| Article master | D11 Inventory | Proposition ; Q-17. |
+| Article master | D11 Inventory | Propriété validée par V-22. |
 | Référence fournisseur | D10 Procurement | Référence propre au fournisseur, liée à l'article. |
 
 **Séparation recommandée.**
@@ -239,7 +241,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - **Inventory** possède l'article, l'entrepôt, l'emplacement, le lot, le mouvement, la réception physique, la réservation, la consommation, le bon de sortie et l'inventaire.
 - Procurement ne modifie jamais une quantité en stock. Inventory ne crée jamais une commande fournisseur.
 - La réception physique est enregistrée par Inventory ; Quality accepte ou refuse ; Procurement gère la réclamation fournisseur et la commande.
-- Le stock est centralisé (V-06). Le stock de chantier est un emplacement temporaire sous contrôle d'Inventory, à valider Q-19.
+- Le stock est centralisé (V-06). Le stock de chantier est un emplacement temporaire du stock central sous contrôle d'Inventory (V-23).
 - La valorisation financière est assurée par Costing ; Inventory fournit les quantités et la traçabilité (BD-21).
 
 **Informations échangées.**
@@ -252,7 +254,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Quality → Inventory | Acceptation, refus, quarantaine | Réception |
 | Procurement → Costing | Engagement, prix, variation | Commande |
 
-**Points à valider.** Q-17 (article master), Q-18 (catalogue fournisseur), Q-19 (stock chantier), Q-20 (valorisation), Q-21 (livraison directe).
+**Points à qualifier.** Q-18 (catalogue fournisseur), Q-20 (valorisation), Q-21 (livraison directe). La propriété de l'article et le statut du stock de chantier sont arbitrés (V-22, V-23).
 
 **Statut.** Proposition.
 
@@ -275,7 +277,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - **Inventory** possède l'article, la réservation, la sortie, le mouvement, la consommation et la traçabilité.
 - Workshop exprime une demande matière ; Inventory réserve, sort et enregistre. Workshop ne décrémente jamais le stock directement.
 - Le rebut et la reprise sont constatés par Workshop, régularisés par Inventory et valorisés par Costing.
-- Une fabrication externe ne change pas la responsabilité : Procurement commande, Workshop porte le dossier technique et l'acceptation technique, Inventory réceptionne la matière ou le composant selon le contrat, Quality contrôle.
+- Pour une fabrication externe, Procurement porte la commande et clôt l'aspect commercial ; Workshop porte le dossier et l'acceptation technique ; Quality statue sur la conformité (V-24). Inventory enregistre les mouvements physiques relevant de son périmètre.
 
 **Informations échangées.**
 
@@ -286,7 +288,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Workshop → Costing | Heures, matière, rebuts | Production |
 | Inventory → Costing | Quantité consommée, valorisation | Mouvement |
 
-**Points à valider.** Q-19, Q-20, Q-23 (acceptation externe), Q-24 (capacité atelier).
+**Points à qualifier.** Q-20 (valorisation), Q-24 (capacité atelier). Le stock de chantier (V-23) et les responsabilités de fabrication externe (V-24) sont arbitrés.
 
 **Statut.** Proposition.
 
@@ -299,18 +301,18 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Responsabilités candidates | Domaine | Analyse |
 | --- | --- | --- |
 | Plan qualité, contrôles, essais, NCR, actions, certificats, qualifications techniques | D14 Quality | Conformité technique aux exigences. |
-| Réception, réserves, levées, PV, DOE, garanties, clôture contractuelle | D17 Handover | Acceptation contractuelle par le client. |
+| Préparation documentaire de réception, centralisation des livrables, réserves documentaires, DOE et garanties | D17 Handover | Préparation et suivi documentaire ; Projects porte la responsabilité contractuelle. |
 | Réserve | D17 Handover | Écart contractuel constaté à la réception. |
 | Non-conformité | D14 Quality | Écart technique à une exigence. |
 
 **Séparation recommandée.**
 
 - **Quality** prononce la conformité technique, ouvre et clôt les NCR, délivre les certificats et fournit les preuves.
-- **Handover** organise la réception, constate les réserves, prononce la levée, établit le PV, compile le DOE et suit les garanties.
+- **Projects** organise et porte la réception contractuelle. **Handover** prépare et centralise les documents et livrables, le DOE et le suivi documentaire des réserves et garanties (V-55).
 - Une réserve peut exister sans NCR (par exemple un document contractuel manquant) et une NCR peut exister sans réserve (par exemple un écart corrigé avant réception).
-- Une réserve peut référencer une NCR, mais les deux objets restent distincts et ont des propriétaires différents. Q-30.
-- Handover ne prononce pas la conformité technique ; Quality ne prononce pas l'acceptation contractuelle.
-- Le DOE est porté contractuellement par Handover ; Documents stocke et versionne les pièces. Q-31.
+- Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la NCR correspondante avant sa clôture. Les objets Réserve et NCR restent distincts (V-26).
+- Projects porte la responsabilité de la réception contractuelle ; Handover ne prononce pas l'acceptation contractuelle. Quality statue sur la conformité technique.
+- Handover prépare et centralise le DOE ; Documents stocke et versionne les pièces. Projects conserve la responsabilité contractuelle de la réception (V-55).
 
 **Informations échangées.**
 
@@ -321,7 +323,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Handover → Projects | Réception, réserves, levées, PV | Réception et clôture |
 | Handover → Documents | Pièces du DOE à compiler et diffuser | Réception |
 
-**Points à valider.** Q-30 (réserve vs NCR), Q-31 (DOE), Q-44 (garanties).
+**Points à qualifier.** Q-31 (DOE), Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; la répartition Projects/Handover est validée par V-55.
 
 **Statut.** Proposition.
 
@@ -392,7 +394,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Prestataire → Workforce | Retour de paie, anomalies, confirmations | Cycle de paie |
 | Workforce → Costing | Taux et coûts RH agrégés | Valorisation |
 
-**Points à valider.** Q-11, Q-12, Q-13, Q-14, Q-40.
+**Points à qualifier.** Q-11, Q-13, Q-14, Q-40. La répartition TimeTracking / Workforce pour les absences est validée par V-21.
 
 **Statut.** Proposition, conforme à la décision validée V-07.
 
@@ -408,11 +410,11 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Workshop | Dossier technique, besoin de fabrication externe, acceptation technique, intégration à la production. |
 | Quality | Contrôle de conformité et NCR. |
 
-**Séparation recommandée.** Procurement porte la relation commerciale et l'engagement ; Workshop porte le dossier technique et l'acceptation technique ; Quality prononce la conformité. Procurement ne décide pas de la conformité technique ; Workshop ne négocie pas le prix ni les conditions.
+**Séparation validée.** Procurement porte la relation commerciale et l'engagement ; Workshop porte le dossier technique et l'acceptation technique ; Quality prononce la conformité (V-24). Procurement ne décide pas de la conformité technique ; Workshop ne négocie pas le prix ni les conditions.
 
 **Informations échangées.** Dossier technique, commande, délais, réception, NCR, performance.
 
-**À valider.** Q-22, Q-23.
+**À qualifier.** Q-22 (qualification du sous-traitant). La répartition des responsabilités de fabrication externe est validée par V-24.
 
 **Statut.** Proposition.
 
@@ -432,7 +434,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 **Informations échangées.** Périmètre, plans, hypothèses, nomenclatures, faisabilité, capacité, avancement.
 
-**À valider.** Q-50, Q-23, Q-24.
+**À qualifier.** Q-50 (frontière des études bureau d'études), Q-24 (capacité atelier). La fabrication externe suit V-24.
 
 **Statut.** Proposition.
 
@@ -451,7 +453,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 **Informations échangées.** Colis, bon de sortie, plan de transport, statut, réception, retour, écart.
 
-**À valider.** Q-19, Q-21.
+**À qualifier.** Q-21 (livraison directe). Le stock de chantier est traité par V-23.
 
 **Statut.** Proposition.
 
@@ -522,31 +524,26 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 
 | Domaine ou statut | Responsabilité |
 | --- | --- |
-| Identité juridique de l'entité | **Non arbitrée — Q-05.** Peut être portée par Clients, par Procurement ou par un référentiel partagé. |
+| Identité juridique de l'entité | **Clients — validé V-15.** Clients porte le référentiel maître unique des tiers. |
 | Clients | Rôle commercial de prospect, client ou donneur d'ordre ; contacts et relation commerciale. |
 | Procurement | Rôle de fournisseur, rôle de sous-traitant, relation d'achat et commande. |
 | Procurement avec Quality et Safety | Qualification métier ou achat du tiers, selon la criticité de la prestation. |
 
-**Séparation recommandée.** La séparation ne choisit pas le portage de l'identité juridique. Elle distingue :
+**Séparation validée par V-15.** Le référentiel maître unique des tiers est détenu par Clients. La séparation distingue :
 
-- l'**identité juridique de l'entité**, dont le propriétaire reste à arbitrer (Q-05) ;
+- l'**identité juridique et les données communes de l'entité**, détenues par Clients ;
 - le **rôle commercial** de prospect, client ou donneur d'ordre, porté par Clients ;
 - le **rôle de fournisseur**, porté par Procurement ;
 - le **rôle de sous-traitant**, porté par Procurement ;
 - la **qualification métier ou achat**, portée par Procurement avec Quality et Safety selon le domaine.
 
-Un même tiers peut cumuler ces rôles. La présence de `CLI-02 Client`, `PRC-01 Fournisseur` et `PRC-02 SousTraitant` ne signifie pas qu'il existe trois entités juridiques distinctes : ce sont des rôles métier. Deux options restent ouvertes, sans nouveau domaine :
+Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiques. Clients reste la source de vérité de l'identité et des données communes ; Procurement conserve les données propres à la relation d'achat et les références fournisseur associées aux articles Inventory (V-15, V-22).
 
-- **Option A** : Clients porte le référentiel de l'entité légale (tiers), Procurement ajoute le rôle fournisseur/sous-traitant et ses données d'achat.
-- **Option B** : Clients et Procurement ont chacun leur référentiel, reliés par un identifiant légal (SIREN/SIRET) et une procédure de rapprochement.
+**Informations échangées.** Identifiant public du tiers, rôle commercial, rôle fournisseur ou sous-traitant, contacts, qualification, statut et conditions propres à chaque relation.
 
-L'option A réduit les doublons mais élargit Clients au-delà de la relation commerciale. L'option B préserve l'autonomie mais impose une réconciliation. **Aucune option n'est tranchée.** Q-05.
+**À qualifier.** Les détails des données propres aux relations d'achat et des qualifications métier restent à préciser ; la propriété du référentiel maître est validée par V-15.
 
-**Informations échangées.** Identité juridique (selon Q-05), rôle commercial, rôle fournisseur ou sous-traitant, contacts, qualification, statut, conditions.
-
-**À valider.** Q-05, Q-02.
-
-**Statut.** Question ouverte.
+**Statut.** Référentiel maître validé par V-15 ; les détails des données propres aux relations d'achat et des qualifications restent à qualifier.
 
 ---
 
@@ -556,16 +553,16 @@ L'option A réduit les doublons mais élargit Clients au-delà de la relation co
 
 | Domaine | Responsabilité |
 | --- | --- |
-| Projects | Décision de clôture de l'affaire, statut contractuel, synthèse. |
-| Handover | Réception contractuelle, réserves, DOE, garanties clientes. |
+| Projects | Organisation et responsabilité de la réception contractuelle, statut contractuel et décision de clôture de l'affaire. |
+| Handover | Préparation et centralisation des documents et livrables de réception, suivi documentaire des réserves, DOE et garanties clientes. |
 | Costing | Coût final, marge, clôture de la période analytique. |
 | Budgets | Écart final, clôture budgétaire. |
 
-**Séparation recommandée.** Handover prononce la réception et la clôture contractuelle ; Projects clôt l'affaire lorsque les conditions sont réunies ; Costing clôt les coûts et calcule la marge finale ; Budgets analyse l'écart final et clôt le budget. Aucun domaine ne peut clôturer seul l'ensemble : une orchestration ou une décision explicite est nécessaire. Q-53.
+**Séparation retenue.** Projects organise et porte la réception contractuelle, puis clôt l'affaire lorsque les conditions de V-28 sont réunies. Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; il ne se substitue pas à Projects pour la responsabilité contractuelle. Costing clôt les coûts et calcule la marge finale ; Budgets clôt le budget. Les confirmations des domaines concernés précèdent la clôture de l'affaire.
 
 **Informations échangées.** Réception, réserves, DOE, garanties clientes, coûts finaux, marge, écarts.
 
-**À valider.** Q-53, Q-30, Q-44.
+**À qualifier.** Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; les conditions de clôture de l'affaire sont validées par V-28.
 
 **Statut.** Proposition.
 
@@ -606,11 +603,11 @@ L'option A réduit les doublons mais élargit Clients au-delà de la relation co
 2. **Technique** : le livrable est-il utilisable/intégrable selon le dossier ? Workshop prononce.
 3. **Commerciale** : la commande est-elle soldée ? Procurement prononce.
 
-Une seule décision ne remplace pas les autres. Une acceptation technique ne vaut pas acceptation qualité ; une réception commerciale ne vaut pas conformité. Q-23.
+Une seule décision ne remplace pas les autres. Une acceptation technique ne vaut pas acceptation qualité ; une réception commerciale ne vaut pas conformité. Cette répartition est validée par V-24.
 
 **Informations échangées.** Dossier, contrôle, NCR, acceptation, réception, clôture.
 
-**À valider.** Q-22, Q-23.
+**À qualifier.** Q-22 (qualification du sous-traitant). La répartition des responsabilités de fabrication externe est validée par V-24.
 
 **Statut.** Proposition.
 
@@ -650,34 +647,34 @@ Une seule décision ne remplace pas les autres. Une acceptation technique ne vau
 
 **À valider.** Q-20, Q-37.
 
-**Statut.** Proposition.
+**Statut.** Responsabilité de clôture validée par V-28 ; la répartition opérationnelle entre Projects et Handover est validée par V-55.
 
-## 5. Décisions proposées
+## 5. Décisions proposées et propositions historiques
 
-Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas validées.
+Le tableau conserve les identifiants PD historiques pour assurer la traçabilité. PD-01 et PD-02 sont remplacées par des décisions validées ; PD-15 est partiellement remplacée par V-15 et V-24. Les autres lignes restent des propositions de cadrage, sauf lorsqu'une décision V ultérieure en précise déjà une partie. Les décisions V prévalent toujours sur les propositions antérieures.
 
 | ID | Décision proposée | Justification | Questions liées |
 | --- | --- | --- | --- |
-| PD-01 | Clients porte les rôles commerciaux et la relation commerciale, sous réserve de Q-05 ; Projects porte l'étude, le devis, la commande, l'affaire et le chantier. | Évite de confondre relation durable et engagement contractuel. | Q-02, Q-03, Q-04, Q-05 |
-| PD-02 | Une affaire peut couvrir plusieurs chantiers ou lots ; un chantier appartient à une seule affaire. | Reflète les affaires multi-sites ou multi-lots, sans imposer un modèle rigide. | Q-01 |
-| PD-03 | Budgets porte l'enveloppe autorisée ; Costing porte le chiffrage, les engagements financiers, les coûts constatés, l'EAC et la marge. | Sépare la décision budgétaire de la mesure économique. | Q-08, Q-09, Q-10 |
-| PD-04 | Procurement porte la commande et l'acte commercial ; Costing enregistre l'engagement financier ; Inventory porte la réception, le stock et les mouvements. | Sépare l'acte commercial, le suivi financier et le fait physique. | Q-17, Q-18, Q-19 |
-| PD-05 | Workshop porte l'OF et la production ; Inventory porte la réservation, la sortie et la consommation matière. | Évite que l'atelier écrive directement dans le stock. | Q-19, Q-20 |
-| PD-06 | Quality porte la conformité technique ; Handover porte la réception contractuelle, les réserves et le DOE. | Sépare la norme technique de l'acceptation client. | Q-30, Q-31 |
+| PD-01 | Clients porte le référentiel maître des tiers, les rôles commerciaux, la relation commerciale et le devis complet ; Projects porte l'étude technique, la commande/contrat après signature, l'affaire et le chantier. | Décision remplacée et précisée par V-15, V-18 et V-29 à V-40. | V-15, V-18, V-29 à V-40 |
+| PD-02 | Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | Décision désormais validée par V-17 ; cette proposition historique est remplacée. | V-17 |
+| PD-03 | Budgets porte l'enveloppe autorisée ; Costing porte les coûts constatés, l'EAC et la marge, ainsi que le suivi des engagements. | La reconnaissance de l'engagement à l'approbation de la commande et la propriété de l'EAC sont validées par V-19 et V-20 ; les seuils budgétaires restent à définir. | Q-08, Q-37, V-19, V-20 |
+| PD-04 | Procurement porte la commande et l'acte commercial ; Costing enregistre l'engagement financier ; Inventory porte la réception, le stock et les mouvements. | Sépare l'acte commercial, le suivi financier et le fait physique ; l'engagement à l'approbation est validé par V-19 et le référentiel article par V-22. | Q-18, V-19, V-22 |
+| PD-05 | Workshop porte l'OF et la production ; Inventory porte la réservation, la sortie et la consommation matière. | Évite que l'atelier écrive directement dans le stock ; le stock de chantier est un emplacement temporaire (V-23). | V-23, Q-20 |
+| PD-06 | Quality porte la conformité technique ; Projects organise la réception contractuelle ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves. | Sépare la conformité technique, la responsabilité contractuelle et la préparation documentaire ; la clôture de l'affaire suit V-28. | V-26, V-28, V-55, Q-31 |
 | PD-07 | Documents porte le contenant, la version et la diffusion ; chaque domaine porte le contenu et la validité métier. | Évite un domaine documentaire qui déciderait du métier. | Q-31, Q-32, Q-33 |
-| PD-08 | Workforce porte les données RH et les variables de paie ; TimeTracking porte les événements de temps ; le prestataire externe produit la paie. | Conforme à V-07 et V-08. | Q-11, Q-12, Q-13, Q-14 |
-| PD-09 | La sous-traitance donnée est portée par Procurement ; la sous-traitance reçue est portée par Projects et Clients. | Distingue l'achat de la vente de prestation. | Q-41 |
-| PD-10 | Planning porte les activités, affectations et l'avancement planning ; Projects porte les jalons et l'avancement contractuel. | Sépare l'organisation de l'engagement. | Q-27, Q-28 |
-| PD-11 | Le stock central est la source de vérité ; le stock de chantier est un emplacement temporaire sous contrôle d'Inventory. | Conforme à V-06 et évite un stock autonome non décidé. | Q-19 |
+| PD-08 | Workforce porte les données RH et les variables de paie ; TimeTracking porte les événements de temps et d'absence ; le prestataire externe produit la paie. | Conforme à V-07, V-08 et V-21. | Q-11, Q-13, Q-14, V-21 |
+| PD-09 | La sous-traitance donnée est portée par Procurement ; la sous-traitance reçue est portée par Projects et Clients. | Distinction validée par V-27 entre achat de prestation et vente de prestation. | V-27 |
+| PD-10 | Planning porte les activités et leur avancement ; Workforce décide des affectations à partir des besoins de Planning ; Projects porte les jalons et l'avancement contractuel. | La distinction des avancements est validée par V-25 ; les modalités de planification restent à qualifier. | Q-28, V-25 |
+| PD-11 | Le stock central est la source de vérité ; le stock de chantier est un emplacement temporaire sous contrôle d'Inventory. | Conforme à V-06 et V-23 ; aucun stock autonome de chantier n'est créé. | V-23 |
 | PD-12 | Reporting est un consommateur en lecture seule, sans écriture ni correction dans les domaines. | Évite un modèle d'écriture parallèle. | Q-34 |
 | PD-13 | Identity porte les comptes et droits ; Workforce porte les collaborateurs et contrats. | Sépare sécurité et RH. | Q-35 |
 | PD-14 | Safety porte les habilitations opérationnelles et autorisations ; Workforce porte les formations et qualifications RH ; Quality porte les qualifications techniques. | Évite trois sources concurrentes pour une même aptitude. | Q-16, Q-29 |
-| PD-15 | Procurement porte les rôles fournisseur/sous-traitant et la relation d'achat, sous réserve de Q-05 ; Quality et Safety prononcent la conformité et l'aptitude. | Sépare relation commerciale et décision technique. | Q-05, Q-22, Q-23 |
-| PD-16 | Costing valorise les faits produits par les domaines opérationnels ; il ne les possède pas. | Évite la duplication des faits. | Q-09, Q-10, Q-20 |
-| PD-17 | Les références inter-domaines utilisent des identifiants publics stables, jamais des Models Eloquent. | Conforme à V-09 et V-10. | Q-36 |
-| PD-18 | Aucune transaction partagée n'est introduite par défaut ; le fournisseur d'une opération porte ses invariants et sa transaction. | Conforme à V-12. | — |
-| PD-19 | Un échange n'est créé que pour un consommateur réel ; le registre est un besoin, pas une autorisation technique. | Conforme à V-11. | — |
-| PD-20 | Les interactions prioritaires de la section 2.2 du registre sont arbitrées avant la matrice du Lot 2. | Réduit le risque de matrice incomplète. | Q-01 à Q-53 |
+| PD-15 | Procurement porte la relation d'achat et les données fournisseur ; Clients porte l'identité maître du tiers ; Quality et Safety interviennent sur la qualification et l'aptitude selon leur périmètre. | La propriété du tiers est validée par V-15 ; l'acceptation technique externe et la conformité sont réparties selon V-24. Les détails de qualification restent à instruire. | V-15, V-24, Q-22 |
+| PD-16 | Costing valorise les faits produits par les domaines opérationnels ; il ne les possède pas. | Évite la duplication des faits. La reconnaissance des engagements et la propriété de l'EAC sont validées par V-19 et V-20 ; la valorisation des stocks reste à qualifier. | V-19, V-20, Q-20 |
+| PD-17 | Les références inter-domaines utilisent des identifiants publics stables, jamais des Models Eloquent. | Les références publiques utilisent des UUID stables selon V-16 ; le format précis de génération reste à définir dans les conventions d'implémentation. | V-16 |
+| PD-18 | Aucune transaction partagée n'est introduite par défaut ; le fournisseur d'une opération porte ses invariants et sa transaction. | Conforme à V-12 et aux règles de communication CHAN-28. | — |
+| PD-19 | Un échange n'est créé que pour un consommateur réel ; le registre est un besoin, pas une autorisation technique. | Conforme à V-11 ; les interactions restent à qualifier individuellement avant toute autorisation. | — |
+| PD-20 | Les interactions prioritaires de la section 2.2 du registre sont arbitrées avant la matrice du Lot 2. | Réduit le risque de matrice incomplète. | Q-01 à Q-53 (références historiques ; plusieurs questions sont désormais arbitrées) |
 
 ## 6. Questions ouvertes
 
@@ -720,7 +717,7 @@ Les décisions suivantes sont des propositions de cadrage. Elles ne sont pas val
 | Q-33 | Quelle valeur légale donner à la signature électronique et à l'archivage ? | Détermine les exigences de preuve et de conservation. | À définir avec le juridique. | Différé |
 | Q-34 | Quelles exigences de fraîcheur, de lignée et d'accès pour Reporting ? | Détermine le modèle de reporting et les contrats de lecture. | Documenter source, formule, période, propriétaire. | Important |
 | Q-35 | Quels rôles, périmètres et comptes externes pour Identity ? | Détermine l'autorisation et les accès clients/fournisseurs. | Rôles explicites, comptes externes sur décision. | Important |
-| Q-36 | Quelle stratégie d'identifiants : auto-incrément, UUID, ULID ? | Détermine les références inter-domaines. | À trancher avant les premiers contrats. | Validé — V-16 |
+| Q-36 | Quelle stratégie d'identifiants : auto-incrément, UUID, ULID ? | Détermine les références inter-domaines. | UUID stables pour les références publiques ; version et format de génération à préciser dans les conventions techniques. | Validé — V-16 |
 | Q-37 | Quelle unité monétaire, devise et règle d'arrondi ? | Détermine tous les échanges financiers. | Montants en unité entière ou décimale fixe, devise EUR. | Important |
 | Q-38 | C2ME est-elle une seule entité juridique ou plusieurs établissements ? | Détermine les périmètres et les rapports. | À clarifier avec la direction. | Différé |
 | Q-39 | Quel périmètre hors connexion et quelle stratégie de conflit ? | Détermine les interactions de saisie et d'idempotence. | Serveur autorité ; conflits explicites. | Important |
@@ -773,14 +770,54 @@ Les questions suivantes étaient bloquantes pour la matrice technique ; elles on
 
 **Contrôle de cohérence.** Ces arbitrages ne créent aucun domaine supplémentaire et respectent les 18 domaines figés (V-01). Le choix Clients comme référentiel maître des tiers ne transfère pas à Clients les commandes fournisseurs : Procurement conserve la relation d'achat, les conditions et références spécifiques. L'identité du tiers est référencée par UUID public. Le stock de chantier reste dans le référentiel central Inventory. Les responsabilités d'avancement et de sous-traitance restent séparées selon leur nature métier. Aucun arbitrage ne crée à lui seul un contrat, un événement, une transaction partagée ou un composant applicatif.
 
-## 7. Décisions restant à valider
+## 6.5 Arbitrages métier complémentaires — questionnaire Lot 2 (16/11/2026)
+
+Les décisions V-29 à V-59 ci-dessous proviennent des réponses explicites du responsable du projet au questionnaire de clarification métier (31 réponses). Elles complètent les décisions V-01 à V-28. Lorsqu'elles contredisent une ancienne proposition du Lot 1, la décision validée ci-dessous prévaut. Elles définissent des responsabilités métier et des règles de processus ; elles ne valent pas autorisation technique d'accès direct.
+
+| ID | Question | Décision validée |
+| --- | --- | --- |
+| V-29 | Q1 — Fin du cycle commercial | Clients porte le cycle commercial jusqu'à la signature du devis accepté ; Projects prend le relais après signature. |
+| V-30 | Q2 — Ouverture d'affaire | La transformation d'un devis accepté en affaire exige une validation explicite de l'utilisateur ; elle n'est pas automatique. |
+| V-31 | Q3 — Conditions | Clients possède les conditions commerciales générales/cadre ; Projects possède les conditions contractuelles propres à l'affaire. |
+| V-32 | Q4 — Budget initial | Le budget initial est créé à partir du devis accepté, avec répartition automatique des lignes du devis. |
+| V-33 | Q5 — Dépassement d'achat | Une commande fournisseur dépassant le disponible budgétaire déclenche une alerte Budgets ; aucun blocage automatique de Procurement n'est imposé. |
+| V-34 | Q6 — EAC | Costing calcule automatiquement et actualise continuellement l'EAC à partir des faits opérationnels et engagements disponibles. |
+| V-35 | Q7 — Propriété du devis | Clients produit et possède le devis complet, y compris les prix et les lignes de travaux. |
+| V-36 | Q8 — Structure du budget | Le budget est structuré par lignes de travaux du devis accepté. |
+| V-37 | Q9 — Avenant | Un avenant accepté révise automatiquement le budget initial, en conservant l'historique des versions et modifications. |
+| V-38 | Q10 — Alerte budgétaire | L'alerte budgétaire retenue concerne le dépassement du disponible par une commande fournisseur. |
+| V-39 | Q11 — Sources EAC | L'EAC prend en compte les commandes et factures, les temps et coûts de main-d'œuvre, les consommations de stock, l'avancement et le reste à faire. |
+| V-40 | Q12 — Construction du devis | Clients construit manuellement le devis ; Costing ne produit pas le devis et intervient sur le suivi économique/rentabilité. |
+| V-41 | Q13 — Chantier principal | Le chantier principal est créé automatiquement lors de la création de l'affaire. |
+| V-42 | Q14 — Avancement contractuel | Seul Projects peut modifier l'avancement contractuel, après validation d'un responsable. |
+| V-43 | Q15 — Avenant et notifications | Un avenant accepté notifie les domaines concernés par les changements de périmètre, selon les besoins réels ; pas de diffusion systématique à tous. |
+| V-44 | Q16 — Planning initial | Le planning initial est créé automatiquement lors de la création de l'affaire. |
+| V-45 | Q17 — Affectation des salariés | Workforce décide des affectations ; Planning fournit les besoins opérationnels. |
+| V-46 | Q18 — Saisie des temps | Les salariés et les chefs d'équipe peuvent tous deux saisir les temps. |
+| V-47 | Q19 — Validation des temps | Le service administratif/RH valide les temps avant leur utilisation dans les processus aval. |
+| V-48 | Q20 — Ordres de fabrication | Les ordres de fabrication sont créés manuellement par le bureau d'études ou le responsable atelier. |
+| V-49 | Q21 — Validation technique atelier | Le responsable atelier (Workshop) valide techniquement les fabrications. |
+| V-50 | Q22 — Demande d'achat | Le responsable travaux ou atelier crée la demande ; Procurement la transforme en commande fournisseur. |
+| V-51 | Q23 — Mouvements de stock | Tout salarié disposant des droits requis peut enregistrer un mouvement de stock ; l'auteur doit être traçable. |
+| V-52 | Q24 — Déclaration NCR | Tout salarié autorisé peut déclarer une non-conformité ; Quality en assure la qualification et le suivi. |
+| V-53 | Q25 — Clôture NCR | Le responsable travaux ou atelier, selon l'origine, clôture la non-conformité avec validation de Quality. |
+| V-54 | Q26 — Contrôles sécurité | Safety définit les règles et contrôles ; les responsables de chantier les exécutent et déclarent les écarts. |
+| V-55 | Q27 — Réception | Projects organise la réception contractuelle ; Handover prépare et centralise les livrables et documents de réception. |
+| V-56 | Q28 — Dépôt documentaire | Tout salarié autorisé peut déposer des documents, avec classement et métadonnées obligatoires. |
+| V-57 | Q29 — Validation documentaire | Le domaine métier propriétaire valide le contenu ; le responsable de l'affaire donne l'approbation finale. |
+| V-58 | Q30 — Reporting | Reporting combine les publications de données/indicateurs des domaines et les consultations via leurs contrats publics. Tout accès direct aux tables internes est interdit. |
+| V-59 | Q31 — Clôture administrative | Le service administratif vérifie les conditions et prononce la clôture après confirmation des domaines concernés. Projects conserve la responsabilité du cycle de vie de l'affaire. |
+
+**Contrôle de cohérence.** V-29, V-35 et V-40 remplacent la proposition antérieure qui attribuait le devis à Projects : Clients est désormais propriétaire du devis complet. Projects conserve l'affaire, le contrat, le chantier et l'avancement contractuel. V-58 confirme l'interdiction d'accès direct aux bases des domaines et reste conforme à V-09/V-10 et CHAN-28. V-59 attribue la décision administrative finale au service administratif, sans transférer à celui-ci la propriété du cycle de vie de l'affaire. Les décisions de création automatique d'un chantier et d'un planning définissent des déclenchements métier ; elles n'autorisent aucun accès direct aux composants internes des domaines concernés.
+
+## 7. Décisions et points restant à qualifier
 
 ### 7.1 Décisions structurantes
 
 | Décision | Options | Recommandation | Impact |
 | --- | --- | --- | --- |
-| Référentiel tiers | Clients maître / Procurement maître / deux référentiels reliés | À arbitrer, sans nouveau domaine ; les rôles commerciaux et d'achat restent distincts de l'identité juridique. | Détermine les échanges Clients ↔ Procurement et la qualité des données. |
-| Relation affaire/chantier | 1–1 / 1–N / N–N | Affaire 1–N chantiers | Détermine les axes de Planning, Budgets, Costing. |
+| Référentiel tiers | Clients maître / Procurement maître / deux référentiels reliés | Clients est le référentiel maître unique (V-15). | Détermine les échanges Clients ↔ Procurement et la qualité des données. |
+| Relation affaire/chantier | 1–1 / 1–N / N–N | Affaire 1–N chantiers (V-17). | Détermine les axes de Planning, Budgets, Costing. |
 | Bureau d'études | Projects / Workshop / partagé | Projects contractuel, Workshop atelier | Détermine la propriété des études et plans. |
 | Sous-traitance reçue | Affaire Projects / commande Procurement | Affaire Projects | Détermine le parcours commercial et la réception. |
 | Sous-traitance donnée | Commande Procurement / OF Workshop | Commande Procurement, dossier Workshop | Détermine la frontière achat/fabrication. |

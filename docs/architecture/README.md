@@ -32,7 +32,7 @@ Les contrats synchrones sont traités dans les sections 1 à 14 de `domain-commu
 
 ## Statut des documents CHAN-29
 
-Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le document `domain-dependency-matrix.md` ouvre le **Lot 2** : matrice technique des dépendances, à qualifier à partir des livrables du Lot 1.
+Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le **Lot 2** ajoute la qualification des dépendances : les arbitrages métier V-29 à V-59 affinent désormais les responsabilités et les interactions candidates, mais ne classent pas à eux seuls les dépendances techniques.
 
 > **Lot 1 — documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites.
 >
