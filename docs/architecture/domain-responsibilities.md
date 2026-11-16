@@ -121,7 +121,7 @@ C2ME intervient dans deux situations distinctes :
 | Situation | Rôle de C2ME | Responsabilités principales |
 | --- | --- | --- |
 | C2ME donneur d'ordre | Client d'un sous-traitant | Procurement porte la commande de sous-traitance et l'engagement ; Projects/Workshop portent le besoin technique et l'acceptation ; Quality contrôle ; Costing enregistre le coût. |
-| C2ME sous-traitant | Intervenant pour un donneur d'ordre | Clients porte le donneur d'ordre et la relation commerciale ; Projects porte l'affaire et l'engagement reçu ; Procurement gère uniquement les achats propres de C2ME ; Handover porte la réception contractuelle par le donneur d'ordre. |
+| C2ME sous-traitant | Intervenant pour un donneur d'ordre | Clients porte le donneur d'ordre et la relation commerciale ; Projects porte l'affaire et l'engagement reçu ; Procurement gère uniquement les achats propres de C2ME ; Projects organise et porte la réception contractuelle par le donneur d'ordre ; Handover prépare et centralise les livrables documentaires. |
 
 La distinction est structurante : elle évite de traiter une commande reçue comme un achat, et une commande passée comme une vente.
 
@@ -305,7 +305,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Identity ne porte pas les données de la personne (Workforce), ni la relation client (Clients), ni la relation fournisseur (Procurement). Il fournit l'identité et les droits ; chaque domaine applique ses propres Policies et invariants métier. Voir BD-18 et Q-35.
 
-**Questions ouvertes.** Q-35 (cycle de vie des comptes et rôles), Q-36 (stratégie d'identifiants), Q-40 (confidentialité et conservation).
+**Questions ouvertes.** Q-35 (cycle de vie des comptes et rôles), Q-40 (confidentialité et conservation). Les références publiques inter-domaines utilisent des UUID stables (V-16) ; la version et le format précis de génération restent à préciser dans les conventions techniques.
 
 ---
 
@@ -469,7 +469,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Procurement / Inventory / Logistics | Besoins datés et contraintes de disponibilité | Préparation |
 | Sortie | Reporting | Charge, respect des délais, conflits | Pilotage |
 
-**Limites et chevauchements.** Planning organise les interventions ; Projects porte l'engagement contractuel et les jalons. Workforce possède les personnes et leurs contraintes ; Equipment possède les actifs ; Workshop possède la capacité de production. Voir BD-02, BD-13 et Q-27, Q-28.
+**Limites et chevauchements.** Planning organise les activités et leur avancement ; Projects porte les jalons et l'avancement contractuel ; TimeTracking porte les temps réalisés ; Workforce décide des affectations à partir des besoins de Planning. Voir BD-02, BD-13, V-25 et Q-28.
 
 **Questions ouvertes.** Q-24 (capacité atelier), Q-28 (horizon et arbitrage des conflits). La répartition des responsabilités d'avancement est validée (V-25).
 
