@@ -52,7 +52,7 @@ flowchart TD
     P2 -->|Jalons contractuels et besoins| PL[Planning\nActivités et affectations]
     P2 -->|Pièces à conserver| D[Documents\nVersions et diffusion]
     B -->|Budget validé / disponible| P2
-    PL -->|Planning publié / alertes| P
+    PL -->|Planning publié / alertes| P2
 ```
 
 **Frontières à préserver :**
@@ -144,15 +144,15 @@ flowchart TD
 ```mermaid
 flowchart TD
     P[Projects / Workshop\nBesoin externe] -->|Spécification et échéance| PR[Procurement\nConsultation et commande]
+    PR -->|Engagement d'achat| C[Costing\nSuivi économique]
     PR -->|Ordre fournisseur| EXT[Sous-traitant\nExécution externe]
-    W[Workshop\nPréparation / intégration] -->|Dossier technique applicable| EXT
+    W[Workshop\nPréparation et acceptation technique] -->|Dossier technique applicable| EXT
     EXT -->|Composants ou prestation livrés| L[Logistics\nTransport]
     L --> I[Inventory\nRéception physique si stock]
-    I -->|Éléments réceptionnés pour examen| W[Workshop\nAcceptation technique]
+    I -->|Éléments réceptionnés pour examen| W
     Q[Quality\nContrôles / NCR] -->|Décision de conformité| W
-    W -->|Résultat d'acceptation technique| PR
-    Q -->|Décision de conformité| PR
-    PR -->|Clôture commerciale de la prestation| C[Costing\nSuivi économique]
+    W -->|Acceptation technique| PC[Procurement\nClôture commerciale]
+    Q -->|Conformité technique| PC
 ```
 
 **Frontières à préserver :**
