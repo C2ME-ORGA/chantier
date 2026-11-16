@@ -32,7 +32,7 @@ Les contrats synchrones sont traités dans les sections 1 à 14 de `domain-commu
 
 ## Statut des documents CHAN-29
 
-Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le **Lot B** qualifie métier les interactions : 125 interactions d'origine, 130 lignes actives après cinq scissions réelles et correction de `INT-072`, dont 117 qualifiées, 4 à préciser, 4 à décomposer, 3 à arbitrer et 2 hors matrice inter-domaines. Aucune classification technique n'est prononcée. Les arbitrages V-29 à V-59 affinent les responsabilités et les interactions, mais ne classent pas à eux seuls les dépendances techniques.
+Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le **Lot B** qualifie métier les interactions : 125 interactions d'origine, 130 lignes actives après cinq scissions réelles et correction de `INT-072`, dont 106 qualifiées, 11 à préciser, 4 à décomposer, 7 à arbitrer et 2 hors matrice inter-domaines. Aucune classification technique n'est prononcée. Les arbitrages V-29 à V-59 affinent les responsabilités et les interactions, mais ne classent pas à eux seuls les dépendances techniques.
 
 > **Lot 1 — documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites.
 >
