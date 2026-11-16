@@ -142,7 +142,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Projects → Planning | Avenants et changements de priorité | Révision |
 | Planning → Projects | Impact des aléas sur les dates | Aléa |
 
-**Points à valider.** Q-27 (avancement contractuel vs planning), Q-28 (horizon ferme, arbitrage des conflits), Q-01 (relation affaire/chantier).
+**Points à valider.** Q-27 (avancement contractuel vs planning), Q-28 (horizon ferme, arbitrage des conflits). La relation affaire/chantier est arbitrée par V-17.
 
 **Statut.** Proposition.
 
@@ -558,11 +558,11 @@ Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiqu
 | Costing | Coût final, marge, clôture de la période analytique. |
 | Budgets | Écart final, clôture budgétaire. |
 
-**Séparation recommandée.** Handover prononce la réception et la clôture contractuelle ; Projects clôt l'affaire lorsque les conditions sont réunies ; Costing clôt les coûts et calcule la marge finale ; Budgets analyse l'écart final et clôt le budget. Aucun domaine ne peut clôturer seul l'ensemble : une orchestration ou une décision explicite est nécessaire. Q-53.
+**Séparation retenue.** Handover prononce la réception et la clôture contractuelle ; Projects clôt l'affaire lorsque les conditions de V-28 sont réunies ; Costing clôt les coûts et calcule la marge finale ; Budgets clôt le budget. Aucun domaine ne clôt seul l'ensemble : les confirmations et l'orchestration respectent la séquence validée par V-28.
 
 **Informations échangées.** Réception, réserves, DOE, garanties clientes, coûts finaux, marge, écarts.
 
-**À valider.** Q-53, Q-30, Q-44.
+**À qualifier.** Q-30 (réserve vs NCR) et Q-44 (garanties). Les conditions de clôture de l'affaire sont validées par V-28.
 
 **Statut.** Proposition.
 
