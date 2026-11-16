@@ -4,15 +4,15 @@ Ce document définit l'organisation et les commandes de test de C2ME Chantier.
 
 ## Objectifs
 
-Le socle de tests distingue les tests rapides, exécutés sur SQLite en mémoire, des tests qui vérifient explicitement le comportement du moteur MariaDB. Les deux suites sont complémentaires et ne doivent pas être confondues.
+Le socle distingue les tests rapides exécutés sur SQLite en mémoire des tests qui vérifient explicitement le comportement du moteur MariaDB. Ces suites sont complémentaires.
 
 ## Organisation des fichiers
 
 | Emplacement | Responsabilité | Environnement |
 | --- | --- | --- |
-| `tests/Unit/` | Tests isolés de classes et fonctions, sans démarrage HTTP ni dépendance à une base réelle | PHPUnit/Pest standard |
-| `tests/Feature/` | Tests d'intégration Laravel : HTTP, authentification, autorisations, interactions applicatives | SQLite en mémoire |
-| `tests/MariaDb/` | Tests dépendant du comportement MariaDB : SQL, contraintes, migrations, types, collations et persistance | MariaDB dédiée |
+| `tests/Unit/` | Tests isolés de classes et fonctions, sans dépendance à HTTP ou à une base réelle | PHPUnit/Pest standard |
+| `tests/Feature/` | Intégration Laravel : HTTP, authentification, autorisations et interactions applicatives | SQLite en mémoire |
+| `tests/MariaDb/` | Comportements propres à MariaDB : SQL, contraintes, migrations, types, collations et persistance | MariaDB dédiée |
 
 Fichiers de configuration :
 
@@ -23,7 +23,7 @@ Fichiers de configuration :
 - `tests/TestCase.php` : base Laravel des tests applicatifs.
 - `tests/MariaDbTestCase.php` : garde-fous MariaDB et transactions annulées après chaque test.
 
-Un test doit être placé dans la suite correspondant à sa dépendance réelle. Ne pas placer un test MariaDB dans Feature uniquement pour bénéficier du démarrage Laravel. Ne pas utiliser MariaDB pour un test unitaire qui peut rester isolé.
+Un test est placé dans la suite correspondant à sa dépendance réelle. Ne pas placer un test MariaDB dans Feature uniquement pour bénéficier du démarrage Laravel. Ne pas utiliser MariaDB pour un test unitaire qui peut rester isolé.
 
 ## Nommage et écriture
 
@@ -71,7 +71,7 @@ Depuis la racine du dépôt :
 php artisan test --no-interaction
 ```
 
-Cette commande exécute les suites Unit et Feature déclarées dans `phpunit.xml), sur SQLite en mémoire. Les variables structurantes `APP_ENV`, `DB_CONNECTION`, `DB_DATABASE` et `DB_URL` sont forcées dans cette configuration.
+Cette commande exécute les suites Unit et Feature déclarées dans `phpunit.xml`, sur SQLite en mémoire. Les variables structurantes `APP_ENV`, `DB_CONNECTION`, `DB_DATABASE` et `DB_URL` sont forcées dans cette configuration.
 
 Pour exécuter un fichier ou filtrer un test :
 
@@ -82,15 +82,15 @@ php artisan test --no-interaction --filter="home"
 
 ### Suite MariaDB
 
-Configurer les variables d'environnement vers une base de test dédiée `chantier_test), puis :
+Configurer les variables d'environnement vers une base de test dédiée `chantier_test`, puis :
 
 ```bash
 php artisan config:clear
 php artisan migrate --force --no-interaction
-vendor/bin/pest --configuration=phpunit.mariadb.xml --no-interaction
+vendor/bin/pest --configuration=phpunit.mariadb.xml
 ```
 
-La commande de migration ci-dessus est destructive si la base contient déjà des données et ne doit être exécutée que sur la base de test isolée. La CI utilise `migrate:fresh) sur son service éphémère ; cette commande ne doit pas être transposée à une base locale partagée.
+La commande de migration ci-dessus est destructive si la base contient déjà des données et ne doit être exécutée que sur la base de test isolée. La CI utilise `migrate:fresh` sur son service éphémère ; cette commande ne doit pas être transposée à une base locale partagée.
 
 ### Contrôles qualité
 
@@ -109,9 +109,9 @@ composer ci:check --no-interaction
 `ci:check` délègue au script Composer `test`, qui exécute dans l'ordre :
 
 1. `php artisan config:clear --ansi` ;
-2. `composer lint:check) ;
-3. `composer types:check) ;
-4. `php artisan test --no-interaction).
+2. `pint --parallel --test` via `composer lint:check` ;
+3. `phpstan analyse` via `composer types:check` ;
+4. `php artisan test --no-interaction`.
 
 Cette commande est le point d'entrée stable pour les contrôles PHP et les suites SQLite dans GitHub Actions et pour l'intégration prévue dans CHAN-35. Elle ne lance pas la suite MariaDB : celle-ci reste un job distinct, avec son service éphémère, ses migrations et sa configuration dédiée. Le build frontend et les tests des scripts d'exploitation restent également des étapes séparées du workflow.
 
