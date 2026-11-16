@@ -17,7 +17,7 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | [`domain-dependency-register.md`](domain-dependency-register.md) | CHAN-29 Lot 2 / Lot B | Registre de qualification métier des 125 interactions d'origine (130 lignes actives après cinq scissions réelles et correction de `INT-072`). |
 | [`domain-dependency-matrix-lot-c.md`](domain-dependency-matrix-lot-c.md) | CHAN-29 Lot C | Qualification technique des 130 interactions ; les 130 classes restent « À qualifier » faute de preuve d'implémentation. |
 | [`domain-dependency-matrix-lot-d.md`](domain-dependency-matrix-lot-d.md) | CHAN-29 Lot D | Matrice consolidée des relations candidates, analyse des 17 paires réciproques, cycles documentaires et limites de l'audit des accès internes. |
-| [`domain-dependency-examples-lot-e.md`](domain-dependency-examples-lot-e.md) | CHAN-29 Lot E | Neuf scénarios métier illustrés par des schémas, règles de propriété et checklist documentaire par domaine et transversale. |
+| [`domain-dependency-examples-lot-e.md`](domain-dependency-examples-lot-e.md) | CHAN-29 Lot E | Neuf scénarios métier illustrés par des schémas, règles de propriété et checklist documentaire par domaine et transversale. |\n| [`domain-dependency-final-review-lot-f.md`](domain-dependency-final-review-lot-f.md) | CHAN-29 Lot F | Revue finale croisée, état des quatre critères d'acceptation, vérification des PR/CI et points restant à démontrer avant clôture. |
 
 ## Ordre de lecture recommandé
 
@@ -33,7 +33,7 @@ Pour comprendre les relations candidates et leurs exemples :
 
 1. [`domain-dependency-matrix-lot-c.md`](domain-dependency-matrix-lot-c.md) — qualification technique des interactions.
 2. [`domain-dependency-matrix-lot-d.md`](domain-dependency-matrix-lot-d.md) — matrice consolidée et analyse des cycles.
-3. [`domain-dependency-examples-lot-e.md`](domain-dependency-examples-lot-e.md) — scénarios, schémas et checklist.
+3. [`domain-dependency-examples-lot-e.md`](domain-dependency-examples-lot-e.md) — scénarios, schémas et checklist.\n4. [`domain-dependency-final-review-lot-f.md`](domain-dependency-final-review-lot-f.md) — revue finale et préparation de clôture.
 
 Pour les règles de code et de contrat, consulter d'abord [`domain-conventions.md`](domain-conventions.md) et [`domain-communication.md`](domain-communication.md).
 
@@ -47,7 +47,7 @@ Le Lot C sépare le statut métier de la classe technique et du mécanisme CHAN-
 
 Le Lot D consolide les relations candidates et analyse les cycles du graphe documentaire. Les cycles apparents ne prouvent pas des cycles d'appels ou de dépendances PHP. Les 18 répertoires `app/Domains/` ne contenant encore que des fichiers `.gitkeep`, l'audit des imports et accès directs aux tables reste à refaire après implémentation.
 
-Le Lot E illustre neuf parcours métier et les frontières de propriété associées. Ses schémas représentent des flux conceptuels et non des appels techniques implémentés. Sa checklist aide à relire la documentation ; elle ne remplace pas les tests d'architecture CHAN-31.
+Le Lot E illustre neuf parcours métier et les frontières de propriété associées. Ses schémas représentent des flux conceptuels et non des appels techniques implémentés. Sa checklist aide à relire la documentation ; elle ne remplace pas les tests d'architecture CHAN-31.\n\nLe Lot F présente la revue finale des documents, des références CHAN-27/28/31, de l'organisation Core/Domains, des critères Jira et des PR/CI. Il conclut que le critère relatif à la classification des dépendances reste partiellement démontré : les 130 interactions demeurent « À qualifier » faute de preuve d'implémentations techniques. Le rapport ne propose donc pas la clôture automatique de CHAN-29.
 
 > **Garde-fou :** la qualification métier, la matrice candidate, l'analyse de graphe et les scénarios illustratifs ne valent pas autorisation technique. Aucune dépendance n'est déclarée autorisée, conditionnelle ou interdite sans preuve et validation explicites.
 
