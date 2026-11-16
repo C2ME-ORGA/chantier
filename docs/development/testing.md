@@ -68,7 +68,7 @@ Prérequis :
 Depuis la racine du dépôt :
 
 ```bash
-php artisan test --no-interaction
+php artisan test
 ```
 
 Cette commande exécute les suites Unit et Feature déclarées dans `phpunit.xml`, sur SQLite en mémoire. Les variables structurantes `APP_ENV`, `DB_CONNECTION`, `DB_DATABASE` et `DB_URL` sont forcées dans cette configuration.
@@ -76,8 +76,8 @@ Cette commande exécute les suites Unit et Feature déclarées dans `phpunit.xml
 Pour exécuter un fichier ou filtrer un test :
 
 ```bash
-php artisan test --no-interaction tests/Feature/HomeRouteTest.php
-php artisan test --no-interaction --filter="home"
+php artisan test tests/Feature/HomeRouteTest.php
+php artisan test --filter="home"
 ```
 
 ### Suite MariaDB
@@ -111,7 +111,7 @@ composer ci:check --no-interaction
 1. `php artisan config:clear --ansi` ;
 2. `pint --parallel --test` via `composer lint:check` ;
 3. `phpstan analyse` via `composer types:check` ;
-4. `php artisan test --no-interaction`.
+4. `php artisan test`.
 
 Cette commande est le point d'entrée stable pour les contrôles PHP et les suites SQLite dans GitHub Actions et pour l'intégration prévue dans CHAN-35. Elle ne lance pas la suite MariaDB : celle-ci reste un job distinct, avec son service éphémère, ses migrations et sa configuration dédiée. Le build frontend et les tests des scripts d'exploitation restent également des étapes séparées du workflow.
 
