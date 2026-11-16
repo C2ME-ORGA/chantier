@@ -19,7 +19,7 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | [`domain-dependency-matrix-lot-d.md`](domain-dependency-matrix-lot-d.md) | CHAN-29 Lot D | Matrice consolidée des relations candidates, analyse des 17 paires réciproques, cycles documentaires et limites de l'audit des accès internes. |
 | [`domain-dependency-examples-lot-e.md`](domain-dependency-examples-lot-e.md) | CHAN-29 Lot E | Neuf scénarios métier illustrés par des schémas, règles de propriété et checklist documentaire par domaine et transversale. |
 | [`domain-dependency-final-review-lot-f.md`](domain-dependency-final-review-lot-f.md) | CHAN-29 Lot F | Revue finale croisée, état des quatre critères d'acceptation, vérification des PR/CI et points restant à démontrer avant clôture. |
-| [`domain-dependency-qualification-lot-g.md`](domain-dependency-qualification-lot-g.md) | CHAN-29 Lot G | Qualification technique cible des 130 interactions, conditions, périmètres hors matrice et limites de preuve d'implémentation. |
+| [`domain-dependency-qualification-lot-g.md`](domain-dependency-qualification-lot-g.md) | CHAN-29 Lot G | Qualification technique cible des 130 interactions, conditions, périmètres hors matrice et limites de preuve d'implémentation. |\n| [`domain-dependency-final-review-lot-h.md`](domain-dependency-final-review-lot-h.md) | CHAN-29 Lot H | Revue finale des quatre critères Jira après Lot G et décision de conception progressive ; validation documentaire de l'architecture cible, sans certification du code futur. |
 
 ## Ordre de lecture recommandé
 
@@ -37,7 +37,7 @@ Pour comprendre les relations candidates et leurs exemples :
 2. [`domain-dependency-matrix-lot-d.md`](domain-dependency-matrix-lot-d.md) — matrice consolidée et analyse des cycles.
 3. [`domain-dependency-examples-lot-e.md`](domain-dependency-examples-lot-e.md) — scénarios, schémas et checklist.
 4. [`domain-dependency-final-review-lot-f.md`](domain-dependency-final-review-lot-f.md) — revue finale et préparation de clôture.
-5. [`domain-dependency-qualification-lot-g.md`](domain-dependency-qualification-lot-g.md) — qualification technique cible des 130 interactions.
+5. [`domain-dependency-qualification-lot-g.md`](domain-dependency-qualification-lot-g.md) — qualification technique cible des 130 interactions.\n6. [`domain-dependency-final-review-lot-h.md`](domain-dependency-final-review-lot-h.md) — revue finale des critères d'acceptation après le Lot G.
 
 Pour les règles de code et de contrat, consulter d'abord [`domain-conventions.md`](domain-conventions.md) et [`domain-communication.md`](domain-communication.md).
 
@@ -55,7 +55,7 @@ Le Lot E illustre neuf parcours métier et les frontières de propriété associ
 
 Le Lot F présente la revue finale des documents, des références CHAN-27/28/31, de l'organisation Core/Domains, des critères Jira et des PR/CI. Il conclut que le critère relatif à la classification des dépendances reste partiellement démontré faute de preuve d'implémentations techniques.
 
-Le Lot G qualifie les 130 interactions pour l'architecture cible : 105 admissibles sous contrat public, 19 conditionnelles, 4 à décomposer et 2 hors périmètre inter-domaines. Une admissibilité cible exige une interaction qualifiée au Lot B ainsi qu'un consommateur, un propriétaire et une capacité explicitement identifiés. Cette qualification ne certifie pas le code existant ; les dépendances implémentées restent à vérifier lorsque les domaines seront développés.
+Le Lot G qualifie les 130 interactions pour l'architecture cible : 105 admissibles sous contrat public, 19 conditionnelles, 4 à décomposer et 2 hors périmètre inter-domaines. Une admissibilité cible exige une interaction qualifiée au Lot B ainsi qu'un consommateur, un propriétaire et une capacité explicitement identifiés. Cette qualification ne certifie pas le code existant ; les dépendances implémentées restent à vérifier lorsque les domaines seront développés.\n\nLe Lot H reprend les quatre critères d'acceptation Jira après intégration du principe de conception progressive. Il conclut que les critères sont démontrés au niveau documentaire de l'architecture cible : la qualification des relations et les interdictions générales répondent au critère sur les dépendances, sans prétendre certifier les dépendances PHP futures. Il propose la présentation de CHAN-29 pour validation de clôture ; aucun statut Jira n'est modifié par le livrable.
 
 **Principe de conception progressive :** les 18 domaines et leurs responsabilités constituent un cadre initial. Leurs périmètres fonctionnels et techniques détaillés seront décidés et affinés au fur et à mesure de la programmation, sur la base des besoins réellement implémentés. Les qualifications du Lot G orientent la cible sans imposer de créer immédiatement chaque contrat ou composant. Les évolutions de périmètre restent soumises aux règles de propriété, d'isolation et de communication CHAN-27/28.
 
