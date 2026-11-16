@@ -58,6 +58,7 @@ La liste ci-dessous regroupe les 95 paires distinctes extraites des interactions
 | Budgets | Costing | INT-054 |
 | Budgets | Procurement | INT-056 |
 | Budgets | Projects | INT-014 |
+| Budgets | Workforce | INT-070 |
 | Clients | Handover | INT-010a |
 | Clients | Identity | INT-004 |
 | Clients | Projects | INT-007, INT-008, INT-010 |
@@ -72,6 +73,7 @@ La liste ci-dessous regroupe les 95 paires distinctes extraites des interactions
 | Costing | TimeTracking | INT-058 |
 | Costing | Workshop | INT-061 |
 | Costing | Workforce | INT-066 |
+| Costing | Handover | INT-120a |
 | Documents | Reporting | INT-125 |
 | Equipment | Logistics | INT-102 |
 | Equipment | Procurement | INT-104, INT-105 |
@@ -108,6 +110,7 @@ La liste ci-dessous regroupe les 95 paires distinctes extraites des interactions
 | Projects | Inventory | INT-034, INT-035 |
 | Projects | Logistics | INT-031 |
 | Projects | Planning | INT-013 |
+| Projects | Procurement | INT-020, INT-021 |
 | Projects | Quality | INT-022, INT-023a |
 | Projects | Safety | INT-025 |
 | Projects | TimeTracking | INT-033 |
@@ -125,6 +128,7 @@ La liste ci-dessous regroupe les 95 paires distinctes extraites des interactions
 | Reporting | Logistics | INT-107 |
 | Reporting | Planning | INT-052 |
 | Reporting | Projects | INT-036, INT-121 |
+| Reporting | Handover | INT-121a |
 | Reporting | Procurement | INT-095 |
 | Reporting | Quality | INT-110 |
 | Reporting | Safety | INT-113 |
@@ -145,6 +149,7 @@ La liste ci-dessous regroupe les 95 paires distinctes extraites des interactions
 | Workshop | Logistics | INT-083, INT-084 |
 | Workshop | Procurement | INT-079, INT-080 |
 | Workshop | Quality | INT-081, INT-082 |
+| Workshop | Safety | INT-111 |
 
 **Attention :** cette matrice est une synthèse de relations candidates. Elle ne remplace pas les lignes INT, leurs descriptions, les propriétaires ni les questions ouvertes du Lot C. La présence d'une paire dans ce tableau n'est pas une autorisation d'import ou d'appel.
 
