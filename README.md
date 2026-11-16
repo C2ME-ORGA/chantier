@@ -91,11 +91,13 @@ npm run dev
 
 ```powershell
 php artisan --version
-php artisan test
+php artisan test --no-interaction
 composer lint:check
 composer types:check
 npm run build
 ```
+
+Pour les conventions de nommage, le choix entre Unit/Feature/MariaDB, les prérequis et toutes les commandes de test, consulter [docs/development/testing.md](docs/development/testing.md). La commande agrégée destinée à la CI est `composer ci:check --no-interaction` ; elle exécute les contrôles PHP et les suites SQLite. La suite MariaDB reste un job distinct du workflow et se lance avec `vendor/bin/pest --configuration=phpunit.mariadb.xml` sur une base `chantier_test` isolée.
 
 Ces commandes doivent être exécutées après installation ; leur présence ici ne signifie pas qu'elles ont déjà été validées sur chaque environnement.
 
