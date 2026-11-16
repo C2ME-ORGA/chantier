@@ -185,6 +185,24 @@ Pour chaque ligne, documenter avant de décider :
 9. **Cycle** : vérifier l'absence de dépendance circulaire, de transaction partagée implicite et de boucle d'événements.
 10. **Décision** : attribuer « Autorisée », « Conditionnelle » ou « Interdite » uniquement après revue et validation explicite.
 
+## 5.1 Conséquences du questionnaire métier Lot 2
+
+Les arbitrages V-29 à V-59 de `domain-boundary-decisions.md` doivent être appliqués lors de la qualification individuelle des interactions, notamment :
+
+- Clients est le fournisseur métier du devis complet, des prix et des lignes de travaux ; Projects consomme les éléments nécessaires à l'ouverture de l'affaire après validation explicite.
+- Projects déclenche la création du chantier principal et du planning initial ; les capacités de création et les références échangées restent à qualifier selon CHAN-28.
+- Budgets consomme les lignes du devis accepté et les avenants acceptés ; Procurement ne reçoit pas de blocage automatique sur dépassement, Budgets émet une alerte.
+- Costing consomme les faits économiques et opérationnels nécessaires à l'EAC ; le devis commercial ne relève pas de Costing.
+- Planning fournit les besoins à Workforce ; Workforce décide des affectations.
+- TimeTracking accepte les saisies salariés et chefs d'équipe ; la validation relève du service administratif/RH.
+- Les demandes d'achat sont initiées par les responsables travaux/atelier et traitées par Procurement.
+- Inventory et Quality acceptent les contributions des salariés autorisés, avec traçabilité et qualification métier.
+- Documents accepte les dépôts des salariés autorisés ; validation de contenu par le domaine propriétaire, approbation finale par le responsable d'affaire.
+- Reporting consomme exclusivement des données publiées ou exposées par contrats publics ; l'accès direct aux tables est interdit.
+- La clôture administrative est prononcée par le service administratif après confirmations des domaines ; Projects conserve le cycle de vie de l'affaire.
+
+**Statut.** Ces arbitrages affinent les propriétaires, consommateurs et déclencheurs métier. Ils ne classent pas automatiquement les interactions en dépendances autorisées ou conditionnelles. Les 125 interactions conservent leur statut individuel tant que leur capacité, leur donnée minimale, leur déclencheur, leur mode CHAN-28 et leurs restrictions ne sont pas qualifiés.
+
 ## 5. Points de vigilance à instruire
 
 - **INT-001** : « Tous les domaines » ne peut pas devenir une dépendance métier universelle à Identity ; séparer authentification/autorisation technique des besoins métier.
