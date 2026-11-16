@@ -72,6 +72,12 @@ Chaque domaine sera structuré **progressivement**, en fonction de ses besoins r
 
 Il est donc attendu qu'un domaine reste vide tant qu'aucun besoin concret ne justifie du code, et que sa structure interne apparaisse au fur et à mesure de son implémentation.
 
+### Évolution des périmètres cibles
+
+La liste des 18 domaines et leur cartographie actuelle constituent un **cadre initial de responsabilités**, pas une spécification figée de leur contenu fonctionnel ou technique. Les périmètres détaillés, les objets effectivement détenus, les composants internes et les frontières précises seront décidés et affinés au fur et à mesure de la programmation, à partir des besoins métier rencontrés et des règles de gestion mises au jour.
+
+Au cours de cette évolution, un domaine pourra être précisé, étendu, scindé ou réorganisé si l'implémentation le justifie. Toute évolution devra toutefois préserver la propriété explicite des données et invariants, l'isolation des domaines et les règles de communication publique définies dans CHAN-27 et CHAN-28. Une interaction cible documentée ne vaut donc pas engagement à créer immédiatement un contrat ou un composant : sa nécessité et sa forme seront confirmées au moment où le cas d'usage sera développé.
+
 ## Références
 
 - [`AGENTS.md`](../../AGENTS.md) — règles générales du dépôt.
