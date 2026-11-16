@@ -8,7 +8,7 @@ Ce document analyse les chevauchements de responsabilité entre les 18 domaines 
 - Hors portée : matrice technique définitive des dépendances (Lot 2), contrats et événements (CHAN-28), conventions internes de code (CHAN-27), tests d'architecture (CHAN-31).
 
 > **Statut du document — Lot 1 / préparation du Lot 2.**
-> Les décisions validées sont listées en section 2 et dans la section 6.4. Les questions bloquantes Q-01, Q-02, Q-05, Q-09, Q-10, Q-12, Q-17, Q-19, Q-23, Q-27, Q-30, Q-36, Q-41 et Q-53 ont été arbitrées par le responsable du projet le 15/11/2026. Les autres propositions et questions restent ouvertes et ne doivent pas être considérées comme validées.
+> Les décisions validées sont listées en section 2 et dans la section 6.4. Les questions bloquantes Q-01, Q-02, Q-05, Q-09, Q-10, Q-12, Q-17, Q-19, Q-23, Q-27, Q-30, Q-36, Q-41 et Q-53 ont été arbitrées par le responsable du projet le 16/11/2026. Les autres propositions et questions restent ouvertes et ne doivent pas être considérées comme validées.
 
 ## 1. Méthode
 
@@ -61,20 +61,20 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | V-12 | Aucune transaction partagée entre domaines n'est introduite sans décision explicite. | `domain-communication.md`, CHAN-28 |
 | V-13 | Le Lot 1 est documentaire : aucun code, modèle, service, action, événement, migration, dépendance ou workflow CI/CD n'est modifié. | Ticket CHAN-29 |
 | V-14 | La matrice technique détaillée des dépendances autorisées et interdites relève du Lot 2. | Ticket CHAN-29 |
-| V-15 | Clients est propriétaire du référentiel maître unique des tiers (identité juridique et données communes). Procurement reste propriétaire de la relation d'achat, des données fournisseurs propres aux achats et des références fournisseur liées aux articles Inventory. | Arbitrage responsable projet, 15/11/2026 (Q-05) |
-| V-16 | Les références publiques inter-domaines utilisent des UUID stables. La version et le format précis de génération restent à préciser au niveau des conventions techniques d'implémentation. | Arbitrage responsable projet, 15/11/2026 (Q-36) |
-| V-17 | Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | Arbitrage responsable projet, 15/11/2026 (Q-01) |
-| V-18 | Un tiers peut cumuler plusieurs rôles dans une même affaire (client, donneur d'ordre, maître d'ouvrage, payeur), ces rôles étant explicitement distingués. | Arbitrage responsable projet, 15/11/2026 (Q-02) |
-| V-19 | Un engagement financier est reconnu à l'approbation de la commande fournisseur. | Arbitrage responsable projet, 15/11/2026 (Q-09) |
-| V-20 | Costing est propriétaire de l'EAC, calculé à partir des faits opérationnels et des engagements. | Arbitrage responsable projet, 15/11/2026 (Q-10) |
-| V-21 | TimeTracking constate les événements et durées d'absence ; Workforce qualifie le motif RH. | Arbitrage responsable projet, 15/11/2026 (Q-12) |
-| V-22 | Inventory est propriétaire du référentiel maître des articles ; Procurement porte les références et données d'achat propres aux fournisseurs. | Arbitrage responsable projet, 15/11/2026 (Q-17) |
-| V-23 | Le stock de chantier est un emplacement temporaire du stock central, géré par Inventory, et non un référentiel autonome. | Arbitrage responsable projet, 15/11/2026 (Q-19) |
-| V-24 | Pour une fabrication externe, Workshop porte l'acceptation technique, Quality statue sur la conformité et Procurement clôt l'aspect commercial. | Arbitrage responsable projet, 15/11/2026 (Q-23) |
-| V-25 | Projects porte l'avancement contractuel ; Planning porte l'avancement des activités ; TimeTracking porte les temps réalisés. | Arbitrage responsable projet, 15/11/2026 (Q-27) |
-| V-26 | Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la non-conformité correspondante avant sa clôture. | Arbitrage responsable projet, 15/11/2026 (Q-30) |
-| V-27 | La sous-traitance confiée par C2ME suit le parcours Procurement ; la sous-traitance reçue par C2ME suit le parcours commercial Projects/Clients. Les deux parcours restent distincts. | Arbitrage responsable projet, 15/11/2026 (Q-41) |
-| V-28 | La clôture d'une affaire intervient après réception, levée des réserves, constitution du DOE, clôture des coûts et clôture du budget. | Arbitrage responsable projet, 15/11/2026 (Q-53) |
+| V-15 | Clients est propriétaire du référentiel maître unique des tiers (identité juridique et données communes). Procurement reste propriétaire de la relation d'achat, des données fournisseurs propres aux achats et des références fournisseur liées aux articles Inventory. | Arbitrage responsable projet, 16/11/2026 (Q-05) |
+| V-16 | Les références publiques inter-domaines utilisent des UUID stables. La version et le format précis de génération restent à préciser au niveau des conventions techniques d'implémentation. | Arbitrage responsable projet, 16/11/2026 (Q-36) |
+| V-17 | Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | Arbitrage responsable projet, 16/11/2026 (Q-01) |
+| V-18 | Un tiers peut cumuler plusieurs rôles dans une même affaire (client, donneur d'ordre, maître d'ouvrage, payeur), ces rôles étant explicitement distingués. | Arbitrage responsable projet, 16/11/2026 (Q-02) |
+| V-19 | Un engagement financier est reconnu à l'approbation de la commande fournisseur. | Arbitrage responsable projet, 16/11/2026 (Q-09) |
+| V-20 | Costing est propriétaire de l'EAC, calculé à partir des faits opérationnels et des engagements. | Arbitrage responsable projet, 16/11/2026 (Q-10) |
+| V-21 | TimeTracking constate les événements et durées d'absence ; Workforce qualifie le motif RH. | Arbitrage responsable projet, 16/11/2026 (Q-12) |
+| V-22 | Inventory est propriétaire du référentiel maître des articles ; Procurement porte les références et données d'achat propres aux fournisseurs. | Arbitrage responsable projet, 16/11/2026 (Q-17) |
+| V-23 | Le stock de chantier est un emplacement temporaire du stock central, géré par Inventory, et non un référentiel autonome. | Arbitrage responsable projet, 16/11/2026 (Q-19) |
+| V-24 | Pour une fabrication externe, Workshop porte l'acceptation technique, Quality statue sur la conformité et Procurement clôt l'aspect commercial. | Arbitrage responsable projet, 16/11/2026 (Q-23) |
+| V-25 | Projects porte l'avancement contractuel ; Planning porte l'avancement des activités ; TimeTracking porte les temps réalisés. | Arbitrage responsable projet, 16/11/2026 (Q-27) |
+| V-26 | Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la non-conformité correspondante avant sa clôture. | Arbitrage responsable projet, 16/11/2026 (Q-30) |
+| V-27 | La sous-traitance confiée par C2ME suit le parcours Procurement ; la sous-traitance reçue par C2ME suit le parcours commercial Projects/Clients. Les deux parcours restent distincts. | Arbitrage responsable projet, 16/11/2026 (Q-41) |
+| V-28 | La clôture d'une affaire intervient après réception, levée des réserves, constitution du DOE, clôture des coûts et clôture du budget. | Arbitrage responsable projet, 16/11/2026 (Q-53) |
 
 ## 3. Chevauchements obligatoires
 
@@ -752,7 +752,7 @@ Les questions suivantes étaient bloquantes pour la matrice technique ; elles on
 - Q-38 : structure juridique multi-établissements ;
 - Q-48 : données de santé et restrictions d'aptitude.
 
-### 6.4 Arbitrages des 14 questions bloquantes — validés le 15/11/2026
+### 6.4 Arbitrages des 14 questions bloquantes — validés le 16/11/2026
 
 | Question | Décision validée | Décision |
 | --- | --- | --- |
