@@ -30,9 +30,9 @@ Les contrats synchrones sont traités dans les sections 1 à 14 de `domain-commu
 
 ## Statut des documents CHAN-29
 
-Les cinq documents CHAN-29 décrivent le **Lot 1** : inventaire et cartographie des responsabilités métier.
+Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le document `domain-dependency-matrix.md` ouvre le **Lot 2** : matrice technique des dépendances, à qualifier à partir des livrables du Lot 1.
 
- > **Lot 1 — documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites.\n>\n> **Lot 2 — documentaire.** La matrice candidate référence le Lot 1 et distingue les dépendances à qualifier des règles déjà validées. Elle ne crée aucune classe, aucun contrat, aucun événement, aucune migration et aucun test d'architecture. Les relations issues des consommateurs du Lot 1 ne valent pas autorisation technique.
+> **Lot 1 — documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites.\n>\n> **Lot 2 — documentaire.** La matrice candidate référence le Lot 1 et distingue les dépendances à qualifier des règles déjà validées. Elle ne crée aucune classe, aucun contrat, aucun événement, aucune migration et aucun test d'architecture. Les relations issues des consommateurs du Lot 1 ne valent pas autorisation technique.
 
 Le dépôt ne contient pas encore de code métier dans `app/Domains/` : les domaines sont matérialisés par des répertoires et des fichiers `.gitkeep`.
 
