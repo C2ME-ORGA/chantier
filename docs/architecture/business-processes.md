@@ -58,12 +58,12 @@ Les autres domaines fournissent une information ou consomment le résultat ; ils
 | P04 | Planification des ressources humaines et matérielles | Besoin d'exécution daté | Planning | Planning publié et ressources affectées |
 | P05 | Approvisionnement et gestion du stock central | Besoin matière ou seuil de stock | Procurement / Inventory | Commande, réception et stock disponible |
 | P06 | Fabrication interne en atelier | Besoin de fabrication validé | Workshop | Composants fabriqués et contrôlés |
-| P07 | Fabrication ou opération externe — sous-traitance dans les deux sens | Décision de faire-faire ou commande reçue | Procurement / Projects / Handover | Prestation externe commandée ou exécutée selon le rôle de C2ME |
+| P07 | Fabrication ou opération externe — sous-traitance dans les deux sens | Décision de faire-faire ou commande reçue | Procurement / Projects | Prestation externe commandée ou exécutée selon le rôle de C2ME |
 | P08 | Préparation logistique et transport vers le chantier | Besoin de livraison | Logistics | Matériel livré et réceptionné sur site |
 | P09 | Réalisation des travaux sur chantier | Autorisation de démarrer | Projects | Travaux exécutés et suivis |
 | P10 | Suivi des temps, de l'avancement et des coûts | Exécution quotidienne et périodes de suivi | TimeTracking / Planning / Costing | Temps, avancement et coûts fiables |
 | P11 | Contrôle qualité, sécurité et non-conformités | Point de contrôle, inspection ou incident | Quality / Safety | Conformité et actions traitées |
-| P12 | Réception, réserves, DOE et clôture | Achèvement des travaux | Handover / Projects | Réception contractuelle et affaire clôturée |
+| P12 | Réception, réserves, DOE et clôture | Achèvement des travaux | Projects / Handover | Réception contractuelle et clôture administrative prononcée |
 
 ## 3. P01 — Prospection, étude, devis et ouverture d'affaire
 
@@ -631,14 +631,14 @@ Les étapes dépendent de la configuration. Les deux variantes ci-dessous ne son
 | 4 | Acheter les besoins propres | Procurement | Inventory, Costing | Acheter les matières, composants et services nécessaires à C2ME | Commandes (`PRC-05`) |
 | 5 | Exécuter | Projects / Workshop | Planning, Logistics, Quality, Safety | Réaliser les travaux ou fabrications selon le contrat | Travaux exécutés |
 | 6 | Contrôler et documenter | Quality | Projects, Documents | Appliquer les contrôles, produire les preuves et les documents exigés | Dossier de conformité (`QUA-03`, `DOC-01`) |
-| 7 | Réceptionner avec le donneur d'ordre | Handover | Projects, Quality | Organiser la réception, les réserves et le DOE | Réception (`HND-01`, `HND-04`) |
-| 8 | Clôturer et valoriser | Projects / Costing | Budgets, Handover | Clôturer l'affaire, calculer la marge et solder les engagements | Affaire clôturée (`PRJ-01`, `CST-05`) |
+| 7 | Réceptionner avec le donneur d'ordre | Projects | Handover, Quality | Organiser la réception contractuelle, constater les réserves et préparer le DOE | Réception contractuelle, dossier de réception (`HND-01`), DOE (`HND-04`) |
+| 8 | Clôturer les coûts et clôturer administrativement | Costing / Service administratif | Projects, Budgets, Handover, domaines concernés | Solder les engagements, calculer la marge, vérifier les conditions et prononcer la clôture administrative | Marge finale et clôture administrative (`CST-05`, `PRJ-01`) |
 
 ### 9.6 Résultats
 
 **Variante A :** dossier technique externe, commande de sous-traitance, suivi, réception, acceptation technique, NCR éventuelle, coût et clôture.
 
-**Variante B :** affaire de sous-traitance, exécution conforme au contrat, preuves, réception par le donneur d'ordre, clôture et marge.
+**Variante B :** affaire de sous-traitance, exécution conforme au contrat, preuves, réception par le donneur d'ordre, clôture administrative et marge.
 
 ### 9.7 Exceptions et cas particuliers
 
@@ -785,7 +785,7 @@ Chargé d'affaires, conducteur de travaux, chef de chantier, équipes, sous-trai
 | 8 | Surveiller la sécurité | Safety | Projects, sous-traitants | Inspecter, corriger, déclarer les incidents, animer la prévention | Sécurité suivie (`SAF-03`, `SAF-04`) |
 | 9 | Suivre l'avancement et les temps | Projects / Planning / TimeTracking | Costing | Déclarer l'avancement, pointer les heures, mettre à jour le planning | Avancement et temps (`PLN-06`, `TKT-01`) |
 | 10 | Gérer les changements | Projects | Clients, Costing, Budgets, Planning | Identifier les travaux supplémentaires, instruire l'avenant, mesurer l'impact | Avenant ou décision (`PRJ-07`) |
-| 11 | Demander la réception | Handover | Projects, Quality | Vérifier l'achèvement et ouvrir la demande de réception | Réception demandée (`HND-01`) |
+| 11 | Demander la réception | Projects | Handover, Quality | Vérifier l'achèvement et ouvrir la demande de réception | Dossier de réception ouvert (`HND-01`) |
 
 ### 11.6 Résultats
 
@@ -971,7 +971,7 @@ Responsable qualité, contrôleur qualité, responsable sécurité, préventeur,
 | Accident grave | Arrêt, secours, préservation des lieux, enquête, obligations légales. |
 | Presqu'accident | Déclarer et traiter comme un signal précurseur. |
 | Sous-traitant non conforme | NCR, action, évaluation fournisseur, mesure contractuelle. |
-| Réserve client | Handover porte la réserve ; Quality traite la cause technique. |
+| Réserve client | Handover en assure le suivi documentaire ; Projects porte la décision contractuelle ; Quality traite la cause technique. |
 | Organisme de contrôle | Coordonner la visite, fournir les preuves, traiter les écarts. |
 | Arrêt de chantier | Décision Projects/Direction, impacts planning et coût. |
 
@@ -993,7 +993,7 @@ Q-15, Q-16, Q-23, Q-25, Q-29, Q-30.
 
 ### 14.1 Contexte
 
-La réception contractuelle clôt la relation d'exécution avec le client. Elle ne se confond ni avec le contrôle qualité technique ni avec la clôture administrative de l'affaire. Handover porte la réception, les réserves, le DOE et les garanties ; Projects porte la clôture de l'affaire ; Costing porte la clôture des coûts.
+La réception contractuelle clôt la relation d'exécution avec le client. Elle ne se confond ni avec le contrôle qualité technique ni avec la clôture administrative de l'affaire. Projects organise et porte la réception contractuelle et conserve la responsabilité du cycle de vie de l'affaire ; Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; le service administratif vérifie les conditions et prononce la clôture administrative (V-59) ; Costing porte la clôture des coûts.
 
 ### 14.2 Déclencheur
 
@@ -1023,15 +1023,15 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 | 1 | Constater l'achèvement | Projects | Quality, chef de chantier | Vérifier la fin des travaux, les autocontrôles et les prérequis | Achèvement constaté |
 | 2 | Réaliser les contrôles finaux | Quality | Projects, Workshop | Contrôler la conformité finale, clôturer les NCR bloquantes | Dossier de conformité (`QUA-03`, `QUA-04`) |
 | 3 | Préparer le DOE | Handover | Documents, Projects, Quality | Identifier les pièces attendues, vérifier la complétude et les versions | DOE en préparation (`HND-04`) |
-| 4 | Demander la réception | Handover | Projects, Clients | Proposer une date, un périmètre et les représentants | Réception demandée (`HND-01`) |
-| 5 | Inspecter avec le client | Handover | Projects, Quality, Client | Visiter, vérifier, constater les écarts et les réserves | Constat de réception |
-| 6 | Prononcer la réception | Handover | Client, Projects | Rédiger le PV, lister les réserves, fixer les délais | PV et réserves (`HND-01`, `HND-02`) |
+| 4 | Demander la réception | Projects | Handover, Clients | Proposer une date, un périmètre et les représentants | Dossier de réception ouvert (`HND-01`) |
+| 5 | Inspecter avec le client | Projects | Handover, Quality, Client | Visiter, vérifier, constater les écarts et les réserves | Constat de réception |
+| 6 | Prononcer la réception | Projects | Client, Handover | Rédiger le PV, lister les réserves, fixer les délais | PV et réserves (`HND-01`, `HND-02`) |
 | 7 | Traiter les réserves | Quality / Workshop / Projects | Handover | Corriger, reprendre, documenter, demander la levée | Travaux de levée |
-| 8 | Vérifier et lever les réserves | Handover | Client, Quality | Contrôler la preuve, prononcer la levée ou refuser | Levée (`HND-03`) |
+| 8 | Vérifier et lever les réserves | Projects | Client, Handover, Quality | Contrôler la preuve, prononcer la levée ou refuser | Levée (`HND-03`) |
 | 9 | Remettre le DOE et les garanties | Handover | Documents, Clients | Compiler, diffuser, faire accuser réception, remettre les garanties clientes | DOE et garanties clientes (`HND-04`, `HND-05`) |
-| 10 | Clôturer contractuellement | Handover | Projects, Clients | Vérifier les conditions, prononcer la clôture contractuelle | Clôture contractuelle |
+| 10 | Coordonner les confirmations des domaines | Projects | Handover, Costing, Budgets, Clients | Recueillir les confirmations et préparer les éléments de clôture | Confirmations réunies |
 | 11 | Clôturer les coûts | Costing / Budgets | Projects, Procurement | Solder les engagements, calculer la marge finale, clôturer la période | Marge finale (`CST-05`) |
-| 12 | Clôturer l'affaire | Projects | Handover, Costing, Budgets | Vérifier les conditions, clôturer l'affaire et les lots | Affaire clôturée (`PRJ-01`) |
+| 12 | Clôturer administrativement l'affaire | Service administratif | Projects, Handover, Costing, Budgets, domaines concernés | Vérifier les conditions, prononcer la clôture administrative | Clôture administrative prononcée (`PRJ-01`) |
 | 13 | Capitaliser | Reporting | Projects, Quality, Safety | Produire les indicateurs et retours d'expérience | Rapport de clôture (`RPT-01`) |
 
 ### 14.6 Résultats
@@ -1042,7 +1042,7 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 - réception prononcée avec ou sans réserves ;
 - réserves levées et vérifiées ;
 - garanties constituées ;
-- clôture contractuelle, clôture des coûts et clôture d'affaire ;
+- conditions contractuelles de clôture vérifiées, clôture des coûts et clôture administrative prononcée ;
 - retour d'expérience.
 
 ### 14.7 Exceptions et cas particuliers
@@ -1050,7 +1050,7 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 | Cas | Traitement proposé |
 | --- | --- |
 | Réserves non levées | Ne pas clôturer ; suivre les délais et les responsabilités. |
-| DOE incomplet | Bloquer la clôture contractuelle ; lister les pièces manquantes. |
+| DOE incomplet | Bloquer la clôture de l'affaire ; lister les pièces manquantes. |
 | Client indisponible | Reporter la réception, tracer les relances et l'impact. |
 | Réception partielle | Prononcer par lot ou zone, avec réserves et dates distinctes. |
 | Refus de réception | Documenter les motifs, traiter, reproposer. |
@@ -1063,7 +1063,7 @@ Responsable réception/handover, chargé d'affaires, chef de chantier, qualité,
 - Projects → Handover : demande, périmètre, lots, client.
 - Quality → Handover : conformité, NCR clôturées.
 - Documents → Handover : pièces et versions du DOE.
-- Handover → Projects : réception, réserves, levées, PV.
+- Handover → Projects : dossier de réception, réserves, levées, PV, garanties.
 - Handover → Clients : PV, DOE, garanties.
 - Handover → Costing : dates de réception et de garantie.
 - Handover → Quality : réserves à traiter.
@@ -1099,7 +1099,7 @@ Q-53, Q-30, Q-31, Q-44.
 | Configuration | Relation commerciale | Commande | Exécution | Réception |
 | --- | --- | --- | --- | --- |
 | C2ME donneur d'ordre | Procurement / sous-traitant | Procurement | Sous-traitant | Inventory / Quality / Workshop |
-| C2ME sous-traitant | Clients / donneur d'ordre | Projects (commande reçue) | Projects / Workshop | Handover (réception par le donneur d'ordre) |
+| C2ME sous-traitant | Clients / donneur d'ordre | Projects (commande reçue) | Projects / Workshop | Projects (réception contractuelle) / Handover (documents) |
 
 ### 15.4 Flux physiques et flux financiers
 

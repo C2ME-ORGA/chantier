@@ -301,9 +301,9 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Responsabilités candidates | Domaine | Analyse |
 | --- | --- | --- |
 | Plan qualité, contrôles, essais, NCR, actions, certificats, qualifications techniques | D14 Quality | Conformité technique aux exigences. |
-| Préparation documentaire de réception, centralisation des livrables, réserves documentaires, DOE et garanties | D17 Handover | Préparation et suivi documentaire ; Projects porte la responsabilité contractuelle. |
-| Réserve | D17 Handover | Écart contractuel constaté à la réception. |
-| Non-conformité | D14 Quality | Écart technique à une exigence. |
+| Préparation documentaire de réception, centralisation des livrables, suivi documentaire des réserves et des garanties, DOE | D17 Handover | Handover prépare et centralise les documents et livrables, le DOE, et assure le suivi documentaire des réserves et de leurs justificatifs ; il ne décide pas de la réception contractuelle. |
+| Réception contractuelle, décisions de réception et de levée des réserves | D03 Projects | Projects organise et porte la réception contractuelle, prononce l'acceptation ou le refus de la réception et décide de la levée ou du refus de levée d'une réserve. |
+| Non-conformité technique | D14 Quality | Quality porte l'écart technique à une exigence, son analyse et son traitement ; la NCR reste distincte de la réserve contractuelle (V-26). |
 
 **Séparation recommandée.**
 
@@ -311,7 +311,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - **Projects** organise et porte la réception contractuelle. **Handover** prépare et centralise les documents et livrables, le DOE et le suivi documentaire des réserves et garanties (V-55).
 - Une réserve peut exister sans NCR (par exemple un document contractuel manquant) et une NCR peut exister sans réserve (par exemple un écart corrigé avant réception).
 - Une réserve documentaire peut être clôturée sans NCR ; une réserve ayant une cause technique nécessite le traitement de la NCR correspondante avant sa clôture. Les objets Réserve et NCR restent distincts (V-26).
-- Projects porte la responsabilité de la réception contractuelle ; Handover ne prononce pas l'acceptation contractuelle. Quality statue sur la conformité technique.
+- Projects porte la responsabilité de la réception contractuelle et des décisions de levée des réserves ; Handover ne prononce ni l'acceptation contractuelle ni la levée ; Quality statue sur la conformité technique et traite la NCR lorsque la cause est technique.
 - Handover prépare et centralise le DOE ; Documents stocke et versionne les pièces. Projects conserve la responsabilité contractuelle de la réception (V-55).
 
 **Informations échangées.**
@@ -320,12 +320,12 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | --- | --- | --- |
 | Quality → Handover | Contrôles, essais, certificats, NCR clôturées | Réception |
 | Handover → Quality | Réserves à traiter techniquement | Réception |
-| Handover → Projects | Réception, réserves, levées, PV | Réception et clôture |
+| Handover → Projects | Dossier de réception, réserves, preuves de levée, PV, garanties | Réception et clôture |
 | Handover → Documents | Pièces du DOE à compiler et diffuser | Réception |
 
 **Points à qualifier.** Q-31 (DOE), Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; la répartition Projects/Handover est validée par V-55.
 
-**Statut.** Proposition.
+**Statut.** Séparation retenue, conforme à V-26 et V-55 ; Q-31 et Q-44 restent ouverts.
 
 ---
 
@@ -338,7 +338,8 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Contenu, validité métier, décision de publier | Domaine propriétaire | Le document n'a de sens que rattaché à un objet métier. |
 | Stockage, version, métadonnées, classification, diffusion, conservation, archive | D16 Documents | Gestion documentaire transverse. |
 | Validation de conformité d'un document | D14 Quality | Quality valide la conformité technique, pas le stockage. |
-| Réception contractuelle et DOE | D17 Handover | Handover décide de la complétude contractuelle. |
+| Réception contractuelle et coordination des conditions de clôture | D03 Projects | Projects organise et porte la réception contractuelle, prononce l'acceptation contractuelle et coordonne la vérification des conditions de clôture ; le service administratif prononce la clôture administrative (V-59). |
+| Préparation documentaire de réception et DOE | D17 Handover | Handover prépare et centralise les documents et livrables de réception et vérifie la complétude documentaire du DOE, sans décider de la réception contractuelle. |
 
 **Séparation recommandée.**
 
@@ -346,7 +347,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 - **Documents** possède le contenant : fichier, version, métadonnées, type, dossier, diffusion, accusé de réception, règle de conservation, archive.
 - Documents ne prononce jamais la validité métier d'un document. Il peut vérifier des métadonnées obligatoires et la complétude d'un dossier.
 - Le statut métier (approuvé, refusé, conforme) et le statut documentaire (brouillon, publié, remplacé, archivé) sont deux dimensions distinctes. Q-32.
-- Handover porte la constitution contractuelle du DOE ; Documents stocke, versionne et diffuse les pièces.
+- Handover porte la constitution et la complétude documentaire du DOE ; Projects reste responsable du fait contractuel de réception ; Documents stocke, versionne et diffuse les pièces.
 - Quality porte les preuves de conformité ; Documents les conserve.
 - L'accès aux documents sensibles (RH, paie, sécurité, contrats) est contrôlé par Identity et les règles du domaine propriétaire.
 
@@ -553,18 +554,19 @@ Un même tiers peut cumuler ces rôles sans créer plusieurs identités juridiqu
 
 | Domaine | Responsabilité |
 | --- | --- |
-| Projects | Organisation et responsabilité de la réception contractuelle, statut contractuel et décision de clôture de l'affaire. |
+| Projects | Organisation et responsabilité de la réception contractuelle, statut contractuel, coordination des conditions contractuelles de clôture et cycle de vie de l'affaire. |
+| Service administratif (acteur transverse) | Vérification des conditions de clôture et décision de clôture administrative, après confirmation des domaines concernés (V-59). |
 | Handover | Préparation et centralisation des documents et livrables de réception, suivi documentaire des réserves, DOE et garanties clientes. |
 | Costing | Coût final, marge, clôture de la période analytique. |
 | Budgets | Écart final, clôture budgétaire. |
 
-**Séparation retenue.** Projects organise et porte la réception contractuelle, puis clôt l'affaire lorsque les conditions de V-28 sont réunies. Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; il ne se substitue pas à Projects pour la responsabilité contractuelle. Costing clôt les coûts et calcule la marge finale ; Budgets clôt le budget. Les confirmations des domaines concernés précèdent la clôture de l'affaire.
+**Séparation retenue.** Projects organise et porte la réception contractuelle et conserve la responsabilité du cycle de vie de l'affaire. Il coordonne la vérification des conditions contractuelles de clôture définies par V-28. Les domaines concernés confirment leurs obligations ; le service administratif vérifie les conditions et prononce la clôture administrative (V-59). Handover prépare et centralise les documents et livrables de réception, le DOE et le suivi documentaire des réserves et garanties ; il ne se substitue pas à Projects pour la responsabilité contractuelle et ne prononce pas la clôture. Costing clôt les coûts et calcule la marge finale ; Budgets clôt le budget.
 
 **Informations échangées.** Réception, réserves, DOE, garanties clientes, coûts finaux, marge, écarts.
 
-**À qualifier.** Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; les conditions de clôture de l'affaire sont validées par V-28.
+**À qualifier.** Q-44 (garanties). Le traitement des réserves/NCR est validé par V-26 ; les conditions de clôture de l'affaire sont validées par V-28 et la clôture administrative par V-59.
 
-**Statut.** Proposition.
+**Statut.** Séparation retenue, conforme à V-28, V-55 et V-59 ; Q-44 reste ouvert.
 
 ---
 
