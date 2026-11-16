@@ -317,14 +317,14 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- |
 | Périmètre inclus | Prospection, qualification, référence maître des tiers, rôles commerciaux, contacts, relation commerciale, conditions commerciales générales/cadre, construction et propriété du devis complet (prix et lignes de travaux), statut et historique relationnel. |
 | Périmètre exclu | Étude technique et exécution contractuelle après signature, commande client/contrat, affaire et chantier (Projects), rôles fournisseur et sous-traitant (Procurement), facturation et paiement (hors périmètre des 18 domaines), comptes utilisateurs (Identity). |
-| Objets métier | `CLI-01` Prospect, `CLI-02` Client, `CLI-03` ContactClient, `CLI-04` RôleTiers, `CLI-05` RelationCommerciale, `CLI-06` ConditionsCommercialesCadre. |
+| Objets métier | `CLI-01` Prospect, `CLI-02` Client, `CLI-03` ContactClient, `CLI-04` RôleTiers, `CLI-05` RelationCommerciale, `CLI-06` ConditionsCommercialesCadre, `CLI-07` DevisCommercial. |
 | Acteurs | Direction commerciale, chargé d'affaires, assistant commercial, direction générale, client, donneur d'ordre, maître d'ouvrage. |
 
 **Règles métier portées par le domaine.**
 
 | Règle | Statut |
 | --- | --- |
-| Un client est identifié par une référence de tiers stable ; l'unicité et le portage de l'identité juridique restent à arbitrer dans Q-05. | Proposition |
+| Un client est identifié par la référence du tiers maître détenue par Clients ; Clients porte le référentiel maître unique des tiers (V-15). | Validé |
 | Un tiers peut porter un rôle commercial, un rôle fournisseur et un rôle sous-traitant ; ces rôles ne créent pas nécessairement des identités juridiques distinctes. | Proposition |
 | Un prospect devient client à la première commande ou au premier contrat ; l'historique de prospection est conservé. | Proposition de travail — à arbitrer dans Q-04 |
 | Un client avec des affaires actives ne peut pas être supprimé ; il peut être désactivé ou bloqué. | Proposition |
@@ -354,7 +354,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Clients porte les rôles commerciaux et la relation commerciale, sous réserve de Q-05. L'identité juridique de l'entité n'est pas arbitrée : elle peut être portée par Clients, par Procurement ou par un référentiel partagé à définir. Projects porte l'étude, le devis, la commande, l'affaire et le chantier. Un tiers peut être client, fournisseur ou sous-traitant sans que cela implique plusieurs identités juridiques. Voir BD-01 et BD-16.
 
-**Questions ouvertes.** Q-02 (client, donneur d'ordre, maître d'ouvrage), Q-03 (opportunité commerciale), Q-04 (création du client), Q-05 (référentiel tiers partagé), Q-06 (conditions financières et crédit).
+**Questions ouvertes.** Q-03 (opportunité commerciale), Q-04 (moment de conversion du prospect), Q-06 (conditions financières et crédit). Q-02 et Q-05 sont arbitrées (V-18 et V-15).
 
 ---
 
@@ -366,7 +366,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- |
 | Périmètre inclus | Réception des éléments commerciaux signés, commande client ou ordre de service, conditions contractuelles propres à l'affaire, contrat, affaire, création du chantier principal, lots et phases, avenants, jalons contractuels, acteurs de l'affaire, site, avancement contractuel, demande de clôture. |
 | Périmètre exclu | Construction et propriété du devis commercial (Clients), planning détaillé et affectations (Planning/Workforce), budget (Budgets), chiffrage et coûts (Costing), fabrication (Workshop), achats (Procurement), stock (Inventory), qualité (Quality), sécurité (Safety), préparation documentaire de réception et DOE (Handover), stockage documentaire (Documents). |
-| Objets métier | `PRJ-01` Affaire, `PRJ-02` Chantier, `PRJ-03` LotPhase, `PRJ-04` Étude, `PRJ-05` Devis, `PRJ-06` CommandeClient, `PRJ-07` Avenant, `PRJ-08` Contrat, `PRJ-09` JalonContractuel, `PRJ-10` ActeurAffaire. |
+| Objets métier | `PRJ-01` Affaire, `PRJ-02` Chantier, `PRJ-03` LotPhase, `PRJ-04` Étude, `PRJ-06` CommandeClient, `PRJ-07` Avenant, `PRJ-08` Contrat, `PRJ-09` JalonContractuel, `PRJ-10` ActeurAffaire. |
 | Acteurs | Direction, chargé d'affaires, conducteur de travaux, chef de chantier, bureau d'études, métreur/économiste, responsable juridique, client, donneur d'ordre. |
 
 **Règles métier portées par le domaine.**
