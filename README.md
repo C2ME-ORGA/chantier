@@ -91,7 +91,7 @@ npm run dev
 
 ```powershell
 php artisan --version
-php artisan test --no-interaction
+php artisan test
 composer lint:check
 composer types:check
 npm run build
