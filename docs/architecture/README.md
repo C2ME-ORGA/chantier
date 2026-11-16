@@ -14,7 +14,7 @@ Ce répertoire regroupe les documents d'architecture de **C2ME Chantier**.
 | [`domain-interactions-register.md`](domain-interactions-register.md) | CHAN-29 Lot 1 | Registre des interactions métier entre domaines : source, destinataire, motif, informations et moment. |
 | [`domain-boundary-decisions.md`](domain-boundary-decisions.md) | CHAN-29 Lot 1 | Chevauchements, arbitrages proposés, décisions validées et questions ouvertes. |
 | [`domain-dependency-matrix.md`](domain-dependency-matrix.md) | CHAN-29 Lot 2 | Matrice technique des dépendances inter-domaines — document de travail à qualifier et valider. |
-| [`domain-dependency-register.md`](domain-dependency-register.md) | CHAN-29 Lot 2 | Registre de traçabilité des 125 interactions métier d'origine (128 lignes après scissions) et de leur qualification technique. |
+| [`domain-dependency-register.md`](domain-dependency-register.md) | CHAN-29 Lot 2 / Lot B | Registre de qualification métier des 125 interactions d'origine (131 lignes après six scissions) ; la classification technique reste au Lot C. |
 
 ## Ordre de lecture recommandé
 
@@ -32,11 +32,13 @@ Les contrats synchrones sont traités dans les sections 1 à 14 de `domain-commu
 
 ## Statut des documents CHAN-29
 
-Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le **Lot 2** ajoute la qualification des dépendances : les arbitrages métier V-29 à V-59 affinent désormais les responsabilités et les interactions candidates, mais ne classent pas à eux seuls les dépendances techniques. Le registre distingue les 125 interactions d'origine des 128 lignes présentes après les scissions `INT-010a`, `INT-120a` et `INT-121a` ; ces suffixes ne créent pas de nouvelles interactions d'origine.
+Les cinq documents CHAN-29 du **Lot 1** décrivent l'inventaire et la cartographie des responsabilités métier. Le **Lot B** qualifie métier les interactions : 125 interactions d'origine, 131 lignes après six scissions, dont 118 qualifiées, 4 à préciser, 4 à décomposer, 3 à arbitrer et 2 hors matrice inter-domaines. Aucune classification technique n'est prononcée. Les arbitrages V-29 à V-59 affinent les responsabilités et les interactions, mais ne classent pas à eux seuls les dépendances techniques.
 
 > **Lot 1 — documentaire.** Il ne définit pas la matrice technique des dépendances autorisées et interdites.
 >
-> **Lot 2 — documentaire.** La matrice candidate référence le Lot 1 et distingue les dépendances à qualifier des règles déjà validées. Elle ne crée aucune classe, aucun contrat, aucun événement, aucune migration et aucun test d'architecture. Les relations issues des consommateurs du Lot 1 ne valent pas autorisation technique.
+> **Lot B — documentaire.** La qualification métier ne vaut pas autorisation technique. Elle ne crée aucune classe, aucun contrat, aucun événement, aucune migration et aucun test d'architecture.
+>
+> **Lot C — à venir.** La classification technique « Autorisée », « Conditionnelle » ou « Interdite » et le choix des mécanismes CHAN-28 restent à instruire après revue du Lot B.
 
 Le dépôt ne contient pas encore de code métier dans `app/Domains/` : les domaines sont matérialisés par des répertoires et des fichiers `.gitkeep`.
 
