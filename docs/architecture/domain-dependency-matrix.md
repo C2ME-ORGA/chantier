@@ -161,7 +161,7 @@ Toute exception éventuelle doit faire l'objet d'une décision d'architecture ex
 
 - La présente matrice, complétée et qualifiée pour les 18 domaines.
 - Une matrice synthétique orientée (consommateur → fournisseur) avec les statuts autorisé, conditionnel et interdit.
-- Un registre détaillé reliant les dépendances retenues aux interactions INT et processus P du Lot 1.
+- Un registre détaillé reliant les dépendances retenues aux interactions INT et processus P du Lot 1 (`domain-dependency-register.md`, inventaire initial des 125 INT).
 - Les règles de propriété des contrats et des références publiques.
 - Des schémas de dépendances sans cycle, accompagnés des exceptions conditionnelles.
 - Des exemples représentatifs couvrant au minimum : affaire/chantier, achats et engagement, stock/article, fabrication externe, temps/absences, avancement, qualité/réserves, sous-traitance dans les deux sens et clôture d'affaire.
