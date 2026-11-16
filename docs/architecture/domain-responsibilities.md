@@ -95,7 +95,7 @@ Le logiciel doit couvrir deux parcours :
 **Parcours commercial complet :**
 
 ```text
-Prospect → Client → Étude → Devis → Acceptation / Commande → Affaire → Chantier
+Prospect → Client → Étude technique (si nécessaire) → Devis Clients → Signature / Commande → Validation d'ouverture → Affaire → Chantier
 ```
 
 **Parcours direct :**
@@ -244,7 +244,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- | --- | --- | --- |
 | D01 | Identity | Identité, authentification et autorisation des acteurs | Utilisateur, Rôle, Permission, Périmètre | Tous |
 | D02 | Clients | Prospects, clients, donneurs d'ordre et relation commerciale | Prospect, Client, Contact, RôleTiers | Projects, Handover, Reporting |
-| D03 | Projects | Engagement contractuel, affaire, chantier et pilotage global | Affaire, Chantier, Devis, Avenant, Jalon | Planning, Budgets, Costing, Workshop, Procurement, Inventory, Quality, Safety, Handover |
+| D03 | Projects | Engagement contractuel, affaire, chantier et pilotage global | Affaire, Chantier, Étude, CommandeClient, Avenant, Jalon | Planning, Budgets, Costing, Workshop, Procurement, Inventory, Quality, Safety, Handover |
 | D04 | Planning | Organisation dans le temps et affectation des ressources | PlanDeCharge, Activité, Affectation | Projects, Workforce, Equipment, Logistics |
 | D05 | Budgets | Enveloppe budgétaire, versions et contrôle de consommation | Budget, LigneBudgétaire, Révision | Projects, Costing, Procurement |
 | D06 | Costing | Chiffrage, coûts, engagements, marge et écarts | Chiffrage, Coût, Engagement, Marge | Projects, Budgets, Reporting |
@@ -348,11 +348,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Entrée | Identity | Responsable commercial et acteurs autorisés | Attribution de la relation |
 | Entrée | Projects | Ouverture, changement d'état ou clôture d'une affaire | Cycle de vie de l'affaire |
 | Entrée | Handover | Réception, réserves, garanties | Réception et garantie |
-| Sortie | Projects | Référence du tiers (selon Q-05), contacts, rôles, conditions cadre | Étude, devis, ouverture d'affaire |
+| Sortie | Projects | Référence maître du tiers, contacts, rôles, conditions commerciales cadre et devis signé | Validation d'ouverture et création de l'affaire |
 | Sortie | Handover | Contacts et représentants du client pour la réception | Préparation de la réception |
 | Sortie | Reporting | Portefeuille clients, prospects, relation commerciale | Analyse commerciale |
 
-**Limites et chevauchements.** Clients porte les rôles commerciaux et la relation commerciale, sous réserve de Q-05. L'identité juridique de l'entité n'est pas arbitrée : elle peut être portée par Clients, par Procurement ou par un référentiel partagé à définir. Projects porte l'étude, le devis, la commande, l'affaire et le chantier. Un tiers peut être client, fournisseur ou sous-traitant sans que cela implique plusieurs identités juridiques. Voir BD-01 et BD-16.
+**Limites et chevauchements.** Clients possède le référentiel maître unique des tiers, les rôles commerciaux, les contacts, la relation commerciale, les conditions commerciales cadre et le devis complet jusqu'à sa signature (V-15, V-18, V-29, V-35, V-40). Procurement conserve la relation d'achat, les données fournisseur propres aux achats et les références fournisseur liées aux articles, sans dupliquer l'identité du tiers. Projects prend le relais après signature et porte l'engagement contractuel, l'affaire et le chantier. L'étude technique reste un objet Projects distinct de la construction du devis commercial. Voir BD-01 et BD-16.
 
 **Questions ouvertes.** Q-03 (opportunité commerciale), Q-04 (moment de conversion du prospect), Q-06 (conditions financières et crédit). Q-02 et Q-05 sont arbitrées (V-18 et V-15).
 
@@ -376,11 +376,11 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Une affaire est ouverte après acceptation d'un devis et validation explicite de l'utilisateur, ou après réception d'une commande ou d'un ordre de service. | Validé — V-30 |
 | Le parcours direct peut ouvrir une affaire sans devis préalable, mais les données contractuelles manquantes doivent être identifiées et complétées. | Validé par le ticket ; modalités à préciser |
 | Une affaire porte un numéro unique, un client, un donneur d'ordre et un périmètre contractuel. | Proposition |
-| Une affaire peut couvrir un ou plusieurs chantiers ou lots ; un chantier appartient à une seule affaire. | Proposition, à valider Q-01 |
+| Une affaire peut regrouper plusieurs chantiers ; chaque chantier appartient à une seule affaire. | Validé — V-17 |
 | Les travaux supplémentaires font l'objet d'un avenant validé avant exécution, sauf procédure d'urgence explicitement autorisée. | Proposition |
 | Les jalons contractuels et les dates engagées sont la référence pour Planning ; toute modification est tracée. | Proposition |
 | L'avancement contractuel est déclaré par lot ou phase ; il ne se confond pas avec l'avancement des activités planifiées. | Proposition |
-| La clôture de l'affaire exige la réception contractuelle, la levée des réserves, le DOE et la finalisation des coûts. | Proposition, conditions à valider Q-53 |
+| La clôture de l'affaire intervient après réception, levée des réserves, constitution du DOE, clôture des coûts et clôture du budget. | Validé — V-28 |
 | Une suspension ou une annulation exige un motif, une validation et une trace. | Proposition |
 
 **États et transitions.**
@@ -388,7 +388,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Objet | États | Transitions principales |
 | --- | --- | --- |
 | Étude | Brouillon, en revue, validée, abandonnée | Soumettre, valider, abandonner. |
-| Devis | Brouillon, envoyé, accepté, refusé, expiré | Envoyer, accepter, refuser, expirer. |
+
 | Affaire | Préparation, en cours, suspendue, réceptionnée, clôturée, annulée | Ouvrir, démarrer, suspendre, reprendre, réceptionner, clôturer, annuler. |
 | Chantier | Préparé, démarré, en cours, suspendu, réceptionné, clôturé | Démarrer, suspendre, reprendre, réceptionner, clôturer. |
 | Avenant | Proposé, validé, refusé | Proposer, valider, refuser. |
@@ -397,9 +397,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 | Sens | Domaine | Informations | Moment |
 | --- | --- | --- | --- |
-| Entrée | Clients | Identité, contacts, rôles, conditions commerciales | Étude, devis, ouverture |
+| Entrée | Clients | Référence maître du tiers, contacts, rôles, conditions commerciales cadre, devis accepté/signé | Reprise après signature et ouverture d'affaire |
 | Entrée | Budgets | Enveloppe validée, disponible, seuils | Ouverture et révision |
-| Entrée | Costing | Chiffrage, coût final estimé, marge, alertes | Étude, devis, suivi |
+| Entrée | Costing | Coûts, EAC, marge et alertes économiques | Pilotage économique de l'affaire |
 | Entrée | Planning | Planning, dates prévisionnelles, conflits, avancement | Préparation et exécution |
 | Entrée | Quality / Safety | Conformité, non-conformités, incidents, contraintes | Exécution et réception |
 | Entrée | Handover | Réception, réserves, levées, PV | Réception et clôture |
@@ -413,7 +413,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Projects est propriétaire de l'engagement et du pilotage contractuel, pas du planning détaillé, du budget, des coûts, de la fabrication, des achats, du stock, de la qualité, de la sécurité ni de la réception contractuelle. Voir BD-01, BD-02, BD-03, BD-17 et BD-19.
 
-**Questions ouvertes.** Q-01 (relation affaire/chantier), Q-27 (avancement), Q-45 (avenants), Q-46 (suspension), Q-47 (annulation), Q-50 (bureau d'études), Q-51 (risques d'affaire), Q-52 (permis et autorisations), Q-53 (conditions de clôture).
+**Questions ouvertes.** Q-27 (avancement), Q-45 (avenants), Q-46 (suspension), Q-47 (annulation), Q-50 (bureau d'études), Q-51 (risques d'affaire), Q-52 (permis et autorisations).
 
 ---
 
@@ -526,7 +526,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 
 **Limites et chevauchements.** Budgets porte l'enveloppe autorisée ; Costing porte le chiffrage, les engagements, les coûts constatés, le coût final estimé et la marge. Procurement porte l'acte commercial d'engagement ; Costing en assure le suivi financier. Voir BD-03.
 
-**Questions ouvertes.** Q-08 (seuils et autorité de révision), Q-09 (reconnaissance des engagements), Q-10 (coût final estimé), Q-37 (unité monétaire et arrondis), Q-53 (clôture budgétaire).
+**Questions ouvertes.** Q-08 (seuils et autorité de révision), Q-09 (reconnaissance des engagements), Q-10 (coût final estimé), Q-37 (unité monétaire et arrondis), clôture budgétaire (V-28).
 
 ---
 
@@ -777,7 +777,7 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | --- | --- |
 | Une demande d'achat précise le besoin, la quantité, la date, le lot, la nature et la référence budgétaire. | Proposition |
 | Une commande est créée après validation du besoin, du disponible budgétaire et des seuils d'approbation. | Proposition, seuils Q-08 |
-| Un fournisseur ou un sous-traitant est un rôle d'achat exercé par un tiers ; il ne présume pas une identité juridique autonome. Le rattachement au référentiel juridique dépend de Q-05. | Proposition |
+| Un fournisseur ou un sous-traitant est un rôle d'achat exercé par un tiers ; il ne présume pas une identité juridique autonome. Le tiers est référencé dans le référentiel maître unique détenu par Clients ; Procurement conserve les données de relation d'achat propres à ses opérations (V-15). | Proposition |
 | Un fournisseur ou sous-traitant est qualifié selon la criticité de la prestation, avec Quality et Safety. | Proposition |
 | Une commande constitue un acte commercial qui crée un engagement financier, suivi par Costing ; ses versions, annulations et réceptions partielles sont tracées. | Proposition |
 | La réception physique ne vaut pas acceptation qualité ; Inventory enregistre, Quality accepte ou refuse. | Proposition |
@@ -815,9 +815,9 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Sortie | Workshop | Statut des commandes de fabrication externe | Sous-traitance |
 | Sortie | Reporting | Achats, engagements, performance fournisseur | Pilotage |
 
-**Limites et chevauchements.** Procurement porte les rôles d'achat et la relation fournisseur/sous-traitant, sans présumer l'identité juridique du tiers (Q-05). Inventory porte le stock et la réception ; Costing valorise ; Budgets autorise ; Quality et Safety qualifient. Voir BD-05, BD-10, BD-16 et BD-19.
+**Limites et chevauchements.** Procurement porte la relation d'achat, les données fournisseur propres aux achats et les références fournisseur liées aux articles. Clients reste propriétaire de l'identité juridique et des données communes du tiers (V-15). Inventory porte le stock et la réception ; Costing valorise ; Budgets autorise ; Quality et Safety qualifient. Voir BD-05, BD-10, BD-16 et BD-19.
 
-**Questions ouvertes.** Q-05 (identité juridique et référentiel tiers), Q-07, Q-08, Q-17 (article), Q-18 (catalogue), Q-22 (qualification sous-traitant), Q-41 (sous-traitance dans les deux sens), Q-44 (garanties fournisseurs).
+**Questions ouvertes.** Q-07, Q-08, Q-17 (article), Q-18 (catalogue), Q-22 (qualification sous-traitant), Q-41 (sous-traitance dans les deux sens), Q-44 (garanties fournisseurs).
 
 ---
 
@@ -1278,8 +1278,8 @@ Les acteurs sont décrits en langage métier : direction, chargé d'affaires, ch
 | Domaine | Possède | Ne possède pas |
 | --- | --- | --- |
 | Identity | Comptes, rôles, permissions, périmètres, délégations | Données RH, contacts clients, fournisseurs |
-| Clients | Prospects, clients, contacts, rôles de tiers, relation commerciale, devis complet et conditions commerciales cadre | Affaire, chantier, exécution contractuelle, fournisseurs |
-| Projects | Commande/contrat après signature, affaire, chantier, lots, avenants, jalons, avancement contractuel | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, réception |
+| Clients | Référentiel maître des tiers, prospects, clients, contacts, rôles commerciaux, relation commerciale, devis complet et conditions commerciales cadre | Affaire, chantier, exécution contractuelle, fournisseurs |
+| Projects | Études techniques, commande/contrat après signature, affaire, chantier, lots, avenants, jalons, avancement contractuel | Planning détaillé, budget, coûts, fabrication, achats, qualité, sécurité, réception |
 | Planning | Plans, activités, affectations, capacité, conflits, avancement planning | Données RH, actifs, capacité atelier, pointages |
 | Budgets | Budget, versions, lignes, enveloppe, contingence, révisions | Chiffrage détaillé, engagements, coûts constatés, prix de vente |
 | Costing | Chiffrage, coûts, engagements, imputations, marge, écarts, EAC | Budget, commandes, temps, stock, production, paie |
