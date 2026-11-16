@@ -1,0 +1,217 @@
+# Registre de qualification des dépendances inter-domaines
+
+- Ticket : CHAN-29 — Documenter les frontières et dépendances autorisées.
+- Lot : Lot 2 — Qualification détaillée des interactions du Lot 1.
+- Source : `domain-interactions-register.md` (Lot 1, 125 interactions).
+- Statut : **inventaire de dépendances candidates — aucune autorisation technique n'est prononcée ici**.
+- Référence de cadrage : `domain-dependency-matrix.md`.
+
+> **Règle impérative.** Une ligne INT décrit un besoin d'échange métier, pas une autorisation technique. Toutes les lignes ci-dessous restent « À qualifier ». Elles ne créent ni contrat, ni événement, ni accès technique.
+
+## 1. Méthode de lecture et d'orientation
+
+Le registre Lot 1 utilise les colonnes « Source » et « Destinataire ». Pour rendre visible le sens de dépendance consommateur → fournisseur dans le Lot 2, l'orientation candidate est déduite de la nature métier :
+
+- **Demande** : le domaine source formule une demande au destinataire ; le source est donc le consommateur de la capacité du destinataire.
+- **Référentiel, Consultation, Notification, Décision, Document** : le destinataire consomme l'information, la décision, le fait ou le document produit/transmis par la source.
+- **Portée « Tous les domaines »** : aucune dépendance générique n'est créée. La relation doit être décomposée par consommateur réel et cas d'usage (notamment Identity, Documents et Reporting).
+
+Cette orientation est une **hypothèse de travail à confirmer** à la lecture du processus et de l'interaction. Si le motif ou le contenu de l'INT contredit la nature déclarée, l'orientation doit être corrigée avant toute qualification.
+
+## 2. Résumé de couverture
+
+| Indicateur | Résultat |
+| --- | ---: |
+| Interactions reprises du Lot 1 | 125 |
+| Interactions conservées avec identifiant INT | 125 |
+| Classe technique attribuée | Aucune |
+| Dépendances autorisées | 0 |
+| Dépendances conditionnelles validées | 0 |
+| Dépendances interdites validées | 0 |
+| Lignes restant à qualifier | 125 |
+
+Les 125 lignes sont conservées pour assurer la traçabilité. Certaines pourront être regroupées, scindées, écartées comme dépendances techniques ou décomposées en plusieurs relations réelles. Le nombre final de dépendances ne sera donc pas nécessairement 125.
+
+## 3. Registre détaillé des interactions candidates
+
+| INT | Dépendance candidate (consommateur → fournisseur) | Processus | Nature Lot 1 | Motif métier | Informations concernées | Moment | Qualification |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| INT-001 | Tous les domaines → D01 Identity | P01–P12 | Référentiel | Identifier l'acteur et vérifier ses droits | Identifiant d'acteur, rôles, permissions, périmètre, statut | Authentification et chaque opération autorisée | À décomposer — portée transverse |
+| INT-002 | D18 Reporting → D01 Identity | P10 | Référentiel | Restreindre l'accès aux rapports | Périmètre, rôles, droits de consultation | Consultation d'un rapport | À qualifier |
+| INT-003 | D01 Identity → D07 Workforce | P03, P09 | Notification | Aligner le compte avec la vie du collaborateur | Arrivée, départ, changement de poste ou d'unité, date d'effet | Cycle de vie RH | À qualifier |
+| INT-004 | D02 Clients → D01 Identity | P12 | Demande | Ouvrir un accès externe éventuel à un contact client | Identité du contact, client, périmètre, demande du client | Si un portail client est décidé | À qualifier |
+| INT-005 | D10 Procurement → D01 Identity | P05, P07 | Demande | Ouvrir un accès externe éventuel à un fournisseur ou sous-traitant | Identité du tiers, contact, périmètre, demande | Si un portail fournisseur est décidé | À qualifier |
+| INT-006 | D03 Projects → D02 Clients | P01, P02 | Référentiel | Identifier le client, le donneur d'ordre et les conditions | Référence du tiers (selon Q-05), contacts, rôles, adresses, conditions cadre, statut | Étude, devis, ouverture d'affaire | À qualifier |
+| INT-007 | D02 Clients → D03 Projects | P01, P02, P12 | Notification | Mettre à jour la relation et le statut du client | Affaire ouverte, commande, réception, clôture, incident relationnel | Cycle de vie de l'affaire | À qualifier |
+| INT-008 | D02 Clients → D03 Projects | P01 | Demande | Lancer une étude à partir d'un prospect qualifié | Besoin, contacts, maturité, échéance, documents disponibles | Qualification commerciale | À qualifier |
+| INT-009 | D17 Handover → D02 Clients | P12 | Référentiel | Identifier les représentants du client à la réception | Contacts, rôles, coordonnées, pouvoirs de réception | Préparation de la réception | À qualifier |
+| INT-010 | D02 Clients → D17 Handover | P12 | Notification | Mettre à jour la relation avec la réception et les garanties | PV, réserves, levées, DOE, dates de garantie | Réception et clôture | À qualifier |
+| INT-011 | D18 Reporting → D02 Clients | P10 | Consultation | Analyser le portefeuille et la relation commerciale | Prospects, clients, relation commerciale, statut, affaires connues | Reporting commercial | À qualifier |
+| INT-012 | D04 Planning → D03 Projects | P02, P03, P04, P09 | Référentiel | Fournir le périmètre et les jalons à planifier | Affaire, chantier, lots, jalons contractuels, priorités, contraintes de site | Préparation et replanification | À qualifier |
+| INT-013 | D03 Projects → D04 Planning | P01, P02, P04, P10 | Notification | Alimenter le pilotage contractuel | Planning, dates prévisionnelles, avancement des activités, conflits | Préparation et suivi | À qualifier |
+| INT-014 | D03 Projects → D05 Budgets | P01, P02, P03 | Demande | Établir ou réviser l'enveloppe budgétaire | Périmètre, lots, montant du contrat, avenants, besoin budgétaire | Ouverture et révision | À qualifier |
+| INT-015 | D03 Projects → D05 Budgets | P01, P02, P03, P10 | Décision | Valider et suivre l'enveloppe | Budget validé, disponible, seuils, écarts, alertes | Ouverture et suivi | À qualifier |
+| INT-016 | D03 Projects → D06 Costing | P01–P12 | Demande | Demander la référence contractuelle, analytique et l'estimation | Affaire, lots, montants contractuels, avenants, avancement, événements, demande d'estimation rapide | Tout le cycle | À qualifier |
+| INT-017 | D03 Projects → D06 Costing | P01, P02, P10, P12 | Notification | Fournir une estimation économique, les risques et les alertes | Estimation, coût réel, EAC, marge, écarts, alertes de risque | Étude, suivi et clôture | À qualifier |
+| INT-018 | D03 Projects → D09 Workshop | P02, P03, P06 | Demande | Demander une fabrication ou une étude d'atelier | Besoin, lot, dossier technique, dates, priorités | Préparation et lancement | À qualifier |
+| INT-019 | D03 Projects → D09 Workshop | P02, P06, P09 | Notification | Informer sur la fabrication | Avancement, disponibilité, contraintes, retards, achèvement | Exécution | À qualifier |
+| INT-020 | D03 Projects → D10 Procurement | P02, P03, P09 | Demande | Exprimer un besoin d'achat ou de sous-traitance non couvert par l'atelier | Prestation, spécifications, quantité, date, lot, budget | Préparation et exécution | À qualifier |
+| INT-021 | D03 Projects → D10 Procurement | P02, P05, P09 | Notification | Informer sur les engagements et livraisons | Commande, fournisseur, montant, dates, statut, retards | Approvisionnement | À qualifier |
+| INT-022 | D14 Quality → D03 Projects | P02, P03, P11 | Référentiel | Fournir les exigences de conformité | Périmètre, spécifications, exigences contractuelles, jalons, points d'arrêt | Préparation et exécution | À qualifier |
+| INT-023 | D03 Projects → D14 Quality | P02, P03, P11 | Notification | Informer sur les exigences, la conformité et les blocages | Exigences applicables, résultats de contrôle, NCR, gravité, blocage, certificats | Préparation, exécution et réception | À qualifier |
+| INT-024 | D15 Safety → D03 Projects | P02, P03, P09 | Référentiel | Fournir les sites, activités et intervenants à couvrir | Sites, activités, planning, sous-traitants, risques connus | Préparation et exécution | À qualifier |
+| INT-025 | D03 Projects → D15 Safety | P02, P09, P11 | Notification | Informer sur la prévention et les incidents | Plan de prévention, consignes, inspections, incidents, autorisations | Exécution et réception | À qualifier |
+| INT-026 | D16 Documents → D03 Projects | P01–P12 | Document | Verser les documents contractuels et d'exécution | Contrats, études, devis, plans, PV, documents de site | Tout le cycle | À qualifier |
+| INT-027 | D03 Projects → D16 Documents | P01–P12 | Référentiel | Fournir les références documentaires contrôlées | Référence, version, statut, diffusion, liens | Tout le cycle | À qualifier |
+| INT-028 | D03 Projects → D17 Handover | P12 | Demande | Demander la réception d'un lot ou de l'affaire | Périmètre, lots, client, dates, achèvement, documents | Achèvement | À qualifier |
+| INT-029 | D03 Projects → D17 Handover | P12 | Notification | Informer sur la réception et les réserves | Réception, réserves, levées, PV, conditions de clôture | Réception et clôture | À qualifier |
+| INT-030 | D13 Logistics → D03 Projects | P08, P09 | Référentiel | Fournir les contraintes d'accès et de livraison | Site, adresse, accès, horaires, destinataires, contraintes | Préparation logistique | À qualifier |
+| INT-031 | D03 Projects → D13 Logistics | P08, P09 | Notification | Informer sur les livraisons | Statut, date, réception, écarts, avaries | Livraison | À qualifier |
+| INT-032 | D08 TimeTracking → D03 Projects | P10 | Référentiel | Fournir les axes d'imputation du temps | Affaire, chantier, lot, activité, centre de coût | Saisie et validation | À qualifier |
+| INT-033 | D03 Projects → D08 TimeTracking | P10 | Notification | Alimenter l'avancement contractuel | Temps par lot, avancement constaté, absences | Suivi | À qualifier |
+| INT-034 | D03 Projects → D11 Inventory | P05, P09 | Demande | Exprimer un besoin de matériel pour le chantier | Article, quantité, date, lot, destination | Préparation et exécution | À qualifier |
+| INT-035 | D03 Projects → D11 Inventory | P05, P09 | Notification | Informer sur la disponibilité et les sorties | Disponibilité, réservation, sortie, pénurie | Exécution | À qualifier |
+| INT-036 | D18 Reporting → D03 Projects | P10, P12 | Consultation | Alimenter le pilotage des affaires | Portefeuille, montants contractuels, avancement, engagements, réception, clôture | Reporting | À qualifier |
+| INT-037 | D04 Planning → D07 Workforce | P02, P04 | Demande | Exprimer les besoins en ressources humaines | Activités, périodes, qualifications, charge, lieu | Planification | À qualifier |
+| INT-038 | D04 Planning → D07 Workforce | P02, P04 | Référentiel | Fournir la disponibilité et les contraintes RH | Collaborateurs, équipes, qualifications, disponibilité, contrat | Planification | À qualifier |
+| INT-039 | D04 Planning → D12 Equipment | P02, P04 | Demande | Exprimer les besoins en équipements | Équipement, activité, période, site, conditions | Planification | À qualifier |
+| INT-040 | D04 Planning → D12 Equipment | P02, P04 | Référentiel | Fournir la disponibilité des équipements | Disponibilité, maintenance, inspections, affectations | Planification | À qualifier |
+| INT-041 | D04 Planning → D09 Workshop | P02, P04, P06 | Demande | Réserver des créneaux d'atelier | OF, activité, période, priorité, contraintes | Planification | À qualifier |
+| INT-042 | D04 Planning → D09 Workshop | P02, P04, P06 | Référentiel | Fournir la capacité et l'avancement atelier | Capacité, durées, charge, avancement, retards | Planification et suivi | À qualifier |
+| INT-043 | D04 Planning → D10 Procurement | P02, P04, P05 | Demande | Exprimer les besoins datés et les délais critiques | Articles, services, dates, quantités, priorités | Planification | À qualifier |
+| INT-044 | D04 Planning → D10 Procurement | P02, P04, P05 | Référentiel | Fournir les délais et dates de livraison | Délais, dates prévues, retards, alternatives | Planification | À qualifier |
+| INT-045 | D04 Planning → D11 Inventory | P02, P04, P05 | Demande | Vérifier la disponibilité matière | Articles, quantités, dates, réservations | Planification | À qualifier |
+| INT-046 | D04 Planning → D11 Inventory | P02, P04, P05 | Notification | Signaler les pénuries et disponibilités | Disponibilité, pénurie, réservation, réapprovisionnement | Planification et suivi | À qualifier |
+| INT-047 | D04 Planning → D13 Logistics | P04, P08 | Demande | Exprimer les besoins de transport | Colis, dates, destinations, contraintes | Planification logistique | À qualifier |
+| INT-048 | D04 Planning → D13 Logistics | P04, P08 | Référentiel | Fournir les contraintes et dates de transport | Délais, capacités, accès, incidents | Planification | À qualifier |
+| INT-049 | D08 TimeTracking → D04 Planning | P10 | Référentiel | Fournir les activités à pointer | Activité, affaire, lot, période, responsable | Saisie des temps | À qualifier |
+| INT-050 | D04 Planning → D08 TimeTracking | P04, P10 | Notification | Alimenter la replanification | Temps réels, absences, avancement, écarts | Replanification | À qualifier |
+| INT-051 | D04 Planning → D15 Safety | P04, P09 | Notification | Signaler les restrictions d'affectation | Habilitation, autorisation, restriction, expiration | Planification | À qualifier |
+| INT-052 | D18 Reporting → D04 Planning | P10 | Consultation | Alimenter le pilotage de la charge | Charge, planning, conflits, respect des délais | Reporting | À qualifier |
+| INT-053 | D06 Costing → D05 Budgets | P02, P03, P10 | Référentiel | Fournir la référence budgétaire | Enveloppe, lignes, lots, natures, période | Élaboration et suivi | À qualifier |
+| INT-054 | D05 Budgets → D06 Costing | P02, P10 | Notification | Alimenter l'analyse budgétaire | Engagements, coûts constatés, EAC, écarts | Suivi et clôture | À qualifier |
+| INT-055 | D10 Procurement → D05 Budgets | P05 | Décision | Autoriser un engagement dans le disponible | Disponible, seuil, nature, lot, conditions | Validation d'achat | À qualifier |
+| INT-056 | D05 Budgets → D10 Procurement | P02, P05 | Notification | Informer sur la consommation de l'enveloppe | Commande, montant, engagement, annulation, variation | Commande et suivi | À qualifier |
+| INT-057 | D18 Reporting → D05 Budgets | P10 | Consultation | Alimenter le pilotage budgétaire | Budget, consommation, écarts, prévisions | Reporting | À qualifier |
+| INT-058 | D06 Costing → D08 TimeTracking | P10 | Notification | Valoriser la main-d'œuvre | Heures validées, affaire, lot, nature, taux | Période de coût | À qualifier |
+| INT-059 | D06 Costing → D11 Inventory | P05, P10 | Notification | Valoriser la matière consommée | Article, quantité, lot, valorisation, affaire | Mouvement de stock | À qualifier |
+| INT-060 | D06 Costing → D10 Procurement | P01, P02, P05, P07 | Notification | Enregistrer les engagements et offres | Commande, montant, fournisseur, variations, offres | Étude, commande et suivi | À qualifier |
+| INT-061 | D06 Costing → D09 Workshop | P06, P10 | Notification | Valoriser la production atelier | Heures, matière, rebuts, coûts atelier, OF | Production | À qualifier |
+| INT-062 | D06 Costing → D12 Equipment | P09, P10 | Notification | Valoriser l'utilisation des équipements | Utilisation, maintenance, panne, location | Utilisation | À qualifier |
+| INT-063 | D06 Costing → D13 Logistics | P08, P10 | Notification | Valoriser le transport | Coût, affaire, lot, transporteur, incident | Livraison | À qualifier |
+| INT-064 | D06 Costing → D14 Quality | P11 | Notification | Valoriser la non-qualité | NCR, reprise, rebut, temps, coût | Traitement qualité | À qualifier |
+| INT-065 | D06 Costing → D15 Safety | P11 | Notification | Valoriser la prévention et les incidents | Coût de prévention, arrêt, incident, action | Prévention et incident | À qualifier |
+| INT-066 | D06 Costing → D07 Workforce | P02, P10 | Référentiel | Fournir les taux de référence | Taux horaire, poste, contrat, période | Valorisation | À qualifier |
+| INT-067 | D18 Reporting → D06 Costing | P10 | Consultation | Alimenter le pilotage économique | Coûts, marges, écarts, EAC, tendances | Reporting | À qualifier |
+| INT-068 | D08 TimeTracking → D07 Workforce | P10 | Référentiel | Fournir les données nécessaires au pointage | Collaborateur, équipe, contrat, droits à absence, période | Saisie et validation | À qualifier |
+| INT-069 | D07 Workforce → D08 TimeTracking | P10 | Notification | Fournir les faits de temps nécessaires aux variables de paie | Temps validés, absences, heures supplémentaires | Cycle de paie | À qualifier |
+| INT-070 | D05 Budgets → D07 Workforce | P01, P02, P03 | Référentiel | Fournir les hypothèses de coût RH | Taux, postes, effectifs, disponibilité | Élaboration budgétaire | À qualifier |
+| INT-071 | D15 Safety → D07 Workforce | P04, P09 | Référentiel | Fournir les formations et qualifications | Formation, qualification, validité, preuve | Affectation et prévention | À qualifier |
+| INT-072 | D15 Safety → D07 Workforce | P04, P11 | Demande | Exprimer les exigences de formation et signaler les incidents | Exigence, habilitation, incident, restriction | Prévention | À qualifier |
+| INT-073 | D14 Quality → D07 Workforce | P11 | Référentiel | Transmettre les formations et qualifications RH disponibles | Formations, qualifications RH, validité, preuves | Contrôle qualité | À qualifier |
+| INT-074 | D18 Reporting → D07 Workforce | P10 | Consultation | Alimenter le pilotage RH | Effectifs, qualifications, absences, masse salariale | Reporting | À qualifier |
+| INT-075 | Prestataire de paie (externe) → D07 Workforce | P10 | Document | Transmettre les éléments de paie | Variables, absences, contrat, période, centre de coût | Cycle de paie | À qualifier |
+| INT-076 | D18 Reporting → D08 TimeTracking | P10 | Consultation | Alimenter le pilotage des temps | Heures, absences, présence, taux, affaire | Reporting | À qualifier |
+| INT-077 | D09 Workshop → D11 Inventory | P06 | Demande | Demander la matière nécessaire à un OF | Article, quantité, date, OF, lot | Lancement et exécution | À qualifier |
+| INT-078 | D09 Workshop → D11 Inventory | P06 | Notification | Répondre sur la disponibilité matière | Disponibilité, réservation, sortie, pénurie, substitution | Exécution | À qualifier |
+| INT-079 | D09 Workshop → D10 Procurement | P07 | Demande | Demander une fabrication ou une opération externe | Dossier technique, périmètre, quantité, date, exigences | Décision de faire-faire | À qualifier |
+| INT-080 | D09 Workshop → D10 Procurement | P07 | Notification | Informer sur la commande externe | Sous-traitant, commande, délai, statut, réception | Sous-traitance | À qualifier |
+| INT-081 | D09 Workshop → D14 Quality | P06, P11 | Demande | Demander un contrôle ou signaler un écart | OF, opération, autocontrôle, caractéristique, NCR | Production | À qualifier |
+| INT-082 | D09 Workshop → D14 Quality | P06, P11 | Notification | Informer sur la conformité et les reprises | Résultat, NCR, reprise, refus, certificat | Production | À qualifier |
+| INT-083 | D09 Workshop → D13 Logistics | P08 | Demande | Signaler un colis prêt à expédier | Colis, poids, dimensions, destination, date | Expédition | À qualifier |
+| INT-084 | D09 Workshop → D13 Logistics | P08 | Notification | Informer sur l'enlèvement et la livraison | Statut, date, incident, retour | Expédition | À qualifier |
+| INT-085 | D16 Documents → D09 Workshop | P03, P06 | Document | Verser les dossiers et documents de fabrication | Plans, nomenclatures, comptes rendus, PV | Production | À qualifier |
+| INT-086 | D09 Workshop → D16 Documents | P03, P06 | Référentiel | Fournir les versions contrôlées | Référence, version, statut, diffusion | Production | À qualifier |
+| INT-087 | D18 Reporting → D09 Workshop | P10 | Consultation | Alimenter le pilotage atelier | Capacité, avancement, rebuts, délais | Reporting | À qualifier |
+| INT-088 | D11 Inventory → D10 Procurement | P05 | Notification | Annoncer les commandes et livraisons attendues | Commande, article, quantité, fournisseur, date, statut | Commande et approvisionnement | À qualifier |
+| INT-089 | D10 Procurement → D11 Inventory | P05 | Notification | Signaler les besoins et écarts de réception | Stock, pénurie, réception, écart, retour | Réapprovisionnement et réception | À qualifier |
+| INT-090 | D14 Quality → D10 Procurement | P05, P07 | Référentiel | Fournir les données de qualification | Fournisseur, sous-traitant, certificats, historique | Sélection | À qualifier |
+| INT-091 | D10 Procurement → D14 Quality | P05, P07 | Notification | Alimenter l'évaluation fournisseur | NCR, audit, conformité, performance | Suivi fournisseur | À qualifier |
+| INT-092 | D10 Procurement → D15 Safety | P05, P07 | Notification | Signaler la conformité sécurité d'un sous-traitant | Documents, habilitation, incident, restriction | Sélection et suivi | À qualifier |
+| INT-093 | D10 Procurement → D13 Logistics | P05, P08 | Demande | Demander l'organisation d'un transport | Enlèvement, livraison, fournisseur, date, colis | Approvisionnement | À qualifier |
+| INT-094 | D10 Procurement → D13 Logistics | P08 | Notification | Informer sur le transport | Statut, incident, retard, avarie | Livraison | À qualifier |
+| INT-095 | D18 Reporting → D10 Procurement | P10 | Consultation | Alimenter le pilotage des achats | Commandes, engagements, délais, performance | Reporting | À qualifier |
+| INT-096 | D11 Inventory → D13 Logistics | P08 | Demande | Demander l'expédition d'un colis | Colis, poids, dimensions, destination, date | Expédition | À qualifier |
+| INT-097 | D11 Inventory → D13 Logistics | P08 | Notification | Confirmer la livraison ou signaler un écart | Statut, réception, retour, avarie, manque | Livraison | À qualifier |
+| INT-098 | D11 Inventory → D14 Quality | P05 | Demande | Demander un contrôle à réception | Article, lot, fournisseur, quantité, exigence | Réception | À qualifier |
+| INT-099 | D11 Inventory → D14 Quality | P05 | Notification | Statuer sur la réception | Accepté, refusé, quarantaine, NCR | Réception | À qualifier |
+| INT-100 | D18 Reporting → D11 Inventory | P10 | Consultation | Alimenter le pilotage du stock | Stock, rotation, écarts, pénuries | Reporting | À qualifier |
+| INT-101 | D13 Logistics → D12 Equipment | P08 | Référentiel | Fournir les véhicules et moyens disponibles | Équipement, disponibilité, capacité, affectation | Transport | À qualifier |
+| INT-102 | D12 Equipment → D13 Logistics | P08 | Notification | Signaler l'utilisation, le retour ou la panne | Usage, compteur, état, panne, retour | Transport | À qualifier |
+| INT-103 | D15 Safety → D12 Equipment | P09, P11 | Notification | Fournir le statut des inspections et certificats | Inspection, validité, certificat, blocage | Utilisation | À qualifier |
+| INT-104 | D12 Equipment → D10 Procurement | P05 | Demande | Demander un achat, une location ou une maintenance externe | Équipement, besoin, date, fournisseur, budget | Acquisition et maintenance | À qualifier |
+| INT-105 | D12 Equipment → D10 Procurement | P05 | Notification | Informer sur la commande ou la location | Statut, dates, fournisseur, coût | Acquisition et maintenance | À qualifier |
+| INT-106 | D18 Reporting → D12 Equipment | P10 | Consultation | Alimenter le pilotage du parc | Disponibilité, utilisation, maintenance, coûts | Reporting | À qualifier |
+| INT-107 | D18 Reporting → D13 Logistics | P10 | Consultation | Alimenter le pilotage logistique | Délais, coûts, incidents, retours | Reporting | À qualifier |
+| INT-108 | D16 Documents → D14 Quality | P11 | Document | Verser les preuves et certificats | Rapports, contrôles, certificats, NCR, actions | Contrôle et clôture | À qualifier |
+| INT-109 | D17 Handover → D14 Quality | P12 | Document | Fournir les preuves de conformité | Contrôles, essais, certificats, NCR clôturées | Réception | À qualifier |
+| INT-110 | D18 Reporting → D14 Quality | P10 | Consultation | Alimenter le pilotage qualité | Taux de conformité, NCR, audits, actions | Reporting | À qualifier |
+| INT-111 | D09 Workshop → D15 Safety | P06, P09 | Notification | Fournir les consignes et inspections atelier | Risques, consignes, inspection, incident, action | Exécution atelier | À qualifier |
+| INT-112 | D16 Documents → D15 Safety | P11 | Document | Verser les preuves de sécurité | Analyses, inspections, incidents, actions, autorisations | Prévention et incident | À qualifier |
+| INT-113 | D18 Reporting → D15 Safety | P10 | Consultation | Alimenter le pilotage sécurité | Fréquence, gravité, conformité, actions | Reporting | À qualifier |
+| INT-114 | D16 Documents → Tous les domaines | P01–P12 | Document | Verser un document et ses métadonnées | Contenu, type, propriétaire, classification, statut, liens | Production ou réception | À décomposer — portée transverse |
+| INT-115 | Tous les domaines → D16 Documents | P01–P12 | Référentiel | Fournir les références et versions contrôlées | Référence, version, statut, diffusion, droits | Consultation | À décomposer — portée transverse |
+| INT-116 | D17 Handover → D16 Documents | P12 | Référentiel | Fournir la complétude et les versions du DOE | Pièces, versions, statut, diffusion, accusés | Réception | À qualifier |
+| INT-117 | D18 Reporting → D16 Documents | P10 | Consultation | Alimenter le pilotage documentaire | Volume, versions, diffusion, archivage | Reporting | À qualifier |
+| INT-118 | D17 Handover → D14 Quality | P12 | Demande | Demander le traitement technique d'une réserve | Réserve, localisation, description, délai, preuve attendue | Réception | À qualifier |
+| INT-119 | D16 Documents → D17 Handover | P12 | Document | Demander la compilation et la diffusion du DOE | Pièces, ordre, destinataires, versions | Réception | À qualifier |
+| INT-120 | D06 Costing → D17 Handover | P12 | Notification | Fournir les dates de réception et de garantie | Réception, réserves, garantie, clôture | Réception et clôture | À qualifier |
+| INT-121 | D18 Reporting → D17 Handover | P10 | Consultation | Alimenter le pilotage des réceptions | Délais, réserves, levées, garanties | Reporting | À qualifier |
+| INT-122 | D17 Handover → D10 Procurement | P12 | Document | Fournir les garanties fournisseurs et sous-traitants nécessaires aux garanties clientes | Garantie, fournisseur, objet, durée, conditions | Clôture | À qualifier |
+| INT-123 | D18 Reporting → Tous les domaines | P10 | Notification | Alimenter les indicateurs et rapports | Données, événements, indicateurs source, période | Génération | À décomposer — portée transverse |
+| INT-124 | Tous les domaines → D18 Reporting | P10 | Consultation | Fournir les rapports et alertes | Rapport, tableau de bord, indicateur, seuil, période | Pilotage | À décomposer — portée transverse |
+| INT-125 | D16 Documents → D18 Reporting | P10 | Document | Archiver ou diffuser un rapport | Rapport, export, période, destinataire | Publication | À qualifier |
+
+## 4. Règles de qualification à appliquer
+
+Pour chaque ligne, documenter avant de décider :
+
+1. **Besoin réel** : la relation nécessite-t-elle un échange technique ou peut-elle rester une coordination de processus, une saisie, un document ou une projection ?
+2. **Consommateur et fournisseur** : confirmer le sens consommateur → fournisseur à partir du motif, du moment et des responsabilités métier.
+3. **Propriété** : identifier le domaine propriétaire de la donnée, de l'invariant et de la décision ; appliquer V-01 à V-28.
+4. **Granularité** : isoler la capacité minimale consommée ; ne pas exposer un domaine entier.
+5. **Nature des données** : distinguer référence, consultation, fait accompli, demande, décision et document.
+6. **Mécanisme** : proposer contrat synchrone ou événement uniquement après avoir justifié le besoin, selon CHAN-28.
+7. **Référence** : utiliser un UUID public stable lorsqu'un objet métier doit être référencé ; ne pas fixer la version UUID ici.
+8. **Restrictions** : préciser conditions, périmètre, autorisation, confidentialité et comportement en cas d'indisponibilité.
+9. **Cycle** : vérifier l'absence de dépendance circulaire, de transaction partagée implicite et de boucle d'événements.
+10. **Décision** : attribuer « Autorisée », « Conditionnelle » ou « Interdite » uniquement après revue et validation explicite.
+
+## 5. Points de vigilance à instruire
+
+- **INT-001** : « Tous les domaines » ne peut pas devenir une dépendance métier universelle à Identity ; séparer authentification/autorisation technique des besoins métier.
+- **INT-004 / INT-005** : accès client et fournisseur conditionnels ; ne pas présumer l'existence de portails externes.
+- **INT-006 / INT-007 / INT-008** : appliquer V-15 et V-18 ; distinguer identité du tiers, rôles dans l'affaire et demande d'étude.
+- **INT-014 à INT-017** : appliquer V-19 et V-20 ; séparer enveloppe Budgets, commande Procurement, engagement et EAC Costing.
+- **INT-032 / INT-033 / INT-076** : appliquer V-21 et V-25 ; distinguer axes d'imputation, temps constatés, absence et qualification RH.
+- **INT-034 / INT-035 / INT-096 à INT-100** : appliquer V-22 et V-23 ; Inventory reste maître des articles et mouvements, y compris stock chantier.
+- **INT-077 à INT-087** : instruire les échanges atelier, matière, sous-traitance et acceptation externe selon V-24 et V-27.
+- **INT-108 à INT-122** : distinguer conformité Quality, réception contractuelle Handover et clôture Projects selon V-26 et V-28.
+- **INT-123 à INT-125** : Reporting est consommateur de données sources ; il ne devient pas autorité métier. Documents assure le stockage/diffusion documentaire sans s'approprier le contenu métier.
+
+Ces points sont des axes de revue, pas des décisions supplémentaires.
+
+## 6. Livrables de la qualification
+
+Le registre sera complété progressivement avec les colonnes suivantes, sans perdre les références INT :
+
+- classe technique et justification ;
+- mode CHAN-28 retenu et raison ;
+- capacité ou donnée minimale exposée ;
+- propriétaire confirmé ;
+- conditions et restrictions ;
+- risque de cycle ;
+- statut de validation et référence de décision.
+
+Les arbitrages non explicitement validés restent des propositions ou questions ouvertes. En particulier, ce registre ne valide aucune des propositions PD restantes du Lot 1.
+
+## 7. Références
+
+- [Matrice technique des dépendances](domain-dependency-matrix.md)
+- [Registre des interactions métier — Lot 1](domain-interactions-register.md)
+- [Processus métier — Lot 1](business-processes.md)
+- [Objets métier — Lot 1](business-objects.md)
+- [Arbitrages de frontières](domain-boundary-decisions.md)
+- [Communication inter-domaines — CHAN-28](domain-communication.md)
+- [Conventions internes — CHAN-27](domain-conventions.md)
+- [Tests d'architecture — CHAN-31](../../README.md)
