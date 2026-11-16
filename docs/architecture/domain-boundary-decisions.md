@@ -85,9 +85,9 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Responsabilités candidates | Domaine | Analyse |
 | --- | --- | --- |
 | Rôles commerciaux (prospect, client, donneur d'ordre), contacts, relation commerciale, conditions cadre | D02 Clients | Ces éléments décrivent la relation durable et les rôles du tiers. |
-| Étude, devis, commande, contrat, affaire, chantier, avenants, jalons | D03 Projects | Ces éléments décrivent l'engagement et son exécution. |
+| Devis complet et conditions commerciales cadre | D02 Clients | Le devis est produit et possédé par Clients jusqu'à sa signature. |\n| Étude, commande/ordre de service, contrat, affaire, chantier, avenants, jalons | D03 Projects | Ces éléments décrivent l'engagement et son exécution après signature. |
 | Opportunité commerciale et pipeline | D02 ou D03 | La frontière dépend de l'organisation commerciale ; Q-03. |
-| Négociation du prix et des conditions de l'affaire | D02 et D03 | Clients porte la relation ; Projects porte l'offre et le contrat. |
+| Conditions commerciales générales/cadre et prix du devis | D02 Clients | Clients construit et possède le devis complet. |\n| Conditions contractuelles propres à l'affaire | D03 Projects | Projects prend le relais après signature. |
 
 **Séparation recommandée.**
 
@@ -106,7 +106,7 @@ Les décisions suivantes sont validées. Elles ne sont pas rouvertes par ce docu
 | Clients → Projects | Prospect qualifié, besoin, échéance | Prospection |
 | Projects → Clients | Statut de l'affaire, commande, réception, clôture | Exécution et relation commerciale |
 
-**Points à valider.** Q-02 (client, donneur d'ordre, maître d'ouvrage), Q-03 (opportunité), Q-04 (création du client), Q-05 (référentiel tiers), Q-06 (conditions financières et crédit).
+**Points restant à qualifier.** Q-03 (opportunité commerciale), Q-04 (moment de conversion du prospect), Q-06 (conditions financières et crédit). Q-02 et Q-05 sont arbitrées par V-18 et V-15 ; la frontière devis/affaire est arbitrée par V-29 à V-35 et V-40.
 
 **Statut.** Remplacé par les décisions validées V-29, V-31 et V-35 : Clients possède le devis complet et les conditions cadre ; Projects prend le relais après signature et possède les conditions propres à l'affaire.
 
