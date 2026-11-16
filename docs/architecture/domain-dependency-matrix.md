@@ -99,7 +99,7 @@ Le tableau ci-dessous reprend les principaux consommateurs indiqués dans la vue
 | Quality | Projects, Workshop, Handover | À qualifier ; Quality possède contrôles et non-conformités |
 | Safety | Projects, Workshop, Workforce | À qualifier ; Safety possède prévention, incidents et habilitations opérationnelles |
 | Documents | Tous les domaines | À qualifier : distinguer service documentaire transverse et dépendance métier ; définir les métadonnées minimales |
-| Handover | Projects, Clients, Quality | À qualifier ; Handover possède réception contractuelle, réserves, DOE et garanties |
+| Handover | Projects, Clients, Quality | À qualifier ; Projects organise la réception contractuelle ; Handover prépare et centralise les pièces, livrables, DOE et le suivi documentaire des réserves et garanties |
 | Reporting | Direction et tous les domaines | À qualifier : privilégier des données de lecture/projections et éviter que les domaines dépendent de Reporting pour leurs décisions métier |
 
 ### 4.1 Points d'attention révélés par cette première cartographie
