@@ -20,7 +20,7 @@ use Throwable;
 function withArchitectureFixture(array $files, Closure $callback): mixed
 {
     $root = sys_get_temp_dir().'/c2me-architecture-'.bin2hex(random_bytes(8));
-    $namespacePrefix = 'App\ArchitectureFixtures\Fixture'.bin2hex(random_bytes(8)).'\';
+    $namespacePrefix = 'App\ArchitectureFixtures\Fixture'.bin2hex(random_bytes(8)).'\\';
     $loader = require base_path('vendor/autoload.php');
 
     if (! $loader instanceof ClassLoader) {
