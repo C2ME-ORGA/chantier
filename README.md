@@ -149,7 +149,7 @@ Le projet utilise deux branches permanentes et des branches temporaires rattach�
 
 Les commits suivent les [Conventional Commits](https://www.conventionalcommits.org/) (`feat`, `fix`, `docs`, etc.). Les Pull Requests sont obligatoires vers `main` et `develop`, et le contrôle GitHub Actions `ci` doit être vert avant toute fusion.
 
-Les protections `protect-main` et `protect-develop` sont documentées comme actives. Les conventions détaillées sont décrites dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md).
+Les protections `protect-main` et `protect-develop` sont documentées comme actives. Les conventions détaillées sont décrites dans [`docs/development/git-workflow.md`](docs/development/git-workflow.md). La revue technique des Pull Requests s'appuie sur [`docs/development/pull-request-review.md`](docs/development/pull-request-review.md) ; cette checklist complète le workflow sans redéfinir les règles de branches, d'approbation ou de fusion.
 
 ## Environnements et opérations
 
