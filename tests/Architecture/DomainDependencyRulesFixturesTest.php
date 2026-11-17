@@ -1,15 +1,31 @@
 <?php
 
 use Closure;
+use Composer\\Autoload\\ClassLoader;
 use FilesystemIterator;
+use Pest\\Arch\\Repositories\\ObjectsRepository;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionProperty;
 use RuntimeException;
 use Throwable;
 
+/**
+ * Runs architecture assertions against a temporary PSR-4 namespace.
+ *
+ * Pest Arch discovers source files from Composer's active PSR-4 loader. The
+ * temporary prefix is registered on that loader and its object repository is
+ * reset before and after the assertion so no fixture can leak into other tests.
+ */
 function withArchitectureFixture(array $files, Closure $callback): mixed
 {
     $root = sys_get_temp_dir().'/c2me-architecture-'.bin2hex(random_bytes(8));
+    $namespacePrefix = 'App\\ArchitectureFixtures\\Fixture'.bin2hex(random_bytes(8)).'\\';
+    $loader = require base_path('vendor/autoload.php');
+
+    if (! $loader instanceof ClassLoader) {
+        throw new RuntimeException('Unable to retrieve the Composer class loader.');
+    }
 
     mkdir($root, 0777, true);
 
@@ -25,8 +41,14 @@ function withArchitectureFixture(array $files, Closure $callback): mixed
             file_put_contents($path, $contents);
         }
 
-        return $callback($root);
+        $loader->addPsr4($namespacePrefix, $root.'/app');
+        resetArchitectureObjectsRepository();
+
+        return $callback($root, $namespacePrefix);
     } finally {
+        $loader->unregisterPsr4Prefix($namespacePrefix);
+        resetArchitectureObjectsRepository();
+
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
             RecursiveIteratorIterator::CHILD_FIRST,
@@ -38,6 +60,11 @@ function withArchitectureFixture(array $files, Closure $callback): mixed
 
         rmdir($root);
     }
+}
+
+function resetArchitectureObjectsRepository(): void
+{
+    (new ReflectionProperty(ObjectsRepository::class, 'instance'))->setValue(null, null);
 }
 
 function expectArchitectureViolation(Closure $assertion, string $forbiddenNamespace): void
@@ -53,14 +80,14 @@ function expectArchitectureViolation(Closure $assertion, string $forbiddenNamesp
     throw new RuntimeException("Expected an architecture violation for {$forbiddenNamespace}.");
 }
 
-it('détecte une dépendance interdite de Core vers un domaine dans une fixture isolée', function (): void {
+it('détecte une dépendance interdite de Core vers un domaine dans une fixture PSR-4 isolée', function (): void {
     withArchitectureFixture([
         'app/Core/Kernel.php' => <<<'PHP'
 <?php
 
-namespace App\Core;
+namespace FixtureNamespace\\Core;
 
-use App\Domains\Clients\Models\Client;
+use FixtureNamespace\\Domains\\Clients\\Models\\Client;
 
 final class Kernel
 {
@@ -70,13 +97,24 @@ final class Kernel
     }
 }
 PHP,
-    ], function (string $root): void {
+        'app/Domains/Clients/Models/Client.php' => <<<'PHP'
+<?php
+
+namespace FixtureNamespace\\Domains\\Clients\\Models;
+
+final class Client {}
+PHP,
+    ], function (string $root, string $namespacePrefix): void {
+        $namespace = rtrim($namespacePrefix, '\\\\');
+        $coreNamespace = $namespace.'\\Core';
+        $domainsNamespace = $namespace.'\\Domains';
+
         expectArchitectureViolation(
-            fn () => arch($root.'/app')
-                ->expect('App\Core')
+            fn () => arch('fixture Core to Domains')
+                ->expect($coreNamespace)
                 ->not
-                ->toUse('App\Domains'),
-            'App\Domains',
+                ->toUse($domainsNamespace),
+            $domainsNamespace,
         );
     });
 });
@@ -86,9 +124,9 @@ it('détecte une dépendance inter-domaines vers une implémentation interne', f
         'app/Domains/Projects/ProjectReader.php' => <<<'PHP'
 <?php
 
-namespace App\Domains\Projects;
+namespace FixtureNamespace\\Domains\\Projects;
 
-use App\Domains\Clients\Models\Client;
+use FixtureNamespace\\Domains\\Clients\\Models\\Client;
 
 final class ProjectReader
 {
@@ -98,17 +136,35 @@ final class ProjectReader
     }
 }
 PHP,
-    ], function (string $root): void {
+        'app/Domains/Clients/Models/Client.php' => <<<'PHP'
+<?php
+
+namespace FixtureNamespace\\Domains\\Clients\\Models;
+
+final class Client {}
+PHP,
+        'app/Domains/Clients/Contracts/ClientLookup.php' => <<<'PHP'
+<?php
+
+namespace FixtureNamespace\\Domains\\Clients\\Contracts;
+
+interface ClientLookup {}
+PHP,
+    ], function (string $root, string $namespacePrefix): void {
+        $namespace = rtrim($namespacePrefix, '\\\\');
+        $projectsNamespace = $namespace.'\\Domains\\Projects';
+        $clientsNamespace = $namespace.'\\Domains\\Clients';
+
         expectArchitectureViolation(
-            fn () => arch($root.'/app')
-                ->expect('App\Domains\Projects')
+            fn () => arch('fixture domain internal dependency')
+                ->expect($projectsNamespace)
                 ->not
-                ->toUse('App\Domains\Clients')
+                ->toUse($clientsNamespace)
                 ->ignoring([
-                    'App\Domains\Clients\Contracts',
-                    'App\Domains\Clients\Events\Integration',
+                    $clientsNamespace.'\\Contracts',
+                    $clientsNamespace.'\\Events\\Integration',
                 ]),
-            'App\Domains\Clients',
+            $clientsNamespace,
         );
     });
 });
@@ -118,23 +174,34 @@ it('accepte une dépendance inter-domaines vers une surface publique CHAN-28', f
         'app/Domains/Projects/ProjectReader.php' => <<<'PHP'
 <?php
 
-namespace App\Domains\Projects;
+namespace FixtureNamespace\\Domains\\Projects;
 
-use App\Domains\Clients\Contracts\ClientLookup;
+use FixtureNamespace\\Domains\\Clients\\Contracts\\ClientLookup;
 
 final class ProjectReader
 {
     public function __construct(private ClientLookup $clients) {}
 }
 PHP,
-    ], function (string $root): void {
-        expect(fn () => arch($root.'/app')
-            ->expect('App\Domains\Projects')
+        'app/Domains/Clients/Contracts/ClientLookup.php' => <<<'PHP'
+<?php
+
+namespace FixtureNamespace\\Domains\\Clients\\Contracts;
+
+interface ClientLookup {}
+PHP,
+    ], function (string $root, string $namespacePrefix): void {
+        $namespace = rtrim($namespacePrefix, '\\\\');
+        $projectsNamespace = $namespace.'\\Domains\\Projects';
+        $clientsNamespace = $namespace.'\\Domains\\Clients';
+
+        expect(fn () => arch('fixture public contract dependency')
+            ->expect($projectsNamespace)
             ->not
-            ->toUse('App\Domains\Clients')
+            ->toUse($clientsNamespace)
             ->ignoring([
-                'App\Domains\Clients\Contracts',
-                'App\Domains\Clients\Events\Integration',
+                $clientsNamespace.'\\Contracts',
+                $clientsNamespace.'\\Events\\Integration',
             ]))
             ->not->toThrow(Throwable::class);
     });
