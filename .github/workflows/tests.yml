@@ -68,8 +68,63 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Verify Vite manifest and assets
+        run: php scripts/ci/verify-vite-build.php
+
       - name: Run CI checks
         run: composer ci:check
+
+  sqlite:
+    name: sqlite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Base SQLite fichier dédiée à la CI. Elle ne contient aucune donnée réelle
+    # et ne doit jamais cibler une base de développement ou de production.
+    env:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ${{ github.workspace }}/database/testing.sqlite
+      DB_URL: ''
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan config:clear
+          mkdir -p database
+          rm -f database/testing.sqlite
+          touch database/testing.sqlite
+
+      - name: Verify Laravel SQLite connection
+        run: php scripts/ci/verify-sqlite.php
+
+      - name: Run SQLite migrations
+        run: php artisan migrate --force --no-interaction
+
+      - name: Verify SQLite migration status
+        run: |
+          php artisan migrate:status --no-ansi
+          php scripts/ci/verify-sqlite-migrations.php
+
+      - name: Run SQLite test suite
+        run: vendor/bin/pest --configuration=phpunit.sqlite.xml --colors=never
 
   mariadb:
     name: mariadb-10.11

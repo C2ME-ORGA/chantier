@@ -254,7 +254,7 @@ test('aucun script de deploiement ou de packaging n execute de migration', funct
     expect($violations)->toBe([]);
 });
 
-test('les workflows ne contiennent que les migrations autorisees du job mariadb', function (): void {
+test('les workflows ne contiennent que les migrations autorisees des jobs dedies', function (): void {
     $root = dirname(__DIR__, 3);
     $violations = [];
 
@@ -267,9 +267,9 @@ test('les workflows ne contiennent que les migrations autorisees du job mariadb'
             continue;
         }
 
-        $allowedJob = basename($file) === 'tests.yml' ? 'mariadb' : null;
+        $allowedJobs = basename($file) === 'tests.yml' ? ['mariadb', 'sqlite'] : null;
 
-        foreach (c2me_workflow_migration_violations($workflow, $allowedJob) as $violation) {
+        foreach (c2me_workflow_migration_violations($workflow, $allowedJobs) as $violation) {
             $violations[] = basename($file).' / '.$violation['job'].' : '.$violation['line'];
         }
     }
@@ -293,7 +293,7 @@ function chan21MigrationWorkflow(string $job, string $command): array
     ];
 }
 
-test('refuse les migrations non autorisees dans les jobs', function (string $job, string $command, ?string $allowedJob): void {
+test('refuse les migrations non autorisees dans les jobs', function (string $job, string $command, array|string|null $allowedJob): void {
     $violations = c2me_workflow_migration_violations(
         chan21MigrationWorkflow($job, $command),
         $allowedJob
@@ -310,6 +310,9 @@ test('refuse les migrations non autorisees dans les jobs', function (string $job
     'migrate:reset dans mariadb' => ['mariadb', 'php artisan migrate:reset', 'mariadb'],
     'migrate:rollback dans mariadb' => ['mariadb', 'php artisan migrate:rollback', 'mariadb'],
     'artisan migrate dans ci' => ['ci', 'php artisan migrate', 'mariadb'],
+    'migration SQLite dans ci' => ['ci', 'php artisan migrate --force --no-interaction', ['mariadb', 'sqlite']],
+    'verification SQLite dans ci' => ['ci', 'php scripts/ci/verify-sqlite-migrations.php', ['mariadb', 'sqlite']],
+    'migration MariaDB dans le job sqlite' => ['sqlite', 'php artisan migrate:fresh --force --no-interaction', ['mariadb', 'sqlite']],
     'commande autorisee suivie d une commande interdite' => [
         'mariadb',
         'php artisan migrate:fresh --force --no-interaction && php artisan migrate:reset',
@@ -356,6 +359,37 @@ test('accepte uniquement les trois commandes autorisees dans le job mariadb', fu
     ];
 
     expect(c2me_workflow_migration_violations($workflow, 'mariadb'))->toBe([]);
+});
+
+test('accepte uniquement les trois commandes autorisees dans le job sqlite', function (): void {
+    $workflow = [
+        'jobs' => [
+            'sqlite' => [
+                'steps' => [
+                    ['run' => 'php artisan migrate --force --no-interaction'],
+                    ['run' => 'php artisan migrate:status --no-ansi'],
+                    ['run' => 'php scripts/ci/verify-sqlite-migrations.php'],
+                ],
+            ],
+        ],
+    ];
+
+    expect(c2me_workflow_migration_violations($workflow, ['mariadb', 'sqlite']))->toBe([]);
+});
+
+test('refuse les commandes MariaDB dans le job sqlite', function (): void {
+    $workflow = [
+        'jobs' => [
+            'sqlite' => [
+                'steps' => [
+                    ['run' => 'php artisan migrate:fresh --force --no-interaction'],
+                    ['run' => 'php scripts/ci/verify-mariadb-migrations.php'],
+                ],
+            ],
+        ],
+    ];
+
+    expect(c2me_workflow_migration_violations($workflow, ['mariadb', 'sqlite']))->toHaveCount(2);
 });
 
 test('refuse les commandes autorisees hors du job mariadb', function (): void {

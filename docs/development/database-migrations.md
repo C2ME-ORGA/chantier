@@ -125,11 +125,11 @@ L'application utilise `CACHE_STORE=database`, `SESSION_DRIVER=database` et `QUEU
 | A-04 | `sessions.user_id` est indexé mais non contraint. Une future clé étrangère devra être ajoutée selon la phase Migrate, pas dans la création initiale. | Moyen |
 | A-05 | Les files d'attente sont en base. Un job sérialisé peut référencer une classe, un modèle ou une colonne qui n'existe plus après un rollback. | Élevé |
 | A-06 | Le cache et les sessions sont en base. Un DDL sur ces tables peut interrompre l'authentification ou les verrous. | Moyen |
-| A-07 | `composer test` utilise SQLite en mémoire. Depuis CHAN-21 lot 2, la CI exécute aussi les migrations et une suite applicative dédiée sur MariaDB 10.11 dans un service éphémère ; la répétition en staging reste nécessaire. | Moyen |
+| A-07 | `composer test` utilise SQLite en mémoire. Depuis CHAN-36, un job CI `sqlite` exécute aussi les migrations sur le fichier dédié `database/testing.sqlite`. Depuis CHAN-21 lot 2, la CI exécute également les migrations et une suite applicative dédiée sur MariaDB 10.11 dans un service éphémère ; la répétition en staging reste nécessaire. | Moyen |
 | A-08 | Les migrations sont incluses dans le paquet de déploiement (seuls `tests/` et `docs/` sont exclus). Elles sont donc disponibles dans chaque release, mais aucune étape ne les exécute. | Faible, par conception |
-| A-09 | Aucun workflow de déploiement ni script de paquet ne contient `artisan migrate`. Depuis CHAN-21 lot 2, seul le job CI MariaDB éphémère exécute `migrate:fresh` sur `chantier_test`. | Faible, par conception |
+| A-09 | Aucun workflow de déploiement ni script de paquet ne contient `artisan migrate`. Seuls les jobs CI `sqlite` et `mariadb` exécutent des migrations, sur `database/testing.sqlite` et sur la base éphémère `chantier_test`. | Faible, par conception |
 | A-10 | L'utilisateur MySQL de l'application dispose des privilèges nécessaires aux migrations. Ces mêmes identifiants sont présents dans la configuration compilée lue à l'exécution. | Moyen |
-| A-11 | `database/database.sqlite` n'est pas versionné ; les tests utilisent `:memory:`. Aucune base locale de référence n'est partagée. | Faible |
+| A-11 | `database/database.sqlite` et `database/testing.sqlite` ne sont pas versionnés ; les tests locaux utilisent `:memory:`. Aucune base locale de référence n'est partagée. | Faible |
 | A-12 | Aucun mécanisme ne relie une release à l'état du schéma. `release.json` ne contient ni lot de migrations ni empreinte du schéma. | Moyen |
 | A-13 | Aucune procédure de sauvegarde/restauration n'est encore opérationnelle (lot 2). Une migration destructive ne peut donc pas être autorisée en production à ce stade. | Critique |
 
@@ -430,7 +430,7 @@ Un index unique ajouté sur des données non contrôlées est une migration inco
 
 ### 5.2 Automatique, manuel et interdit
 
-- **Automatique en local et en CI** : `migrate` sur une base éphémère SQLite en mémoire, et depuis CHAN-21 lot 2 `migrate:fresh` sur le service MariaDB 10.11 éphémère de la CI, suivi de la suite `tests/MariaDb`. Cela valide le DDL et les contraintes MariaDB sans prouver le comportement de staging.
+- **Automatique en local et en CI** : `migrate` sur `database/testing.sqlite` dans le job CI `sqlite` et sur une base SQLite en mémoire pour les tests locaux, puis depuis CHAN-21 lot 2 `migrate:fresh` sur le service MariaDB 10.11 éphémère de la CI, suivi de la suite `tests/MariaDb`. Cela valide le DDL et les contraintes MariaDB sans prouver le comportement de staging.
 - **Automatique en déploiement** : aucune migration, sans exception dans ce lot. Les workflows `deploy-staging`, `deploy-production`, `release` et les scripts serveur ne contiennent aucune commande de migration.
 - **Manuel avec validation** : toute migration A, B ou C sur staging puis production, avec preuve de répétition en staging.
 - **Manuel avec validation renforcée** : toute migration D, avec sauvegarde vérifiée ; pour une suppression de structure, après expiration de la fenêtre de rollback.
@@ -965,13 +965,13 @@ Les tests [`tests/Unit/Migrations/MigrationPolicyTest.php`](../../tests/Unit/Mig
 - l'absence de suppression de lignes dans `up()` sans annotation `@destructive` ;
 - la classification `@phase` des migrations créées après l'entrée en vigueur de cette politique ;
 - l'absence de modèle Eloquent et d'`env()` dans les migrations ;
-- l'absence de commande de migration dans les workflows de déploiement et les scripts de déploiement, hors job MariaDB éphémère de `tests.yml` ;
+- l'absence de commande de migration dans les workflows de déploiement et les scripts de déploiement, hors jobs `sqlite` et `mariadb` dédiés de `tests.yml` ;
 
 Les tests [`tests/Unit/Documentation/MigrationDocumentationTest.php`](../../tests/Unit/Documentation/MigrationDocumentationTest.php) vérifient la présence de ce document, de ses sections obligatoires et du lien depuis [`deployment-process.md`](deployment-process.md).
 
 Les tests [`tests/MariaDb`](../../tests/MariaDb) s'exécutent avec [`phpunit.mariadb.xml`](../../phpunit.mariadb.xml) sur la base isolée `chantier_test`. Ils vérifient le moteur MariaDB 10.11, l'état des migrations, les types natifs, les index, les contraintes, les opérations CRUD présentes dans l'application et le démarrage des routes `/` et `/up` via `tests/MariaDb/ApplicationTest.php`.
 
-Les tests [`tests/Feature`](../../tests/Feature) restent la suite HTTP rapide exécutée sur SQLite. Ils ne sont pas rejoués tels quels sur MariaDB afin de ne pas modifier le bootstrap ni la configuration PHPUnit MariaDB ; le test applicatif MariaDB couvre le démarrage de l'application et ses routes sur le moteur réel, sans dupliquer la logique métier.
+Les tests [`tests/Feature`](../../tests/Feature) restent la suite HTTP rapide exécutée sur SQLite. Ils ne sont pas rejoués tels quels sur MariaDB afin de ne pas modifier le bootstrap ni la configuration PHPUnit MariaDB ; le test applicatif MariaDB couvre le démarrage de l'application et ses routes sur le moteur réel, sans dupliquer la logique métier. La variante [`phpunit.sqlite.xml`](../../phpunit.sqlite.xml) rejoue les suites sur le fichier dédié `database/testing.sqlite` dans le job CI `sqlite`.
 
 Ces tests statiques ne prouvent pas le comportement MariaDB ; la suite `tests/MariaDb` fournit cette couverture sur un service éphémère.
 
@@ -987,6 +987,12 @@ composer test
 composer lint:check
 composer types:check
 
+# Suite SQLite dédiée sur fichier (base isolée déjà migrée)
+vendor/bin/pest --configuration=phpunit.sqlite.xml
+
+# Vérification de l'état des migrations SQLite
+php scripts/ci/verify-sqlite-migrations.php
+
 # Suite MariaDB dédiée (base isolée déjà migrée)
 vendor/bin/pest --configuration=phpunit.mariadb.xml
 
@@ -1000,7 +1006,7 @@ bash .github/scripts/tests/test-deployment-automation.sh
 
 ### 13.3 Limites des tests
 
-- La suite rapide utilise SQLite en mémoire (`phpunit.xml`) et reste la référence de `composer test` pour `tests/Unit` et `tests/Feature`.
+- La suite rapide utilise SQLite en mémoire (`phpunit.xml`) et reste la référence de `composer test` pour `tests/Unit`, `tests/Feature` et `tests/Architecture`. Le job CI `sqlite` rejoue les mêmes suites sur `database/testing.sqlite` via `phpunit.sqlite.xml`.
 - La suite `tests/MariaDb` (`phpunit.mariadb.xml`) se connecte à MariaDB 10.11 et vérifie les migrations, les types, les index, les contraintes, les opérations CRUD existantes et les routes applicatives `/` et `/up`.
 - Les tests `tests/Feature` ne sont pas rejoués sur MariaDB : le bootstrap et la configuration PHPUnit MariaDB sont volontairement stables. Le test `tests/MariaDb/ApplicationTest.php` couvre le démarrage applicatif sur le moteur réel.
 - Elle n'exécute pas `migrate:fresh` elle-même : la CI migre une base `chantier_test` éphémère avant les tests, qui s'exécutent sous transaction annulée.

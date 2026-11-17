@@ -76,7 +76,7 @@ php artisan config:clear
 php artisan migrate
 ```
 
-Les lots 1 et 2 de CHAN-21 sont intégrés : la CI GitHub Actions démarre un service MariaDB 10.11 éphémère, exécute les migrations sur la base isolée `chantier_test`, vérifie que le schéma est à jour, puis lance la suite `tests/MariaDb` (connexion, schéma, contraintes, CRUD et routes applicatives). SQLite reste le moteur des tests rapides ; la suite MariaDB valide le comportement réel du moteur. Les commandes locales sont décrites dans la section « Intégration continue » ci-dessous.
+Les lots 1 et 2 de CHAN-21 sont intégrés : la CI GitHub Actions démarre un service MariaDB 10.11 éphémère, exécute les migrations sur la base isolée `chantier_test`, vérifie que le schéma est à jour, puis lance la suite `tests/MariaDb` (connexion, schéma, contraintes, CRUD et routes applicatives). SQLite reste le moteur des tests rapides ; la suite MariaDB valide le comportement réel du moteur. Depuis CHAN-36, un job `sqlite` dédié vérifie aussi la connexion, les migrations et les suites Pest sur le fichier `database/testing.sqlite` ; les tests d'assets Vite restent couverts par le job `ci` après le build. Les commandes locales sont décrites dans la section « Intégration continue » ci-dessous.
 
 ### Assets front-end
 
@@ -97,18 +97,20 @@ composer types:check
 npm run build
 ```
 
-Pour les conventions de nommage, le choix entre Unit/Feature/MariaDB, les prérequis et toutes les commandes de test, consulter [docs/development/testing.md](docs/development/testing.md). La commande agrégée destinée à la CI est `composer ci:check --no-interaction` ; elle exécute les contrôles PHP et les suites SQLite. La suite MariaDB reste un job distinct du workflow et se lance avec `vendor/bin/pest --configuration=phpunit.mariadb.xml` sur une base `chantier_test` isolée.
+Pour les conventions de nommage, le choix entre Unit/Feature/MariaDB, les prérequis et toutes les commandes de test, consulter [docs/development/testing.md](docs/development/testing.md). La commande agrégée destinée à la CI est `composer ci:check --no-interaction` ; elle exécute les contrôles PHP et la suite SQLite en mémoire. La validation SQLite sur fichier dédié se lance avec `vendor/bin/pest --configuration=phpunit.sqlite.xml`. La suite MariaDB reste un job distinct du workflow et se lance avec `vendor/bin/pest --configuration=phpunit.mariadb.xml` sur une base `chantier_test` isolée.
 
 Ces commandes doivent être exécutées après installation ; leur présence ici ne signifie pas qu'elles ont déjà été validées sur chaque environnement.
 
 ### Intégration continue
 
-Le workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) sépare deux environnements :
+Le workflow [`.github/workflows/tests.yml`](.github/workflows/tests.yml) sépare quatre jobs indépendants :
 
-- le job `ci` conserve les contrôles existants sur SQLite en mémoire, conformément à `phpunit.xml` : tests de l'automatisation des releases et des déploiements, validation des workflows (dont la configuration MariaDB), tests des scripts de sauvegarde/restauration et de rollback, Pint, Larastan/PHPStan, Pest et build frontend ;
-- le job `mariadb-10.11` démarre un service éphémère `mariadb:10.11`, vérifie réellement la connexion Laravel avec `DB_CONNECTION=mariadb`, exécute `migrate:fresh` sur la base isolée `chantier_test`, vérifie que toutes les migrations sont appliquées avec `scripts/ci/verify-mariadb-migrations.php`, puis exécute la suite `tests/MariaDb` (connexion, migrations, schéma, CRUD `User` et routes applicatives `/` et `/up`) via `phpunit.mariadb.xml`.
+- le job `ci` conserve les contrôles existants sur SQLite en mémoire, conformément à `phpunit.xml` : tests de l'automatisation des releases et des déploiements, validation des workflows (dont les configurations SQLite et MariaDB), tests des scripts de sauvegarde/restauration et de rollback, Pint, Larastan/PHPStan, Pest et build frontend. Il installe les dépendances avec `npm ci`, construit les assets avec `npm run build`, puis vérifie le manifest Vite et tous les fichiers référencés avec `scripts/ci/verify-vite-build.php` ;
+- le job `sqlite` vérifie la connexion Laravel avec `DB_CONNECTION=sqlite`, cible le fichier dédié `database/testing.sqlite`, exécute les migrations avec `php artisan migrate --force --no-interaction`, vérifie leur état avec `scripts/ci/verify-sqlite-migrations.php`, puis lance les suites Pest avec `phpunit.sqlite.xml` ; les tests d'assets Vite y sont ignorés faute de build et restent exécutés dans le job `ci` ;
+- le job `mariadb-10.11` démarre un service éphémère `mariadb:10.11`, vérifie réellement la connexion Laravel avec `DB_CONNECTION=mariadb`, exécute `migrate:fresh` sur la base isolée `chantier_test`, vérifie que toutes les migrations sont appliquées avec `scripts/ci/verify-mariadb-migrations.php`, puis exécute la suite `tests/MariaDb` (connexion, migrations, schéma, CRUD `User` et routes applicatives `/` et `/up`) via `phpunit.mariadb.xml` ;
+- le job `package-linux` construit et vérifie le paquet Linux.
 
-Le job MariaDB n'utilise que des identifiants jetables propres à la CI et n'accède à aucun serveur C2ME. Les tests rapides `tests/Unit` et `tests/Feature` restent exécutés sur SQLite en mémoire par `php artisan test`. La suite `tests/MariaDb` ne remplace pas SQLite : elle vérifie le moteur réel, les migrations, le schéma, le CRUD existant et le démarrage des routes applicatives sur MariaDB. Pour l'exécuter localement sur une instance MariaDB 10.11 isolée :
+Le job MariaDB n'utilise que des identifiants jetables propres à la CI et n'accède à aucun serveur C2ME. Les tests rapides `tests/Unit`, `tests/Feature` et `tests/Architecture` restent exécutés sur SQLite en mémoire par `php artisan test`. La suite `tests/MariaDb` ne remplace pas SQLite : elle vérifie le moteur réel, les migrations, le schéma, le CRUD existant et le démarrage des routes applicatives sur MariaDB. Pour l'exécuter localement sur une instance MariaDB 10.11 isolée :
 
 ```powershell
 $env:DB_CONNECTION='mariadb'

@@ -5,21 +5,46 @@ declare(strict_types=1);
 /**
  * Règles communes de détection des commandes de migration dans les workflows.
  *
- * Seul le job `mariadb` de `.github/workflows/tests.yml` peut exécuter les
- * commandes retournées par c2me_allowed_migration_commands(). Toute autre
- * occurrence, y compris dans ce job, est refusée.
+ * Seuls les jobs `mariadb` et `sqlite` de `.github/workflows/tests.yml` peuvent
+ * exécuter leurs commandes de migration respectives. Toute autre occurrence,
+ * y compris dans ces jobs, est refusée.
  */
 
 /**
- * @return list<string>
+ * Retourne les commandes autorisées, par job de `.github/workflows/tests.yml`.
+ *
+ * @return array<string, list<string>>
  */
-function c2me_allowed_migration_commands(): array
+function c2me_allowed_migration_commands_by_job(): array
 {
     return [
-        'php artisan migrate:fresh --force --no-interaction',
-        'php artisan migrate:status --no-ansi',
-        'php scripts/ci/verify-mariadb-migrations.php',
+        'mariadb' => [
+            'php artisan migrate:fresh --force --no-interaction',
+            'php artisan migrate:status --no-ansi',
+            'php scripts/ci/verify-mariadb-migrations.php',
+        ],
+        'sqlite' => [
+            'php artisan migrate --force --no-interaction',
+            'php artisan migrate:status --no-ansi',
+            'php scripts/ci/verify-sqlite-migrations.php',
+        ],
     ];
+}
+
+/**
+ * Retourne les commandes autorisées pour un job, ou pour tous les jobs.
+ *
+ * @return list<string>
+ */
+function c2me_allowed_migration_commands(?string $job = null): array
+{
+    $commandsByJob = c2me_allowed_migration_commands_by_job();
+
+    if ($job !== null) {
+        return $commandsByJob[$job] ?? [];
+    }
+
+    return array_values(array_unique(array_merge(...array_values($commandsByJob))));
 }
 
 /**
@@ -129,7 +154,7 @@ function c2me_dequote_for_analysis(string $line): string
 function c2me_line_mentions_migration(string $line): bool
 {
     return preg_match(
-        '/\b(?:artisan\s+(?:migrate(?::[a-z]+)?|db:wipe)|migrate:(?:fresh|refresh|reset|rollback)|db:wipe|verify-mariadb-migrations\.php)\b/i',
+        '/\b(?:artisan\s+(?:migrate(?::[a-z]+)?|db:wipe)|migrate:(?:fresh|refresh|reset|rollback)|db:wipe|verify-(?:mariadb|sqlite)-migrations\.php)\b/i',
         $line
     ) === 1;
 }
@@ -138,16 +163,17 @@ function c2me_line_mentions_migration(string $line): bool
  * Analyse les scripts `run` de chaque job et retourne les violations.
  *
  * Une ligne logique n'est autorisée que si sa forme normalisée correspond
- * exactement à une commande autorisée et que le job est le job autorisé. Toute
- * autre ligne contenant une migration est refusée, y compris les commandes
- * préfixées, chaînées, piped, quotées ou reconstituées.
+ * exactement à une commande autorisée pour le job courant. Toute autre ligne
+ * contenant une migration est refusée, y compris les commandes préfixées,
+ * chaînées, piped, quotées ou reconstituées.
  *
  * @param  array<string, mixed>  $workflow
+ * @param  string|list<string>|null  $allowedJobs
  * @return list<array{job: string, line: string}>
  */
-function c2me_workflow_migration_violations(array $workflow, ?string $allowedJob = null): array
+function c2me_workflow_migration_violations(array $workflow, array|string|null $allowedJobs = null): array
 {
-    $allowedCommands = c2me_allowed_migration_commands();
+    $allowedJobs = $allowedJobs === null ? [] : (array) $allowedJobs;
     $jobs = is_array($workflow['jobs'] ?? null) ? $workflow['jobs'] : [];
     $violations = [];
 
@@ -155,6 +181,11 @@ function c2me_workflow_migration_violations(array $workflow, ?string $allowedJob
         if (! is_array($job)) {
             continue;
         }
+
+        $jobName = (string) $jobName;
+        $allowedCommands = in_array($jobName, $allowedJobs, true)
+            ? c2me_allowed_migration_commands($jobName)
+            : [];
 
         $steps = is_array($job['steps'] ?? null) ? $job['steps'] : [];
 
@@ -171,7 +202,7 @@ function c2me_workflow_migration_violations(array $workflow, ?string $allowedJob
                     continue;
                 }
 
-                if ((string) $jobName === $allowedJob && in_array($line, $allowedCommands, true)) {
+                if (in_array($line, $allowedCommands, true)) {
                     continue;
                 }
 
