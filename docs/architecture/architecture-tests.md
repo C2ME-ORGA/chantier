@@ -29,3 +29,31 @@ Les règles sont introduites progressivement dans CHAN-31 : frontières Core/Dom
 ## Dépendances
 
 Aucune nouvelle dépendance n’est ajoutée dans ce lot. Les outils déjà présents dans le verrou Composer pourront être utilisés après vérification de leur API et de leur adéquation aux règles à tester.
+
+
+## Règles de frontières automatisées — CHAN-31 Lot C
+
+La suite `DomainDependencyRulesTest.php` applique les règles statiques suivantes à partir des namespaces PSR-4 de l'application :
+
+1. **Core → Domains interdit** : aucun composant sous `App\\Core` ne peut dépendre d'un composant sous `App\\Domains`.
+2. **Domaine → domaine via surface publique uniquement** : un domaine consommateur ne peut importer chez un autre domaine que les namespaces publics définis par CHAN-28 :
+   - `App\\Domains\\{Provider}\\Contracts\\...`
+   - `App\\Domains\\{Provider}\\Events\\Integration\\...`
+3. **Dépendances internes interdites** : les Models, Actions, Services, DTO internes, Policies et événements locaux restent privés à leur domaine. La règle générale bloque aussi tout autre namespace fournisseur hors des deux surfaces publiques.
+
+Les 18 domaines sont énumérés explicitement dans le test. Toute évolution de cette liste doit être accompagnée d'une décision d'architecture et d'une mise à jour du test.
+
+### Articulation avec CHAN-29
+
+L'autorisation syntaxique d'importer une surface publique CHAN-28 ne classe pas automatiquement une relation métier comme autorisée au sens de CHAN-29. Les 130 interactions recensées dans la matrice Lot C restent « À qualifier » tant qu'une décision technique traçable ne confirme pas le consommateur, le fournisseur, la capacité et les conditions. Ces tests contrôlent la frontière de code, pas l'existence ni la légitimité métier de chaque relation.
+
+### Portée et limites
+
+Ces contrôles s'appuient sur l'analyse statique des dépendances PHP effectuée par Pest Arch. Ils détectent les références de classes analysables (imports et usages PHP résolus par l'outil), mais ne prouvent pas à eux seuls l'absence :
+- de requêtes SQL directes vers les tables d'un autre domaine ;
+- de résolution dynamique de classes ou de services ;
+- de contournement via le conteneur Laravel, la configuration ou des chaînes de classes ;
+- de transactions inter-domaines implicites ;
+- d'une violation sémantique du contrat public.
+
+Ces cas nécessitent des contrôles ciblés complémentaires et une revue du code. Les tests de cas négatifs et les fixtures isolées sont traités dans le lot D.
