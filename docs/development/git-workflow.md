@@ -210,6 +210,8 @@ Chaque Pull Request doit contenir :
 - les **points d'attention**, limites connues ou décisions restant à prendre ;
 - une checklist de validation.
 
+La revue technique s'appuie sur [`pull-request-review.md`](pull-request-review.md), qui définit les contrôles, la classification des remarques et le format attendu. Ce document ne modifie ni les règles de branches, ni les protections GitHub, ni les règles de fusion.
+
 Le titre de la Pull Request doit rester explicite et reprendre la clé Jira. Exemple :
 
 ```text
@@ -322,4 +324,5 @@ Avant d'ouvrir une Pull Request :
 - [ ] La documentation est mise à jour si nécessaire.
 - [ ] Aucun secret ni donnée sensible n'est présent.
 - [ ] La Pull Request contient la référence Jira, le résumé et les contrôles effectués.
+- [ ] La checklist de revue technique [`pull-request-review.md`](pull-request-review.md) a été appliquée pour les points concernés.
 - [ ] Le contrôle `ci` est vert avant la fusion.
