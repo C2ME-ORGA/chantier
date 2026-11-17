@@ -13,7 +13,7 @@ it('respecte le mapping PSR-4 App\\\\ vers app/ dans Core et Domains', function 
 
     $violations = [];
 
-    foreach ($roots as $area => $root) {
+    foreach ($roots as $root) {
         expect(is_dir($root))->toBeTrue();
 
         $iterator = new RecursiveIteratorIterator(
@@ -25,7 +25,7 @@ it('respecte le mapping PSR-4 App\\\\ vers app/ dans Core et Domains', function 
                 continue;
             }
 
-            $relativePath = substr($file->getPathname(), strlen($applicationRoot.'/app/') );
+            $relativePath = substr($file->getPathname(), strlen($applicationRoot.'/app/'));
             $expectedClass = 'App\\'.str_replace(['/', '.php'], ['\\', ''], $relativePath);
             $tokens = token_get_all(file_get_contents($file->getPathname()));
             $namespace = '';
@@ -186,16 +186,19 @@ it('ne contient aucun cycle dans les imports PHP entre Core et domaines', functi
                         continue;
                     }
 
-                    // Les imports groupés sont normalisés en imports individuels.
-                    if (preg_match('/^(.+)\\\\{(.+)}$/', $statement, $groupMatch) === 1) {
-                        $prefix = rtrim(trim($groupMatch[1]), '\\\\').'\\\\';
+                    // Les imports groupés sont normalisés sans dépendance externe.
+                    $groupStart = strpos($statement, '{');
 
-                        foreach (explode(',', $groupMatch[2]) as $groupItem) {
-                            $imports[] = $prefix.trim($groupItem);
+                    if ($groupStart !== false && str_ends_with($statement, '}')) {
+                        $prefix = rtrim(trim(substr($statement, 0, $groupStart)), '\\\\').'\\\\';
+                        $groupItems = substr($statement, $groupStart + 1, -1);
+
+                        foreach (explode(',', $groupItems) as $groupItem) {
+                            $imports[] = $prefix.trim(preg_split('/\\s+as\\s+/i', trim($groupItem))[0]);
                         }
                     } else {
                         foreach (explode(',', $statement) as $import) {
-                            $imports[] = trim($import);
+                            $imports[] = trim(preg_split('/\\s+as\\s+/i', trim($import))[0]);
                         }
                     }
 
@@ -242,7 +245,6 @@ it('ne contient aucun cycle dans les imports PHP entre Core et domaines', functi
             $graph[$class] ??= [];
 
             foreach ($definition['imports'] as $import) {
-                $import = preg_replace('/\\\\s+as\\\\s+.+$/i', '', $import);
                 $import = ltrim(trim($import), '\\\\');
 
                 if (isset($classToFile[$import]) && $classToFile[$import] !== $file) {
