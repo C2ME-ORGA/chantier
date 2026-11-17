@@ -100,6 +100,47 @@ composer types:check
 npm run build
 ```
 
+### Analyse statique PHP (Larastan)
+
+Larastan étend PHPStan avec la connaissance des APIs Laravel : modèles Eloquent, conteneur, façades, validation et relations. Il complète les tests et Pint en détectant des incohérences de types, des méthodes inexistantes ou des contrats mal respectés sur le code applicatif. Il ne remplace ni les tests de comportement ni la validation MariaDB.
+
+Versions réellement verrouillées dans `composer.lock` :
+
+| Paquet | Version verrouillée | Rôle |
+| --- | --- | --- |
+| `larastan/larastan` | `v3.15.0` | extension Laravel pour PHPStan |
+| `phpstan/phpstan` | `2.3.5` | moteur d'analyse statique |
+
+`composer.json` déclare `larastan/larastan` avec la contrainte `^3.9` ; PHPStan est amené transitivement par Larastan.
+
+La configuration est définie dans `phpstan.neon`. Le niveau actuellement configuré est **7**. Le périmètre analysé est exactement :
+
+- `app/` ;
+- `bootstrap/app.php` ;
+- `config/` ;
+- `database/` ;
+- `routes/`.
+
+`tests/` et `bootstrap/providers.php` ne font pas partie du périmètre actuel.
+
+La commande de référence est :
+
+```bash
+composer types:check
+```
+
+Elle exécute `phpstan analyse` avec la configuration `phpstan.neon`. Le niveau 7 constitue le niveau initial retenu pour le code existant ; il ne garantit pas l'absence de défauts et pourra être relevé par décision documentée.
+
+Politique d'exclusion :
+
+- aucune exclusion globale de `app/` n'est admise ;
+- toute exclusion éventuelle doit rester limitée à un chemin précis, être justifiée et documentée ;
+- les exclusions ne doivent pas servir à masquer des erreurs applicatives : une erreur réelle doit être corrigée, pas ignorée.
+
+En cas d'erreur détectée, l'analyse retourne un code de sortie non nul. `composer types:check` échoue alors et la CI (`composer ci:check`) s'arrête, ce qui rend la régression bloquante. Ne pas contourner ce comportement avec `|| true`, une option d'ignorance ou un baseline ajouté sans justification.
+
+Lors de la validation locale de CHAN-34, l'analyse a porté sur 22 fichiers avec un code de sortie nul et aucune erreur. Ce résultat est un constat daté de cette validation, pas une garantie permanente : il dépend du périmètre et du niveau configurés.
+
 ### Commande agrégée destinée à la CI
 
 ```bash
