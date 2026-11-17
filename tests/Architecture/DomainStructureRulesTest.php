@@ -27,7 +27,13 @@ it('respecte le mapping PSR-4 App\\\\ vers app/ dans Core et Domains', function 
 
             $relativePath = substr($file->getPathname(), strlen($applicationRoot.'/app/'));
             $expectedClass = 'App\\'.str_replace(['/', '.php'], ['\\', ''], $relativePath);
-            $tokens = token_get_all(file_get_contents($file->getPathname()));
+            $source = file_get_contents($file->getPathname());
+
+            if ($source === false) {
+                throw new RuntimeException('Impossible de lire '.$file->getPathname());
+            }
+
+            $tokens = token_get_all($source);
             $namespace = '';
             $declaredClasses = [];
 
@@ -120,6 +126,11 @@ it('ne contient aucun cycle dans les imports PHP entre Core et domaines', functi
             }
 
             $source = file_get_contents($file->getPathname());
+
+            if ($source === false) {
+                throw new RuntimeException('Impossible de lire '.$file->getPathname());
+            }
+
             $tokens = token_get_all($source);
             $namespace = '';
             $imports = [];
