@@ -1,7 +1,5 @@
 <?php
 
-use Throwable;
-
 function withArchitectureFixture(array $files, Closure $callback): mixed
 {
     $root = sys_get_temp_dir().'/c2me-architecture-'.bin2hex(random_bytes(8));
@@ -57,7 +55,7 @@ PHP,
             ->expect('App\Core')
             ->not
             ->toUse('App\Domains'))
-            ->toThrow(Throwable::class);
+            ->toThrow(\\Throwable::class);
     });
 });
 
@@ -87,7 +85,7 @@ PHP,
                 'App\Domains\Clients\Contracts',
                 'App\Domains\Clients\Events\Integration',
             ]))
-            ->toThrow(Throwable::class);
+            ->toThrow(\\Throwable::class);
     });
 });
 
@@ -114,6 +112,6 @@ PHP,
                 'App\Domains\Clients\Contracts',
                 'App\Domains\Clients\Events\Integration',
             ]))
-            ->not->toThrow(Throwable::class);
+            ->not->toThrow(\\Throwable::class);
     });
 });
