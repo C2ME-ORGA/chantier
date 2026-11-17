@@ -55,7 +55,7 @@ function expectArchitectureViolation(Closure $assertion, string $forbiddenNamesp
 
 it('détecte une dépendance interdite de Core vers un domaine dans une fixture isolée', function (): void {
     withArchitectureFixture([
-        'Core/Kernel.php' => <<<'PHP'
+        'app/Core/Kernel.php' => <<<'PHP'
 <?php
 
 namespace App\Core;
@@ -72,7 +72,7 @@ final class Kernel
 PHP,
     ], function (string $root): void {
         expectArchitectureViolation(
-            fn () => arch($root)
+            fn () => arch($root.'/app')
                 ->expect('App\Core')
                 ->not
                 ->toUse('App\Domains'),
@@ -83,7 +83,7 @@ PHP,
 
 it('détecte une dépendance inter-domaines vers une implémentation interne', function (): void {
     withArchitectureFixture([
-        'Domains/Projects/ProjectReader.php' => <<<'PHP'
+        'app/Domains/Projects/ProjectReader.php' => <<<'PHP'
 <?php
 
 namespace App\Domains\Projects;
@@ -100,7 +100,7 @@ final class ProjectReader
 PHP,
     ], function (string $root): void {
         expectArchitectureViolation(
-            fn () => arch($root)
+            fn () => arch($root.'/app')
                 ->expect('App\Domains\Projects')
                 ->not
                 ->toUse('App\Domains\Clients')
@@ -115,7 +115,7 @@ PHP,
 
 it('accepte une dépendance inter-domaines vers une surface publique CHAN-28', function (): void {
     withArchitectureFixture([
-        'Domains/Projects/ProjectReader.php' => <<<'PHP'
+        'app/Domains/Projects/ProjectReader.php' => <<<'PHP'
 <?php
 
 namespace App\Domains\Projects;
@@ -128,7 +128,7 @@ final class ProjectReader
 }
 PHP,
     ], function (string $root): void {
-        expect(fn () => arch($root)
+        expect(fn () => arch($root.'/app')
             ->expect('App\Domains\Projects')
             ->not
             ->toUse('App\Domains\Clients')
