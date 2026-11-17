@@ -31,39 +31,8 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.[1-9][0-9]*)?$ ]]; then
-            echo "Tag de release invalide : $RELEASE_TAG" >&2
-            exit 1
-          fi
-
-          if [[ "$(git cat-file -t "refs/tags/${RELEASE_TAG}")" != "tag" ]]; then
-            echo "Le tag $RELEASE_TAG doit être un tag annoté." >&2
-            exit 1
-          fi
-
-          if [[ "$RELEASE_TAG" == *-rc.* ]]; then
-            release_type="release candidate"
-            target_ref="origin/develop"
-            target_label="develop"
-          else
-            release_type="stable"
-            target_ref="origin/main"
-            target_label="main"
-          fi
-
-          if ! git rev-parse -q --verify "${target_ref}^{commit}" >/dev/null; then
-            echo "Impossible de résoudre la référence $target_ref." >&2
-            exit 1
-          fi
-
-          tag_sha="$(git rev-parse "${RELEASE_TAG}^{commit}")"
-          target_sha="$(git rev-parse "${target_ref}^{commit}")"
-
-          if [[ "$tag_sha" != "$target_sha" ]]; then
-            echo "Le tag $release_type $RELEASE_TAG pointe sur le commit $tag_sha, alors que $target_ref pointe sur le commit $target_sha." >&2
-            echo "Créez le tag sur le HEAD actuel de $target_label, sans déplacer un tag déjà publié." >&2
-            exit 1
-          fi
+          bash .github/scripts/deploy/validate-release-tag.sh \
+            --tag "$RELEASE_TAG"
 
       - name: Generate release notes
         env:

@@ -24,6 +24,7 @@ Ce document décrit une automatisation **préparée mais non exécutée depuis c
 | Workflow de staging | [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml) |
 | Workflow de production | [`.github/workflows/deploy-production.yml`](../../.github/workflows/deploy-production.yml) |
 | Workflow de release | [`.github/workflows/release.yml`](../../.github/workflows/release.yml) |
+| Validation des tags de release | [`.github/scripts/deploy/validate-release-tag.sh`](../../.github/scripts/deploy/validate-release-tag.sh) |
 | Construction du paquet | [`.github/scripts/package/build-package.sh`](../../.github/scripts/package/build-package.sh) |
 | Promotion staging → production | [`.github/scripts/deploy/resolve-promotion.sh`](../../.github/scripts/deploy/resolve-promotion.sh) |
 | Déploiement serveur | [`.github/scripts/deploy/remote-deploy.sh`](../../.github/scripts/deploy/remote-deploy.sh) |
@@ -119,10 +120,12 @@ Le workflow vérifie successivement :
 
 1. le format SemVer de la release candidate ;
 2. le caractère **annoté** du tag et le type `commit` de l'objet pointé ;
-3. l'appartenance du commit du tag à l'historique de `origin/develop` ;
+3. l'appartenance du commit du tag à l'historique de `origin/develop` ; une RC normale pointe sur le HEAD de `develop`, une RC de hotfix pointe sur le HEAD de `main`, à condition qu'il soit présent dans `develop` ;
 4. la provenance du commit et de son arbre Git enregistrés dans la suite du workflow.
 
 Un tag léger, un format invalide, un tag stable ou un commit absent de l'historique de `develop` est refusé.
+
+La règle de création de la RC — HEAD de `develop`, ou HEAD de `main` présent dans `develop`, sans tag stable déjà présent — est appliquée par [`validate-release-tag.sh`](../../.github/scripts/deploy/validate-release-tag.sh). Le déploiement staging vérifie ensuite l'appartenance du commit à l'historique de `develop`.
 
 ### Avancée de branche entre le tag et le workflow
 
@@ -130,7 +133,7 @@ Le tag identifie le contenu déployé ; il reste immuable. Le contrôle de dépl
 
 - Si `develop` avance après la création du tag, le déploiement staging reste possible : l'artefact est construit depuis le commit tagué, et la provenance est vérifiée par `head_sha`, le workflow et le tag.
 - Un tag créé sur une branche divergente, non fusionnée, est refusé.
-- Le workflow de release conserve, lui, l'exigence d'un tag créé sur le HEAD de `develop` ou `main` au moment de la publication. Cette exigence n'est pas affaiblie.
+- Le workflow de release exige un tag stable sur le HEAD de `main` et une RC normale sur le HEAD de `develop`. Une RC de hotfix doit pointer sur le HEAD de `main`, à condition qu'il soit présent dans `develop` et non déjà stable-tagué. Cette exception est limitée au hotfix et contrôlée par [`validate-release-tag.sh`](../../.github/scripts/deploy/validate-release-tag.sh).
 - La promotion en production conserve la comparaison des arbres Git et la référence `Staging-Candidate`.
 
 ### Production
@@ -259,6 +262,8 @@ La promotion ne reconstruit rien. Le workflow de production :
 10. recalcule l'empreinte SHA-256 et la compare au manifeste et au fichier `.sha256` ;
 11. vérifie l'ensemble des champs du manifeste (version, tag, commit, arbre, exécution, identifiant d'artefact, empreinte, statut staging).
 
+La candidate de hotfix est le HEAD de `main` au moment de la RC ; elle peut être un commit non-HEAD de `develop`. L'important est qu'elle soit ancêtre du tag stable et que son arbre Git soit identique.
+
 Un artefact expiré, introuvable, incohérent ou invalide bloque le déploiement. Aucun paquet n'est reconstruit silencieusement.
 
 ## Workflows
@@ -291,9 +296,12 @@ Le workflow de release est conservé :
 
 - release candidate publiée en **pre-release** ;
 - version stable créée en **brouillon**, publiée manuellement ;
-- les règles de versionnement et de tags ne changent pas.
+- les règles de versionnement et de tags restent celles de [`release-process.md`](release-process.md).
 
-Seule adaptation : une section `Déploiement` est ajoutée aux notes d'une version stable pour référencer la candidate staging vérifiable. Sans candidate, la section l'indique explicitement.
+Adaptations :
+
+- la validation du tag est déléguée à [`validate-release-tag.sh`](../../.github/scripts/deploy/validate-release-tag.sh), qui accepte une RC de hotfix sur le HEAD de `main`, présent dans `develop` ;
+- une section `Déploiement` est ajoutée aux notes d'une version stable pour référencer la candidate staging vérifiable. Sans candidate, la section l'indique explicitement.
 
 ### Actions épinglées
 
