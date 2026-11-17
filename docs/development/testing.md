@@ -154,23 +154,83 @@ composer ci:check --no-interaction
 3. `phpstan analyse` via `composer types:check` ;
 4. `php artisan test`.
 
-Cette commande est le point d'entrée stable pour les contrôles PHP et les suites SQLite dans GitHub Actions et pour l'intégration prévue dans CHAN-35. Elle ne lance pas la suite MariaDB : celle-ci reste un job distinct, avec son service éphémère, ses migrations et sa configuration dédiée. Le build frontend et les tests des scripts d'exploitation restent également des étapes séparées du workflow.
+Cette commande est le point d'entrée stable pour les contrôles PHP et les suites SQLite dans le job `ci` de GitHub Actions. Elle ne lance pas la suite MariaDB : celle-ci reste un job distinct, avec son service éphémère, ses migrations et sa configuration dédiée. Le build frontend et les tests des scripts d'exploitation restent également des étapes séparées du workflow.
 
 Ne pas remplacer `composer ci:check` par une commande locale partielle dans la CI sans décision documentée.
 
 ## CI GitHub Actions
 
-Le workflow `.github/workflows/tests.yml` :
+Le workflow d'intégration continue est défini dans `.github/workflows/tests.yml`. Il porte le contrôle qualité du dépôt ; il ne publie aucune release et ne déploie rien.
 
-- installe PHP 8.4 et les dépendances Composer ;
-- prépare l'environnement Laravel et les assets ;
-- lance `composer ci:check` pour les contrôles PHP et les tests Unit/Feature SQLite ;
-- démarre un service MariaDB 10.11 éphémère ;
-- vérifie la connexion, applique les migrations et contrôle leur état ;
-- lance `vendor/bin/pest --configuration=phpunit.mariadb.xml --colors=never` ;
-- construit et vérifie le package Linux dans un job dédié.
+### Déclencheurs et branches
 
-La suite MariaDB n'utilise aucun serveur C2ME et aucune donnée réelle. La CI est la validation de référence pour les deux moteurs ; les résultats doivent être consultés sur le commit exact de la Pull Request.
+Le workflow s'exécute pour :
+
+- un `push` sur `develop` ;
+- un `push` sur `main` ;
+- une `pull_request` ciblant `develop` ;
+- une `pull_request` ciblant `main`.
+
+Une branche temporaire (`feature/*`, `bugfix/*`, `docs/*`, etc.) ne déclenche donc pas la CI par un simple push : elle est contrôlée dès qu'une Pull Request la cible vers `develop` ou `main`. Aucun filtre `paths` n'est appliqué : chaque événement retenu exécute le workflow complet. Aucun déclenchement manuel (`workflow_dispatch`) n'est configuré, et le workflow de tests n'est déclenché ni par un tag ni par une release.
+
+Ce périmètre est vérifié structurellement par `.github/scripts/tests/validate-workflows.php`, qui contrôle la présence des événements `push` et `pull_request` ainsi que des branches `develop` et `main` pour chacun.
+
+### Jobs
+
+| Job | Nom affiché | Rôle |
+| --- | --- | --- |
+| `ci` | `ci` | Contrôles qualité PHP, validation des workflows et des scripts d'exploitation, build frontend, tests Unit/Feature sur SQLite en mémoire. |
+| `mariadb` | `mariadb-10.11` | Vérification du comportement réel sur MariaDB 10.11 avec une base éphémère dédiée. |
+| `package-linux` | `package-linux` | Construction et vérification du package Linux. |
+
+Les trois jobs ne déclarent aucune clé `needs` : ils sont indépendants et GitHub Actions peut les exécuter en parallèle, sans ordre imposé entre eux. L'échec d'un job suffit à marquer le workflow en échec.
+
+#### Job `ci`
+
+Le job `ci` s'exécute sur `ubuntu-latest` et :
+
+1. exécute les tests d'automatisation de release ;
+2. installe PHP 8.4, Composer 2 et Node.js 22 ;
+3. installe les dépendances Composer puis valide les workflows avec `php .github/scripts/tests/validate-workflows.php` ;
+4. exécute les tests d'automatisation de déploiement, de sauvegarde/restauration et de rollback ;
+5. prépare un `.env` local et un fichier `database/database.sqlite` vide pour l'isolation des tests ;
+6. installe les dépendances npm avec `npm ci` et construit les assets avec `npm run build` ;
+7. exécute `composer ci:check`, qui enchaîne `php artisan config:clear --ansi`, Laravel Pint en mode vérification (`pint --parallel --test`), Larastan/PHPStan (`phpstan analyse`) puis la suite `php artisan test` (Pest) sur SQLite en mémoire.
+
+#### Job MariaDB
+
+Le job `mariadb-10.11` démarre un service `mariadb:10.11` éphémère, joignable uniquement sur la boucle locale, avec une base, un utilisateur et des mots de passe jetables propres à la CI. Il vérifie la connexion, applique les migrations avec `php artisan migrate:fresh --force --no-interaction`, contrôle leur état puis exécute `vendor/bin/pest --configuration=phpunit.mariadb.xml --colors=never`. Aucun serveur C2ME et aucune donnée réelle ne sont utilisés.
+
+#### Job `package-linux`
+
+Le job `package-linux` prépare PHP 8.4 et Node.js 22, puis exécute `bash .github/scripts/tests/test-assemble-linux.sh` pour construire et vérifier le package Linux. Il ne publie ni n'envoie cet artefact : la publication et le déploiement relèvent des workflows dédiés.
+
+### Contrôles qualité exécutés
+
+- Validation structurelle des workflows, des déclencheurs, des jobs, des permissions et des actions épinglées.
+- Contrôles des scripts d'automatisation de release, de déploiement, de sauvegarde/restauration et de rollback.
+- Laravel Pint en mode vérification.
+- Larastan/PHPStan au niveau configuré dans `phpstan.neon`.
+- Pest via `php artisan test` sur SQLite en mémoire.
+- `npm run build` pour le frontend Vite/Tailwind.
+- Suite Pest MariaDB dédiée.
+- Construction et vérification du package Linux.
+
+### Comportement en cas d'échec
+
+Chaque étape échoue avec un code de sortie non nul et interrompt le job concerné ; le workflow est alors marqué en échec. Le workflow de tests n'utilise ni `continue-on-error: true` ni `|| true` pour masquer un échec, et ces usages sont refusés par `validate-workflows.php`. Les jobs n'étant pas chaînés, l'échec de l'un n'annule pas les autres, mais le résultat global reste en échec. Une Pull Request dont la CI est en échec ne doit pas être fusionnée lorsque le contrôle `ci` est requis par la protection de branche.
+
+### CI qualité, release et déploiement
+
+- `.github/workflows/tests.yml` : contrôle qualité uniquement, permissions `contents: read`, aucun secret SSH, aucun environnement GitHub, aucune migration hors du job MariaDB éphémère.
+- `.github/workflows/release.yml` : déclenché par un tag `v*`, crée ou met à jour la release GitHub correspondante.
+- `.github/workflows/deploy-staging.yml` et `.github/workflows/deploy-production.yml` : déploient les artefacts promus selon le processus de release.
+
+La séparation est contrôlée par `validate-workflows.php` : le workflow de tests ne doit contenir aucun job de release ou de déploiement, aucune référence à un environnement de déploiement et aucun secret SSH.
+
+La frontière de responsabilité est la suivante : CHAN-35 couvre la configuration et la fiabilisation du workflow de tests et de son script de validation ; le workflow Git, les releases, les environnements et les déploiements relèvent de CHAN-92 et de ses documents spécialisés. Les travaux spécifiques aux suites SQLite et au build frontend relèvent de CHAN-36 ; le workflow de tests conserve les étapes nécessaires à leur exécution sans les redéfinir ici.
+
+La CI est la validation de référence pour les deux moteurs de base de données ; les résultats doivent être consultés sur le commit exact de la Pull Request.
 
 ## Ajouter un test
 
