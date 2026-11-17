@@ -47,7 +47,7 @@ function withArchitectureFixture(array $files, Closure $callback): mixed
 
         return $callback($root, $namespacePrefix);
     } finally {
-        $loader->unregisterPsr4Prefix($namespacePrefix);
+        $loader->setPsr4($namespacePrefix, []);
         resetArchitectureObjectsRepository();
 
         $iterator = new RecursiveIteratorIterator(
