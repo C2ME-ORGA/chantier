@@ -1,9 +1,9 @@
 <?php
 
 use Closure;
-use Composer\\Autoload\\ClassLoader;
+use Composer\Autoload\ClassLoader;
 use FilesystemIterator;
-use Pest\\Arch\\Repositories\\ObjectsRepository;
+use Pest\Arch\Repositories\ObjectsRepository;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionProperty;
@@ -20,7 +20,7 @@ use Throwable;
 function withArchitectureFixture(array $files, Closure $callback): mixed
 {
     $root = sys_get_temp_dir().'/c2me-architecture-'.bin2hex(random_bytes(8));
-    $namespacePrefix = 'App\\ArchitectureFixtures\\Fixture'.bin2hex(random_bytes(8)).'\\';
+    $namespacePrefix = 'App\ArchitectureFixtures\Fixture'.bin2hex(random_bytes(8)).'\';
     $loader = require base_path('vendor/autoload.php');
 
     if (! $loader instanceof ClassLoader) {
@@ -38,6 +38,7 @@ function withArchitectureFixture(array $files, Closure $callback): mixed
                 mkdir($directory, 0777, true);
             }
 
+            $contents = str_replace('FixtureNamespace', rtrim($namespacePrefix, '\\'), $contents);
             file_put_contents($path, $contents);
         }
 
@@ -85,9 +86,9 @@ it('détecte une dépendance interdite de Core vers un domaine dans une fixture 
         'app/Core/Kernel.php' => <<<'PHP'
 <?php
 
-namespace FixtureNamespace\\Core;
+namespace FixtureNamespace\Core;
 
-use FixtureNamespace\\Domains\\Clients\\Models\\Client;
+use FixtureNamespace\Domains\Clients\Models\Client;
 
 final class Kernel
 {
@@ -100,14 +101,14 @@ PHP,
         'app/Domains/Clients/Models/Client.php' => <<<'PHP'
 <?php
 
-namespace FixtureNamespace\\Domains\\Clients\\Models;
+namespace FixtureNamespace\Domains\Clients\Models;
 
 final class Client {}
 PHP,
     ], function (string $root, string $namespacePrefix): void {
-        $namespace = rtrim($namespacePrefix, '\\\\');
-        $coreNamespace = $namespace.'\\Core';
-        $domainsNamespace = $namespace.'\\Domains';
+        $namespace = rtrim($namespacePrefix, '\\');
+        $coreNamespace = $namespace.'\Core';
+        $domainsNamespace = $namespace.'\Domains';
 
         expectArchitectureViolation(
             fn () => arch('fixture Core to Domains')
@@ -124,9 +125,9 @@ it('détecte une dépendance inter-domaines vers une implémentation interne', f
         'app/Domains/Projects/ProjectReader.php' => <<<'PHP'
 <?php
 
-namespace FixtureNamespace\\Domains\\Projects;
+namespace FixtureNamespace\Domains\Projects;
 
-use FixtureNamespace\\Domains\\Clients\\Models\\Client;
+use FixtureNamespace\Domains\Clients\Models\Client;
 
 final class ProjectReader
 {
@@ -139,21 +140,21 @@ PHP,
         'app/Domains/Clients/Models/Client.php' => <<<'PHP'
 <?php
 
-namespace FixtureNamespace\\Domains\\Clients\\Models;
+namespace FixtureNamespace\Domains\Clients\Models;
 
 final class Client {}
 PHP,
         'app/Domains/Clients/Contracts/ClientLookup.php' => <<<'PHP'
 <?php
 
-namespace FixtureNamespace\\Domains\\Clients\\Contracts;
+namespace FixtureNamespace\Domains\Clients\Contracts;
 
 interface ClientLookup {}
 PHP,
     ], function (string $root, string $namespacePrefix): void {
-        $namespace = rtrim($namespacePrefix, '\\\\');
-        $projectsNamespace = $namespace.'\\Domains\\Projects';
-        $clientsNamespace = $namespace.'\\Domains\\Clients';
+        $namespace = rtrim($namespacePrefix, '\\');
+        $projectsNamespace = $namespace.'\Domains\Projects';
+        $clientsNamespace = $namespace.'\Domains\Clients';
 
         expectArchitectureViolation(
             fn () => arch('fixture domain internal dependency')
@@ -161,8 +162,8 @@ PHP,
                 ->not
                 ->toUse($clientsNamespace)
                 ->ignoring([
-                    $clientsNamespace.'\\Contracts',
-                    $clientsNamespace.'\\Events\\Integration',
+                    $clientsNamespace.'\Contracts',
+                    $clientsNamespace.'\Events\Integration',
                 ]),
             $clientsNamespace,
         );
@@ -174,9 +175,9 @@ it('accepte une dépendance inter-domaines vers une surface publique CHAN-28', f
         'app/Domains/Projects/ProjectReader.php' => <<<'PHP'
 <?php
 
-namespace FixtureNamespace\\Domains\\Projects;
+namespace FixtureNamespace\Domains\Projects;
 
-use FixtureNamespace\\Domains\\Clients\\Contracts\\ClientLookup;
+use FixtureNamespace\Domains\Clients\Contracts\ClientLookup;
 
 final class ProjectReader
 {
@@ -186,22 +187,22 @@ PHP,
         'app/Domains/Clients/Contracts/ClientLookup.php' => <<<'PHP'
 <?php
 
-namespace FixtureNamespace\\Domains\\Clients\\Contracts;
+namespace FixtureNamespace\Domains\Clients\Contracts;
 
 interface ClientLookup {}
 PHP,
     ], function (string $root, string $namespacePrefix): void {
-        $namespace = rtrim($namespacePrefix, '\\\\');
-        $projectsNamespace = $namespace.'\\Domains\\Projects';
-        $clientsNamespace = $namespace.'\\Domains\\Clients';
+        $namespace = rtrim($namespacePrefix, '\\');
+        $projectsNamespace = $namespace.'\Domains\Projects';
+        $clientsNamespace = $namespace.'\Domains\Clients';
 
         expect(fn () => arch('fixture public contract dependency')
             ->expect($projectsNamespace)
             ->not
             ->toUse($clientsNamespace)
             ->ignoring([
-                $clientsNamespace.'\\Contracts',
-                $clientsNamespace.'\\Events\\Integration',
+                $clientsNamespace.'\Contracts',
+                $clientsNamespace.'\Events\Integration',
             ]))
             ->not->toThrow(Throwable::class);
     });
