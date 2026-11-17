@@ -32,6 +32,6 @@ Résultats et remarques :
 
 ## Revue technique
 
-- [ ] La checklist de revue technique a été appliquée : [docs/development/pull-request-review.md](../docs/development/pull-request-review.md)
+- [ ] La checklist de revue technique a été appliquée : [docs/development/pull-request-review.md](docs/development/pull-request-review.md)
 - [ ] Les sections sans objet sont identifiées et justifiées.
 - [ ] Aucun secret ni donnée sensible n'est présent dans le diff.
