@@ -21,7 +21,7 @@ it('respecte le mapping PSR-4 App\\\\ vers app/ dans Core et Domains', function 
         );
 
         foreach ($iterator as $file) {
-            if (!$file instanceof SplFileInfo || !$file->isFile() || $file->getExtension() !== 'php') {
+            if (! $file instanceof SplFileInfo || ! $file->isFile() || $file->getExtension() !== 'php') {
                 continue;
             }
 
@@ -40,7 +40,7 @@ it('respecte le mapping PSR-4 App\\\\ vers app/ dans Core et Domains', function 
             for ($index = 0, $count = count($tokens); $index < $count; $index++) {
                 $token = $tokens[$index];
 
-                if (!is_array($token)) {
+                if (! is_array($token)) {
                     continue;
                 }
 
@@ -62,7 +62,7 @@ it('respecte le mapping PSR-4 App\\\\ vers app/ dans Core et Domains', function 
                     $namespace = implode('', $namespaceParts);
                 }
 
-                if (!in_array($token[0], [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
+                if (! in_array($token[0], [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
                     continue;
                 }
 
@@ -121,7 +121,7 @@ it('ne contient aucun cycle dans les imports PHP entre Core et domaines', functi
         );
 
         foreach ($iterator as $file) {
-            if (!$file instanceof SplFileInfo || !$file->isFile() || $file->getExtension() !== 'php') {
+            if (! $file instanceof SplFileInfo || ! $file->isFile() || $file->getExtension() !== 'php') {
                 continue;
             }
 
@@ -151,7 +151,7 @@ it('ne contient aucun cycle dans les imports PHP entre Core et domaines', functi
                     continue;
                 }
 
-                if (!is_array($token)) {
+                if (! is_array($token)) {
                     continue;
                 }
 
