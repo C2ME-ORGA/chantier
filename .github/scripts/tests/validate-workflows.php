@@ -16,6 +16,8 @@ require dirname(__DIR__, 3).'/vendor/autoload.php';
 
 $projectRoot = dirname(__DIR__, 3);
 require_once $projectRoot.'/scripts/ci/lib/workflow-migrations.php';
+require_once $projectRoot.'/scripts/ci/lib/workflow-configuration.php';
+require_once $projectRoot.'/scripts/ci/lib/composer-scripts.php';
 $failures = [];
 $checks = 0;
 
@@ -70,6 +72,28 @@ function job_environment(mixed $environment): string
     }
 
     return is_string($environment) ? $environment : '';
+}
+
+/**
+ * Retourne le nom affiché d'un job, ou null si sa déclaration est inexploitable.
+ *
+ * GitHub Actions affiche l'identifiant du job lorsqu'aucun `name` n'est déclaré.
+ *
+ * @param  array<string, mixed>  $jobs
+ */
+function job_display_name(array $jobs, string $jobId): ?string
+{
+    $job = $jobs[$jobId] ?? null;
+
+    if (! is_array($job)) {
+        return null;
+    }
+
+    if (! array_key_exists('name', $job)) {
+        return $jobId;
+    }
+
+    return is_string($job['name']) && $job['name'] !== '' ? $job['name'] : null;
 }
 
 function workflow_paths(string $directory): array
@@ -252,18 +276,183 @@ $tests = $documents['tests.yml'] ?? [];
 if ($tests !== []) {
     $rawTests = (string) file_get_contents($workflowDirectory.'/tests.yml');
     $jobs = is_array($tests['jobs'] ?? null) ? $tests['jobs'] : [];
+    $testsTriggers = triggers($tests);
 
-    check(str_contains($rawTests, 'test-deployment-automation.sh'), 'tests.yml doit exécuter les tests de déploiement.');
-    check(str_contains($rawTests, 'validate-workflows.php'), 'tests.yml doit valider les workflows.');
-    check(str_contains($rawTests, 'test-assemble-linux.sh'), 'tests.yml doit exécuter le test d\'assemblage Linux.');
-    check(isset($jobs['package-linux']), 'tests.yml doit définir le job package-linux.');
+    check(array_key_exists('push', $testsTriggers), 'tests.yml doit être déclenché par un push.');
+    check(array_key_exists('pull_request', $testsTriggers), 'tests.yml doit être déclenché par une pull_request.');
+    check(! array_key_exists('release', $testsTriggers), 'tests.yml ne doit pas être déclenché par une release.');
+    check(! isset($testsTriggers['push']['tags']), 'tests.yml ne doit pas être déclenché par un tag de release.');
+
+    $configuredEvents = c2me_workflow_event_names($testsTriggers);
+
+    check(
+        $configuredEvents !== null,
+        'tests.yml : les noms d\'événements déclarés doivent être textuels.'
+    );
+    check(
+        $configuredEvents === ['pull_request', 'push'],
+        'tests.yml doit configurer exactement les événements push et pull_request (configuré : '.implode(', ', $configuredEvents ?? []).').'
+    );
+
+    $expectedBranches = ['develop', 'main'];
+    sort($expectedBranches);
+
+    foreach (['push', 'pull_request'] as $event) {
+        $branches = c2me_workflow_trigger_branches($testsTriggers, $event);
+
+        check(
+            $branches !== null,
+            "tests.yml : les branches de l'événement {$event} doivent être une liste de valeurs textuelles."
+        );
+
+        if ($branches === null) {
+            continue;
+        }
+
+        $sortedBranches = $branches;
+        sort($sortedBranches);
+
+        check(
+            $sortedBranches === $expectedBranches,
+            "tests.yml doit cibler exactement les branches develop et main pour l'événement {$event} (configuré : ".implode(', ', $branches).').'
+        );
+    }
+
+    check(
+        ($tests['permissions'] ?? []) === ['contents' => 'read'],
+        'tests.yml doit limiter les permissions à contents:read.'
+    );
+
+    $expectedJobs = [
+        'ci' => 'ci',
+        'mariadb' => 'mariadb-10.11',
+        'package-linux' => 'package-linux',
+    ];
+
+    $declaredJobs = array_map(
+        static fn (string|int $job): string => (string) $job,
+        array_keys($jobs)
+    );
+    $expectedJobIds = array_keys($expectedJobs);
+    sort($declaredJobs);
+    sort($expectedJobIds);
+
+    check(
+        $declaredJobs === $expectedJobIds,
+        'tests.yml doit déclarer exactement les jobs ci, mariadb et package-linux (déclaré : '.implode(', ', $declaredJobs).').'
+    );
+
+    foreach ($expectedJobs as $jobId => $expectedJobName) {
+        $jobName = job_display_name($jobs, $jobId);
+
+        check(
+            $jobName === $expectedJobName,
+            "tests.yml : le job {$jobId} doit être affiché sous le nom {$expectedJobName} (configuré : ".($jobName ?? 'aucun').').'
+        );
+    }
+
+    $deploymentJobs = array_values(array_filter(
+        array_keys($jobs),
+        static fn (string|int $job): bool => preg_match('/(?:release|deploy)/i', (string) $job) === 1
+    ));
+
+    check(
+        $deploymentJobs === [],
+        'tests.yml ne doit contenir aucun job de release ou de déploiement (trouvé : '.implode(', ', $deploymentJobs).').'
+    );
+
+    foreach ($jobs as $jobName => $job) {
+        if (! is_array($job)) {
+            continue;
+        }
+
+        check(
+            ! array_key_exists('needs', $job),
+            "tests.yml : le job {$jobName} ne doit pas déclarer de dépendance needs."
+        );
+        check(
+            ! array_key_exists('environment', $job),
+            "tests.yml : le job {$jobName} ne doit pas cibler un environnement de déploiement."
+        );
+        check(
+            ($job['continue-on-error'] ?? false) !== true,
+            "tests.yml : le job {$jobName} ne doit pas masquer ses échecs avec continue-on-error."
+        );
+
+        $steps = is_array($job['steps'] ?? null) ? $job['steps'] : [];
+
+        foreach ($steps as $index => $step) {
+            if (! is_array($step)) {
+                continue;
+            }
+
+            check(
+                ($step['continue-on-error'] ?? false) !== true,
+                "tests.yml : l'étape {$index} du job {$jobName} ne doit pas masquer ses échecs avec continue-on-error."
+            );
+
+            $script = $step['run'] ?? null;
+
+            check(
+                ! is_string($script) || preg_match('/(?:^|\s)\|\|\s*true(?:\s|$)/', $script) !== 1,
+                "tests.yml : l'étape {$index} du job {$jobName} ne doit pas masquer un échec avec || true."
+            );
+        }
+    }
+
+    check(! str_contains($rawTests, 'secrets.SSH_'), 'tests.yml ne doit référencer aucun secret SSH.');
+
+    $packageLinuxJob = is_array($jobs['package-linux'] ?? null) ? $jobs['package-linux'] : [];
+    $packageLinuxScripts = job_run_scripts($packageLinuxJob);
+
+    check(
+        runs_exact_command($packageLinuxScripts, 'bash .github/scripts/tests/test-assemble-linux.sh'),
+        'Le job package-linux doit exécuter le test d\'assemblage Linux.'
+    );
 
     $ciJob = is_array($jobs['ci'] ?? null) ? $jobs['ci'] : [];
     $ciScripts = job_run_scripts($ciJob);
 
     check($ciJob !== [], 'tests.yml doit définir le job ci.');
     check(runs_exact_command($ciScripts, 'composer ci:check'), 'Le job ci doit exécuter composer ci:check dans une étape run.');
+    check(runs_exact_command($ciScripts, 'npm run build'), 'Le job ci doit exécuter npm run build dans une étape run.');
     check(runs_exact_command($ciScripts, 'touch database/database.sqlite'), 'Le job ci doit préparer database/database.sqlite dans une étape run.');
+    check(
+        runs_exact_command($ciScripts, 'php .github/scripts/tests/validate-workflows.php'),
+        'Le job ci doit valider les workflows avec validate-workflows.php.'
+    );
+    check(
+        runs_exact_command($ciScripts, 'bash .github/scripts/tests/test-deployment-automation.sh'),
+        'Le job ci doit exécuter les tests de déploiement.'
+    );
+
+    $composerJsonPath = $projectRoot.'/composer.json';
+    $composerJson = json_decode((string) file_get_contents($composerJsonPath), true);
+    $composerData = is_array($composerJson) ? $composerJson : [];
+    $composerScripts = is_array($composerData['scripts'] ?? null) ? $composerData['scripts'] : [];
+    $ciCommands = c2me_composer_script_commands($composerScripts, 'ci:check');
+    $requireDev = is_array($composerData['require-dev'] ?? null) ? $composerData['require-dev'] : [];
+
+    check($composerData !== [], 'composer.json doit être un document JSON valide.');
+    check($ciCommands !== [], 'composer.json doit définir un script ci:check exploitable.');
+    check(
+        in_array('pint --parallel --test', $ciCommands, true),
+        'composer ci:check doit exécuter Laravel Pint en mode vérification.'
+    );
+    check(
+        in_array('phpstan analyse', $ciCommands, true),
+        'composer ci:check doit exécuter Larastan/PHPStan.'
+    );
+    check(
+        array_filter(
+            $ciCommands,
+            static fn (string $command): bool => preg_match('/(?:^|\s)artisan test(?:\s|$)/', $command) === 1
+        ) !== [],
+        'composer ci:check doit exécuter Pest via php artisan test.'
+    );
+    check(isset($requireDev['laravel/pint']), 'composer.json doit déclarer Laravel Pint.');
+    check(isset($requireDev['larastan/larastan']), 'composer.json doit déclarer Larastan.');
+    check(isset($requireDev['pestphp/pest']), 'composer.json doit déclarer Pest.');
 
     $mariadbJob = is_array($jobs['mariadb'] ?? null) ? $jobs['mariadb'] : [];
     $mariadbService = is_array($mariadbJob['services']['mariadb'] ?? null) ? $mariadbJob['services']['mariadb'] : [];
