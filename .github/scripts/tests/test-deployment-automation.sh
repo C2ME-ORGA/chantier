@@ -2478,9 +2478,10 @@ assert_contains "$notes_file" "sera refusé" "Arbre différent non référencé"
 scripts_dir="$script_dir"
 workflows_dir="$project_root/.github/workflows"
 
-# CHAN-21 lot 2 : seul le job mariadb de tests.yml peut exécuter les
-# commandes de migration autorisées. Les scripts et workflows de déploiement
-# restent soumis à l'interdiction, y compris pour les commandes chaînées.
+# CHAN-21 lot 2 et CHAN-36 : seuls les jobs sqlite et mariadb de tests.yml
+# peuvent exécuter leurs commandes de migration respectives. Les scripts et
+# workflows de déploiement restent soumis à l'interdiction, y compris pour les
+# commandes chaînées.
 migration_checker="$project_root/scripts/ci/check-workflow-migrations.php"
 
 migration_hits="$(grep -rEli 'artisan[[:space:]]+migrate|artisan[[:space:]]+db:wipe|migrate:(fresh|refresh|reset|rollback)|db:wipe|migrate[[:space:]]+--force' \
@@ -2495,7 +2496,7 @@ fi
 for workflow in "$workflows_dir"/*.yml; do
   allowed_job=""
   if [ "$(basename "$workflow")" = "tests.yml" ]; then
-    allowed_job="mariadb"
+    allowed_job="mariadb,sqlite"
   fi
 
   checker_args=("$migration_checker" "$workflow")
@@ -2620,6 +2621,27 @@ if php "$migration_checker" "$migration_fixtures/allowed-mariadb.yml" mariadb >/
   pass
 else
   fail "Les trois commandes autorisées dans le job mariadb doivent être acceptées."
+fi
+
+cat > "$migration_fixtures/allowed-sqlite.yml" <<'YAML'
+jobs:
+  sqlite:
+    steps:
+      - run: 'php artisan migrate --force --no-interaction'
+      - run: 'php artisan migrate:status --no-ansi'
+      - run: 'php scripts/ci/verify-sqlite-migrations.php'
+YAML
+
+if php "$migration_checker" "$migration_fixtures/allowed-sqlite.yml" mariadb,sqlite >/dev/null 2>&1; then
+  pass
+else
+  fail "Les trois commandes autorisées dans le job sqlite doivent être acceptées."
+fi
+
+if php "$migration_checker" "$migration_fixtures/allowed-sqlite.yml" mariadb >/dev/null 2>&1; then
+  fail "Les commandes SQLite ne doivent pas être autorisées dans le job mariadb."
+else
+  pass
 fi
 
 if grep -rEl 'artisan[[:space:]]+down|maintenance:activate' \

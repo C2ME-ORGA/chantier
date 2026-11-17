@@ -4,21 +4,23 @@ Ce document définit l'organisation et les commandes de test de C2ME Chantier.
 
 ## Objectifs
 
-Le socle distingue les tests rapides exécutés sur SQLite en mémoire des tests qui vérifient explicitement le comportement du moteur MariaDB. Ces suites sont complémentaires.
+Le socle distingue les tests rapides exécutés sur SQLite des tests qui vérifient explicitement le comportement du moteur MariaDB. Les tests SQLite locaux utilisent une base en mémoire ; le job CI `sqlite` rejoue la suite complète sur un fichier SQLite dédié. Ces suites sont complémentaires.
 
 ## Organisation des fichiers
 
 | Emplacement | Responsabilité | Environnement |
 | --- | --- | --- |
 | `tests/Unit/` | Tests isolés de classes et fonctions, sans dépendance à HTTP ou à une base réelle | PHPUnit/Pest standard |
-| `tests/Feature/` | Intégration Laravel : HTTP, authentification, autorisations et interactions applicatives | SQLite en mémoire |
+| `tests/Feature/` | Intégration Laravel : HTTP, authentification, autorisations et interactions applicatives | SQLite en mémoire en local, fichier SQLite dédié en CI |
 | `tests/MariaDb/` | Comportements propres à MariaDB : SQL, contraintes, migrations, types, collations et persistance | MariaDB dédiée |
 
 Fichiers de configuration :
 
-- `phpunit.xml` : suites Unit et Feature, SQLite en mémoire.
+- `phpunit.xml` : suites Unit, Feature et Architecture, SQLite en mémoire pour les commandes locales.
+- `phpunit.sqlite.xml` : rejoue les mêmes suites sur le fichier SQLite dédié `database/testing.sqlite` dans le job CI `sqlite`.
 - `phpunit.mariadb.xml` : suite MariaDB dédiée.
 - `tests/Pest.php` : déclaration des TestCase Pest par répertoire.
+- `tests/bootstrap-sqlite.php` : force la connexion SQLite et le fichier de test avant le bootstrap Laravel.
 - `tests/bootstrap-mariadb.php` : force les variables de connexion avant le bootstrap Laravel.
 - `tests/TestCase.php` : base Laravel des tests applicatifs.
 - `tests/MariaDbTestCase.php` : garde-fous MariaDB et transactions annulées après chaque test.
@@ -44,7 +46,9 @@ Utiliser Unit lorsque la logique peut être testée sans conteneur Laravel, base
 
 Utiliser Feature lorsqu'il faut vérifier le comportement intégré de Laravel : routes, middleware, authentification, autorisation, validation HTTP, réponses et interactions avec les composants applicatifs.
 
-Les tests Feature utilisent `Tests\\TestCase` et `RefreshDatabase`, configurés dans `tests/Pest.php`. La base SQLite en mémoire est réinitialisée selon le cycle de vie Laravel.
+Les tests Feature utilisent `Tests\\TestCase` et `RefreshDatabase`, configurés dans `tests/Pest.php`. La base SQLite est réinitialisée selon le cycle de vie Laravel.
+
+En local, `php artisan test` utilise SQLite en mémoire. Le job CI `sqlite` utilise `phpunit.sqlite.xml` et `tests/bootstrap-sqlite.php` pour cibler le fichier dédié `database/testing.sqlite`. Cette variante vérifie réellement la connexion SQLite, les migrations et les contraintes de clés étrangères sur un fichier, sans dépendre de MariaDB.
 
 ### Choix de MariaDB
 
@@ -71,7 +75,7 @@ Depuis la racine du dépôt :
 php artisan test
 ```
 
-Cette commande exécute les suites Unit et Feature déclarées dans `phpunit.xml`, sur SQLite en mémoire. Les variables structurantes `APP_ENV`, `DB_CONNECTION`, `DB_DATABASE` et `DB_URL` sont forcées dans cette configuration.
+Cette commande exécute les suites Unit, Feature et Architecture déclarées dans `phpunit.xml`, sur SQLite en mémoire. Les variables structurantes `APP_ENV`, `DB_CONNECTION`, `DB_DATABASE` et `DB_URL` sont forcées dans cette configuration.
 
 Pour exécuter un fichier ou filtrer un test :
 
@@ -79,6 +83,24 @@ Pour exécuter un fichier ou filtrer un test :
 php artisan test tests/Feature/HomeRouteTest.php
 php artisan test --filter="home"
 ```
+
+### Tests SQLite sur fichier dédié
+
+Le job CI `sqlite` rejoue la suite complète sur `database/testing.sqlite`. Pour reproduire ce contrôle en local sous bash :
+
+```bash
+export DB_CONNECTION=sqlite
+export DB_DATABASE="$PWD/database/testing.sqlite"
+export DB_URL=
+php -r "file_exists('database/testing.sqlite') || touch('database/testing.sqlite');"
+php artisan config:clear
+php scripts/ci/verify-sqlite.php
+php artisan migrate --force --no-interaction
+php scripts/ci/verify-sqlite-migrations.php
+vendor/bin/pest --configuration=phpunit.sqlite.xml
+```
+
+Sous PowerShell, définir les mêmes variables avec `$env:DB_CONNECTION`, `$env:DB_DATABASE` et `$env:DB_URL`, puis exécuter les mêmes commandes. `phpunit.sqlite.xml` force le fichier `database/testing.sqlite` : ne jamais le remplacer par `database/database.sqlite`, une base de développement ou une base de production. Le script `verify-sqlite.php` refuse une connexion en mémoire, un autre pilote ou un autre fichier que `testing.sqlite`.
 
 ### Suite MariaDB
 
@@ -91,6 +113,16 @@ vendor/bin/pest --configuration=phpunit.mariadb.xml
 ```
 
 La commande de migration ci-dessus est destructive si la base contient déjà des données et ne doit être exécutée que sur la base de test isolée. La CI utilise `migrate:fresh` sur son service éphémère ; cette commande ne doit pas être transposée à une base locale partagée.
+
+### Installation frontend reproductible et build Vite
+
+```bash
+npm ci
+npm run build
+php scripts/ci/verify-vite-build.php
+```
+
+`npm ci` installe strictement les versions verrouillées dans `package-lock.json` ; ne pas utiliser `npm install` dans la CI. `npm run build` génère `public/build/manifest.json` et les assets référencés. `php scripts/ci/verify-vite-build.php` échoue si le manifest est absent, invalide, si une entrée `resources/css/app.css` ou `resources/js/app.js` manque, ou si un fichier référencé n'existe pas dans `public/build`.
 
 ### Contrôles qualité
 
@@ -154,7 +186,7 @@ composer ci:check --no-interaction
 3. `phpstan analyse` via `composer types:check` ;
 4. `php artisan test`.
 
-Cette commande est le point d'entrée stable pour les contrôles PHP et les suites SQLite dans le job `ci` de GitHub Actions. Elle ne lance pas la suite MariaDB : celle-ci reste un job distinct, avec son service éphémère, ses migrations et sa configuration dédiée. Le build frontend et les tests des scripts d'exploitation restent également des étapes séparées du workflow.
+Cette commande est le point d'entrée stable pour les contrôles PHP et la suite SQLite en mémoire dans le job `ci` de GitHub Actions. Elle ne lance ni la validation SQLite sur fichier dédié ni la suite MariaDB : celles-ci restent des jobs distincts, avec leurs migrations et leur configuration dédiée. Le build frontend et la vérification du manifest Vite, ainsi que les tests des scripts d'exploitation, restent également des étapes séparées du workflow.
 
 Ne pas remplacer `composer ci:check` par une commande locale partielle dans la CI sans décision documentée.
 
@@ -179,11 +211,12 @@ Ce périmètre est vérifié structurellement par `.github/scripts/tests/validat
 
 | Job | Nom affiché | Rôle |
 | --- | --- | --- |
-| `ci` | `ci` | Contrôles qualité PHP, validation des workflows et des scripts d'exploitation, build frontend, tests Unit/Feature sur SQLite en mémoire. |
+| `ci` | `ci` | Contrôles qualité PHP, validation des workflows et des scripts d'exploitation, build frontend et vérification du manifest Vite, tests Unit/Feature/Architecture sur SQLite en mémoire. |
+| `sqlite` | `sqlite` | Validation SQLite dédiée : connexion réelle, migrations et suite Pest complète sur le fichier `database/testing.sqlite`. |
 | `mariadb` | `mariadb-10.11` | Vérification du comportement réel sur MariaDB 10.11 avec une base éphémère dédiée. |
 | `package-linux` | `package-linux` | Construction et vérification du package Linux. |
 
-Les trois jobs ne déclarent aucune clé `needs` : ils sont indépendants et GitHub Actions peut les exécuter en parallèle, sans ordre imposé entre eux. L'échec d'un job suffit à marquer le workflow en échec.
+Les quatre jobs ne déclarent aucune clé `needs` : ils sont indépendants et GitHub Actions peut les exécuter en parallèle, sans ordre imposé entre eux. L'échec d'un job suffit à marquer le workflow en échec.
 
 #### Job `ci`
 
@@ -194,8 +227,19 @@ Le job `ci` s'exécute sur `ubuntu-latest` et :
 3. installe les dépendances Composer puis valide les workflows avec `php .github/scripts/tests/validate-workflows.php` ;
 4. exécute les tests d'automatisation de déploiement, de sauvegarde/restauration et de rollback ;
 5. prépare un `.env` local et un fichier `database/database.sqlite` vide pour l'isolation des tests ;
-6. installe les dépendances npm avec `npm ci` et construit les assets avec `npm run build` ;
+6. installe les dépendances npm avec `npm ci`, construit les assets avec `npm run build`, puis vérifie le manifest et les fichiers référencés avec `php scripts/ci/verify-vite-build.php` ;
 7. exécute `composer ci:check`, qui enchaîne `php artisan config:clear --ansi`, Laravel Pint en mode vérification (`pint --parallel --test`), Larastan/PHPStan (`phpstan analyse`) puis la suite `php artisan test` (Pest) sur SQLite en mémoire.
+
+#### Job `sqlite`
+
+Le job `sqlite` ne dépend d'aucun service externe. Il cible le fichier dédié `database/testing.sqlite` avec `DB_CONNECTION=sqlite`, `DB_DATABASE` et `DB_URL=` neutralisé, installe PHP 8.4 avec `pdo_sqlite`, puis :
+
+1. vérifie la connexion réelle avec `php scripts/ci/verify-sqlite.php` ;
+2. exécute les migrations avec `php artisan migrate --force --no-interaction` ;
+3. contrôle leur état avec `php artisan migrate:status --no-ansi` et `php scripts/ci/verify-sqlite-migrations.php` ;
+4. exécute la suite Pest complète avec `vendor/bin/pest --configuration=phpunit.sqlite.xml --colors=never`.
+
+`phpunit.sqlite.xml` et `tests/bootstrap-sqlite.php` forcent le fichier dédié avant le démarrage de Laravel. Le test `tests/Feature/Database/SqliteConnectionTest.php` vérifie que la suite rapide utilise réellement le pilote SQLite et jamais MariaDB. Un échec de connexion, de migration ou de test fait échouer le job. Les tests d'assets Vite nécessitent un build : ils sont exécutés dans le job `ci` après `npm run build` et sont marqués ignorés dans le job `sqlite`, qui ne reconstruit pas le frontend.
 
 #### Job MariaDB
 
@@ -211,18 +255,20 @@ Le job `package-linux` prépare PHP 8.4 et Node.js 22, puis exécute `bash .gith
 - Contrôles des scripts d'automatisation de release, de déploiement, de sauvegarde/restauration et de rollback.
 - Laravel Pint en mode vérification.
 - Larastan/PHPStan au niveau configuré dans `phpstan.neon`.
-- Pest via `php artisan test` sur SQLite en mémoire.
-- `npm run build` pour le frontend Vite/Tailwind.
+- Pest via `php artisan test` sur SQLite en mémoire et via `phpunit.sqlite.xml` sur le fichier SQLite dédié.
+- Connexion, migrations et état des migrations SQLite.
+- `npm ci` et `npm run build` pour le frontend Vite/Tailwind.
+- Présence du manifest Vite et de tous les fichiers qu'il référence.
 - Suite Pest MariaDB dédiée.
 - Construction et vérification du package Linux.
 
 ### Comportement en cas d'échec
 
-Chaque étape échoue avec un code de sortie non nul et interrompt le job concerné ; le workflow est alors marqué en échec. Le workflow de tests n'utilise ni `continue-on-error: true` ni `|| true` pour masquer un échec, et ces usages sont refusés par `validate-workflows.php`. Les jobs n'étant pas chaînés, l'échec de l'un n'annule pas les autres, mais le résultat global reste en échec. Une Pull Request dont la CI est en échec ne doit pas être fusionnée lorsque le contrôle `ci` est requis par la protection de branche.
+Chaque étape échoue avec un code de sortie non nul et interrompt le job concerné ; le workflow est alors marqué en échec. Les scripts `verify-sqlite.php`, `verify-sqlite-migrations.php` et `verify-vite-build.php` retournent explicitement un code non nul en cas d'écart. Le workflow de tests n'utilise ni `continue-on-error: true` ni `|| true` pour masquer un échec, et ces usages sont refusés par `validate-workflows.php`. Les jobs n'étant pas chaînés, l'échec de l'un n'annule pas les autres, mais le résultat global reste en échec. Une Pull Request dont la CI est en échec ne doit pas être fusionnée lorsque le contrôle `ci` est requis par la protection de branche.
 
 ### CI qualité, release et déploiement
 
-- `.github/workflows/tests.yml` : contrôle qualité uniquement, permissions `contents: read`, aucun secret SSH, aucun environnement GitHub, aucune migration hors du job MariaDB éphémère.
+- `.github/workflows/tests.yml` : contrôle qualité uniquement, permissions `contents: read`, aucun secret SSH, aucun environnement GitHub, aucune migration hors des jobs `sqlite` et `mariadb` dédiés.
 - `.github/workflows/release.yml` : déclenché par un tag `v*`, crée ou met à jour la release GitHub correspondante.
 - `.github/workflows/deploy-staging.yml` et `.github/workflows/deploy-production.yml` : déploient les artefacts promus selon le processus de release.
 
@@ -242,4 +288,4 @@ La CI est la validation de référence pour les deux moteurs de base de données
 6. Si le changement touche MariaDB, exécuter aussi la suite MariaDB dédiée.
 7. Vérifier la CI de la Pull Request et rapporter les résultats réellement observés.
 
-Références : `README.md`, `AGENTS.md`, `phpunit.xml`, `phpunit.mariadb.xml`, `tests/Pest.php` et `.github/workflows/tests.yml`.
+Références : `README.md`, `AGENTS.md`, `phpunit.xml`, `phpunit.sqlite.xml`, `phpunit.mariadb.xml`, `tests/Pest.php`, `scripts/ci/verify-sqlite.php`, `scripts/ci/verify-vite-build.php` et `.github/workflows/tests.yml`.

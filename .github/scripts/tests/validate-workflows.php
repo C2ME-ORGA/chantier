@@ -161,7 +161,7 @@ foreach ($workflowPaths as $path) {
 
     $migrationViolations = c2me_workflow_migration_violations(
         $documents[$name],
-        $name === 'tests.yml' ? 'mariadb' : null
+        $name === 'tests.yml' ? ['mariadb', 'sqlite'] : null
     );
 
     $migrationDetails = array_map(
@@ -325,6 +325,7 @@ if ($tests !== []) {
 
     $expectedJobs = [
         'ci' => 'ci',
+        'sqlite' => 'sqlite',
         'mariadb' => 'mariadb-10.11',
         'package-linux' => 'package-linux',
     ];
@@ -339,7 +340,7 @@ if ($tests !== []) {
 
     check(
         $declaredJobs === $expectedJobIds,
-        'tests.yml doit déclarer exactement les jobs ci, mariadb et package-linux (déclaré : '.implode(', ', $declaredJobs).').'
+        'tests.yml doit déclarer exactement les jobs ci, sqlite, mariadb et package-linux (déclaré : '.implode(', ', $declaredJobs).').'
     );
 
     foreach ($expectedJobs as $jobId => $expectedJobName) {
@@ -415,7 +416,12 @@ if ($tests !== []) {
 
     check($ciJob !== [], 'tests.yml doit définir le job ci.');
     check(runs_exact_command($ciScripts, 'composer ci:check'), 'Le job ci doit exécuter composer ci:check dans une étape run.');
+    check(runs_exact_command($ciScripts, 'npm ci'), 'Le job ci doit installer les dépendances Node avec npm ci dans une étape run.');
     check(runs_exact_command($ciScripts, 'npm run build'), 'Le job ci doit exécuter npm run build dans une étape run.');
+    check(
+        runs_exact_command($ciScripts, 'php scripts/ci/verify-vite-build.php'),
+        'Le job ci doit vérifier le manifest Vite et ses fichiers avec scripts/ci/verify-vite-build.php.'
+    );
     check(runs_exact_command($ciScripts, 'touch database/database.sqlite'), 'Le job ci doit préparer database/database.sqlite dans une étape run.');
     check(
         runs_exact_command($ciScripts, 'php .github/scripts/tests/validate-workflows.php'),
@@ -453,6 +459,105 @@ if ($tests !== []) {
     check(isset($requireDev['laravel/pint']), 'composer.json doit déclarer Laravel Pint.');
     check(isset($requireDev['larastan/larastan']), 'composer.json doit déclarer Larastan.');
     check(isset($requireDev['pestphp/pest']), 'composer.json doit déclarer Pest.');
+
+    $sqliteJob = is_array($jobs['sqlite'] ?? null) ? $jobs['sqlite'] : [];
+    $sqliteJobEnv = is_array($sqliteJob['env'] ?? null) ? $sqliteJob['env'] : [];
+
+    check($sqliteJob !== [], 'tests.yml doit définir un job sqlite dédié.');
+    check(! array_key_exists('services', $sqliteJob), 'Le job sqlite ne doit dépendre d\'aucun service externe.');
+    check(($sqliteJobEnv['DB_CONNECTION'] ?? null) === 'sqlite', 'Le job sqlite doit définir DB_CONNECTION=sqlite.');
+    check(
+        str_contains((string) ($sqliteJobEnv['DB_DATABASE'] ?? ''), 'database/testing.sqlite'),
+        'Le job sqlite doit cibler le fichier dédié database/testing.sqlite.'
+    );
+    check(
+        (string) ($sqliteJobEnv['DB_URL'] ?? '') === '',
+        'Le job sqlite doit neutraliser DB_URL pour éviter une connexion externe.'
+    );
+
+    $sqliteSteps = is_array($sqliteJob['steps'] ?? null) ? $sqliteJob['steps'] : [];
+    $sqlitePhpStep = [];
+
+    foreach ($sqliteSteps as $step) {
+        if (is_array($step) && str_starts_with((string) ($step['uses'] ?? ''), 'shivammathur/setup-php@')) {
+            $sqlitePhpStep = $step;
+
+            break;
+        }
+    }
+
+    $sqlitePhpWith = is_array($sqlitePhpStep['with'] ?? null) ? $sqlitePhpStep['with'] : [];
+    $sqliteExtensions = is_string($sqlitePhpWith['extensions'] ?? null)
+        ? (preg_split('/[\s,]+/', trim($sqlitePhpWith['extensions']), -1, PREG_SPLIT_NO_EMPTY) ?: [])
+        : [];
+
+    check((string) ($sqlitePhpWith['php-version'] ?? '') === '8.4', 'Le job sqlite doit utiliser PHP 8.4.');
+    check(in_array('pdo_sqlite', $sqliteExtensions, true), 'Le job sqlite doit installer l\'extension pdo_sqlite.');
+
+    $sqliteScripts = job_run_scripts($sqliteJob);
+
+    check(
+        runs_exact_command($sqliteScripts, 'touch database/testing.sqlite'),
+        'Le job sqlite doit préparer le fichier database/testing.sqlite dans une étape run.'
+    );
+    check(
+        runs_exact_command($sqliteScripts, 'php scripts/ci/verify-sqlite.php'),
+        'Le job sqlite doit vérifier la connexion SQLite avec scripts/ci/verify-sqlite.php.'
+    );
+    check(
+        runs_exact_command($sqliteScripts, 'php artisan migrate --force --no-interaction'),
+        'Le job sqlite doit exécuter les migrations sur le fichier dédié.'
+    );
+    check(
+        runs_exact_command($sqliteScripts, 'php artisan migrate:status --no-ansi'),
+        'Le job sqlite doit afficher l\'état des migrations.'
+    );
+    check(
+        runs_exact_command($sqliteScripts, 'php scripts/ci/verify-sqlite-migrations.php'),
+        'Le job sqlite doit vérifier que toutes les migrations sont appliquées.'
+    );
+    check(
+        runs_exact_command($sqliteScripts, 'vendor/bin/pest --configuration=phpunit.sqlite.xml --colors=never'),
+        'Le job sqlite doit exécuter la suite Pest avec phpunit.sqlite.xml.'
+    );
+
+    $sqlitePhpunitPath = $projectRoot.'/phpunit.sqlite.xml';
+    check(is_file($sqlitePhpunitPath), 'phpunit.sqlite.xml doit exister pour la suite SQLite dédiée.');
+
+    if (is_file($sqlitePhpunitPath)) {
+        $sqlitePhpunit = (string) file_get_contents($sqlitePhpunitPath);
+        $sqliteBootstrap = $projectRoot.'/tests/bootstrap-sqlite.php';
+
+        check(
+            str_contains($sqlitePhpunit, '<env name="DB_CONNECTION" value="sqlite" force="true"/>'),
+            'phpunit.sqlite.xml doit forcer la connexion sqlite.'
+        );
+        check(
+            str_contains($sqlitePhpunit, 'bootstrap="tests/bootstrap-sqlite.php"'),
+            'phpunit.sqlite.xml doit utiliser le bootstrap SQLite dédié.'
+        );
+
+        foreach (['Unit', 'Feature', 'Architecture'] as $suite) {
+            check(
+                str_contains($sqlitePhpunit, "<directory>tests/{$suite}</directory>"),
+                "phpunit.sqlite.xml doit déclarer la suite {$suite}."
+            );
+        }
+
+        check(is_file($sqliteBootstrap), 'tests/bootstrap-sqlite.php doit exister.');
+
+        if (is_file($sqliteBootstrap)) {
+            $bootstrap = (string) file_get_contents($sqliteBootstrap);
+            check(
+                str_contains($bootstrap, "'DB_CONNECTION' => 'sqlite'"),
+                'tests/bootstrap-sqlite.php doit forcer DB_CONNECTION=sqlite.'
+            );
+            check(
+                str_contains($bootstrap, "'DB_DATABASE' => dirname(__DIR__).'/database/testing.sqlite'"),
+                'tests/bootstrap-sqlite.php doit forcer le fichier database/testing.sqlite.'
+            );
+        }
+    }
 
     $mariadbJob = is_array($jobs['mariadb'] ?? null) ? $jobs['mariadb'] : [];
     $mariadbService = is_array($mariadbJob['services']['mariadb'] ?? null) ? $mariadbJob['services']['mariadb'] : [];
