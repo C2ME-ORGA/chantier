@@ -44,6 +44,14 @@ function withArchitectureFixture(array $files, Closure $callback): mixed
         }
 
         $loader->addPsr4($namespacePrefix, $root.'/app');
+
+        // Pest Arch analyzes declared classes. Registering a PSR-4 prefix alone
+        // does not load fixture files, so explicitly load every fixture before
+        // creating the architecture expectation.
+        foreach (array_keys($files) as $relativePath) {
+            require_once $root.'/'.$relativePath;
+        }
+
         resetArchitectureObjectsRepository();
 
         return $callback($root, $namespacePrefix);
