@@ -3,6 +3,7 @@
 use Closure;
 use Composer\Autoload\ClassLoader;
 use FilesystemIterator;
+use Pest\Arch\Exceptions\ArchExpectationFailedException;
 use Pest\Arch\Repositories\ObjectsRepository;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -72,7 +73,7 @@ function expectArchitectureViolation(Closure $assertion, string $forbiddenNamesp
 {
     try {
         $assertion();
-    } catch (Throwable $exception) {
+    } catch (ArchExpectationFailedException $exception) {
         expect($exception->getMessage())->toContain($forbiddenNamespace);
 
         return;
