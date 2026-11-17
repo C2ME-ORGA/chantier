@@ -71,11 +71,13 @@ final class Kernel
 }
 PHP,
     ], function (string $root): void {
-        expect(fn () => arch($root)
-            ->expect('App\Core')
-            ->not
-            ->toUse('App\Domains'))
-            ->toThrow(\Throwable::class);
+        expectArchitectureViolation(
+            fn () => arch($root)
+                ->expect('App\Core')
+                ->not
+                ->toUse('App\Domains'),
+            'App\Domains',
+        );
     });
 });
 
@@ -97,15 +99,17 @@ final class ProjectReader
 }
 PHP,
     ], function (string $root): void {
-        expect(fn () => arch($root)
-            ->expect('App\Domains\Projects')
-            ->not
-            ->toUse('App\Domains\Clients')
-            ->ignoring([
-                'App\Domains\Clients\Contracts',
-                'App\Domains\Clients\Events\Integration',
-            ]))
-            ->toThrow(\Throwable::class);
+        expectArchitectureViolation(
+            fn () => arch($root)
+                ->expect('App\Domains\Projects')
+                ->not
+                ->toUse('App\Domains\Clients')
+                ->ignoring([
+                    'App\Domains\Clients\Contracts',
+                    'App\Domains\Clients\Events\Integration',
+                ]),
+            'App\Domains\Clients',
+        );
     });
 });
 
@@ -132,6 +136,6 @@ PHP,
                 'App\Domains\Clients\Contracts',
                 'App\Domains\Clients\Events\Integration',
             ]))
-            ->not->toThrow(\Throwable::class);
+            ->not->toThrow(Throwable::class);
     });
 });
