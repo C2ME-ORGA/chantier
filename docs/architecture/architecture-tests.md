@@ -46,6 +46,21 @@ Les 18 domaines sont énumérés explicitement dans le test. Toute évolution de
 
 L'autorisation syntaxique d'importer une surface publique CHAN-28 ne classe pas automatiquement une relation métier comme autorisée au sens de CHAN-29. Les 130 interactions recensées dans la matrice Lot C restent « À qualifier » tant qu'une décision technique traçable ne confirme pas le consommateur, le fournisseur, la capacité et les conditions. Ces tests contrôlent la frontière de code, pas l'existence ni la légitimité métier de chaque relation.
 
+## Contrôles de structure PHP — CHAN-31 Lot E
+
+Le fichier `DomainStructureRulesTest.php` ajoute deux contrôles ciblés sur les sources réellement présentes sous `app/Core` et `app/Domains` :
+
+1. **Cohérence PSR-4** : pour chaque déclaration de classe, interface, trait ou enum trouvée dans un fichier PHP, le namespace et le nom déclaré doivent correspondre au chemin relatif au mapping Composer `App\\` → `app/`.
+2. **Cycles d'imports explicites** : construction d'un graphe à partir des instructions PHP `use` qui ciblent des classes présentes dans ces répertoires, puis recherche de cycles dans ce graphe.
+
+Le contrôle PSR-4 ignore les fichiers PHP sans déclaration de type nommée. Le graphe de cycles ne considère que les imports explicites `use` entre classes identifiées dans le périmètre ; il ne constitue pas un analyseur complet de toutes les références possibles du langage PHP. En particulier, les références pleinement qualifiées sans import, les résolutions dynamiques, les appels au conteneur, les dépendances SQL et les dépendances indirectes via configuration ne sont pas certifiés par ce contrôle.
+
+Ces tests n'ajoutent aucune dépendance Composer et ne créent aucun fichier temporaire dans l'arborescence applicative. Ils s'exécutent avec la suite Architecture :
+
+```bash
+php artisan test --testsuite=Architecture
+```
+
 ## État de couverture
 
 À ce stade, `app/Core/` et les répertoires `app/Domains/*` ne contiennent pas encore de systèmes métier. Les règles du lot C définissent les frontières attendues, mais leur exécution ne constitue pas une preuve de conformité de dépendances métier réelles tant que ces composants n’existent pas. Les tests négatifs représentatifs sont reportés jusqu'à l'apparition des premiers systèmes dans les domaines.
