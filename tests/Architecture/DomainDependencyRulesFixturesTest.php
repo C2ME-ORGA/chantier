@@ -55,7 +55,7 @@ PHP,
             ->expect('App\Core')
             ->not
             ->toUse('App\Domains'))
-            ->toThrow(\\Throwable::class);
+            ->toThrow(\Throwable::class);
     });
 });
 
@@ -85,7 +85,7 @@ PHP,
                 'App\Domains\Clients\Contracts',
                 'App\Domains\Clients\Events\Integration',
             ]))
-            ->toThrow(\\Throwable::class);
+            ->toThrow(\Throwable::class);
     });
 });
 
@@ -112,6 +112,6 @@ PHP,
                 'App\Domains\Clients\Contracts',
                 'App\Domains\Clients\Events\Integration',
             ]))
-            ->not->toThrow(\\Throwable::class);
+            ->not->toThrow(\Throwable::class);
     });
 });
