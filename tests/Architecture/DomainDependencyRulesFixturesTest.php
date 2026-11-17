@@ -1,5 +1,11 @@
 <?php
 
+use Closure;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use Throwable;
+
 function withArchitectureFixture(array $files, Closure $callback): mixed
 {
     $root = sys_get_temp_dir().'/c2me-architecture-'.bin2hex(random_bytes(8));
