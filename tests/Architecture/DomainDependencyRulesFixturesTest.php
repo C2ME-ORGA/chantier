@@ -4,6 +4,7 @@ use Closure;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use RuntimeException;
 use Throwable;
 
 function withArchitectureFixture(array $files, Closure $callback): mixed
@@ -37,6 +38,19 @@ function withArchitectureFixture(array $files, Closure $callback): mixed
 
         rmdir($root);
     }
+}
+
+function expectArchitectureViolation(Closure $assertion, string $forbiddenNamespace): void
+{
+    try {
+        $assertion();
+    } catch (Throwable $exception) {
+        expect($exception->getMessage())->toContain($forbiddenNamespace);
+
+        return;
+    }
+
+    throw new RuntimeException("Expected an architecture violation for {$forbiddenNamespace}.");
 }
 
 it('détecte une dépendance interdite de Core vers un domaine dans une fixture isolée', function (): void {
