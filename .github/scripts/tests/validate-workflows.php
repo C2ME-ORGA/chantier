@@ -74,6 +74,28 @@ function job_environment(mixed $environment): string
     return is_string($environment) ? $environment : '';
 }
 
+/**
+ * Retourne le nom affiché d'un job, ou null si sa déclaration est inexploitable.
+ *
+ * GitHub Actions affiche l'identifiant du job lorsqu'aucun `name` n'est déclaré.
+ *
+ * @param  array<string, mixed>  $jobs
+ */
+function job_display_name(array $jobs, string $jobId): ?string
+{
+    $job = $jobs[$jobId] ?? null;
+
+    if (! is_array($job)) {
+        return null;
+    }
+
+    if (! array_key_exists('name', $job)) {
+        return $jobId;
+    }
+
+    return is_string($job['name']) && $job['name'] !== '' ? $job['name'] : null;
+}
+
 function workflow_paths(string $directory): array
 {
     $paths = glob($directory.'/*.yml') ?: [];
@@ -301,18 +323,33 @@ if ($tests !== []) {
         'tests.yml doit limiter les permissions à contents:read.'
     );
 
-    $mariadbJobName = is_array($jobs['mariadb'] ?? null) ? ($jobs['mariadb']['name'] ?? null) : null;
-    $packageJobName = is_array($jobs['package-linux'] ?? null) ? ($jobs['package-linux']['name'] ?? null) : null;
+    $expectedJobs = [
+        'ci' => 'ci',
+        'mariadb' => 'mariadb-10.11',
+        'package-linux' => 'package-linux',
+    ];
 
-    check(isset($jobs['ci']), 'tests.yml doit définir le job ci.');
-    check(
-        $mariadbJobName === 'mariadb-10.11',
-        'tests.yml doit définir le job mariadb-10.11.'
+    $declaredJobs = array_map(
+        static fn (string|int $job): string => (string) $job,
+        array_keys($jobs)
     );
+    $expectedJobIds = array_keys($expectedJobs);
+    sort($declaredJobs);
+    sort($expectedJobIds);
+
     check(
-        $packageJobName === 'package-linux',
-        'tests.yml doit définir le job package-linux.'
+        $declaredJobs === $expectedJobIds,
+        'tests.yml doit déclarer exactement les jobs ci, mariadb et package-linux (déclaré : '.implode(', ', $declaredJobs).').'
     );
+
+    foreach ($expectedJobs as $jobId => $expectedJobName) {
+        $jobName = job_display_name($jobs, $jobId);
+
+        check(
+            $jobName === $expectedJobName,
+            "tests.yml : le job {$jobId} doit être affiché sous le nom {$expectedJobName} (configuré : ".($jobName ?? 'aucun').').'
+        );
+    }
 
     $deploymentJobs = array_values(array_filter(
         array_keys($jobs),

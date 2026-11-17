@@ -14,9 +14,10 @@ declare(strict_types=1);
  * Retourne les branches filtrées pour un événement de déclenchement.
  *
  * Retourne `null` lorsque la configuration est invalide : événement absent,
- * configuration non tabulaire, `branches` non textuel ou entrée de branche non
- * textuelle. Une liste vide n'est pas considérée comme invalide : elle ne
- * satisfait simplement pas la comparaison attendue par l'appelant.
+ * configuration non tabulaire, clé `branches` explicitement définie à `null`,
+ * `branches` non textuel ou entrée de branche non textuelle. Une clé `branches`
+ * absente retourne une liste vide, tout comme une liste vide : ces formes ne
+ * satisfont simplement pas la comparaison attendue par l'appelant.
  *
  * @param  array<string, mixed>  $trigger
  * @return list<string>|null
@@ -37,7 +38,15 @@ function c2me_workflow_trigger_branches(array $trigger, string $event): ?array
         return null;
     }
 
-    $branches = $configuration['branches'] ?? [];
+    if (! array_key_exists('branches', $configuration)) {
+        return [];
+    }
+
+    $branches = $configuration['branches'];
+
+    if ($branches === null) {
+        return null;
+    }
 
     if (is_string($branches)) {
         return [$branches];

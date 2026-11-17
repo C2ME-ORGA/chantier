@@ -67,3 +67,8 @@ test('distingue un événement absent d un événement sans filtre', function ()
     expect(c2me_workflow_trigger_branches([], 'push'))->toBeNull()
         ->and(c2me_workflow_trigger_branches(['push' => null], 'push'))->toBe([]);
 });
+
+test('distingue une clé branches absente d une clé définie à null', function (): void {
+    expect(c2me_workflow_trigger_branches(['push' => []], 'push'))->toBe([])
+        ->and(c2me_workflow_trigger_branches(['push' => ['branches' => null]], 'push'))->toBeNull();
+});
