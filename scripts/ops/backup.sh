@@ -533,9 +533,11 @@ create_set() {
   [[ ! -e "$C2ME_WORK_DIR" ]] || c2me_die "un jeu portant cet identifiant existe déjà : $C2ME_SET_ID"
   [[ ! -e "$C2ME_BACKUP_ROOT/sets/$C2ME_SET_ID" ]] || c2me_die "jeu déjà présent dans sets/ : $C2ME_SET_ID"
 
+  # Enregistrer avant création : un signal reçu entre mkdir et l enregistrement
+  # ne doit jamais laisser une zone de travail hors de C2ME_CLEANUP_PATHS.
+  c2me_register_cleanup "$C2ME_WORK_DIR"
   mkdir -- "$C2ME_WORK_DIR"
   c2me_chmod 0700 -- "$C2ME_WORK_DIR"
-  c2me_register_cleanup "$C2ME_WORK_DIR"
 
   C2ME_CONSISTENCY_STARTED="$(c2me_iso_now)"
 

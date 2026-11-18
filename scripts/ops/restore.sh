@@ -252,9 +252,12 @@ prepare_work_dir() {
 
   C2ME_WORK_DIR="$C2ME_RESTORE_WORK_ROOT/$set_id-$(c2me_random_hex8)"
   [[ ! -e "$C2ME_WORK_DIR" ]] || c2me_die "zone de travail déjà existante : $C2ME_WORK_DIR"
+
+  # Enregistrer avant création : un signal reçu entre mkdir et l enregistrement
+  # ne doit jamais laisser une zone de travail hors de C2ME_CLEANUP_PATHS.
+  c2me_register_cleanup "$C2ME_WORK_DIR"
   mkdir -- "$C2ME_WORK_DIR"
   c2me_chmod 0700 -- "$C2ME_WORK_DIR"
-  c2me_register_cleanup "$C2ME_WORK_DIR"
 }
 
 prepare_state_dir() {
