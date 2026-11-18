@@ -167,6 +167,8 @@ Aucune sauvegarde/restauration réelle ni copie hors site ne doit être considé
 
 ## Sécurité
 
+Le socle global de rôles et permissions est documenté dans [`docs/development/authorization.md`](docs/development/authorization.md). Les autorisations par ressource, notamment par chantier, relèvent des Policies Laravel.
+
 - Ne jamais versionner `.env`, des secrets, clés privées, exports de base de données ou données réelles.
 - Conserver `.env.example` sans identifiants ni secrets.
 - Utiliser des comptes et bases dédiés aux environnements de développement et de test.
