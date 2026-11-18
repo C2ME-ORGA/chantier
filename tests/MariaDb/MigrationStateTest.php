@@ -28,6 +28,11 @@ test('les tables créées par les migrations existent', function () {
         'jobs',
         'job_batches',
         'failed_jobs',
+        'permissions',
+        'roles',
+        'model_has_permissions',
+        'model_has_roles',
+        'role_has_permissions',
     ];
 
     foreach ($tables as $table) {

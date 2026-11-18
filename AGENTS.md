@@ -103,6 +103,7 @@ Ne pas créer de `tailwind.config.js` par réflexe : il n'est pas requis par la 
 - Les migrations doivent être compatibles avec une livraison progressive et réversibles lorsque cela est possible.
 - Ne jamais exécuter une commande destructive sur une base qui n'est pas explicitement isolée.
 - Toute synchronisation hors connexion doit être idempotente et traçable ; ne pas appliquer un mécanisme générique « last-write-wins » aux données financières ou aux validations métier.
+- Le socle global de rôles et permissions est documenté dans [docs/development/authorization.md](docs/development/authorization.md) ; les autorisations par ressource relèvent des Policies.
 
 ## Tests, qualité et contrôles
 
