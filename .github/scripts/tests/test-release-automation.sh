@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 #
-# Tests de l'automatisation de release : génération des notes et filtres du
-# workflow GitHub Actions.
+# Tests de l'automatisation de release : génération des notes, validation des
+# tags de release et filtres du workflow GitHub Actions.
 
+# shellcheck disable=SC2016 # backticks et ${...} recherchés littéralement dans les fichiers
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 project_root="$(cd "$script_dir/../.." && pwd)"
 notes_script="$script_dir/generate-release-notes.sh"
+release_tag_script="$script_dir/deploy/validate-release-tag.sh"
 workflow="$project_root/.github/workflows/release.yml"
 work_dir="$(mktemp -d)"
 
@@ -85,6 +87,19 @@ commit_change() {
   )
 }
 
+commit_new_file() {
+  local repo="$1"
+  local file="$2"
+  local message="$3"
+
+  (
+    cd "$repo"
+    printf '%s\n' "$message" > "$file"
+    git add "$file"
+    git commit --quiet -m "$message"
+  )
+}
+
 tag_annotated() {
   local repo="$1"
   local tag="$2"
@@ -134,6 +149,57 @@ run_notes_fails() {
   else
     pass
   fi
+}
+
+set_remote_ref() {
+  local repo="$1"
+  local ref="$2"
+  local sha="$3"
+
+  git -C "$repo" update-ref "refs/remotes/origin/${ref}" "$sha"
+}
+
+run_in_repo() {
+  local repo="$1"
+  shift
+
+  (cd "$repo" && "$@")
+}
+
+run_fails_with_message() {
+  local label="$1"
+  local expected="$2"
+  shift 2
+
+  local log="$work_dir/last-release-tag-failure.log"
+
+  if "$@" >"$log" 2>&1; then
+    fail "$label : la commande aurait dû échouer."
+    return
+  fi
+
+  if grep -Fq -- "$expected" "$log"; then
+    pass
+  else
+    fail "$label : message attendu '$expected' absent."
+  fi
+}
+
+setup_release_tag_repo() {
+  local repo="$1"
+
+  init_repo "$repo"
+  git -C "$repo" branch -M develop
+  git -C "$repo" branch main
+  git -C "$repo" switch --quiet main
+  commit_change "$repo" "fix(hotfix): correction"
+  hotfix_commit="$(git -C "$repo" rev-parse HEAD)"
+  git -C "$repo" switch --quiet develop
+  git -C "$repo" merge --quiet --ff-only main
+  commit_change "$repo" "feat(develop): evolution"
+  develop_commit="$(git -C "$repo" rev-parse HEAD)"
+  set_remote_ref "$repo" main "$hotfix_commit"
+  set_remote_ref "$repo" develop "$develop_commit"
 }
 
 # 1. Première release sans tag précédent.
@@ -277,12 +343,16 @@ else
   pass
 fi
 
-if grep -Fq 'target_ref="origin/main"' "$workflow" \
-  && grep -Fq 'target_ref="origin/develop"' "$workflow" \
-  && grep -Fq 'tag_sha="$(git rev-parse "${RELEASE_TAG}^{commit}")"' "$workflow"; then
+if grep -Fq 'validate-release-tag.sh' "$workflow"; then
   pass
 else
-  fail "Le workflow doit comparer exactement le commit du tag avec origin/main ou origin/develop."
+  fail "Le workflow doit appeler validate-release-tag.sh."
+fi
+
+if grep -Fq 'fetch-depth: 0' "$workflow"; then
+  pass
+else
+  fail "Le workflow doit conserver fetch-depth: 0 pour récupérer l'historique et les tags."
 fi
 
 validate_line="$(grep -n 'name: Validate release tag' "$workflow" | head -n 1 | cut -d: -f1 || true)"
@@ -294,12 +364,116 @@ else
   fail "La validation du tag doit précéder la création de la release."
 fi
 
-if grep -Fq 'Tag de release invalide' "$workflow" \
-  && grep -Fq 'git cat-file -t "refs/tags/${RELEASE_TAG}"' "$workflow"; then
+if grep -Fq 'tag de release invalide' "$release_tag_script" \
+  && grep -Fq 'git cat-file -t "refs/tags/${tag}"' "$release_tag_script"; then
   pass
 else
-  fail "Le workflow doit conserver la validation stricte du format et du tag annoté."
+  fail "validate-release-tag.sh doit conserver la validation stricte du format et du tag annoté."
 fi
+
+# 10. Validation des tags de release.
+repo="$work_dir/release-tag-normal-rc"
+setup_release_tag_repo "$repo"
+tag_annotated "$repo" v1.5.0-rc.1
+output="$work_dir/release-tag-normal-rc.out"
+run_in_repo "$repo" bash "$release_tag_script" --tag v1.5.0-rc.1 > "$output"
+assert_contains "$output" "release_type=release-candidate" "RC normale"
+assert_contains "$output" "reference=origin/develop" "RC normale"
+assert_contains "$output" "head_matches=true" "RC normale"
+assert_contains "$output" "hotfix_rc=false" "RC normale"
+
+repo="$work_dir/release-tag-stable"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet main
+tag_annotated "$repo" v1.4.3
+output="$work_dir/release-tag-stable.out"
+run_in_repo "$repo" bash "$release_tag_script" --tag v1.4.3 > "$output"
+assert_contains "$output" "release_type=stable" "Version stable"
+assert_contains "$output" "reference=origin/main" "Version stable"
+assert_contains "$output" "head_matches=true" "Version stable"
+assert_contains "$output" "hotfix_rc=false" "Version stable"
+
+repo="$work_dir/release-tag-hotfix-rc"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet main
+tag_annotated "$repo" v1.4.3-rc.1
+output="$work_dir/release-tag-hotfix-rc.out"
+run_in_repo "$repo" bash "$release_tag_script" --tag v1.4.3-rc.1 > "$output"
+assert_contains "$output" "release_type=release-candidate" "RC hotfix"
+assert_contains "$output" "reference=origin/develop" "RC hotfix"
+assert_contains "$output" "head_matches=false" "RC hotfix"
+assert_contains "$output" "hotfix_rc=true" "RC hotfix"
+
+repo="$work_dir/release-tag-hotfix-not-in-develop"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet main
+commit_change "$repo" "fix(hotfix): non synchronise"
+unsynced_commit="$(git -C "$repo" rev-parse HEAD)"
+set_remote_ref "$repo" main "$unsynced_commit"
+tag_annotated "$repo" v1.4.4-rc.1
+run_fails_with_message "Main avance après synchronisation" "Synchronisez main vers develop" \
+  run_in_repo "$repo" bash "$release_tag_script" --tag v1.4.4-rc.1
+
+repo="$work_dir/release-tag-hotfix-old-main-head"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet main
+commit_new_file "$repo" "main-avance.txt" "fix(hotfix): main avance"
+new_main_commit="$(git -C "$repo" rev-parse HEAD)"
+set_remote_ref "$repo" main "$new_main_commit"
+git -C "$repo" switch --quiet develop
+git -C "$repo" merge --quiet --no-edit main
+commit_change "$repo" "feat(develop): suite apres main"
+set_remote_ref "$repo" develop "$(git -C "$repo" rev-parse HEAD)"
+git -C "$repo" tag -a v1.4.4-rc.1 -m "v1.4.4-rc.1" "$hotfix_commit"
+run_fails_with_message "RC hotfix sur ancien HEAD main" "doit pointer exactement sur le HEAD de main" \
+  run_in_repo "$repo" bash "$release_tag_script" --tag v1.4.4-rc.1
+
+repo="$work_dir/release-tag-develop-only"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet develop
+commit_change "$repo" "feat(develop): non fusionne"
+tag_annotated "$repo" v1.5.0-rc.2
+commit_change "$repo" "feat(develop): suite"
+set_remote_ref "$repo" develop "$(git -C "$repo" rev-parse HEAD)"
+run_fails_with_message "RC develop-only refusée" "doit pointer exactement sur le HEAD de main" \
+  run_in_repo "$repo" bash "$release_tag_script" --tag v1.5.0-rc.2
+
+repo="$work_dir/release-tag-stable-collision"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet main
+tag_annotated "$repo" v1.4.3
+tag_annotated "$repo" v1.4.3-rc.1
+run_fails_with_message "RC sur commit stable" "déjà pointé par un tag stable" \
+  run_in_repo "$repo" bash "$release_tag_script" --tag v1.4.3-rc.1
+
+repo="$work_dir/release-tag-multiple-stable"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet main
+tag_annotated "$repo" v1.4.3
+tag_annotated "$repo" v1.4.4
+run_fails_with_message "Deux tags stables sur le même commit" "un autre tag stable pointe déjà" \
+  run_in_repo "$repo" bash "$release_tag_script" --tag v1.4.4
+
+repo="$work_dir/release-tag-stable-not-head"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet develop
+tag_annotated "$repo" v1.4.3
+run_fails_with_message "Version stable hors HEAD main" "Créez le tag sur le HEAD actuel de main" \
+  run_in_repo "$repo" bash "$release_tag_script" --tag v1.4.3
+
+repo="$work_dir/release-tag-lightweight"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet main
+tag_lightweight "$repo" v1.4.3
+run_fails_with_message "Tag de release léger" "doit exister et être annoté" \
+  run_in_repo "$repo" bash "$release_tag_script" --tag v1.4.3
+
+repo="$work_dir/release-tag-invalid"
+setup_release_tag_repo "$repo"
+git -C "$repo" switch --quiet main
+tag_annotated "$repo" v1.4
+run_fails_with_message "Format de tag invalide" "tag de release invalide" \
+  run_in_repo "$repo" bash "$release_tag_script" --tag v1.4
 
 printf '%d assertions réussies, %d échec(s).\n' "$passed" "$failed"
 

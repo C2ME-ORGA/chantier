@@ -16,6 +16,7 @@ Les règles de branches, de commits et de Pull Requests décrites ici sont appli
 | Versionnement, tags et releases | [`release-process.md`](release-process.md) |
 | Environnements et protections | [`environments.md`](environments.md) |
 | Déploiements et promotion des artefacts | [`deployment-process.md`](deployment-process.md) |
+| Synchronisation `main` → `develop` | [`hotfix-process.md`](hotfix-process.md) |
 | Règles impératives pour les agents et contributeurs | [`AGENTS.md`](../../AGENTS.md) |
 | Présentation du projet et démarrage local | [`README.md`](../../README.md) |
 | Contrôle d'intégration continue | [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) |
@@ -121,7 +122,7 @@ Exemples invalides :
 
 7. **Supprimer la branche temporaire** après la fusion, localement et sur le dépôt distant.
 
-Après la fusion d'un `hotfix/*` dans `main`, synchroniser `develop` avec `main` afin que la correction ne soit pas perdue lors de la prochaine livraison. La synchronisation passe par une Pull Request de `main` vers `develop`, avec une fusion et non un rebase. Un push direct sur `develop` reste interdit. Si des ajustements sont nécessaires, utiliser une branche `bugfix/CHAN-<numéro>-synchronisation-hotfix` créée depuis `develop`.
+Après la fusion d'un `hotfix/*` dans `main`, synchroniser `develop` avec `main` afin que la correction ne soit pas perdue lors de la prochaine livraison. La synchronisation passe par une Pull Request vers `develop`, avec une fusion et non un rebase. Un push direct sur `develop` reste interdit. La procédure détaillée — préflight des SHA, détection du hotfix déjà intégré, PR directe ou branche `bugfix/CHAN-<numéro>-synchronisation-hotfix`, résolution des conflits et vérification de l'historique — est définie dans [`hotfix-process.md`](hotfix-process.md).
 
 ## Conventions de commits
 

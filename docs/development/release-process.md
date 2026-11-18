@@ -17,6 +17,7 @@ Ce document définit le versionnement, les tags, les notes de version et le proc
 | Déploiements et promotion des artefacts | [`deployment-process.md`](deployment-process.md) |
 | Versionnement, tags et releases | Ce document |
 | Workflow de release | [`.github/workflows/release.yml`](../../.github/workflows/release.yml) |
+| Validation des tags de release | [`.github/scripts/deploy/validate-release-tag.sh`](../../.github/scripts/deploy/validate-release-tag.sh) |
 | Génération des notes de version | [`.github/scripts/generate-release-notes.sh`](../../.github/scripts/generate-release-notes.sh) |
 | Contrôle d'intégration continue | [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) |
 | Règles impératives pour les agents et contributeurs | [`AGENTS.md`](../../AGENTS.md) |
@@ -118,9 +119,10 @@ git tag -a v1.4.0-rc.1 -m "v1.4.0-rc.1"
 | Type de tag | Commit cible | Branche de référence |
 | --- | --- | --- |
 | Stable `vX.Y.Z` | Commit de `main` issu de la Pull Request de livraison ou du hotfix, après succès de `ci`. | `main` |
-| Release candidate `vX.Y.Z-rc.N` | Commit de tête de `develop` après intégration des changements de la version. | `develop` |
+| Release candidate normale `vX.Y.Z-rc.N` | Commit de tête de `develop` après intégration des changements de la version. | `develop` |
+| Release candidate de hotfix `vX.Y.Z-rc.N` | Commit HEAD de `main`, présent dans l'historique de `develop`, non déjà pointé par un tag stable. | `main` et `develop` |
 
-Le workflow de release vérifie que le tag pointe exactement sur le HEAD de `origin/main` pour une version stable et sur le HEAD de `origin/develop` pour une release candidate. Un tag créé sur un autre commit, une branche temporaire ou un HEAD dépassé est refusé.
+Le workflow de release vérifie que le tag stable pointe exactement sur le HEAD de `origin/main`. Une release candidate normale doit pointer exactement sur le HEAD de `origin/develop`. Une release candidate de hotfix doit pointer exactement sur le HEAD de `origin/main`, à condition que ce commit soit présent dans l'historique de `origin/develop` et qu'il ne soit pas déjà pointé par un tag stable. Un tag qui ne satisfait pas ces règles est refusé. Ces règles sont appliquées par [`validate-release-tag.sh`](../../.github/scripts/deploy/validate-release-tag.sh).
 
 ### Immuabilité
 
@@ -219,11 +221,13 @@ git tag -a v0.5.0-rc.1 -m "v0.5.0-rc.1"
 git push origin v0.5.0-rc.1
 ```
 
-Le tag doit être créé sur le HEAD courant de `develop`. Ne pas fusionner d'autre changement avant la fin du workflow : la vérification exige une correspondance exacte entre le tag et le HEAD de `origin/develop`.
+Pour une release candidate normale, le tag doit être créé sur le HEAD courant de `develop`. Ne pas fusionner d'autre changement avant la fin du workflow : la vérification exige une correspondance exacte entre le tag et le HEAD de `origin/develop`.
+
+Pour une release candidate de hotfix, suivre le §6 : le tag est créé sur le HEAD de `main`, après synchronisation de `main` vers `develop`. Il doit appartenir à l'historique de `develop`. Si `main` avance entre la synchronisation et la création de la RC, synchroniser à nouveau `develop` et créer la RC sur le nouveau HEAD de `main`.
 
 Le push du tag déclenche le workflow de release. Celui-ci :
 
-1. vérifie le format du tag, son caractère annoté et sa correspondance exacte avec le HEAD de `develop` ;
+1. vérifie le format du tag, son caractère annoté et sa cible : HEAD de `develop` pour une RC normale, HEAD de `main` présent dans `develop` pour une RC de hotfix, sans tag stable déjà présent sur ce commit ;
 2. génère les notes de version ;
 3. crée ou met à jour une release GitHub marquée **pre-release**.
 
@@ -309,10 +313,15 @@ Un hotfix corrige une anomalie urgente en production et ne doit contenir ni fonc
 1. créer `hotfix/CHAN-<numéro>-<description>` depuis `main` ;
 2. ouvrir une Pull Request vers `main` et obtenir un `ci` vert ;
 3. fusionner avec `merge` ou `rebase` ;
-4. attendre le `ci` sur `main` ;
-5. créer le tag `PATCH` sur `main`, par exemple `v0.5.1` ;
-6. vérifier et publier la release en brouillon ;
-7. synchroniser `develop` depuis `main` par une Pull Request dédiée.
+4. attendre le `ci` sur `main` et identifier le commit de fusion `M` ;
+5. synchroniser `main` vers `develop` par une Pull Request dédiée, avec une fusion classique, puis attendre la CI verte ; la procédure de préflight, de branche de synchronisation et de résolution des conflits est définie dans [`hotfix-process.md`](hotfix-process.md) ;
+6. créer une release candidate annotée `vX.Y.Z-rc.N` sur `M`, qui doit être le HEAD de `main` et être présent dans `develop` ;
+7. pousser la RC, vérifier le déploiement staging et exécuter la recette ;
+8. créer le tag stable annoté `vX.Y.Z` sur le HEAD de `main` (`M` si `main` n'a pas avancé), après succès du staging ;
+9. vérifier la release en brouillon, la ligne `Staging-Candidate` et les notes, puis publier ;
+10. laisser `deploy-production` promouvoir le même artefact et exécuter les contrôles post-déploiement.
+
+La RC de hotfix est acceptée par [`validate-release-tag.sh`](../../.github/scripts/deploy/validate-release-tag.sh) si son commit est le HEAD de `main`, appartient à `develop` et n'est pas déjà pointé par un tag stable. Si `main` avance entre la synchronisation et la création de la RC, ou entre la RC et le tag stable, une nouvelle RC est obligatoire après synchronisation de `main` vers `develop`.
 
 Si le correctif impose une rupture de compatibilité, ce n'est pas un hotfix : il suit le processus normal de version majeure.
 
@@ -349,7 +358,10 @@ Le workflow [`.github/workflows/release.yml`](../../.github/workflows/release.ym
 Il :
 
 - valide le format du tag et vérifie qu'il est annoté ;
-- refuse un tag stable qui ne pointe pas exactement sur le HEAD de `main` et une release candidate qui ne pointe pas exactement sur le HEAD de `develop` ;
+- refuse un tag stable qui ne pointe pas exactement sur le HEAD de `main` ;
+- refuse une release candidate normale qui ne pointe pas exactement sur le HEAD de `develop` ;
+- accepte une release candidate de hotfix sur le HEAD de `main`, présent dans `develop` et non déjà pointé par un tag stable ;
+- applique ces règles via [`validate-release-tag.sh`](../../.github/scripts/deploy/validate-release-tag.sh) ;
 - génère les notes avec le script dédié ;
 - crée une release **pre-release** publiée pour une release candidate ;
 - crée une release **brouillon** pour une version stable ;

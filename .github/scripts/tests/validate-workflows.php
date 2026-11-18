@@ -264,6 +264,9 @@ if ($release !== []) {
     check(($releaseTriggers['push']['tags'] ?? []) === ['v*'], 'release doit rester déclenché par les tags v*.');
     check(str_contains($rawRelease, '--prerelease'), 'release doit continuer à publier les candidates en prérelease.');
     check(str_contains($rawRelease, '--draft'), 'release doit continuer à créer les versions stables en brouillon.');
+    check(str_contains($rawRelease, 'validate-release-tag.sh'), 'release doit valider les tags via validate-release-tag.sh.');
+    check(is_file($projectRoot.'/.github/scripts/deploy/validate-release-tag.sh'), 'validate-release-tag.sh doit exister.');
+    check(str_contains($rawRelease, 'fetch-depth: 0'), 'release doit conserver fetch-depth: 0 pour récupérer l\'historique et les tags.');
     check(str_contains($rawRelease, 'stable-candidate.sh'), 'release doit référencer la candidate staging des versions stables.');
     check(
         strpos($rawRelease, 'stable-candidate.sh') < strpos($rawRelease, 'name: Create or update GitHub release'),
