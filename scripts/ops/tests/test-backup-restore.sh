@@ -141,8 +141,8 @@ if [[ -n "${FAKE_DUMP_SLEEP:-}" ]]; then
   sleep "$FAKE_DUMP_SLEEP"
 fi
 if [[ -n "${FAKE_DUMP_BLOCK:-}" ]]; then
-  printf '%s\n' "$$" >"${FAKE_DUMP_BLOCK_PID:-/dev/null}"
   trap 'printf stopped >"${FAKE_DUMP_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+  printf '%s\n' "$$" >"${FAKE_DUMP_BLOCK_PID:-/dev/null}"
   while :; do
     sleep 1
   done
@@ -167,8 +167,8 @@ done
 
 if ((has_query == 0)); then
   if [[ -n "${FAKE_MYSQL_BLOCK:-}" ]]; then
-    printf '%s\n' "$$" >"${FAKE_MYSQL_BLOCK_PID:-/dev/null}"
     trap 'printf stopped >"${FAKE_MYSQL_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+    printf '%s\n' "$$" >"${FAKE_MYSQL_BLOCK_PID:-/dev/null}"
     while :; do
       sleep 1
     done
@@ -246,8 +246,8 @@ if [[ -n "${FAKE_AGE_SLEEP:-}" ]]; then
   sleep "$FAKE_AGE_SLEEP"
 fi
 if [[ -n "${FAKE_AGE_BLOCK:-}" ]]; then
-  printf '%s\n' "$$" >"${FAKE_AGE_BLOCK_PID:-/dev/null}"
   trap 'printf stopped >"${FAKE_AGE_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+  printf '%s\n' "$$" >"${FAKE_AGE_BLOCK_PID:-/dev/null}"
   while :; do
     sleep 1
   done
@@ -276,8 +276,8 @@ FAKE
 cat >"$fake_bin/tar" <<FAKE
 #!/usr/bin/env bash
 if [[ -n "\${FAKE_TAR_BLOCK:-}" && " \$* " == *" --extract "* ]]; then
-  printf '%s\n' "\$\$" >"\${FAKE_TAR_BLOCK_PID:-/dev/null}"
   trap 'printf stopped >"\${FAKE_TAR_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+  printf '%s\n' "\$\$" >"\${FAKE_TAR_BLOCK_PID:-/dev/null}"
   while :; do
     sleep 1
   done
@@ -296,8 +296,8 @@ for arg in "\$@"; do
 done
 if [[ -n "\${FAKE_GZIP_BLOCK:-}" ]]; then
   if [[ "\${FAKE_GZIP_BLOCK}" == 'any' || "\${FAKE_GZIP_BLOCK}" == "\$mode" ]]; then
-    printf '%s\n' "\$\$" >"\${FAKE_GZIP_BLOCK_PID:-/dev/null}"
     trap 'printf stopped >"\${FAKE_GZIP_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+    printf '%s\n' "\$\$" >"\${FAKE_GZIP_BLOCK_PID:-/dev/null}"
     while :; do
       sleep 1
     done
@@ -324,8 +324,8 @@ while (($#)); do
 done
 
 if [[ -n "${FAKE_ZSTD_BLOCK:-}" && "${FAKE_ZSTD_BLOCK}" == "$mode" ]]; then
-  printf '%s\n' "$$" >"${FAKE_ZSTD_BLOCK_PID:-/dev/null}"
   trap 'printf stopped >"${FAKE_ZSTD_BLOCK_STOP:-/dev/null}"; exit 143' TERM
+  printf '%s\n' "$$" >"${FAKE_ZSTD_BLOCK_PID:-/dev/null}"
   while :; do
     sleep 1
   done
@@ -959,127 +959,6 @@ else
   wait "$probe_pid" 2>/dev/null || true
 fi
 
-wait_for_nonempty() {
-  local directory="$1"
-  local attempt
-
-  for attempt in $(seq 1 100); do
-    if [[ -n "$(ls -A "$directory" 2>/dev/null)" ]]; then
-      return 0
-    fi
-    sleep 0.1
-  done
-
-  return 1
-}
-
-run_with_signal() {
-  local signal="$1"
-  local expected_code="$2"
-  local label="$3"
-  local log="$work_dir/signal-${label}.log"
-  local sets_before sets_after pid status
-
-  sets_before="$(ls -1 "$backup_root/sets" | wc -l | tr -d ' ')"
-
-  FAKE_DUMP_SLEEP=10 bash "$ops_dir/backup.sh" set --env staging --trigger manual \
-    --confirm-workers-stopped --confirm-scheduler-disabled >"$log" 2>&1 &
-  pid=$!
-
-  if wait_for_nonempty "$backup_root/incoming"; then
-    kill "-$signal" "$pid" 2>/dev/null
-    wait "$pid" 2>/dev/null
-    status=$?
-
-    if [[ "$status" == "$expected_code" ]]; then
-      pass
-    else
-      fail "signal $signal : code retour $status au lieu de $expected_code."
-      printf '%s\n' '--- journal du signal ---' >&2
-      sed -n '1,120p' "$log" >&2 || true
-    fi
-
-    sets_after="$(ls -1 "$backup_root/sets" | wc -l | tr -d ' ')"
-
-    if [[ "$sets_before" == "$sets_after" ]]; then
-      pass
-    else
-      fail "signal $signal : un jeu incomplet a été promu."
-    fi
-
-    if [[ -z "$(ls -A "$backup_root/incoming" 2>/dev/null)" ]]; then
-      pass
-    else
-      fail "signal $signal : la zone de travail n'a pas été nettoyée."
-      ls -la "$backup_root/incoming" >&2 || true
-      find "$backup_root/incoming" -maxdepth 2 -print >&2 2>/dev/null || true
-    fi
-
-    if [[ ! -e "$backup_root/.lock" ]]; then
-      pass
-    else
-      fail "signal $signal : le verrou n'a pas été nettoyé."
-    fi
-  else
-    fail "signal $signal : la sauvegarde n'a pas démarré."
-    kill -KILL "$pid" 2>/dev/null || true
-    wait "$pid" 2>/dev/null || true
-    rm -rf "$backup_root/.lock"
-  fi
-}
-
-if ((signals_supported == 1)); then
-  set -m
-  run_with_signal TERM 143 'term'
-  run_with_signal INT 130 'int'
-  set +m
-else
-  skip 'les signaux ne peuvent pas être délivrés sur cette plateforme : tests TERM/INT non exécutés.'
-fi
-
-if ((signals_supported == 1)); then
-  restore_target="$work_dir/restauration/signal"
-  FAKE_AGE_SLEEP=10 bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
-    --target-dir "$restore_target" --owner "$owner" --identity "$work_dir/id.age" \
-    >"$work_dir/signal-restore.log" 2>&1 &
-  restore_pid=$!
-
-  if wait_for_nonempty "$work_dir/work"; then
-    kill -TERM "$restore_pid" 2>/dev/null
-    wait "$restore_pid" 2>/dev/null
-    restore_status=$?
-
-    if [[ "$restore_status" == '143' ]]; then
-      pass
-    else
-      fail "restauration interrompue : code $restore_status au lieu de 143."
-    fi
-
-    if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
-      pass
-    else
-      fail 'une interruption de restauration doit supprimer la zone de travail déchiffrée.'
-    fi
-
-    if [[ ! -e "$backup_root/.lock" ]]; then
-      pass
-    else
-      fail 'une interruption de restauration doit libérer le verrou.'
-    fi
-
-    assert_dir_absent "$restore_target" 'aucune cible créée par une restauration interrompue'
-  else
-    fail 'la restauration n a pas démarré pour le test de signal.'
-    kill -KILL "$restore_pid" 2>/dev/null || true
-    wait "$restore_pid" 2>/dev/null || true
-    rm -rf "$backup_root/.lock"
-  fi
-fi
-
-# ---------------------------------------------------------------------------
-# 14 bis. Interruption des processus enfants critiques
-# ---------------------------------------------------------------------------
-
 wait_for_file() {
   local path="$1"
   local attempt
@@ -1094,12 +973,34 @@ wait_for_file() {
   return 1
 }
 
+assert_work_root_empty() {
+  local root="$1"
+  local message="$2"
+
+  if [[ ! -d "$root" ]]; then
+    fail "$message : racine de travail absente ($root)."
+    return
+  fi
+
+  if [[ -z "$(ls -A "$root" 2>/dev/null)" ]]; then
+    pass
+  else
+    fail "$message"
+    {
+      printf '%s\n' '--- résidus de la zone de travail ---'
+      find "$root" -maxdepth 4 -print 2>/dev/null || true
+      ls -la "$root" 2>/dev/null || true
+    } >&2
+  fi
+}
+
 assert_child_interrupted() {
   local label="$1"
   local status="$2"
   local expected_code="$3"
   local pid_file="$4"
   local stop_file="$5"
+  local lock_dir="${6:-$backup_root/.lock}"
 
   if [[ "$status" == "$expected_code" ]]; then
     pass
@@ -1126,12 +1027,122 @@ assert_child_interrupted() {
     fail "$label : l enfant n a pas reçu le signal de terminaison."
   fi
 
-  if [[ ! -e "$backup_root/.lock" ]]; then
+  if [[ ! -e "$lock_dir" ]]; then
     pass
   else
     fail "$label : le verrou subsiste après l interruption."
   fi
 }
+
+prepare_signal_backup_root() {
+  local name="$1"
+  local scenario_root="$work_dir/backup-signal-$name"
+
+  mkdir -p "$scenario_root/incoming" \
+    "$scenario_root/sets" \
+    "$scenario_root/expired" \
+    "$scenario_root/ledger/restore-reports" \
+    "$scenario_root/ledger/restore-state"
+
+  printf '%s\n' "$scenario_root"
+}
+
+run_with_signal() {
+  local signal="$1"
+  local expected_code="$2"
+  local label="$3"
+  local scenario_root pid_file stop_file log pid status
+
+  scenario_root="$(prepare_signal_backup_root "$label")"
+  pid_file="$work_dir/signal-$label-dump.pid"
+  stop_file="$work_dir/signal-$label-dump.stop"
+  log="$work_dir/signal-$label.log"
+  rm -f "$pid_file" "$stop_file"
+
+  # Le faux mariadb-dump écrit son PID une fois la zone de travail enregistrée.
+  # L attente de ce fichier garantit que le signal intervient à l étape visée.
+  FAKE_DUMP_BLOCK=1 FAKE_DUMP_BLOCK_PID="$pid_file" FAKE_DUMP_BLOCK_STOP="$stop_file" \
+    C2ME_BACKUP_ROOT="$scenario_root" bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+    --confirm-workers-stopped --confirm-scheduler-disabled >"$log" 2>&1 &
+  pid=$!
+
+  if wait_for_file "$pid_file"; then
+    kill "-$signal" "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    status=$?
+
+    assert_child_interrupted "signal $signal" "$status" "$expected_code" "$pid_file" "$stop_file" "$scenario_root/.lock"
+
+    if [[ "$status" != "$expected_code" ]]; then
+      printf '%s\n' '--- journal du signal ---' >&2
+      sed -n '1,120p' "$log" >&2 || true
+    fi
+
+    if [[ -z "$(ls -A "$scenario_root/sets" 2>/dev/null)" ]]; then
+      pass
+    else
+      fail "signal $signal : un jeu incomplet a été promu."
+    fi
+
+    assert_work_root_empty "$scenario_root/incoming" "signal $signal : la zone de travail n'a pas été nettoyée."
+  else
+    fail "signal $signal : le double de mariadb-dump ne s est pas bloqué."
+    kill -KILL "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    rm -rf "$scenario_root/.lock"
+  fi
+}
+
+if ((signals_supported == 1)); then
+  set -m
+  run_with_signal TERM 143 'term'
+  run_with_signal INT 130 'int'
+  set +m
+else
+  skip 'les signaux ne peuvent pas être délivrés sur cette plateforme : tests TERM/INT non exécutés.'
+fi
+
+if ((signals_supported == 1)); then
+  restore_target="$work_dir/restauration/signal"
+  restore_work_root="$work_dir/work-signal-restore"
+  restore_age_pid_file="$work_dir/signal-restore-age.pid"
+  restore_age_stop_file="$work_dir/signal-restore-age.stop"
+  rm -f "$restore_age_pid_file" "$restore_age_stop_file"
+
+  # Le faux age écrit son PID après l enregistrement de la zone et des
+  # artefacts : le signal interrompt réellement le déchiffrement.
+  FAKE_AGE_BLOCK=1 FAKE_AGE_BLOCK_PID="$restore_age_pid_file" FAKE_AGE_BLOCK_STOP="$restore_age_stop_file" \
+    C2ME_RESTORE_WORK_ROOT="$restore_work_root" bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
+    --target-dir "$restore_target" --owner "$owner" --identity "$work_dir/id.age" \
+    >"$work_dir/signal-restore.log" 2>&1 &
+  restore_pid=$!
+
+  if wait_for_file "$restore_age_pid_file"; then
+    kill -TERM "$restore_pid" 2>/dev/null
+    wait "$restore_pid" 2>/dev/null
+    restore_status=$?
+
+    assert_child_interrupted 'restauration interrompue' "$restore_status" '143' \
+      "$restore_age_pid_file" "$restore_age_stop_file"
+
+    if [[ "$restore_status" != '143' ]]; then
+      printf '%s\n' '--- journal de la restauration interrompue ---' >&2
+      sed -n '1,120p' "$work_dir/signal-restore.log" >&2 || true
+    fi
+
+    assert_work_root_empty "$restore_work_root" 'une interruption de restauration doit supprimer la zone de travail déchiffrée.'
+    assert_dir_absent "$restore_target" 'aucune cible créée par une restauration interrompue'
+  else
+    fail 'le double de age ne s est pas bloqué pour le test de signal.'
+    kill -KILL "$restore_pid" 2>/dev/null || true
+    wait "$restore_pid" 2>/dev/null || true
+    rm -rf "$backup_root/.lock"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# 14 bis. Interruption des processus enfants critiques
+# ---------------------------------------------------------------------------
 
 # Jeu compressé en zstd, créé avant les tests d interruption pour que le
 # nombre de jeux reste stable pendant ces tests.
@@ -1155,12 +1166,13 @@ fi
 sets_before_children="$(ls -1 "$backup_root/sets" | wc -l | tr -d ' ')"
 
 # mariadb-dump bloqué
+dump_scenario_root="$(prepare_signal_backup_root 'child-dump')"
 dump_pid_file="$work_dir/child-dump.pid"
 dump_stop_file="$work_dir/child-dump.stop"
 rm -f "$dump_pid_file" "$dump_stop_file"
 
 FAKE_DUMP_BLOCK=1 FAKE_DUMP_BLOCK_PID="$dump_pid_file" FAKE_DUMP_BLOCK_STOP="$dump_stop_file" \
-  bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  C2ME_BACKUP_ROOT="$dump_scenario_root" bash "$ops_dir/backup.sh" set --env staging --trigger manual \
   --confirm-workers-stopped --confirm-scheduler-disabled >"$work_dir/child-dump.log" 2>&1 &
 child_main_pid=$!
 
@@ -1169,27 +1181,25 @@ if wait_for_file "$dump_pid_file"; then
   wait "$child_main_pid" 2>/dev/null
   child_status=$?
 
-  assert_child_interrupted 'mariadb-dump interrompu' "$child_status" '143' "$dump_pid_file" "$dump_stop_file"
+  assert_child_interrupted 'mariadb-dump interrompu' "$child_status" '143' "$dump_pid_file" "$dump_stop_file" "$dump_scenario_root/.lock"
 
-  if [[ -z "$(ls -A "$backup_root/incoming" 2>/dev/null)" ]]; then
-    pass
-  else
-    fail 'mariadb-dump interrompu : zone de travail non nettoyée.'
-  fi
+  assert_work_root_empty "$dump_scenario_root/incoming" 'mariadb-dump interrompu : zone de travail non nettoyée.'
+  assert_work_root_empty "$dump_scenario_root/sets" 'mariadb-dump interrompu : un jeu incomplet a été promu.'
 else
   fail 'le double de mariadb-dump ne s est pas bloqué.'
   kill -KILL "$child_main_pid" 2>/dev/null || true
   wait "$child_main_pid" 2>/dev/null || true
-  rm -rf "$backup_root/.lock"
+  rm -rf "$dump_scenario_root/.lock"
 fi
 
 # gzip bloqué pendant la compression
+gzip_scenario_root="$(prepare_signal_backup_root 'child-gzip')"
 gzip_pid_file="$work_dir/child-gzip.pid"
 gzip_stop_file="$work_dir/child-gzip.stop"
 rm -f "$gzip_pid_file" "$gzip_stop_file"
 
 FAKE_GZIP_BLOCK=compress FAKE_GZIP_BLOCK_PID="$gzip_pid_file" FAKE_GZIP_BLOCK_STOP="$gzip_stop_file" \
-  bash "$ops_dir/backup.sh" set --env staging --trigger manual \
+  C2ME_BACKUP_ROOT="$gzip_scenario_root" bash "$ops_dir/backup.sh" set --env staging --trigger manual \
   --confirm-workers-stopped --confirm-scheduler-disabled >"$work_dir/child-gzip.log" 2>&1 &
 child_main_pid=$!
 
@@ -1198,21 +1208,25 @@ if wait_for_file "$gzip_pid_file"; then
   wait "$child_main_pid" 2>/dev/null
   child_status=$?
 
-  assert_child_interrupted 'gzip interrompu' "$child_status" '143' "$gzip_pid_file" "$gzip_stop_file"
+  assert_child_interrupted 'gzip interrompu' "$child_status" '143' "$gzip_pid_file" "$gzip_stop_file" "$gzip_scenario_root/.lock"
+
+  assert_work_root_empty "$gzip_scenario_root/incoming" 'gzip interrompu : zone de travail non nettoyée.'
+  assert_work_root_empty "$gzip_scenario_root/sets" 'gzip interrompu : un jeu incomplet a été promu.'
 else
   fail 'le double de gzip ne s est pas bloqué.'
   kill -KILL "$child_main_pid" 2>/dev/null || true
   wait "$child_main_pid" 2>/dev/null || true
-  rm -rf "$backup_root/.lock"
+  rm -rf "$gzip_scenario_root/.lock"
 fi
 
 # age bloqué pendant la restauration
+age_scenario_root="$work_dir/work-child-age"
 age_pid_file="$work_dir/child-age.pid"
 age_stop_file="$work_dir/child-age.stop"
 rm -f "$age_pid_file" "$age_stop_file"
 
 FAKE_AGE_BLOCK=1 FAKE_AGE_BLOCK_PID="$age_pid_file" FAKE_AGE_BLOCK_STOP="$age_stop_file" \
-  bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
+  C2ME_RESTORE_WORK_ROOT="$age_scenario_root" bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
   --target-dir "$work_dir/restauration/child-age" --owner "$owner" --identity "$work_dir/id.age" \
   >"$work_dir/child-age.log" 2>&1 &
 child_main_pid=$!
@@ -1230,21 +1244,18 @@ else
   rm -rf "$backup_root/.lock"
 fi
 
-if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
-  pass
-else
-  fail 'age interrompu : zone de travail déchiffrée non nettoyée.'
-fi
+assert_work_root_empty "$age_scenario_root" 'age interrompu : zone de travail déchiffrée non nettoyée.'
 
 assert_dir_absent "$work_dir/restauration/child-age" 'aucune cible créée après interruption de age'
 
 # mariadb bloqué pendant l'import d'une restauration
+mysql_scenario_root="$work_dir/work-child-mysql"
 mysql_pid_file="$work_dir/child-mysql.pid"
 mysql_stop_file="$work_dir/child-mysql.stop"
 rm -f "$mysql_pid_file" "$mysql_stop_file"
 
 FAKE_MYSQL_BLOCK=1 FAKE_MYSQL_BLOCK_PID="$mysql_pid_file" FAKE_MYSQL_BLOCK_STOP="$mysql_stop_file" \
-  bash "$ops_dir/restore.sh" db --env staging --set "$set_id" \
+  C2ME_RESTORE_WORK_ROOT="$mysql_scenario_root" bash "$ops_dir/restore.sh" db --env staging --set "$set_id" \
   --target-db 'chantier_restore_20261113_feedface' --identity "$work_dir/id.age" \
   >"$work_dir/child-mysql.log" 2>&1 &
 child_main_pid=$!
@@ -1262,19 +1273,16 @@ else
   rm -rf "$backup_root/.lock"
 fi
 
-if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
-  pass
-else
-  fail 'mariadb import interrompu : zone de travail non nettoyée.'
-fi
+assert_work_root_empty "$mysql_scenario_root" 'mariadb import interrompu : zone de travail non nettoyée.'
 
 # Décompression gzip bloquée pendant une restauration
+gzip_dec_scenario_root="$work_dir/work-child-gzip-decompress"
 gzip_dec_pid_file="$work_dir/child-gzip-decompress.pid"
 gzip_dec_stop_file="$work_dir/child-gzip-decompress.stop"
 rm -f "$gzip_dec_pid_file" "$gzip_dec_stop_file"
 
 FAKE_GZIP_BLOCK=decompress FAKE_GZIP_BLOCK_PID="$gzip_dec_pid_file" FAKE_GZIP_BLOCK_STOP="$gzip_dec_stop_file" \
-  bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
+  C2ME_RESTORE_WORK_ROOT="$gzip_dec_scenario_root" bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
   --target-dir "$work_dir/restauration/child-gzip-decompress" --owner "$owner" --identity "$work_dir/id.age" \
   >"$work_dir/child-gzip-decompress.log" 2>&1 &
 child_main_pid=$!
@@ -1292,20 +1300,17 @@ else
   rm -rf "$backup_root/.lock"
 fi
 
-if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
-  pass
-else
-  fail 'gzip decompression interrompue : zone de travail non nettoyée.'
-fi
+assert_work_root_empty "$gzip_dec_scenario_root" 'gzip decompression interrompue : zone de travail non nettoyée.'
 
 assert_dir_absent "$work_dir/restauration/child-gzip-decompress" 'aucune cible créée après interruption de gzip -d'
 
+zstd_dec_scenario_root="$work_dir/work-child-zstd-decompress"
 zstd_dec_pid_file="$work_dir/child-zstd-decompress.pid"
 zstd_dec_stop_file="$work_dir/child-zstd-decompress.stop"
 rm -f "$zstd_dec_pid_file" "$zstd_dec_stop_file"
 
 FAKE_ZSTD_BLOCK=decompress FAKE_ZSTD_BLOCK_PID="$zstd_dec_pid_file" FAKE_ZSTD_BLOCK_STOP="$zstd_dec_stop_file" \
-  bash "$ops_dir/restore.sh" files --env staging --set "$zstd_set_id" \
+  C2ME_RESTORE_WORK_ROOT="$zstd_dec_scenario_root" bash "$ops_dir/restore.sh" files --env staging --set "$zstd_set_id" \
   --target-dir "$work_dir/restauration/child-zstd-decompress" --owner "$owner" --identity "$work_dir/id.age" \
   >"$work_dir/child-zstd-decompress.log" 2>&1 &
 child_main_pid=$!
@@ -1323,21 +1328,18 @@ else
   rm -rf "$backup_root/.lock"
 fi
 
-if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
-  pass
-else
-  fail 'zstd decompression interrompue : zone de travail non nettoyée.'
-fi
+assert_work_root_empty "$zstd_dec_scenario_root" 'zstd decompression interrompue : zone de travail non nettoyée.'
 
 assert_dir_absent "$work_dir/restauration/child-zstd-decompress" 'aucune cible créée après interruption de zstd -d'
 
 # tar bloqué pendant l'extraction
+tar_scenario_root="$work_dir/work-child-tar"
 tar_pid_file="$work_dir/child-tar.pid"
 tar_stop_file="$work_dir/child-tar.stop"
 rm -f "$tar_pid_file" "$tar_stop_file"
 
 FAKE_TAR_BLOCK=1 FAKE_TAR_BLOCK_PID="$tar_pid_file" FAKE_TAR_BLOCK_STOP="$tar_stop_file" \
-  bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
+  C2ME_RESTORE_WORK_ROOT="$tar_scenario_root" bash "$ops_dir/restore.sh" files --env staging --set "$set_id" \
   --target-dir "$work_dir/restauration/child-tar" --owner "$owner" --identity "$work_dir/id.age" \
   >"$work_dir/child-tar.log" 2>&1 &
 child_main_pid=$!
@@ -1355,11 +1357,13 @@ else
   rm -rf "$backup_root/.lock"
 fi
 
-if [[ -z "$(ls -A "$work_dir/work" 2>/dev/null)" ]]; then
-  pass
-else
-  fail 'tar interrompu : zone de travail non nettoyée.'
-fi
+assert_work_root_empty "$tar_scenario_root" 'tar interrompu : zone de travail non nettoyée.'
+
+# Une racine isolée ne doit pas masquer une fuite dans les racines partagées :
+# si l override d environnement n était pas appliqué, le scénario aurait écrit
+# dans ces racines au lieu de sa racine dédiée.
+assert_work_root_empty "$work_dir/work" 'les interruptions isolées ne doivent pas fuir dans la racine de travail partagée.'
+assert_work_root_empty "$backup_root/incoming" 'les interruptions isolées ne doivent pas fuir dans incoming partagé.'
 
 sets_after_children="$(ls -1 "$backup_root/sets" | wc -l | tr -d ' ')"
 
