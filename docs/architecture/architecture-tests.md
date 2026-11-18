@@ -117,13 +117,20 @@ Le graphe orienté des dépendances statiques entre les classes déclarées sous
 - extends, implements et usage de traits ;
 - types de propriétés, paramètres, retours et types de catch ;
 - instanciations, appels statiques, constantes de classe, `instanceof` et attributs ;
-- références pleinement qualifiées sans instruction `use`.
+- références non qualifiées dans le namespace courant ;
+- références qualifiées relatives et références pleinement qualifiées sans instruction `use`.
 
-Les noms sont résolus par `NameResolver`. Seules les références vers une classe déclarée dans les racines analysées sont conservées. Les arêtes et les classes sont triées ; les cycles sont normalisés et dédupliqués avant restitution. Une erreur de parsing est exposée dans la liste `errors` et fait échouer le contrôle applicatif.
+`NameResolver` est exécuté avec `replaceNodes: false` afin de conserver les nœuds d’origine et leurs attributs de résolution. Le collecteur utilise en priorité l’attribut `resolvedName`, puis `namespacedName` en repli. Cela couvre les références non qualifiées du même namespace, les alias d’import, les imports groupés et les noms pleinement qualifiés. Les nœuds correspondant à des appels de fonctions ou à des constantes sont exclus : leurs noms ne deviennent pas des dépendances de classes.
+
+Seules les références vers une classe déclarée dans les racines analysées sont conservées. Les arêtes et les classes sont triées. L’énumération des cycles simples utilise l’algorithme de Johnson : chaque circuit élémentaire est produit une seule fois, puis normalisé par rotation et dédupliqué. Une erreur de parsing est exposée dans la liste `errors` et fait échouer le contrôle applicatif.
+
+Complexité : `O((V + E) × (C + 1))` pour un graphe de `V` classes, `E` arêtes et `C` cycles simples. Le nombre de cycles peut être exponentiel, donc le résultat lui-même peut croître fortement sur un graphe pathologique.
 
 ### Cas couverts
 
-`ImportCycleTest.php` couvre l’absence de cycle dans les racines réelles, un cycle à deux classes, un cycle à trois classes, plusieurs cycles distincts, un graphe acyclique, des références pleinement qualifiées sans `use`, des répertoires vides et une erreur de parsing.
+`PhpReferenceCollectorTest.php` vérifie la conversion en FQCN des références non qualifiées du même namespace, des références qualifiées relatives, des alias, des imports groupés et des références pleinement qualifiées. Il vérifie aussi que les appels de fonctions et les constantes ne sont pas collectés comme dépendances de classes.
+
+`ImportCycleTest.php` couvre l’absence de cycle dans les racines réelles, un cycle à deux classes, un cycle à trois classes, plusieurs cycles distincts, des cycles qui se chevauchent (`A → B → C → A` et `A → C → A`), un graphe acyclique, des références non qualifiées du même namespace, un alias d’import, un import groupé, des références pleinement qualifiées sans `use`, des répertoires vides, une erreur de parsing et le déterminisme des résultats.
 
 ### Limites
 
@@ -135,6 +142,8 @@ Le graphe ne représente que les dépendances statiques de classes. Il ne détec
 - les appels indirects via configuration, files d’attente, événements ou dispatch dynamique ;
 - les types déclarés uniquement en PHPDoc ;
 - les dépendances métier sans référence PHP, qui relèvent de CHAN-29.
+
+L’énumération exhaustive des cycles simples peut produire un volume important de chemins sur un graphe fortement maillé. Le contrôle est adapté à la taille actuelle du Modular Monolith ; il ne doit pas être transformé en analyse de graphe à grande échelle sans réévaluer ce choix.
 
 Un cycle absent du graphe PHP n’est donc pas une preuve d’absence de couplage métier. Ces contrôles complètent la revue d’architecture, ils ne la remplacent pas.
 

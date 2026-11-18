@@ -140,58 +140,103 @@ final class PhpArchitectureAnalyzer
     }
 
     /**
-     * Returns every directed cycle as an explicit "A -> B -> A" path.
+     * Returns every elementary directed cycle as an explicit "A -> B -> A" path.
+     *
+     * Johnson's algorithm enumerates all elementary circuits of a directed
+     * graph. Its complexity is O((V + E) * (C + 1)) when the graph has C simple
+     * cycles, so the output itself can be exponential in the worst case.
      *
      * @param  array<string, list<string>>  $graph
      * @return list<string>
      */
     public function cycles(array $graph): array
     {
-        $keys = array_keys($graph);
-        sort($keys);
+        $nodes = array_keys($graph);
+        sort($nodes);
 
-        $state = [];
-        $stack = [];
-        $stackIndexes = [];
-        $cycles = [];
+        $nodeIndexes = array_flip($nodes);
+        $adjacency = [];
 
-        $visit = function (string $class) use (&$visit, &$state, &$stack, &$stackIndexes, &$cycles, $graph): void {
-            $state[$class] = 1;
-            $stackIndexes[$class] = count($stack);
-            $stack[] = $class;
+        foreach ($nodes as $node) {
+            $dependencies = [];
 
-            $dependencies = $graph[$class] ?? [];
+            foreach ($graph[$node] as $dependency) {
+                if (isset($nodeIndexes[$dependency])) {
+                    $dependencies[$dependency] = true;
+                }
+            }
+
+            $dependencies = array_keys($dependencies);
             sort($dependencies);
+            $adjacency[$node] = $dependencies;
+        }
 
-            foreach ($dependencies as $dependency) {
-                if (! isset($graph[$dependency])) {
-                    continue;
-                }
+        $cycles = [];
+        $count = count($nodes);
 
-                $dependencyState = $state[$dependency] ?? 0;
+        for ($startIndex = 0; $startIndex < $count; $startIndex++) {
+            $start = $nodes[$startIndex];
+            $stack = [];
+            $blocked = [];
+            $blockedBy = [];
 
-                if ($dependencyState === 1) {
-                    $cycle = array_slice($stack, $stackIndexes[$dependency]);
-                    $cycle[] = $dependency;
-                    $cycles[$this->canonicalCycle($cycle)] = true;
-
-                    continue;
-                }
-
-                if ($dependencyState === 0) {
-                    $visit($dependency);
-                }
+            foreach ($nodes as $node) {
+                $blocked[$node] = false;
+                $blockedBy[$node] = [];
             }
 
-            array_pop($stack);
-            unset($stackIndexes[$class]);
-            $state[$class] = 2;
-        };
+            $unblock = function (string $node) use (&$unblock, &$blocked, &$blockedBy): void {
+                $blocked[$node] = false;
 
-        foreach ($keys as $class) {
-            if (($state[$class] ?? 0) === 0) {
-                $visit($class);
-            }
+                foreach (array_keys($blockedBy[$node]) as $blockingNode) {
+                    unset($blockedBy[$node][$blockingNode]);
+
+                    if ($blocked[$blockingNode]) {
+                        $unblock($blockingNode);
+                    }
+                }
+            };
+
+            $circuit = function (string $node) use (&$circuit, &$unblock, &$blocked, &$blockedBy, &$stack, &$cycles, $adjacency, $nodeIndexes, $start, $startIndex): bool {
+                $found = false;
+
+                $stack[] = $node;
+                $blocked[$node] = true;
+
+                foreach ($adjacency[$node] as $dependency) {
+                    if ($nodeIndexes[$dependency] < $startIndex) {
+                        continue;
+                    }
+
+                    if ($dependency === $start) {
+                        $cycle = [...$stack, $start];
+                        $cycles[$this->canonicalCycle($cycle)] = true;
+                        $found = true;
+
+                        continue;
+                    }
+
+                    if (! $blocked[$dependency] && $circuit($dependency)) {
+                        $found = true;
+                    }
+                }
+
+                if ($found) {
+                    $unblock($node);
+                } else {
+                    foreach ($adjacency[$node] as $dependency) {
+                        if ($nodeIndexes[$dependency] >= $startIndex) {
+                            $blockedBy[$dependency][$node] = true;
+                        }
+                    }
+                }
+
+                array_pop($stack);
+
+                return $found;
+            };
+
+            $circuit($start);
         }
 
         $paths = array_keys($cycles);

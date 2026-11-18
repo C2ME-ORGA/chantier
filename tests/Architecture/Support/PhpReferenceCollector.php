@@ -65,10 +65,38 @@ final class PhpReferenceCollector implements NodeVisitor
         }
 
         if ($node instanceof Node\Name && ! isset($this->ignoredNames[spl_object_id($node)])) {
-            $this->references[$node->toString()] = true;
+            $reference = $this->resolveReferenceName($node);
+
+            if ($reference !== null) {
+                $this->references[$reference] = true;
+            }
         }
 
         return null;
+    }
+
+    /**
+     * Uses the name resolved by NameResolver, then the namespaced fallback.
+     */
+    private function resolveReferenceName(Node\Name $name): ?string
+    {
+        if ($name->isSpecialClassName()) {
+            return null;
+        }
+
+        $resolved = $name->getAttribute('resolvedName');
+
+        if ($resolved instanceof Node\Name) {
+            return ltrim($resolved->toString(), '\\');
+        }
+
+        $namespaced = $name->getAttribute('namespacedName');
+
+        if ($namespaced instanceof Node\Name) {
+            return ltrim($namespaced->toString(), '\\');
+        }
+
+        return ltrim($name->toString(), '\\');
     }
 
     public function leaveNode(Node $node)

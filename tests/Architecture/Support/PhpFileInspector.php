@@ -38,7 +38,7 @@ final class PhpFileInspector
 
         try {
             $statements = $this->parser->parse($source) ?? [];
-            $statements = (new NodeTraverser(new NameResolver))->traverse($statements);
+            $statements = (new NodeTraverser(new NameResolver(null, ['replaceNodes' => false])))->traverse($statements);
         } catch (Error $error) {
             return $this->failure($error->getMessage());
         }
