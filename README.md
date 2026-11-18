@@ -134,7 +134,15 @@ L'installation complète de Filament 5, la création du panel d'administration e
 
 ## Architecture cible
 
-Le projet suivra une architecture **Modular Monolith**. Les domaines métier seront isolés dans `modules/`, avec des contrats explicites et des règles de dépendance documentées. Le répertoire `app/` conservera le bootstrap Laravel et les éléments transverses nécessaires. La mise en place de cette architecture est suivie séparément dans Jira.
+Le projet suit une architecture **Modular Monolith**, organisée sous `app/Core/` et `app/Domains/` :
+
+- `app/Core/` regroupe les composants techniques transverses, génériques et indépendants du métier.
+- `app/Domains/{Domaine}/` accueille le code métier dont chaque domaine est propriétaire : règles, états et données.
+- Les règles de communication entre domaines reposent sur des contrats publics et des événements d'intégration, définis comme conventions dans [`domain-communication.md`](docs/architecture/domain-communication.md) ; les composants internes d'un domaine ne sont pas accessibles aux autres domaines.
+- Les règles de dépendance sont documentées dans [`docs/architecture/`](docs/architecture/README.md) et protégées par les tests d'architecture de [`tests/Architecture/`](tests/Architecture/) : indépendance du Core, surfaces publiques inter-domaines, conformité PSR-4 et absence de cycles PHP.
+- Aucun dossier racine `modules/` ne fait partie de l'architecture retenue.
+
+Les 18 domaines constituent un cadre initial de responsabilités. Leurs périmètres détaillés seront précisés au fil des besoins réels, et leurs répertoires ne contiennent pas encore de code métier. Les contrats, événements et composants inter-domaines sont définis comme conventions d'architecture cible ; ils ne sont pas encore implémentés. Pour le détail, consulter la [documentation d'architecture](docs/architecture/README.md), l'[organisation du Core](app/Core/README.md) et l'[organisation des domaines](app/Domains/README.md).
 
 ## Workflow Git
 
