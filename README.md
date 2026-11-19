@@ -174,6 +174,8 @@ Le socle global de rôles et permissions est documenté dans [`docs/development/
 - Utiliser des comptes et bases dédiés aux environnements de développement et de test.
 - Ne pas exécuter de migration destructive sur une base contenant des données réelles.
 
+L'authentification des routes API par tokens personnels Sanctum est documentée dans [`docs/development/sanctum.md`](docs/development/sanctum.md).
+
 ## Suivi
 
 Le backlog et les décisions projet sont suivis dans [Jira – C2ME Chantier](https://sarlc2me.atlassian.net/jira/software/projects/CHAN).
