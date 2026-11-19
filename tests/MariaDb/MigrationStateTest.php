@@ -33,6 +33,7 @@ test('les tables créées par les migrations existent', function () {
         'model_has_permissions',
         'model_has_roles',
         'role_has_permissions',
+        'personal_access_tokens',
     ];
 
     foreach ($tables as $table) {

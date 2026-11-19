@@ -127,7 +127,8 @@ La séparation est la suivante :
 | --- | --- | --- |
 | Permission globale | Rôle ou permission Spatie | CHAN-38, puis CHAN-40 |
 | Autorisation sur une ressource | Policy Laravel et vérification serveur | CHAN-42 |
-| Authentification | Guard `web`, connexion et session | CHAN-43 |
+| Authentification API | Token personnel Bearer Sanctum | CHAN-39 |
+| Authentification web | Guard `web`, connexion et session | CHAN-43 |
 
 Une permission globale ne remplace jamais une Policy. Une Policy ne doit pas être contournée par une attribution directe en base.
 
@@ -172,7 +173,7 @@ Ne pas considérer comme implémentés dans ce ticket :
 - les rôles et permissions métier (CHAN-40) ;
 - les profils utilisateurs et appareils (CHAN-41) ;
 - les Policies et middleware des chantiers (CHAN-42) ;
-- Sanctum (CHAN-39) ;
+- Sanctum (CHAN-39, voir [`sanctum.md`](sanctum.md)) ;
 - la connexion et la réinitialisation du mot de passe (CHAN-43) ;
 - le MFA (CHAN-44) ;
 - la journalisation des événements de sécurité (CHAN-45) ;
@@ -188,4 +189,5 @@ Ne pas considérer comme implémentés dans ce ticket :
 - [`database/migrations/2026_11_18_161315_create_permission_tables.php`](../../database/migrations/2026_11_18_161315_create_permission_tables.php)
 - [`docs/development/testing.md`](testing.md)
 - [`docs/development/database-migrations.md`](database-migrations.md)
+- [`docs/development/sanctum.md`](sanctum.md)
 - [Documentation Spatie Laravel Permission](https://spatie.be/docs/laravel-permission)
