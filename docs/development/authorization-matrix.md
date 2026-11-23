@@ -147,11 +147,11 @@ Divergences entre documentation et code :
 
 **Finalité.** Piloter l’entreprise et exercer les décisions opérationnelles, stratégiques et financières relevant de la Direction.
 
-**Périmètre.** Tous les modules métier et toutes les données métier, avec des droits opérationnels de consultation, création, modification et validation. La gestion des habilitations techniques reste exclue.
+**Périmètre.** Tous les modules métier et toutes les données métier sont dans le champ de responsabilité de la Direction. Les capacités effectives de consultation, création, modification et validation sont toutefois définies ressource par ressource et selon les workflows du catalogue §5 ; la portée transversale ne vaut pas attribution automatique de toutes ces actions. La matrice §6 synthétise exclusivement les permissions explicites du §5. Les droits validés mais non encore traduits sont recensés dans A-16, sans extension implicite du catalogue. La gestion des habilitations techniques reste exclue.
 
-**Consultation.** Consultation transversale des données métier et RH sensibles nécessaires à ses fonctions, dans les limites légales. Pour les données médicales, accès uniquement aux informations légalement accessibles et nécessaires ; aucun accès aux documents détenus dans l’espace confidentiel des professionnels de santé.
+**Consultation.** Consultation transversale des données métier nécessaires à ses fonctions, sous réserve des permissions explicites du catalogue §5 et des Policies applicables. Pour les données RH sensibles, accès limité aux informations légalement accessibles et nécessaires. Pour les données médicales, aucun accès aux documents détenus dans l’espace confidentiel des professionnels de santé.
 
-**Création et modification.** Droits opérationnels de création et de modification dans les modules métier lorsque l’opération est prévue. Les droits de modification restent distincts des droits de consultation pour les données RH sensibles.
+**Création et modification.** Ces capacités sont attribuées uniquement lorsqu’une action correspondante est explicitement prévue pour DIR dans la ligne de ressource concernée au §5 et par le workflow applicable. Une capacité de consultation transversale ne confère pas, à elle seule, un droit de création ou de modification. Les droits sur les données RH sensibles restent strictement différenciés.
 
 **Suppression.** Aucune suppression universelle implicite. La suppression reste définie ressource par ressource, lorsqu’une décision métier l’autorise.
 
@@ -423,9 +423,9 @@ Les tableaux indiquent les actions et les rôles. Chaque action listée forme un
 Deux rôles ont une portée fonctionnelle globale décidée par 10303. Ces règles ne sont pas répétées sur chaque ligne métier :
 
 - **SA** : droit métier et administratif global sur les modules et données métier, sous réserve de l’exception médicale et des Policies CHAN-42. Les permissions SA listées dans les tableaux sont celles qui nécessitent une précision.
-- **DIR** : droits opérationnels transversaux de consultation, création, modification et validation dans les processus prévus, sous réserve des restrictions légales, médicales et des Policies CHAN-42. Les approbations, paiements, paie, RH sensibles et reporting stratégique sont listés explicitement.
+- **DIR** : responsabilité métier transversale sur les modules et les données nécessaires au pilotage. Cette responsabilité ne constitue pas une attribution générique de `view`, `create`, `update` ou `validate`. Les actions DIR effectivement inscrites au §5 sont les seules permissions explicites synthétisées au §6. Toute capacité transversale fonctionnellement confirmée mais non traduite en ligne de ressource est recensée dans A-16 comme non traduite ; toute capacité dont l’existence ou l’étendue n’est pas suffisamment établie reste à arbitrer. Les approbations financières, paiements, paie, RH sensibles et reporting stratégique conservent leurs règles spécifiques.
 
-Ces règles globales sont fonctionnellement `Validé` et techniquement `À normaliser` ; elles ne créent aucun droit d’administration des habilitations pour DIR et aucun accès automatique aux documents médicaux détaillés pour SA.
+Les règles de portée globale sont fonctionnellement `Validé` et techniquement `À normaliser` pour SA. Pour DIR, le principe de responsabilité transversale est validé, mais les permissions restent celles explicitement définies au §5 ; les écarts non traduits ou à arbitrer sont suivis en A-16. Aucun de ces principes ne crée un droit d’administration des habilitations pour DIR ni un accès automatique aux documents médicaux détaillés pour SA.
 
 ### 5.1 Identity
 
@@ -457,7 +457,9 @@ Ces règles globales sont fonctionnellement `Validé` et techniquement `À norma
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `affaires`, `chantiers`, `lots_phases` | `view`, `create`, `update` : CT ; `view` : ADM, CC, CPT, DIR selon liste | assigned_projects | Gestion opérationnelle | 10298 | `Proposé` |
+| `affaires` | `view`, `create`, `update` : CT ; `view` : ADM, CC, CPT, DIR selon liste | assigned_projects | Affaires au niveau contractuel/commercial | 10298 | `Proposé` |
+| `chantiers` | `view`, `create`, `update` : CT ; `view` : ADM, CC, CPT, DIR selon liste | assigned_sites | Gestion opérationnelle des sites/chantiers affectés | 10298 | `Proposé` |
+| `lots_phases` | Actions et attribution à confirmer selon le rattachement métier au niveau affaire ou chantier | À arbitrer | Le document source ne permet pas de fixer un scope unique sans arbitrage | 10298 | `À arbitrer` |
 | `etudes` | `view`, `create`, `update` : CT | assigned_projects | Études | 10298 | `Proposé` |
 | `commandes_clients` | `view` : DIR, ADM, CT, CPT ; `approve` : DIR, SA | global / assigned_projects | Approbation contractuelle | 10298, 10301 | `Proposé` |
 | `avenants` | `view` : DIR, ADM, CT ; `prepare`, `submit` : CT à confirmer ; `approve` : DIR, SA | global / assigned_projects | Avenants et seuil | 10298, 10303 | `À arbitrer` |
@@ -653,21 +655,21 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | Identity | administration complète des habilitations, panel | panel, sans administration des habilitations | panel | panel | panel | panel | portail personnel, panel non | panel |
 | Clients | droits métier globaux | view selon liste + approve conditions/devis | prospects, clients, contacts, devis | lecture | — | — | — | factures, avoirs, relances |
 | Projects | droits métier globaux | view selon liste + approve commandes/avenants/contrats | lecture | affaires, chantiers, lots | lecture | — | — | lecture chantiers |
-| Planning | droits métier globaux | view conflits/avancement ; planning à normaliser | — | planning, affectations | lecture | planning atelier | planning personnel | — |
-| Budgets | droits métier globaux | view budgets + approve budgets/révisions | lecture | budgets, révisions | — | — | — | révisions à normaliser |
+| Planning | droits métier globaux | view conflits/avancement selon §5 ; droits DIR supplémentaires à qualifier en A-16 | — | planning, affectations | lecture | planning atelier | planning personnel | — |
+| Budgets | droits métier globaux | view budgets ; approbations explicitement listées au §5, autres actions à qualifier en A-16 si confirmées | lecture | budgets, révisions | — | — | — | révisions à normaliser |
 | Costing | droits métier globaux | view chiffrages/coûts/marges/écarts/provisions + approve provisions | — | coûts, marges, écarts | — | coûts atelier | — | coûts |
 | Workforce | données RH métier hors exception médicale | view RH selon §5, accès encadré, pas d’administration | RH administrative, variables paie | RH opérationnelle limitée | équipe | collaborateurs | dossier et bulletins propres | paie, bulletins et données nécessaires aux virements |
 | TimeTracking | droits métier globaux | view/supervise pointages + arbitrage absences | absences courantes | pointages chantier affectés, corrections/réouvertures | pointages équipe | pointages équipe atelier | pointages et absences propres | lecture des temps validés pour paie |
 | Workshop | droits métier globaux | view OF | — | lecture | OF, comptes rendus | OF, production | OF personnels | — |
-| Procurement | droits métier globaux | view demandes/commandes + approve commandes | fournisseurs, demandes, préparation | demandes | besoins, sous-traitants | demandes, fournisseurs | — | consultation commandes |
+| Procurement | droits métier globaux | view/approve uniquement lorsque listés au §5 ; autres droits transversaux à qualifier en A-16 si confirmés | fournisseurs, demandes, préparation | demandes | besoins, sous-traitants | demandes, fournisseurs | — | consultation commandes |
 | Inventory | droits métier globaux | transversal à normaliser | — | mouvements | stocks, consommations | stocks, mouvements | — | lecture |
 | Equipment | droits métier globaux | transversal à normaliser | — | équipements | équipements, pannes | équipements, maintenance | équipement personnel | — |
 | Logistics | droits métier globaux | transversal à normaliser | — | livraisons | — | expédition | — | — |
-| Quality | droits métier globaux | view plans/NCR | — | contrôles | contrôles, NCR | contrôles, NCR, clôture | signalements | — |
+| Quality | droits métier globaux | view plans/NCR selon §5 ; autres capacités transversales à qualifier en A-16 si confirmées | — | contrôles | contrôles, NCR | contrôles, NCR, clôture | signalements | — |
 | Safety | droits métier globaux | transversal à normaliser | — | inspections | inspections, incidents | atelier | signalements | — |
-| Documents | droits métier globaux | view | documents admin | documents chantier | documents, diffusion | documents atelier | documents personnels | lecture |
-| Handover | droits métier globaux | view réceptions/clôture | clôture à normaliser | réceptions, réserves | réserves | — | — | — |
-| Reporting | droits métier globaux | view + export | rapports | rapports | rapports quotidiens | reporting production | — | exports |
+| Documents | droits métier globaux | view selon §5 ; autres capacités transversales à qualifier en A-16 si confirmées | documents admin | documents chantier | documents, diffusion | documents atelier | documents personnels | lecture |
+| Handover | droits métier globaux | view selon §5 ; toute autre capacité non traduite reste suivie en A-16 si confirmée | clôture à normaliser | réceptions, réserves | réserves | — | — | — |
+| Reporting | droits métier globaux | view stratégique et autres droits uniquement selon §5 ; exports DIR à confirmer selon M-05/A-16 | rapports | rapports | rapports quotidiens | reporting production | — | exports |
 | Accounting | droits métier globaux selon périmètre retenu | approve paiements + valider paie | — | — | — | — | — | préparation et exécution après autorisation |
 
 ## 7. Matrice des restrictions et interdictions
@@ -694,8 +696,8 @@ Vocabulaire documentaire retenu :
 | `global` | Portée applicative complète ou ressource sans restriction de périmètre lorsque le rôle le permet | panel, administration Identity, comptabilité |
 | `company` | Société entière pour un domaine | RH administrative, reporting Direction |
 | `transversal` | Données métier accessibles transversalement à DIR/SA, sous réserve des restrictions du §7 et des workflows | consultation transversale DIR/SA |
-| `assigned_projects` | Affaires et projets affectés au niveau contractuel, sans accès automatique à tous les chantiers | CT |
-| `assigned_sites` | Chantiers affectés | CC |
+| `assigned_projects` | Affaires et projets affectés au niveau contractuel ou commercial ; ne donne pas accès automatiquement aux chantiers associés | CT |
+| `assigned_sites` | Sites/chantiers affectés pour les opérations de terrain ; ne donne pas accès automatiquement aux données contractuelles/commerciales de l’affaire | CT, CC ; autres rôles opérationnels uniquement lorsque leur affectation chantier est explicitement prévue |
 | `assigned_workers` | Salariés affectés à un chantier | contrôle des pointages par CT |
 | `own_team` | Salariés de l’équipe encadrée | CC, RA |
 | `own` | Données propres à l’utilisateur | SAL |
@@ -704,7 +706,7 @@ Vocabulaire documentaire retenu :
 | `restricted` | Accès restreint ou besoin d’en connaître (RH sensible, médical, banque) | dossiers RH, justificatifs médicaux, coordonnées bancaires |
 | `policy_defined` | Périmètre effectif déterminé par les Policies métier définies dans CHAN-42 | documents, clients, absences, etc. |
 
-Les cellules composites (`assigned_projects / own_team`, `company / own`, etc.) listent les scopes applicables ; le scope `policy_defined` est déterminé par les Policies métier de CHAN-42. `assigned_projects` est réservé aux affaires et projets affectés ; `assigned_sites` aux sites ou chantiers affectés ; `assigned_workers` aux salariés affectés à un chantier ou à un périmètre opérationnel. Une affaire n’implique pas automatiquement l’accès à tous ses chantiers, et un chantier n’implique pas l’accès aux données commerciales ou comptables de l’affaire. `transversal` est représenté dans la matrice §6 et ne remplace pas les scopes de ressource du §5. Aucun mécanisme de Policy n’est implémenté par ce lot.
+Les cellules composites (`assigned_projects / own_team`, `company / own`, etc.) listent les scopes applicables ; le scope `policy_defined` est déterminé par les Policies métier de CHAN-42. `assigned_projects` est réservé aux affaires et projets affectés au niveau contractuel/commercial ; `assigned_sites` aux sites ou chantiers affectés au niveau opérationnel ; `assigned_workers` aux salariés affectés à un chantier ou à un périmètre opérationnel. Une affaire n’implique pas automatiquement l’accès à tous ses chantiers, et un chantier n’implique pas l’accès aux données commerciales ou comptables de l’affaire. Les `lots_phases` ne reçoivent pas de scope par déduction : leur rattachement à l’affaire ou au chantier doit être confirmé ; dans l’attente, ils restent `À arbitrer`. `transversal` est représenté dans la matrice §6 et ne remplace pas les scopes de ressource du §5. Aucun mécanisme de Policy n’est implémenté par ce lot.
 
 ## 9. Règles de validation et séparation des responsabilités
 
@@ -803,8 +805,8 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-13 | Cache Spatie | Cache standard constaté | Documenter l’invalidation après synchronisation et opérations SQL directes | Exploitation | Développement |
 | A-14 | Intégration comptable externe | Périmètre non défini dans les commentaires disponibles | Déterminer l’interface et la frontière avec un logiciel/prestataire comptable | Architecture | Direction / architecture |
 | A-15 | Périmètre CHAN-45 et audit | CHAN-45 est mentionné dans la documentation du dépôt comme journalisation de sécurité ; le périmètre exact sur l’audit métier immuable n’est pas vérifié | Confirmer si CHAN-45 porte l’audit métier ou prévoir un lot dédié | Périmètre du stockage d’audit | Architecture / sécurité |
-| A-16 | Droits transversaux DIR non traduits | DIR dispose de droits métier transversaux validés ; le §5 ne liste pas encore de permissions explicites pour certaines ressources de Planning, ni pour Inventory, Equipment, Logistics et Safety | Normaliser les permissions DIR correspondantes sans créer de `delete` implicite ni d’administration des habilitations | Matrice §6 et catalogue §5 | Architecture / métier |
-| A-17 | Affaire, chantier et site pour les ressources transverses | `assigned_projects`, `assigned_sites` et `assigned_workers` sont distingués ; certaines ressources transverses ne précisent pas si elles relèvent de l’affaire ou du chantier | Déterminer ressource par ressource le niveau applicable, notamment Quality, Safety, Documents et Handover ; Inventory, Equipment et Logistics sont rattachés à `assigned_sites` ou `workshop` lorsque l’usage est explicite | Scopes §8 et catalogue §5 | Architecture / métier |
+| A-16 | Droits transversaux DIR non traduits | La responsabilité métier transversale de DIR est validée, mais les permissions ne sont pas encore traduites de façon exhaustive dans le catalogue §5. Les droits explicites de §5 restent applicables et sont les seuls repris en §6 | Pour chaque ressource/domaines de §5, comparer la portée fonctionnelle validée aux actions réellement attribuées à DIR. Classer chaque écart : (1) droit confirmé et déjà traduit ; (2) droit transversal confirmé mais non traduit, à inscrire comme proposition à normaliser avec ressource/action/scope ; (3) droit non suffisamment défini, à soumettre à arbitrage. Ne jamais déduire un CRUDV générique, un `delete`, une validation opérationnelle réservée à CT/CC/RA, un droit d’habilitation ou un accès médical non autorisé. Couvrir notamment Clients, Projects, Planning, Budgets, Costing, Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting et Accounting ; maintenir les restrictions financières, RH et les workflows spécifiques | Compléter cette ligne lors de la revue métier ressource par ressource ; synchroniser §5 et §6 après arbitrage | Architecture / métier / Direction |
+| A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent désormais de scopes distincts (`assigned_projects` et `assigned_sites`) ; le rattachement des `lots_phases` n’est pas établi par les éléments disponibles | Confirmer si chaque lot/phase est rattaché fonctionnellement à l’affaire, au chantier, ou selon une relation distincte ; seulement après confirmation, définir ses actions et son scope. Ne pas inférer un scope depuis l’ancienne ligne groupée | §5.3 et §8 ; aucun accès implicite en attendant l’arbitrage | Architecture / métier |
 
 ## 12. Correspondance avec CHAN-40, CHAN-42, CHAN-43, CHAN-45 et CHAN-46
 
