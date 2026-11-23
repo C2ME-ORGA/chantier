@@ -555,13 +555,13 @@ Le code candidat `timetracking.timesheets.validate` désigne la validation des f
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `articles`, `entrepots`, `emplacements`, `lots_stock` | `view`, `create`, `update` : RA ; `view` : CT, CC, CPT | workshop / assigned_sites | Stocks | 10298, 10300 | `Proposé` |
-| `mouvements_stock` | `view`, `create`, `update`, `reverse` : RA ; `view`, `create`, `update` : CT ; `view` : CC, CPT | assigned_sites / workshop | Mouvements | 10298, 10300 | `Proposé` |
-| `receptions_stock`, `reservations_stock` | `view`, `create`, `update` : RA ; `view` : CT, CC | workshop / assigned_sites | Réceptions et réservations | 10298 | `Proposé` |
-| `consommations` | `view`, `create` : CC ; `view`, `create`, `update`, `reverse` : RA ; `view` : CT, CPT | assigned_sites / workshop | Consommations | 10298, 10300 | `Proposé` ; code normalisé `inventory.consommations` |
-| `bons_sortie` | `view`, `create`, `update` : RA ; `view` : CC | workshop | Sorties | 10298 | `Proposé` |
-| `inventaires_physiques` | `view`, `create`, `update` : RA ; `view` : CPT | workshop | Inventaires | 10298, 10300 | `Proposé` |
-| `ajustements` | `update`, `reverse` : RA | workshop | Ajustements | 10298 | `À arbitrer` sur action |
+| `articles`, `entrepots`, `emplacements`, `lots_stock` | Accès complet DIR : toutes actions applicables ; RA, CT, CC et CPT conservent leurs droits | global DIR / workshop / assigned_sites | Référentiels et suivi des stocks | Arbitrage A.4.2 Groupe 2 ; 10298, 10300 | Décision DIR confirmée ; actions à normaliser |
+| `mouvements_stock` | Accès complet DIR : toutes actions applicables, y compris création, modification, annulation/inversion et validation si applicable ; RA, CT, CC et CPT conservent leurs droits | global DIR / assigned_sites / workshop | Mouvements de stock et traçabilité | Arbitrage A.4.2 Groupe 2 ; 10298, 10300 | Décision DIR confirmée ; actions à normaliser ; conserver l’historique des mouvements |
+| `receptions_stock`, `reservations_stock` | Accès complet DIR : toutes actions applicables ; RA, CT et CC conservent leurs droits | global DIR / workshop / assigned_sites | Réceptions et réservations | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `consommations` | Accès complet DIR : toutes actions applicables, y compris création, modification, annulation/inversion et validation si applicable ; CC, RA, CT et CPT conservent leurs droits | global DIR / assigned_sites / workshop | Consommations de matières | Arbitrage A.4.2 Groupe 2 ; 10298, 10300 | Décision DIR confirmée ; code normalisé `inventory.consommations` ; actions à normaliser |
+| `bons_sortie` | Accès complet DIR : toutes actions applicables ; RA et CC conservent leurs droits | global DIR / workshop | Bons de sortie | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `inventaires_physiques` | Accès complet DIR : toutes actions applicables ; RA et CPT conservent leurs droits | global DIR / workshop | Inventaires physiques | Arbitrage A.4.2 Groupe 2 ; 10298, 10300 | Décision DIR confirmée ; actions à normaliser |
+| `ajustements` | Accès complet DIR : toutes actions applicables, y compris création, modification, validation, annulation/inversion et suppression si légalement et techniquement permise ; RA conserve ses droits | global DIR / workshop | Ajustements de stock | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser ; préserver la piste d’audit des corrections |
 
 ### 5.12 Equipment
 
@@ -662,7 +662,7 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | TimeTracking | droits métier globaux | accès complet global à toutes les ressources et actions applicables, y compris create/update/delete/validate/authorize/close/reopen ; hors documents médicaux détaillés | absences courantes | pointages chantier affectés, corrections/réouvertures | pointages équipe | pointages équipe atelier | pointages et absences propres | lecture des temps validés pour paie |
 | Workshop | droits métier globaux | accès complet global à toutes les ressources et actions applicables (view/create/update/delete/validate et actions spécifiques) | — | lecture | OF, comptes rendus | OF, production | OF personnels | — |
 | Procurement | droits métier globaux | accès complet global aux ressources et actions applicables ; approbation des engagements DIR selon seuil cumulé > 100 000 € HT par opération | fournisseurs, demandes, préparation | demandes | besoins, sous-traitants | demandes, fournisseurs | — | consultation commandes |
-| Inventory | droits métier globaux | transversal à normaliser | — | mouvements | stocks, consommations | stocks, mouvements | — | lecture |
+| Inventory | droits métier globaux | accès complet global aux ressources et actions applicables, sous réserve de la traçabilité des mouvements et ajustements | — | mouvements | stocks, consommations | stocks, mouvements | — | lecture |
 | Equipment | droits métier globaux | transversal à normaliser | — | équipements | équipements, pannes | équipements, maintenance | équipement personnel | — |
 | Logistics | droits métier globaux | transversal à normaliser | — | livraisons | — | expédition | — | — |
 | Quality | droits métier globaux | view plans/NCR selon §5 ; autres capacités transversales à qualifier en A-16 si confirmées | — | contrôles | contrôles, NCR | contrôles, NCR, clôture | signalements | — |
@@ -805,7 +805,7 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-13 | Cache Spatie | Cache standard constaté | Documenter l’invalidation après synchronisation et opérations SQL directes | Exploitation | Développement |
 | A-14 | Intégration comptable externe | Périmètre non défini dans les commentaires disponibles | Déterminer l’interface et la frontière avec un logiciel/prestataire comptable | Architecture | Direction / architecture |
 | A-15 | Périmètre CHAN-45 et audit | CHAN-45 est mentionné dans la documentation du dépôt comme journalisation de sécurité ; le périmètre exact sur l’audit métier immuable n’est pas vérifié | Confirmer si CHAN-45 porte l’audit métier ou prévoir un lot dédié | Périmètre du stockage d’audit | Architecture / sécurité |
-| A-16 | Droits transversaux DIR non traduits | Groupe 1 arbitré sur Identity, Clients, Projects et Planning ; Groupe 2 : arbitrages sur planning/conflits, budgets, contingences, engagements, provisions, périodes analytiques, chiffrages/coûts/écarts, accès complet RH, TimeTracking, Workshop et Procurement | Poursuivre la revue exhaustive des domaines restants et des ressources/actions non résolues ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Les droits RH, TimeTracking, Workshop et Procurement DIR couvrent toutes les ressources et actions applicables, y compris create/update/validate/delete, sous réserve du secret médical, de la conservation légale, de la traçabilité et de la séparation des tâches. Pour les commandes d’achat et de sous-traitance, l’approbation DIR reste limitée aux engagements dépassant 100 000 € HT cumulés par opération ; l’exécution des paiements conserve ses règles financières dédiées. Ne pas étendre ces décisions aux autres domaines ni aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
+| A-16 | Droits transversaux DIR non traduits | Groupe 1 arbitré sur Identity, Clients, Projects et Planning ; Groupe 2 : arbitrages sur planning/conflits, budgets, contingences, engagements, provisions, périodes analytiques, chiffrages/coûts/écarts, accès complet RH, TimeTracking, Workshop, Procurement et Inventory | Poursuivre la revue exhaustive des domaines restants et des ressources/actions non résolues ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Les droits RH, TimeTracking, Workshop, Procurement et Inventory DIR couvrent toutes les ressources et actions applicables, y compris create/update/validate/delete, sous réserve du secret médical, de la conservation légale, de la traçabilité et de la séparation des tâches. Pour les mouvements, consommations, inventaires et ajustements de stock, les historiques, motifs, auteurs et horodatages doivent être conservés ; les suppressions physiques ne doivent pas effacer la piste d’audit. Pour les commandes d’achat et de sous-traitance, l’approbation DIR reste limitée aux engagements dépassant 100 000 € HT cumulés par opération ; l’exécution des paiements conserve ses règles financières dédiées. Ne pas étendre ces décisions aux autres domaines ni aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
 | A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent de scopes distincts (`assigned_projects` et `assigned_sites`) ; aucun élément validé ne permet d’attribuer un scope aux `lots_phases` | Confirmer si chaque lot/phase relève de l’affaire, du chantier ou d’une relation propre. Tant que ce rattachement n’est pas validé, conserver la ressource sans permission opérationnelle ni scope attribué ; ne pas déduire `assigned_projects`, `assigned_sites` ou `policy_defined` de l’ancien regroupement | §5.3 et §8 ; accès non attribué en attente d’arbitrage | Architecture / métier |
 
 
@@ -980,6 +980,21 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 - La suppression est accordée fonctionnellement, mais son exécution doit respecter les obligations légales de conservation, les durées de rétention et l’inaltérabilité des traces. Lorsque la suppression est interdite ou inappropriée, utiliser l’archivage ou la désactivation.
 - Les workflows de séparation des tâches restent applicables : DIR ne peut pas s’auto-approuver lorsque la règle impose une validation indépendante ; les changements de coordonnées bancaires doivent être validés par une personne différente du demandeur/modificateur.
 - Cette décision ne modifie pas les droits des autres rôles et ne donne aucun droit sur les ressources non RH.
+
+### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Inventory / Stocks
+
+**Décision métier reçue le 24/11/2026.** DIR bénéficie d’un accès complet à toutes les ressources du domaine Inventory et à toutes les actions applicables.
+
+| Domaine / ressource | Décision DIR | Actions / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Inventory / toutes les ressources du §5.11 | Accès complet DIR | Toutes les actions applicables, notamment consultation, création, modification, suppression, validation, annulation/inversion et ajustement | Global pour DIR | Décision confirmée ; actions à normaliser dans le catalogue |
+
+**Garde-fous et limites.**
+
+- Les mouvements, consommations, réceptions, sorties, inventaires et ajustements doivent conserver une piste d’audit exploitable : auteur, horodatage, motif et historique des corrections.
+- Une annulation ou inversion doit être privilégiée à une suppression physique lorsqu’un mouvement a déjà un impact sur le stock ou la comptabilité. Les suppressions ne doivent pas effacer les traces obligatoires.
+- Les droits existants de RA, CT, CC et CPT sont conservés ; les responsabilités opérationnelles ne leur sont pas retirées.
+- Cette décision concerne uniquement Inventory (§5.11) et ne crée aucun droit supplémentaire dans Equipment, Logistics, Quality ou Safety.
 
 ### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Procurement / Achats et approvisionnements
 
