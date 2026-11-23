@@ -808,6 +808,78 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-16 | Droits transversaux DIR non traduits | La responsabilité métier transversale de DIR est validée, mais les permissions ne sont pas encore traduites de façon exhaustive dans le catalogue §5. Les droits explicites de §5 restent applicables et sont les seuls repris en §6 | Pour chaque ressource et chaque domaine de §5, effectuer une comparaison exhaustive et tracer le résultat dans cette ligne : (1) droit confirmé et déjà traduit dans §5 ; (2) droit transversal DIR confirmé mais non traduit, à ajouter uniquement après détermination explicite de la ressource, de l’action et du scope ; (3) droit dont l’existence, l’action ou l’étendue reste à arbitrer. La portée transversale n’est pas une permission et ne permet pas de déduire un CRUDV générique. Ne jamais inférer `delete`, une validation opérationnelle attribuée à CT/CC/RA, l’administration Identity, ni un accès médical non autorisé. Vérifier en particulier les ressources sans droit DIR explicite, y compris Inventory, Equipment, Logistics et Safety ; préserver les approbations, contrôles financiers, restrictions RH et workflows spécifiques. La ligne reste ouverte jusqu’à ce que la couverture de chaque ressource soit documentée, et §6 doit continuer à refléter uniquement les droits effectivement inscrits en §5 | Compléter la revue ressource par ressource ; consigner distinctement les droits confirmés non traduits et les arbitrages métier requis ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
 | A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent de scopes distincts (`assigned_projects` et `assigned_sites`) ; aucun élément validé ne permet d’attribuer un scope aux `lots_phases` | Confirmer si chaque lot/phase relève de l’affaire, du chantier ou d’une relation propre. Tant que ce rattachement n’est pas validé, conserver la ressource sans permission opérationnelle ni scope attribué ; ne pas déduire `assigned_projects`, `assigned_sites` ou `policy_defined` de l’ancien regroupement | §5.3 et §8 ; accès non attribué en attente d’arbitrage | Architecture / métier |
 
+
+## 11.1 Dossier d'arbitrage A.4.1 — couverture transversale de DIR
+
+**Objectif.** Préparer la validation métier exhaustive des droits de Direction (DIR) dans les 19 domaines du catalogue. Cette revue ne crée aucune permission et ne transforme pas la responsabilité transversale de DIR en CRUDV générique.
+
+**Méthode de lecture.**
+
+- « Explicite » signifie qu'une action DIR est déjà inscrite sur une ressource au §5 ; elle peut être reprise dans §6 après contrôle de cohérence.
+- « À examiner » signifie que la responsabilité transversale peut justifier un besoin, mais que la ressource, l'action ou le scope doit être confirmé par la Direction.
+- « Restriction » rappelle qu'un workflow ou une limite déjà définie ne peut pas être contourné.
+- Aucun droit absent de §5 n'est ajouté par cette revue. Les permissions proposées restent distinctes des décisions métier validées.
+- Les scopes sont des indications de périmètre ; leur contrôle effectif relève de CHAN-42.
+
+| Domaine | Droits DIR actuellement explicites au §5 | Vérifications / arbitrages nécessaires | Garde-fous à préserver |
+| --- | --- | --- | --- |
+| Identity | admin_panel.access ; consultation et administration des financial_delegations selon les actions listées | Ne pas étendre à users, roles, permissions, role_assignments ou access_settings | DIR n'administre pas les habilitations ; sémantique suspend/delete reste M-16 |
+| Clients | Consultation des prospects, clients, contacts et relations commerciales selon liste ; conditions_commerciales.approve à préciser ; consultation/approbation des devis selon ligne | Confirmer les ressources commerciales et les conditions exactes d'approbation ; clarifier la consultation des factures, avoirs, relances, échéanciers, litiges et règlements | Ne pas attribuer création/modification ou action financière par simple transversalité |
+| Projects | Consultation des affaires et chantiers selon liste ; consultation des commandes clients/contrats ; approbation des commandes clients, avenants et contrats selon lignes ; consultation des jalons et rapports ; approbation des réceptions à confirmer | Confirmer les droits DIR sur études, lots/phases, planning contractuel, avenants (préparation/soumission), réceptions et autres ressources non explicitement attribuées | assigned_projects et assigned_sites restent distincts ; lots_phases demeure non attribué jusqu'à arbitrage A-17 |
+| Planning | Consultation des conflits et avancement ; arbitrage des conflits à confirmer | Déterminer les actions DIR sur plannings, affectations, conflits et avancement, sans reprendre les opérations quotidiennes | Ne pas retirer les validations opérationnelles de CT, CC ou RA |
+| Budgets | Consultation des budgets et révisions ; approbation des budgets et révisions ; approbation des contingences à confirmer | Confirmer consultation et approbation des lignes budgétaires, contingences et révisions ; préciser les conditions de validation | Conserver le workflow de soumission par CT et l'approbation financière DIR/SA ; ne pas déduire un droit de modification |
+| Costing | Consultation des chiffrages, coûts, écarts et marges ; approbation des provisions analytiques | Confirmer accès et actions sur engagements, coûts, écarts, provisions et périodes analytiques | Seuil global de 100 000 € HT, cumul commandes/avenants, délégations par rôle et absence d'auto-approbation |
+| Workforce | Consultation RH DIR selon liste ; accès encadré aux données RH sensibles ; consultation des dossiers disciplinaires ; droits sur coordonnées bancaires ; validation indépendante des demandes de modification bancaire ; validation finale de paie ; supervision des indemnités et grands déplacements | Confirmer les ressources RH exactes et distinguer consultation, modification, validation et administration ; confirmer les droits DIR sur barèmes de grands déplacements | Secret médical ; pas d'accès aux documents médicaux confidentiels ; séparation des tâches bancaires et de paie ; ne pas étendre les données sensibles au-delà du besoin légal |
+| TimeTracking | view/supervise sur pointages ; arbitrage des absences ; supervision des heures supplémentaires | Confirmer si DIR a besoin d'autres actions de supervision sur corrections, périodes et indicateurs, sans créer de validation courante | Clôture mensuelle par acteur à définir (M-03) ; réouverture exceptionnelle DIR/SA motivée ; pas de validation opérationnelle implicite |
+| Workshop | Consultation des ordres de fabrication selon ligne | Confirmer si DIR doit consulter d'autres ressources atelier (dossiers, opérations, capacités, demandes matière, production, colis, rebuts/reprises) et avec quel niveau de détail | Pas d'approbation des plans de conception attribuée par défaut ; préserver l'autonomie opérationnelle RA |
+| Procurement | Consultation des demandes d'achat, commandes d'achat et commandes de sous-traitance ; approbation des commandes selon les lignes | Confirmer les droits DIR sur fournisseurs, offres, accords-cadres, garanties, évaluations, incidents et besoins | Pas d'engagement sans approbation prévue ; seuil, cumul et délégations financières applicables |
+| Inventory | Aucun droit DIR explicite sur les ressources de stock au §5 | Décider si DIR doit consulter articles, entrepôts, mouvements, consommations, inventaires, ajustements ou indicateurs de stock | Ne pas déduire un droit de modification, d'ajustement ou de mouvement |
+| Equipment | Aucun droit DIR explicite sur les ressources matériel au §5 | Décider si DIR doit consulter les équipements, affectations, maintenances, interventions, inspections et pannes | Ne pas attribuer d'action opérationnelle ou réglementaire non décidée |
+| Logistics | Aucun droit DIR explicite sur les ressources logistiques au §5 | Décider si DIR doit consulter transports, tournées, livraisons, retours et accès chantier | Ne pas attribuer planification ou modification opérationnelle par défaut |
+| Quality | Consultation des plans qualité et des non-conformités | Confirmer consultation des contrôles, actions correctives, audits, certificats et signalements ; déterminer si une décision d'arbitrage qualité est réellement requise | Ne pas attribuer à DIR la validation ou clôture opérationnelle réservée à CT/RA ; rôle de traitement des signalements à arbitrer |
+| Safety | Aucun droit DIR explicite sur les ressources sécurité au §5 | Décider si DIR doit consulter analyses de risques, plans de prévention, inspections, incidents, actions, habilitations et signalements | Ne pas déduire un rôle de responsable sécurité ou des actions de traitement |
+| Documents | Consultation des documents selon ligne ; export DIR listé mais encore à arbitrer | Confirmer ressources documentaires consultables, téléchargement, signature, diffusion et export, avec liste des catégories/champs sensibles | M-05 et M-17 restent ouverts ; les scopes documentaires relèvent de CHAN-42 |
+| Handover | Consultation des dossiers de réception, réserves, levées de réserves et DOE ; consultation des garanties et dossiers de clôture selon lignes | Confirmer les actions DIR sur garanties, clôtures, réserves et réception finale | Ne pas attribuer validation ou clôture sans décision explicite |
+| Reporting | Consultation des rapports, indicateurs, tableaux de bord, tableaux de bord stratégiques et snapshots ; export DIR listé mais à arbitrer | Définir les ressources stratégiques, snapshots, sources de données, exports et éventuelles restrictions de champs | Préserver le caractère stratégique réservé à DIR ; M-05 et M-11 restent ouverts |
+| Accounting | Approbation des paiements préparés par CPT ; autres droits DIR non explicitement listés dans le domaine | Confirmer si DIR a besoin de consultation sur trésorerie, écritures, journaux, rapprochements, immobilisations, déclarations et clôtures ; déterminer si le domaine accounting est distinct | DIR autorise/refuse les paiements, mais ne les prépare ni ne les exécute ; namespace A-01 ouvert |
+
+### Décisions à obtenir en séance métier
+
+Pour chaque ligne « À examiner », la Direction doit choisir explicitement l'une des réponses suivantes, ressource par ressource :
+
+1. **Confirmer** : préciser l'action atomique (view, create, update, approve, etc.), le scope métier attendu et, si nécessaire, les conditions du workflow.
+2. **Refuser** : consigner qu'aucune permission DIR n'est accordée.
+3. **Reporter** : conserver le point ouvert avec son responsable et son ticket éventuel.
+
+Une réponse « accès transversal » ou « accès complet » n'est pas suffisante : elle doit être décomposée en ressources et actions explicites. Toute action de validation doit être distinguée d'une approbation stratégique ou financière. Les décisions seront ensuite reportées dans les lignes concernées du §5, puis dans la synthèse §6 et dans A-16.
+
+### Arbitrage A-17 — rattachement des lots et phases
+
+Le catalogue distingue déjà :
+
+- affaires : objet contractuel/commercial, scope candidat actuellement inscrit assigned_projects ;
+- chantiers : objet opérationnel/site, scope candidat actuellement inscrit assigned_sites ;
+- lots_phases : relation métier non déterminée, sans permission opérationnelle ni scope attribué.
+
+**Options à faire confirmer par le métier :**
+
+| Option | Rattachement envisagé | Conséquence possible | Point à confirmer |
+| --- | --- | --- | --- |
+| A | Un lot/une phase appartient à une affaire | Héritage du contexte affaire et du scope assigned_projects à étudier | Un lot peut-il exister sans chantier ou couvrir plusieurs chantiers ? |
+| B | Un lot/une phase appartient à un chantier | Héritage du contexte site et du scope assigned_sites à étudier | Un lot peut-il être partagé entre plusieurs chantiers ou affaires ? |
+| C | Un lot/une phase est une entité propre liée à l'affaire et au chantier | Relation et contrôle de périmètre spécifiques à définir dans CHAN-42 | Quelle est la cardinalité réelle et quelle affectation ouvre l'accès ? |
+| D | Autre modèle métier | Décrire le rattachement et les cardinalités attendues | Faire préciser le modèle par le responsable métier |
+
+Aucune option n'est retenue par le présent document. Jusqu'à décision, lots_phases reste sans permission opérationnelle et sans scope attribué. Le choix de modèle de données et les contrôles de périmètre devront être cohérents entre CHAN-40 et CHAN-42.
+
+### État A.4.1
+
+- Revue des 19 domaines préparée ; les droits DIR déjà explicites sont recensés sans les élargir.
+- Les domaines sans droit DIR explicite sont signalés comme sujets de décision, sans permission ajoutée.
+- Les workflows financiers, RH, médicaux, de paie, de temps et de validation opérationnelle restent prioritaires et inchangés.
+- Les arbitrages A-16 et A-17 restent **ouverts** jusqu'à validation explicite par la Direction.
+- Ce dossier ne vaut pas gel du catalogue et n'autorise pas encore la génération des seeders RBAC.
+
 ## 12. Correspondance avec CHAN-40, CHAN-42, CHAN-43, CHAN-45 et CHAN-46
 
 | Ticket | Responsabilité | Éléments de ce document |
