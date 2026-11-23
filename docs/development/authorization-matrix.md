@@ -449,7 +449,8 @@ Les règles de portée globale sont fonctionnellement `Validé` et techniquement
 | `prospects`, `clients`, `contacts`, `relations_commerciales` | `view`, `create`, `update` : ADM ; `view` : DIR selon liste | global / company | Gestion administrative | 10298 | `Proposé` |
 | `conditions_commerciales` | `view`, `create`, `update` : ADM ; `approve` : DIR pour toutes les conditions, modifications et dérogations | global | Approbation des conditions commerciales, sans droit implicite de modification pour DIR | 10298, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permission à intégrer et workflow à préciser |
 | `devis_commerciaux` | `view`, `create`, `update`, `submit` : ADM ; `approve` : DIR, SA ; `view` : DIR | global | Préparation, soumission et approbation | 10298, 10301 | `Proposé` |
-| `factures_clients`, `avoirs` | `view`, `create`, `update`, `issue` : CPT ; `view` : DIR | global | Consultation DIR ; préparation et émission comptables conservées à CPT | 10300, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permissions à intégrer |
+| `factures_clients` | Accès complet DIR : toutes les actions applicables (`view`, `create`, `update`, `issue`, `delete` si l’action existe) ; `view`, `create`, `update`, `issue` : CPT | global pour DIR et CPT | DIR dispose de tous les droits métier applicables sur les factures clients, y compris leur création, modification et émission ; droits CPT conservés | 10300, décision A.4.2 du 24/11/2026 | Accès complet DIR confirmé ; toute suppression reste soumise aux obligations légales de conservation et à la traçabilité |
+| `avoirs` | `view`, `create`, `update`, `issue` : CPT ; `view` : DIR | global | Consultation DIR ; préparation et émission des avoirs conservées à CPT | 10300, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permissions à intégrer |
 | `relances`, `echeanciers`, `litiges_facturation` | `view`, `create`, `update` : CPT ; `view`, `arbitrate` : DIR ; approbation d'une régularisation financière par DIR à modéliser dans un workflow distinct | global | Consultation et arbitrage DIR ; aucune création/émission d'avoir ni exécution de paiement par effet implicite | 10300, arbitrage A.4.2 Groupe 1 | Arbitrage et consultation validés ; action `arbitrate` à normaliser (A-07) ; objet/action d'approbation financière à préciser |
 | `reglements` | `view`, `reconcile` : CPT ; `view` : DIR | global | Consultation DIR ; rapprochement CPT | 10300, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permissions à intégrer |
 
@@ -1288,3 +1289,14 @@ Cette décision confirme la séparation entre préparation/soumission opération
 | Budgets / `lignes_budgetaires` | Accès complet DIR | Toutes les actions applicables, notamment consultation, création, modification, soumission, validation, approbation et suppression lorsque l’action existe | global pour DIR ; assigned_projects pour CT | Décision validée ; toute suppression reste soumise aux obligations de conservation et à la traçabilité ; workflow à préciser |
 
 Cette décision complète les droits DIR déjà confirmés sur les budgets, leurs révisions et les contingences. Elle ne modifie pas les scopes des autres rôles.
+
+
+### A.4.2 — Registre des arbitrages DIR — Factures clients
+
+**Décision métier reçue le 24/11/2026.** DIR bénéficie de tous les droits métier applicables sur la ressource `factures_clients`, sans restriction de montant : consultation, création, modification, émission et suppression si cette action est effectivement prévue par le modèle applicatif. Les droits existants de CPT sont conservés.
+
+| Domaine / ressource | Décision métier | Actions / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Clients / `factures_clients` | Accès complet DIR | Toutes les actions applicables, dont `view`, `create`, `update`, `issue` et `delete` si disponible | global pour DIR | Décision validée ; suppression soumise aux obligations de conservation, à la traçabilité et aux règles comptables applicables |
+
+Cette décision concerne exclusivement les factures clients. Elle n’étend pas automatiquement les droits DIR aux avoirs, aux relances, aux échéanciers, aux règlements ou à l’exécution des paiements. La séparation des tâches sur les paiements reste inchangée : DIR/SA autorisent ou refusent, CPT prépare et exécute ; le préparateur ne peut pas autoriser son propre paiement.
