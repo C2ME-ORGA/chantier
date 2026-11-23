@@ -490,7 +490,7 @@ Les règles de portée globale sont fonctionnellement `Validé` et techniquement
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
 | `chiffrages`, `couts`, `ecarts` | `view` : DIR, ADM, CT, RA, CPT ; `create`, `update` : CT, RA selon objet | assigned_projects | Coûts | 10298, 10300 | `Proposé` |
-| `engagements` | `view` : DIR, CT, CPT ; `approve` : DIR, SA à confirmer | global / assigned_projects | Engagements | 10297, 10298, 10303 | `À arbitrer` |
+| `engagements` | `view` : DIR, CT, CPT ; `approve` : DIR, SA uniquement lorsque le seuil cumulé dépasse 100 000 € HT pour une même opération | global pour DIR/SA ; assigned_projects pour CT | Approbation préalable obligatoire au-delà de 100 000 € HT cumulés pour une même opération, en agrégeant commandes et avenants et en prévenant le fractionnement ; en dessous ou au seuil, pas d'approbation DIR au titre de cette règle | 10297, 10298, 10303, arbitrage A.4.2 Groupe 2 | Seuil et cumul validés ; modalités de délégation sous seuil et workflow à préciser
 | `marges` | `view` : DIR, CT, RA, CPT | assigned_projects / global | Rentabilité | 10298, 10300 | `Proposé` |
 | `provisions_analytiques` | `view` : DIR, CT, CPT ; `approve` : DIR, SA | global | Provisions | 10298, 10301 | `Proposé` |
 | `periodes_analytiques` | `view`, `lock`, `unlock`, `close` : CPT | global | Périodes analytiques | 10300 | `Proposé` |
@@ -657,7 +657,7 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | Projects | droits métier globaux | view global affaires, chantiers, études, jalons, rapports, commandes, contrats, avenants et réceptions ; approve commandes/avenants/contrats/réception contractuelle et dossier Handover | lecture | affaires, chantiers, lots | lecture | — | — | lecture chantiers |
 | Planning | droits métier globaux | view global plannings contractuels/opérationnels, affectations, conflits et avancement ; arbitrate conflits | — | planning, affectations | lecture | planning atelier | planning personnel | — |
 | Budgets | droits métier globaux | view budgets ; approve tous budgets, toutes révisions et toutes contingences sans seuil de montant | lecture | budgets, révisions, contingences | — | — | — | workflows à préciser |
-| Costing | droits métier globaux | view chiffrages/coûts/marges/écarts/provisions + approve provisions | — | coûts, marges, écarts | — | coûts atelier | — | coûts |
+| Costing | droits métier globaux | view chiffrages/coûts/marges/écarts/provisions ; approve provisions ; approve engagements uniquement au-delà de 100 000 € HT cumulés par opération | — | coûts, marges, écarts | — | coûts atelier | — | coûts |
 | Workforce | données RH métier hors exception médicale | view RH selon §5, accès encadré, pas d’administration | RH administrative, variables paie | RH opérationnelle limitée | équipe | collaborateurs | dossier et bulletins propres | paie, bulletins et données nécessaires aux virements |
 | TimeTracking | droits métier globaux | view/supervise pointages + arbitrage absences | absences courantes | pointages chantier affectés, corrections/réouvertures | pointages équipe | pointages équipe atelier | pointages et absences propres | lecture des temps validés pour paie |
 | Workshop | droits métier globaux | view OF | — | lecture | OF, comptes rendus | OF, production | OF personnels | — |
@@ -828,7 +828,7 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | Projects | Consultation des affaires et chantiers selon liste ; consultation des commandes clients/contrats ; approbation des commandes clients, avenants et contrats selon lignes ; consultation des jalons et rapports ; approbation des réceptions à confirmer | Confirmer les droits DIR sur études, lots/phases, planning contractuel, avenants (préparation/soumission), réceptions et autres ressources non explicitement attribuées | assigned_projects et assigned_sites restent distincts ; lots_phases demeure non attribué jusqu'à arbitrage A-17 |
 | Planning | Consultation des conflits et avancement ; arbitrage des conflits à confirmer | Déterminer les actions DIR sur plannings, affectations, conflits et avancement, sans reprendre les opérations quotidiennes | Ne pas retirer les validations opérationnelles de CT, CC ou RA |
 | Budgets | Consultation des budgets et révisions ; approbation de tous les budgets, révisions et contingences sans seuil de montant | Confirmer les droits sur les lignes budgétaires et préciser les workflows d'approbation | Conserver la préparation/soumission par CT ; aucune création ou modification DIR implicite |
-| Costing | Consultation des chiffrages, coûts, écarts et marges ; approbation des provisions analytiques | Confirmer accès et actions sur engagements, coûts, écarts, provisions et périodes analytiques | Seuil global de 100 000 € HT, cumul commandes/avenants, délégations par rôle et absence d'auto-approbation |
+| Costing | Consultation des chiffrages, coûts, écarts et marges ; approbation des provisions analytiques ; approbation DIR/SA des engagements uniquement au-delà de 100 000 € HT cumulés par opération | Confirmer les droits sur coûts, écarts et périodes analytiques, ainsi que les délégations sous seuil | Cumul commandes/avenants pour une même opération, prévention du fractionnement et absence d'auto-approbation |
 | Workforce | Consultation RH DIR selon liste ; accès encadré aux données RH sensibles ; consultation des dossiers disciplinaires ; droits sur coordonnées bancaires ; validation indépendante des demandes de modification bancaire ; validation finale de paie ; supervision des indemnités et grands déplacements | Confirmer les ressources RH exactes et distinguer consultation, modification, validation et administration ; confirmer les droits DIR sur barèmes de grands déplacements | Secret médical ; pas d'accès aux documents médicaux confidentiels ; séparation des tâches bancaires et de paie ; ne pas étendre les données sensibles au-delà du besoin légal |
 | TimeTracking | view/supervise sur pointages ; arbitrage des absences ; supervision des heures supplémentaires | Confirmer si DIR a besoin d'autres actions de supervision sur corrections, périodes et indicateurs, sans créer de validation courante | Clôture mensuelle par acteur à définir (M-03) ; réouverture exceptionnelle DIR/SA motivée ; pas de validation opérationnelle implicite |
 | Workshop | Consultation des ordres de fabrication selon ligne | Confirmer si DIR doit consulter d'autres ressources atelier (dossiers, opérations, capacités, demandes matière, production, colis, rebuts/reprises) et avec quel niveau de détail | Pas d'approbation des plans de conception attribuée par défaut ; préserver l'autonomie opérationnelle RA |
@@ -925,6 +925,16 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 | Contingences budgétaires | Approbation systématique de toutes les contingences | `approve` sur chaque contingence, sans seuil ni restriction de montant | Global pour DIR ; assigned_projects pour CT sur la préparation | Décision fonctionnelle confirmée ; workflow et séparation des tâches à préciser |
 
 **Limites conservées.** Cette décision ne donne pas à DIR les droits `create` ou `update` sur les contingences. CT conserve la préparation et la modification dans son périmètre affecté. L'approbation DIR est requise pour chaque contingence, quel que soit le montant.
+
+### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Engagements financiers
+
+**Décision métier reçue le 23/11/2026.**
+
+| Domaine / ressource | Décision DIR | Action atomique / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Engagements financiers | Approbation DIR uniquement lorsque le seuil dépasse 100 000 € HT cumulés pour une même opération | `approve` sur les engagements concernés ; agrégation des commandes et avenants rattachés à la même opération | Global pour DIR ; CT reste dans son périmètre affecté pour les opérations de préparation | Seuil, cumul et principe anti-fractionnement confirmés ; modalités de délégation sous seuil et workflow à préciser |
+
+**Limites conservées.** DIR n'approuve pas systématiquement tous les engagements : son approbation préalable est requise uniquement lorsque le cumul dépasse 100 000 € HT pour une même opération. Le calcul doit agréger les commandes et avenants liés à cette opération et empêcher le fractionnement artificiel. Les délégations applicables sous ce seuil restent à préciser ; aucune permission de préparation ou de modification des engagements n'est accordée à DIR par cette décision.
 
 ### Arbitrage A-17 — rattachement des lots et phases
 
