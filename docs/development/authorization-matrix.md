@@ -540,16 +540,16 @@ Le code candidat `timetracking.timesheets.validate` désigne la validation des f
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `fournisseurs`, `sous_traitants` | `view`, `create`, `update` : ADM ; `view` : CT, CC, RA, CPT | global | Référentiels | 10298, 10300 | `Proposé` |
-| `demandes_achat` | `view`, `create`, `update`, `submit` : ADM, CT, RA ; `view` : DIR | assigned_projects / global | Demandes d’achat | 10298 | `Proposé` |
-| `besoins` | `create` : CC ; `view` : CT, RA | assigned_projects | Signalement de besoin sans demande d’achat | 10303 | `À arbitrer` |
-| `offres_fournisseurs` | `view`, `create`, `update` : ADM ; `view` : RA | global | Offres | 10298 | `Proposé` |
-| `commandes_achats`, `lignes_commande` | `view` : DIR, ADM, CT, RA, CPT ; `prepare`, `submit` : ADM ; `approve` : DIR, SA | global / assigned_projects | Commandes | 10298, 10301, 10303 | `Proposé` |
-| `commandes_sous_traitance` | `view` : DIR, ADM, CT, RA, CPT ; `prepare`, `submit` : ADM ; `approve` : DIR, SA | global / assigned_projects | Sous-traitance | 10298, 10301, 10303 | `Proposé` |
-| `evaluations_fournisseurs` | `view`, `create`, `update` : ADM ; `view` : RA | global | Évaluations | 10298 | `Proposé` |
-| `accords_cadres`, `garanties_fournisseurs` | `view`, `create`, `update` : ADM ; `view` : RA | global | Accords et garanties | 10298 | `À arbitrer` sur approbation |
-| `factures_fournisseurs` | `view`, `create`, `update`, `reconcile` : CPT ; `view` : ADM | global | Factures fournisseurs | 10300 | `Proposé` |
-| `incidents_sous_traitance` | `create` : CC ; `view` : CT, RA ; `update` : CT/RA à confirmer | assigned_projects | Incidents sous-traitance | 10303 | `À arbitrer` |
+| `fournisseurs`, `sous_traitants` | Accès complet DIR : toutes actions applicables ; ADM, CT, CC, RA et CPT conservent leurs droits | global DIR / global | Référentiels fournisseurs et sous-traitants | Arbitrage A.4.2 Groupe 2 ; 10298, 10300 | Décision DIR confirmée ; actions à normaliser |
+| `demandes_achat` | Accès complet DIR : toutes actions applicables ; ADM, CT et RA conservent leurs droits | global DIR / assigned_projects | Demandes d’achat | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `besoins` | Accès complet DIR : toutes actions applicables ; CC, CT et RA conservent leurs droits | global DIR / assigned_projects | Signalement et suivi des besoins d’approvisionnement | Arbitrage A.4.2 Groupe 2 ; 10303 | Décision DIR confirmée ; actions à normaliser |
+| `offres_fournisseurs` | Accès complet DIR : toutes actions applicables ; ADM et RA conservent leurs droits | global DIR / global | Offres fournisseurs | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `commandes_achats`, `lignes_commande` | Accès complet DIR aux actions applicables, dont consultation, préparation, modification, soumission et approbation ; ADM, CT, RA, CPT et SA conservent leurs droits | global DIR / global / assigned_projects | Commandes d’achat et engagements | Arbitrage A.4.2 Groupe 2 ; 10298, 10301, 10303 | Décision DIR confirmée ; approbation DIR uniquement lorsque le seuil cumulé de 100 000 € HT par opération est dépassé, selon §5.6 ; actions à normaliser |
+| `commandes_sous_traitance` | Accès complet DIR aux actions applicables, dont consultation, préparation, modification, soumission et approbation ; ADM, CT, RA, CPT et SA conservent leurs droits | global DIR / global / assigned_projects | Commandes de sous-traitance et engagements | Arbitrage A.4.2 Groupe 2 ; 10298, 10301, 10303 | Décision DIR confirmée ; approbation DIR uniquement lorsque le seuil cumulé de 100 000 € HT par opération est dépassé, selon §5.6 ; actions à normaliser |
+| `evaluations_fournisseurs` | Accès complet DIR : toutes actions applicables ; ADM et RA conservent leurs droits | global DIR / global | Évaluation des fournisseurs | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `accords_cadres`, `garanties_fournisseurs` | Accès complet DIR : toutes actions applicables, y compris approbation si l’action existe ; ADM et RA conservent leurs droits | global DIR / global | Accords-cadres et garanties fournisseurs | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `factures_fournisseurs` | Accès complet DIR : toutes actions applicables, dont consultation, création, modification et rapprochement ; CPT et ADM conservent leurs droits | global DIR / global | Factures fournisseurs et rapprochement | Arbitrage A.4.2 Groupe 2 ; 10300 | Décision DIR confirmée ; actions à normaliser ; exécution des paiements soumise aux règles financières dédiées |
+| `incidents_sous_traitance` | Accès complet DIR : toutes actions applicables ; CC, CT et RA conservent leurs droits | global DIR / assigned_projects | Incidents de sous-traitance | Arbitrage A.4.2 Groupe 2 ; 10303 | Décision DIR confirmée ; actions à normaliser |
 
 ### 5.11 Inventory
 
@@ -661,7 +661,7 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | Workforce | données RH métier hors exception médicale | accès complet global à toutes les ressources RH et actions applicables, y compris create/update/validate/delete ; secret médical, conservation légale et séparation des tâches maintenus | RH administrative, variables paie selon §5 | RH opérationnelle limitée | équipe | collaborateurs | dossier et bulletins propres | paie, bulletins et données nécessaires aux virements |
 | TimeTracking | droits métier globaux | accès complet global à toutes les ressources et actions applicables, y compris create/update/delete/validate/authorize/close/reopen ; hors documents médicaux détaillés | absences courantes | pointages chantier affectés, corrections/réouvertures | pointages équipe | pointages équipe atelier | pointages et absences propres | lecture des temps validés pour paie |
 | Workshop | droits métier globaux | accès complet global à toutes les ressources et actions applicables (view/create/update/delete/validate et actions spécifiques) | — | lecture | OF, comptes rendus | OF, production | OF personnels | — |
-| Procurement | droits métier globaux | view/approve uniquement lorsque listés au §5 ; autres droits transversaux à qualifier en A-16 si confirmés | fournisseurs, demandes, préparation | demandes | besoins, sous-traitants | demandes, fournisseurs | — | consultation commandes |
+| Procurement | droits métier globaux | accès complet global aux ressources et actions applicables ; approbation des engagements DIR selon seuil cumulé > 100 000 € HT par opération | fournisseurs, demandes, préparation | demandes | besoins, sous-traitants | demandes, fournisseurs | — | consultation commandes |
 | Inventory | droits métier globaux | transversal à normaliser | — | mouvements | stocks, consommations | stocks, mouvements | — | lecture |
 | Equipment | droits métier globaux | transversal à normaliser | — | équipements | équipements, pannes | équipements, maintenance | équipement personnel | — |
 | Logistics | droits métier globaux | transversal à normaliser | — | livraisons | — | expédition | — | — |
@@ -805,7 +805,7 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-13 | Cache Spatie | Cache standard constaté | Documenter l’invalidation après synchronisation et opérations SQL directes | Exploitation | Développement |
 | A-14 | Intégration comptable externe | Périmètre non défini dans les commentaires disponibles | Déterminer l’interface et la frontière avec un logiciel/prestataire comptable | Architecture | Direction / architecture |
 | A-15 | Périmètre CHAN-45 et audit | CHAN-45 est mentionné dans la documentation du dépôt comme journalisation de sécurité ; le périmètre exact sur l’audit métier immuable n’est pas vérifié | Confirmer si CHAN-45 porte l’audit métier ou prévoir un lot dédié | Périmètre du stockage d’audit | Architecture / sécurité |
-| A-16 | Droits transversaux DIR non traduits | Groupe 1 arbitré sur Identity, Clients, Projects et Planning ; Groupe 2 : arbitrages sur planning/conflits, budgets, contingences, engagements, provisions, périodes analytiques, chiffrages/coûts/écarts, accès complet RH, TimeTracking et Workshop | Poursuivre la revue exhaustive des domaines restants et des ressources/actions non résolues ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Les droits RH, TimeTracking et Workshop DIR couvrent toutes les ressources et actions applicables, y compris create/update/validate/delete, sous réserve du secret médical, de la conservation légale, de la traçabilité et de la séparation des tâches. Ne pas étendre ces décisions aux autres domaines ni aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
+| A-16 | Droits transversaux DIR non traduits | Groupe 1 arbitré sur Identity, Clients, Projects et Planning ; Groupe 2 : arbitrages sur planning/conflits, budgets, contingences, engagements, provisions, périodes analytiques, chiffrages/coûts/écarts, accès complet RH, TimeTracking, Workshop et Procurement | Poursuivre la revue exhaustive des domaines restants et des ressources/actions non résolues ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Les droits RH, TimeTracking, Workshop et Procurement DIR couvrent toutes les ressources et actions applicables, y compris create/update/validate/delete, sous réserve du secret médical, de la conservation légale, de la traçabilité et de la séparation des tâches. Pour les commandes d’achat et de sous-traitance, l’approbation DIR reste limitée aux engagements dépassant 100 000 € HT cumulés par opération ; l’exécution des paiements conserve ses règles financières dédiées. Ne pas étendre ces décisions aux autres domaines ni aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
 | A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent de scopes distincts (`assigned_projects` et `assigned_sites`) ; aucun élément validé ne permet d’attribuer un scope aux `lots_phases` | Confirmer si chaque lot/phase relève de l’affaire, du chantier ou d’une relation propre. Tant que ce rattachement n’est pas validé, conserver la ressource sans permission opérationnelle ni scope attribué ; ne pas déduire `assigned_projects`, `assigned_sites` ou `policy_defined` de l’ancien regroupement | §5.3 et §8 ; accès non attribué en attente d’arbitrage | Architecture / métier |
 
 
@@ -980,6 +980,21 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 - La suppression est accordée fonctionnellement, mais son exécution doit respecter les obligations légales de conservation, les durées de rétention et l’inaltérabilité des traces. Lorsque la suppression est interdite ou inappropriée, utiliser l’archivage ou la désactivation.
 - Les workflows de séparation des tâches restent applicables : DIR ne peut pas s’auto-approuver lorsque la règle impose une validation indépendante ; les changements de coordonnées bancaires doivent être validés par une personne différente du demandeur/modificateur.
 - Cette décision ne modifie pas les droits des autres rôles et ne donne aucun droit sur les ressources non RH.
+
+### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Procurement / Achats et approvisionnements
+
+**Décision métier reçue le 23/11/2026.** DIR bénéficie d’un accès complet à toutes les ressources du domaine Procurement et à toutes les actions applicables.
+
+| Domaine / ressource | Décision DIR | Actions / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Procurement / toutes les ressources du §5.10 | Accès complet DIR | Toutes les actions applicables, notamment consultation, création, modification, suppression, préparation, soumission, validation, approbation et rapprochement lorsque ces actions existent | Global pour DIR | Décision confirmée ; actions à normaliser dans le catalogue |
+
+**Garde-fous et limites.**
+
+- Pour les commandes d’achat et de sous-traitance constituant des engagements financiers, l’approbation DIR demeure soumise au seuil cumulé strictement supérieur à 100 000 € HT par opération, en agrégeant commandes et avenants et en empêchant le fractionnement artificiel (§5.6).
+- L’accès complet aux factures fournisseurs et leur rapprochement ne confèrent pas à DIR un droit d’exécuter les paiements ; les règles de préparation, autorisation et exécution des paiements restent distinctes.
+- Les droits existants des autres rôles sont conservés. Les responsabilités de préparation et de traitement opérationnel ne sont pas transférées à DIR.
+- Cette décision concerne uniquement Procurement (§5.10) et ne crée aucun droit supplémentaire dans Inventory, Equipment, Logistics, Quality ou Safety.
 
 ### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Workshop / Production
 
