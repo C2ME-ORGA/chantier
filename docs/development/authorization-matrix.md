@@ -480,9 +480,9 @@ Les règles de portée globale sont fonctionnellement `Validé` et techniquement
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `budgets` | `view`, `create`, `update`, `submit` : CT ; `approve` : DIR, SA ; `view` : ADM, CPT, DIR | assigned_projects / global | Budgets | 10298, 10301 | `Proposé` |
+| `budgets` | `view`, `create`, `update`, `submit` : CT ; `approve` : DIR, SA ; `view` : ADM, CPT, DIR | assigned_projects pour CT ; global pour DIR, SA, ADM, CPT selon rôle | Budgets ; approbation obligatoire de tous les budgets par DIR sans seuil de montant | 10298, 10301, arbitrage A.4.2 Groupe 2 | Approbation DIR sans restriction de montant validée fonctionnellement ; workflow à préciser |
 | `lignes_budgetaires` | `view`, `create`, `update` : CT ; `view` : ADM, CPT | assigned_projects | Lignes budgétaires | 10298 | `Proposé` |
-| `revisions_budgetaires` | `view`, `create`, `update`, `submit` : CT ; `approve` : DIR, SA ; `view` : ADM, CPT | assigned_projects / global | Révisions | 10298, 10301 | `Proposé` |
+| `revisions_budgetaires` | `view`, `create`, `update`, `submit` : CT ; `approve` : DIR, SA ; `view` : ADM, CPT | assigned_projects pour CT ; global pour DIR, SA, ADM, CPT selon rôle | Révisions ; approbation obligatoire de toutes les révisions par DIR sans seuil de montant | 10298, 10301, arbitrage A.4.2 Groupe 2 | Approbation DIR sans restriction de montant validée fonctionnellement ; workflow à préciser |
 | `contingences` | `view`, `create`, `update` : CT ; `approve` : DIR à confirmer | assigned_projects | Contingences | 10298 | `À arbitrer` |
 
 ### 5.6 Costing
@@ -656,7 +656,7 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | Clients | droits métier globaux | view factures, avoirs, relances, échéanciers, litiges, règlements ; approve conditions commerciales/devis ; arbitrate litiges ; approbation de régularisation financière à modéliser | prospects, clients, contacts, devis | lecture | — | — | — | factures, avoirs, relances |
 | Projects | droits métier globaux | view global affaires, chantiers, études, jalons, rapports, commandes, contrats, avenants et réceptions ; approve commandes/avenants/contrats/réception contractuelle et dossier Handover | lecture | affaires, chantiers, lots | lecture | — | — | lecture chantiers |
 | Planning | droits métier globaux | view global plannings contractuels/opérationnels, affectations, conflits et avancement ; arbitrate conflits | — | planning, affectations | lecture | planning atelier | planning personnel | — |
-| Budgets | droits métier globaux | view budgets ; approbations explicitement listées au §5, autres actions à qualifier en A-16 si confirmées | lecture | budgets, révisions | — | — | — | révisions à normaliser |
+| Budgets | droits métier globaux | view budgets ; approve tous budgets et toutes révisions sans seuil de montant | lecture | budgets, révisions | — | — | — | révisions à normaliser |
 | Costing | droits métier globaux | view chiffrages/coûts/marges/écarts/provisions + approve provisions | — | coûts, marges, écarts | — | coûts atelier | — | coûts |
 | Workforce | données RH métier hors exception médicale | view RH selon §5, accès encadré, pas d’administration | RH administrative, variables paie | RH opérationnelle limitée | équipe | collaborateurs | dossier et bulletins propres | paie, bulletins et données nécessaires aux virements |
 | TimeTracking | droits métier globaux | view/supervise pointages + arbitrage absences | absences courantes | pointages chantier affectés, corrections/réouvertures | pointages équipe | pointages équipe atelier | pointages et absences propres | lecture des temps validés pour paie |
@@ -903,6 +903,18 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 | Planning / conflits | Arbitrage des conflits | `arbitrate` sur les conflits de planning, en complément de `view` | Global pour DIR ; CT reste limité à assigned_projects | Décision fonctionnelle confirmée ; permission à normaliser dans A-07 et contrôle de périmètre à implémenter dans CHAN-42 |
 
 **Limites conservées.** Ce droit permet à DIR de trancher les conflits de planning. Il ne lui attribue pas la création, la modification ou l'affectation quotidienne des plannings, et ne transfère pas les responsabilités opérationnelles de CT, CC ou RA. La portée globale concerne l'arbitrage DIR ; les scopes des rôles opérationnels restent inchangés.
+
+
+### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Budgets
+
+**Décision métier reçue le 23/11/2026.**
+
+| Domaine / ressource | Décision DIR | Action atomique / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Budgets | Approbation systématique de tous les budgets | `approve` sur chaque budget, sans seuil ni restriction de montant | Global pour DIR | Décision fonctionnelle confirmée ; workflow et séparation des tâches à préciser |
+| Révisions budgétaires | Approbation systématique de toutes les révisions | `approve` sur chaque révision budgétaire, sans seuil ni restriction de montant | Global pour DIR | Décision fonctionnelle confirmée ; workflow et séparation des tâches à préciser |
+
+**Limites conservées.** Cette décision ne donne pas à DIR les droits `create`, `update` ou `submit` sur les budgets ou leurs révisions. Les droits de préparation et de soumission de CT restent distincts. L'approbation par DIR est requise pour chaque budget et chaque révision, quel que soit le montant.
 
 ### Arbitrage A-17 — rattachement des lots et phases
 
