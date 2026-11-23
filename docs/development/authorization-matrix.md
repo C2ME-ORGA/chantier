@@ -423,7 +423,7 @@ Les tableaux indiquent les actions et les rôles. Chaque action listée forme un
 Deux rôles ont une portée fonctionnelle globale décidée par 10303. Ces règles ne sont pas répétées sur chaque ligne métier :
 
 - **SA** : droit métier et administratif global sur les modules et données métier, sous réserve de l’exception médicale et des Policies CHAN-42. Les permissions SA listées dans les tableaux sont celles qui nécessitent une précision.
-- **DIR** : responsabilité métier transversale sur les modules et les données nécessaires au pilotage. Cette responsabilité ne constitue pas une attribution générique de `view`, `create`, `update` ou `validate`. Les actions DIR effectivement inscrites au §5 sont les seules permissions explicites synthétisées au §6. Toute capacité transversale fonctionnellement confirmée mais non traduite en ligne de ressource est recensée dans A-16 comme non traduite ; toute capacité dont l’existence ou l’étendue n’est pas suffisamment établie reste à arbitrer. Les approbations financières, paiements, paie, RH sensibles et reporting stratégique conservent leurs règles spécifiques.
+- **DIR** : responsabilité métier transversale sur les modules et les données nécessaires au pilotage. Elle ne crée pas automatiquement de CRUDV générique : les accès complets accordés par arbitrage explicite sont détaillés ressource par ressource au §5 (notamment Costing, Workforce, TimeTracking et Workshop). Les autres actions DIR effectivement inscrites au §5 sont les seules permissions explicites ; toute capacité non traduite est suivie en A-16 et toute capacité dont l’existence ou l’étendue n’est pas suffisamment établie reste à arbitrer. Les approbations financières, paiements, paie, données médicales et reporting stratégique conservent leurs règles spécifiques.
 
 Les règles de portée globale sont fonctionnellement `Validé` et techniquement `À normaliser` pour SA. Pour DIR, le principe de responsabilité transversale est validé, mais les permissions restent celles explicitement définies au §5 ; les écarts non traduits ou à arbitrer sont suivis en A-16. Aucun de ces principes ne crée un droit d’administration des habilitations pour DIR ni un accès automatique aux documents médicaux détaillés pour SA.
 
@@ -529,12 +529,12 @@ Le code candidat `timetracking.timesheets.validate` désigne la validation des f
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `ordres_fabrication` | `view` : DIR, CT, CC, RA, SAL own ; `create`, `update`, `reopen`, `close`, `validate` : RA | workshop / own | Production | 10298, 10299 | `Proposé` |
-| `dossiers_fabrication`, `operations`, `postes`, `capacites_atelier` | `view`, `create`, `update` : RA ; `view` : CT, CC | workshop | Dossiers et capacité | 10298 | `Proposé` |
-| `demandes_matiere` | `view`, `create`, `update` : RA | workshop | Besoins matière | 10298 | `Proposé` |
-| `comptes_rendus_production` | `view`, `create`, `update` : RA ; `view` : CT, CC ; `create` : SAL own | workshop / own | Déclaration de production | 10298, 10299 | `Proposé` |
-| `colis_fabrication` | `view`, `create`, `update` : RA ; `view` : CT | workshop | Expédition | 10298 | `Proposé` |
-| `rebuts`, `reprises` | `update`, `reopen` : RA | workshop | Reprises | 10298 | `À arbitrer` sur ressource |
+| `ordres_fabrication` | Accès complet DIR : toutes actions applicables, notamment `view`, `create`, `update`, `delete`, `reopen`, `close`, `validate` ; CT, CC, RA et SAL conservent leurs droits | global DIR / workshop / own | Production et pilotage des ordres de fabrication | Arbitrage A.4.2 Groupe 2 ; 10298, 10299 | Décision DIR confirmée ; actions à normaliser |
+| `dossiers_fabrication`, `operations`, `postes`, `capacites_atelier` | Accès complet DIR : toutes actions applicables, notamment `view`, `create`, `update`, `delete`, `validate` ; RA, CT et CC conservent leurs droits | global DIR / workshop | Dossiers, opérations, postes et capacité atelier | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `demandes_matiere` | Accès complet DIR : toutes actions applicables, notamment `view`, `create`, `update`, `delete`, `submit`, `validate` ; RA conserve ses droits | global DIR / workshop | Besoins et demandes matière | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `comptes_rendus_production` | Accès complet DIR : toutes actions applicables, notamment `view`, `create`, `update`, `delete`, `submit`, `validate` ; RA, CT, CC et SAL conservent leurs droits | global DIR / workshop / own | Déclaration et suivi de production | Arbitrage A.4.2 Groupe 2 ; 10298, 10299 | Décision DIR confirmée ; actions à normaliser ; historique de production conservé |
+| `colis_fabrication` | Accès complet DIR : toutes actions applicables, notamment `view`, `create`, `update`, `delete`, `validate`, `close` ; RA et CT conservent leurs droits | global DIR / workshop | Colis et expédition de fabrication | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
+| `rebuts`, `reprises` | Accès complet DIR : toutes actions applicables, notamment `view`, `create`, `update`, `delete`, `reopen`, `validate`, `close` ; RA conserve ses droits | global DIR / workshop | Rebuts, reprises et suivi de non-conformités de production | Arbitrage A.4.2 Groupe 2 ; 10298 | Décision DIR confirmée ; actions à normaliser |
 
 ### 5.10 Procurement
 
@@ -660,7 +660,7 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | Costing | droits métier globaux | view/create/update/validate chiffrages, coûts et écarts ; view marges/provisions ; approve provisions ; approve engagements uniquement au-delà de 100 000 € HT cumulés par opération ; view/lock/unlock/close périodes analytiques | — | coûts, marges, écarts | — | coûts atelier | — | coûts |
 | Workforce | données RH métier hors exception médicale | accès complet global à toutes les ressources RH et actions applicables, y compris create/update/validate/delete ; secret médical, conservation légale et séparation des tâches maintenus | RH administrative, variables paie selon §5 | RH opérationnelle limitée | équipe | collaborateurs | dossier et bulletins propres | paie, bulletins et données nécessaires aux virements |
 | TimeTracking | droits métier globaux | accès complet global à toutes les ressources et actions applicables, y compris create/update/delete/validate/authorize/close/reopen ; hors documents médicaux détaillés | absences courantes | pointages chantier affectés, corrections/réouvertures | pointages équipe | pointages équipe atelier | pointages et absences propres | lecture des temps validés pour paie |
-| Workshop | droits métier globaux | view OF | — | lecture | OF, comptes rendus | OF, production | OF personnels | — |
+| Workshop | droits métier globaux | accès complet global à toutes les ressources et actions applicables (view/create/update/delete/validate et actions spécifiques) | — | lecture | OF, comptes rendus | OF, production | OF personnels | — |
 | Procurement | droits métier globaux | view/approve uniquement lorsque listés au §5 ; autres droits transversaux à qualifier en A-16 si confirmés | fournisseurs, demandes, préparation | demandes | besoins, sous-traitants | demandes, fournisseurs | — | consultation commandes |
 | Inventory | droits métier globaux | transversal à normaliser | — | mouvements | stocks, consommations | stocks, mouvements | — | lecture |
 | Equipment | droits métier globaux | transversal à normaliser | — | équipements | équipements, pannes | équipements, maintenance | équipement personnel | — |
@@ -805,7 +805,7 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-13 | Cache Spatie | Cache standard constaté | Documenter l’invalidation après synchronisation et opérations SQL directes | Exploitation | Développement |
 | A-14 | Intégration comptable externe | Périmètre non défini dans les commentaires disponibles | Déterminer l’interface et la frontière avec un logiciel/prestataire comptable | Architecture | Direction / architecture |
 | A-15 | Périmètre CHAN-45 et audit | CHAN-45 est mentionné dans la documentation du dépôt comme journalisation de sécurité ; le périmètre exact sur l’audit métier immuable n’est pas vérifié | Confirmer si CHAN-45 porte l’audit métier ou prévoir un lot dédié | Périmètre du stockage d’audit | Architecture / sécurité |
-| A-16 | Droits transversaux DIR non traduits | Groupe 1 arbitré sur Identity, Clients, Projects et Planning ; Groupe 2 : arbitrages sur planning/conflits, budgets, contingences, engagements, provisions, périodes analytiques, chiffrages/coûts/écarts, accès complet RH et accès complet TimeTracking | Poursuivre la revue exhaustive des domaines restants et des ressources/actions non résolues ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Les droits RH et TimeTracking DIR couvrent toutes les ressources et actions applicables, y compris create/update/validate/delete, sous réserve du secret médical, de la conservation légale, de la traçabilité et de la séparation des tâches. Ne pas étendre ces décisions aux autres domaines ni aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
+| A-16 | Droits transversaux DIR non traduits | Groupe 1 arbitré sur Identity, Clients, Projects et Planning ; Groupe 2 : arbitrages sur planning/conflits, budgets, contingences, engagements, provisions, périodes analytiques, chiffrages/coûts/écarts, accès complet RH, TimeTracking et Workshop | Poursuivre la revue exhaustive des domaines restants et des ressources/actions non résolues ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Les droits RH, TimeTracking et Workshop DIR couvrent toutes les ressources et actions applicables, y compris create/update/validate/delete, sous réserve du secret médical, de la conservation légale, de la traçabilité et de la séparation des tâches. Ne pas étendre ces décisions aux autres domaines ni aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
 | A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent de scopes distincts (`assigned_projects` et `assigned_sites`) ; aucun élément validé ne permet d’attribuer un scope aux `lots_phases` | Confirmer si chaque lot/phase relève de l’affaire, du chantier ou d’une relation propre. Tant que ce rattachement n’est pas validé, conserver la ressource sans permission opérationnelle ni scope attribué ; ne pas déduire `assigned_projects`, `assigned_sites` ou `policy_defined` de l’ancien regroupement | §5.3 et §8 ; accès non attribué en attente d’arbitrage | Architecture / métier |
 
 
@@ -980,6 +980,20 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 - La suppression est accordée fonctionnellement, mais son exécution doit respecter les obligations légales de conservation, les durées de rétention et l’inaltérabilité des traces. Lorsque la suppression est interdite ou inappropriée, utiliser l’archivage ou la désactivation.
 - Les workflows de séparation des tâches restent applicables : DIR ne peut pas s’auto-approuver lorsque la règle impose une validation indépendante ; les changements de coordonnées bancaires doivent être validés par une personne différente du demandeur/modificateur.
 - Cette décision ne modifie pas les droits des autres rôles et ne donne aucun droit sur les ressources non RH.
+
+### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Workshop / Production
+
+**Décision métier reçue le 23/11/2026.** DIR bénéficie d’un accès complet à toutes les ressources du domaine Workshop et à toutes les actions applicables.
+
+| Domaine / ressource | Décision DIR | Actions / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Workshop / toutes les ressources du §5.9 | Accès complet DIR | Toutes les actions applicables, notamment `view`, `create`, `update`, `delete`, `submit`, `validate`, `reopen`, `close`, et les actions spécifiques aux ressources | Global pour DIR | Décision confirmée ; actions à normaliser dans le catalogue |
+
+**Garde-fous et limites.**
+
+- L’accès complet DIR ne retire pas les responsabilités opérationnelles de RA sur l’atelier, ni les droits existants de CT, CC et SAL.
+- Les opérations de production, rebuts et reprises doivent conserver leur historique et leur traçabilité ; une suppression physique ne doit pas effacer les éléments nécessaires à la justification de la production ou à l’audit.
+- Cette décision concerne uniquement le domaine Workshop (§5.9). Elle n’accorde pas automatiquement de droits sur Inventory, Equipment, Logistics, Quality ou Safety, qui feront l’objet d’arbitrages distincts.
 
 ### A.4.2 — Registre des arbitrages DIR, Groupe 2 — TimeTracking
 
