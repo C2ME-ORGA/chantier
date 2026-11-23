@@ -453,7 +453,7 @@ Les règles de portée globale sont fonctionnellement `Validé` et techniquement
 | `avoirs` | Accès complet DIR : toutes les actions applicables (`view`, `create`, `update`, `issue`, `delete` si l’action existe) ; `view`, `create`, `update`, `issue` : CPT | global pour DIR et CPT | DIR dispose de tous les droits métier applicables sur les avoirs clients, y compris leur création, modification et émission ; droits CPT conservés | 10300, décision A.4.2 du 24/11/2026 | Accès complet DIR confirmé ; suppression soumise aux obligations comptables de conservation et à la traçabilité |
 | `relances` | Accès complet DIR : toutes les actions applicables (`view`, `create`, `update`, `issue`, `close`, `delete` si disponibles) ; `view`, `create`, `update` : CPT | global pour DIR et CPT | DIR dispose de tous les droits métier applicables sur les relances clients, y compris création, modification, émission et clôture ; droits CPT conservés | 10300, décision A.4.2 du 24/11/2026 | Accès complet DIR confirmé ; suppression soumise aux obligations de conservation et à la traçabilité |
 | `echeanciers` | Accès complet DIR : toutes les actions applicables (`view`, `create`, `update`, `validate`, `close`, `delete` si disponibles) ; `view`, `create`, `update` : CPT | global pour DIR et CPT | DIR dispose de tous les droits métier applicables sur les échéanciers clients, y compris création, modification, validation et clôture ; droits CPT conservés | 10300, décision A.4.2 du 24/11/2026 | Accès complet DIR confirmé ; suppression soumise aux obligations de conservation et à la traçabilité |
-| `litiges_facturation` | `view`, `create`, `update` : CPT ; `view`, `arbitrate` : DIR ; approbation d'une régularisation financière par DIR à modéliser dans un workflow distinct | global | Consultation et arbitrage DIR ; aucune création/émission d'avoir ni exécution de paiement par effet implicite | 10300, arbitrage A.4.2 Groupe 1 | Arbitrage et consultation validés ; action `arbitrate` à normaliser (A-07) ; objet/action d'approbation financière à préciser |
+| `litiges_facturation` | Accès complet DIR : toutes les actions applicables (`view`, `create`, `update`, `treat`, `arbitrate`, `close`, `delete` si disponibles) ; `view`, `create`, `update` : CPT | global pour DIR et CPT | DIR dispose de tous les droits métier applicables sur les litiges de facturation, y compris création, modification, traitement, arbitrage et clôture ; droits CPT conservés | 10300, arbitrage A.4.2 Groupe 1 et décision du 24/11/2026 | Accès complet DIR confirmé ; action `arbitrate` à normaliser (A-07) ; régularisation financière via workflow distinct ; suppression soumise à conservation et traçabilité |
 | `reglements` | `view`, `reconcile` : CPT ; `view` : DIR | global | Consultation DIR ; rapprochement CPT | 10300, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permissions à intégrer |
 
 ### 5.3 Projects
@@ -1335,3 +1335,14 @@ Cette décision est limitée aux relances. Elle ne modifie pas les droits sur le
 | Clients / `echeanciers` | Accès complet DIR | Toutes les actions applicables, dont `view`, `create`, `update`, `validate`, `close` et `delete` si disponible | global pour DIR | Décision validée ; suppression soumise aux obligations de conservation et à la traçabilité |
 
 Cette décision est limitée aux échéanciers. Elle ne modifie pas les droits DIR sur les litiges de facturation, ni la séparation des tâches applicable aux paiements.
+
+
+### A.4.2 — Registre des arbitrages DIR — Litiges de facturation
+
+**Décision métier reçue le 24/11/2026.** DIR bénéficie de tous les droits métier applicables sur les litiges de facturation : consultation, création, modification, traitement, arbitrage et clôture. La suppression est accordée uniquement si l’action existe et si elle est compatible avec les obligations de conservation et de traçabilité. Les droits existants de CPT sont conservés.
+
+| Domaine / ressource | Décision métier | Actions / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Clients / `litiges_facturation` | Accès complet DIR | Toutes les actions applicables, dont `view`, `create`, `update`, `treat`, `arbitrate`, `close` et `delete` si disponible | global pour DIR | Décision validée ; normalisation de `arbitrate` maintenue dans A-07 ; régularisation financière via workflow distinct ; suppression soumise à conservation et traçabilité |
+
+L'accès complet aux litiges n'autorise pas implicitement l'émission d'un avoir ni l'exécution d'un paiement. L'approbation d'une régularisation financière reste un workflow distinct à modéliser ; les paiements restent soumis à la séparation des tâches : DIR/SA autorisent ou refusent, CPT prépare et exécute, et le préparateur ne peut autoriser son propre paiement.
