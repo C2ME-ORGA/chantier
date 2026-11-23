@@ -483,7 +483,7 @@ Les règles de portée globale sont fonctionnellement `Validé` et techniquement
 | `budgets` | `view`, `create`, `update`, `submit` : CT ; `approve` : DIR, SA ; `view` : ADM, CPT, DIR | assigned_projects pour CT ; global pour DIR, SA, ADM, CPT selon rôle | Budgets ; approbation obligatoire de tous les budgets par DIR sans seuil de montant | 10298, 10301, arbitrage A.4.2 Groupe 2 | Approbation DIR sans restriction de montant validée fonctionnellement ; workflow à préciser |
 | `lignes_budgetaires` | `view`, `create`, `update` : CT ; `view` : ADM, CPT | assigned_projects | Lignes budgétaires | 10298 | `Proposé` |
 | `revisions_budgetaires` | `view`, `create`, `update`, `submit` : CT ; `approve` : DIR, SA ; `view` : ADM, CPT | assigned_projects pour CT ; global pour DIR, SA, ADM, CPT selon rôle | Révisions ; approbation obligatoire de toutes les révisions par DIR sans seuil de montant | 10298, 10301, arbitrage A.4.2 Groupe 2 | Approbation DIR sans restriction de montant validée fonctionnellement ; workflow à préciser |
-| `contingences` | `view`, `create`, `update` : CT ; `approve` : DIR à confirmer | assigned_projects | Contingences | 10298 | `À arbitrer` |
+| `contingences` | `view`, `create`, `update` : CT ; `approve` : DIR | assigned_projects pour CT ; global pour DIR | Approbation obligatoire de toutes les contingences par DIR sans seuil de montant ; préparation et modification restent distinctes | 10298, arbitrage A.4.2 Groupe 2 | Approbation DIR sans restriction de montant validée fonctionnellement ; workflow et séparation des tâches à préciser |
 
 ### 5.6 Costing
 
@@ -915,6 +915,16 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 | Révisions budgétaires | Approbation systématique de toutes les révisions | `approve` sur chaque révision budgétaire, sans seuil ni restriction de montant | Global pour DIR | Décision fonctionnelle confirmée ; workflow et séparation des tâches à préciser |
 
 **Limites conservées.** Cette décision ne donne pas à DIR les droits `create`, `update` ou `submit` sur les budgets ou leurs révisions. Les droits de préparation et de soumission de CT restent distincts. L'approbation par DIR est requise pour chaque budget et chaque révision, quel que soit le montant.
+
+### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Contingences
+
+**Décision métier reçue le 23/11/2026.**
+
+| Domaine / ressource | Décision DIR | Action atomique / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Contingences budgétaires | Approbation systématique de toutes les contingences | `approve` sur chaque contingence, sans seuil ni restriction de montant | Global pour DIR ; assigned_projects pour CT sur la préparation | Décision fonctionnelle confirmée ; workflow et séparation des tâches à préciser |
+
+**Limites conservées.** Cette décision ne donne pas à DIR les droits `create` ou `update` sur les contingences. CT conserve la préparation et la modification dans son périmètre affecté. L'approbation DIR est requise pour chaque contingence, quel que soit le montant.
 
 ### Arbitrage A-17 — rattachement des lots et phases
 
