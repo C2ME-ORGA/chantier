@@ -447,33 +447,33 @@ Les règles de portée globale sont fonctionnellement `Validé` et techniquement
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
 | `prospects`, `clients`, `contacts`, `relations_commerciales` | `view`, `create`, `update` : ADM ; `view` : DIR selon liste | global / company | Gestion administrative | 10298 | `Proposé` |
-| `conditions_commerciales` | `view`, `create`, `update` : ADM ; `approve` : DIR dans limites à définir | global | Conditions cadre | 10298 | `À arbitrer` |
+| `conditions_commerciales` | `view`, `create`, `update` : ADM ; `approve` : DIR pour toutes les conditions, modifications et dérogations | global | Approbation des conditions commerciales, sans droit implicite de modification pour DIR | 10298, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permission à intégrer et workflow à préciser |
 | `devis_commerciaux` | `view`, `create`, `update`, `submit` : ADM ; `approve` : DIR, SA ; `view` : DIR | global | Préparation, soumission et approbation | 10298, 10301 | `Proposé` |
-| `factures_clients`, `avoirs` | `view`, `create`, `update`, `issue` : CPT ; `view` : DIR selon liste | global | Facturation client | 10300 | `Proposé` |
-| `relances`, `echeanciers`, `litiges_facturation` | `view`, `create`, `update` : CPT | global | Suivi de facturation | 10300 | `Proposé` |
-| `reglements` | `view`, `reconcile` : CPT | global | Règlements et rapprochement | 10300 | `À arbitrer` |
+| `factures_clients`, `avoirs` | `view`, `create`, `update`, `issue` : CPT ; `view` : DIR | global | Consultation DIR ; préparation et émission comptables conservées à CPT | 10300, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permissions à intégrer |
+| `relances`, `echeanciers`, `litiges_facturation` | `view`, `create`, `update` : CPT ; `view`, `arbitrate` : DIR ; approbation d'une régularisation financière par DIR à modéliser dans un workflow distinct | global | Consultation et arbitrage DIR ; aucune création/émission d'avoir ni exécution de paiement par effet implicite | 10300, arbitrage A.4.2 Groupe 1 | Arbitrage et consultation validés ; action `arbitrate` à normaliser (A-07) ; objet/action d'approbation financière à préciser |
+| `reglements` | `view`, `reconcile` : CPT ; `view` : DIR | global | Consultation DIR ; rapprochement CPT | 10300, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permissions à intégrer |
 
 ### 5.3 Projects
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `affaires` | `view`, `create`, `update` : CT ; `view` : ADM, CC, CPT, DIR selon liste | assigned_projects | Affaires au niveau contractuel/commercial | 10298 | `Proposé` |
-| `chantiers` | `view`, `create`, `update` : CT ; `view` : ADM, CC, CPT, DIR selon liste | assigned_sites | Gestion opérationnelle des sites/chantiers affectés | 10298 | `Proposé` |
+| `affaires` | `view`, `create`, `update` : CT ; `view` : ADM, CC, CPT, DIR | global pour DIR ; assigned_projects pour CT | Affaires au niveau contractuel/commercial ; consultation DIR globale | 10298, arbitrage A.4.2 Groupe 1 | Consultation DIR validée ; permissions à intégrer |
+| `chantiers` | `view`, `create`, `update` : CT ; `view` : ADM, CC, CPT, DIR | global pour DIR ; assigned_sites pour CT | Gestion opérationnelle ; consultation DIR globale | 10298, arbitrage A.4.2 Groupe 1 | Consultation DIR validée ; permissions à intégrer |
 | `lots_phases` | Actions et attribution à confirmer selon le rattachement métier au niveau affaire ou chantier | À arbitrer | Le document source ne permet pas de fixer un scope unique sans arbitrage | 10298 | `À arbitrer` |
-| `etudes` | `view`, `create`, `update` : CT | assigned_projects | Études | 10298 | `Proposé` |
+| `etudes` | `view`, `create`, `update` : CT ; `view` : DIR | global pour DIR ; assigned_projects pour CT | Consultation DIR des études | 10298, arbitrage A.4.2 Groupe 1 | Consultation DIR validée ; permission à intégrer |
 | `commandes_clients` | `view` : DIR, ADM, CT, CPT ; `approve` : DIR, SA | global / assigned_projects | Approbation contractuelle | 10298, 10301 | `Proposé` |
-| `avenants` | `view` : DIR, ADM, CT ; `prepare`, `submit` : CT à confirmer ; `approve` : DIR, SA | global / assigned_projects | Avenants et seuil | 10298, 10303 | `À arbitrer` |
+| `avenants` | `view` : DIR, ADM, CT ; `prepare`, `submit` : CT à confirmer ; `approve` : DIR, SA | global pour DIR ; assigned_projects pour CT | Approbation DIR uniquement ; préparation/soumission CT non modifiées ; seuil et cumul applicables | 10298, 10303, arbitrage A.4.2 Groupe 1 | Approbation DIR validée ; préparation/soumission CT restent à arbitrer |
 | `contrats` | `view` : DIR, ADM, CT, CPT ; `approve` : DIR, SA | global | Contrats | 10298, 10301 | `Proposé` |
 | `jalons` | `view`, `update` : CT ; `view` : DIR, CC | assigned_projects | Jalons | 10298 | `Proposé` |
-| `receptions` | `view`, `prepare` : CT ; `view` : CC ; `approve` : DIR à confirmer | assigned_projects | Réception contractuelle | 10298 | `À arbitrer` |
+| `receptions` | `view`, `prepare` : CT ; `view` : CC ; `approve` : DIR | global pour DIR ; assigned_projects pour CT | Approbation de la réception contractuelle par DIR, distincte de l'approbation finale du dossier Handover | 10298, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permission à intégrer |
 | `rapports_operationnels` | `view`, `create`, `update` : CT, CC ; `view` : DIR | assigned_projects | Rapports | 10298 | `Proposé` |
 
 ### 5.4 Planning
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `plannings`, `affectations` | `view`, `create`, `update`, `assign` : CT ; `view` : CC, RA, SAL ; `update` atelier : RA | assigned_projects / own_team | Planning et affectations | 10298, 10299 | `Proposé` |
-| `conflits` | `view` : CT, DIR ; arbitrage : DIR | global / assigned_projects | Arbitrage de conflits | 10298 | `À arbitrer` |
+| `plannings`, `affectations` | `view`, `create`, `update`, `assign` : CT ; `view` : CC, RA, SAL, DIR ; `update` atelier : RA | global pour DIR ; assigned_projects / own_team pour les rôles opérationnels | Consultation DIR des plannings contractuels et opérationnels ; aucune gestion quotidienne | 10298, arbitrage A.4.2 Groupe 1 | Consultation DIR validée ; permission à intégrer |
+| `conflits` | `view` : CT, DIR ; arbitrage : DIR à confirmer séparément | global pour DIR ; assigned_projects pour CT | Consultation DIR ; arbitrage des conflits non décidé par le seul choix de consultation des plannings | 10298, arbitrage A.4.2 Groupe 1 | Consultation confirmée ; action `arbitrate` sur conflits reste à arbitrer |
 | `avancement` | `view`, `update` : CT, CC ; `view` : DIR | assigned_projects | Avancement | 10298 | `Proposé` |
 
 ### 5.5 Budgets
@@ -615,7 +615,7 @@ Le code candidat `timetracking.timesheets.validate` désigne la validation des f
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `dossiers_reception`, `reserves`, `levees_reserves`, `doe` | `view`, `create`, `update` : CT, CC ; `view` : DIR | assigned_projects | Réception | 10298 | `Proposé` |
+| `dossiers_reception` | `view`, `create`, `update` : CT, CC ; `view`, `approve` : DIR | global pour DIR ; assigned_projects pour CT, CC | Approbation finale DIR du dossier de réception, distincte de la réception contractuelle Projects ; n'accorde pas l'approbation des réserves, levées de réserves ou DOE | 10298, arbitrage A.4.2 Groupe 1 | Décision métier validée ; permission à intégrer |\n| `reserves`, `levees_reserves`, `doe` | `view`, `create`, `update` : CT, CC ; `view` : DIR | global pour DIR ; assigned_projects pour CT, CC | Consultation et gestion opérationnelle des réserves, levées et DOE ; aucune approbation DIR décidée ici | 10298, arbitrage A.4.2 Groupe 1 | Consultation confirmée ; actions opérationnelles inchangées |
 | `garanties_clients` | `view` : CT, ADM ; `update` : ADM à confirmer | company / assigned_projects | Garanties | 10298 | `À arbitrer` |
 | `dossiers_cloture` | `view` : DIR, CT, ADM ; `create`, `update` : CT, ADM ; `close` : ADM à confirmer | assigned_projects / company | Clôture | 10298 | `À arbitrer` |
 
@@ -653,9 +653,9 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | Domaine | SA | DIR | ADM | CT | CC | RA | SAL | CPT |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Identity | administration complète des habilitations, panel | panel, sans administration des habilitations | panel | panel | panel | panel | portail personnel, panel non | panel |
-| Clients | droits métier globaux | view selon liste + approve conditions/devis | prospects, clients, contacts, devis | lecture | — | — | — | factures, avoirs, relances |
-| Projects | droits métier globaux | view selon liste + approve commandes/avenants/contrats | lecture | affaires, chantiers, lots | lecture | — | — | lecture chantiers |
-| Planning | droits métier globaux | view conflits/avancement selon §5 ; droits DIR supplémentaires à qualifier en A-16 | — | planning, affectations | lecture | planning atelier | planning personnel | — |
+| Clients | droits métier globaux | view factures, avoirs, relances, échéanciers, litiges, règlements ; approve conditions commerciales/devis ; arbitrate litiges ; approbation de régularisation financière à modéliser | prospects, clients, contacts, devis | lecture | — | — | — | factures, avoirs, relances |
+| Projects | droits métier globaux | view global affaires, chantiers, études, jalons, rapports, commandes, contrats, avenants et réceptions ; approve commandes/avenants/contrats/réception contractuelle et dossier Handover | lecture | affaires, chantiers, lots | lecture | — | — | lecture chantiers |
+| Planning | droits métier globaux | view global plannings contractuels/opérationnels, affectations, conflits et avancement ; arbitrage conflits reste à arbitrer | — | planning, affectations | lecture | planning atelier | planning personnel | — |
 | Budgets | droits métier globaux | view budgets ; approbations explicitement listées au §5, autres actions à qualifier en A-16 si confirmées | lecture | budgets, révisions | — | — | — | révisions à normaliser |
 | Costing | droits métier globaux | view chiffrages/coûts/marges/écarts/provisions + approve provisions | — | coûts, marges, écarts | — | coûts atelier | — | coûts |
 | Workforce | données RH métier hors exception médicale | view RH selon §5, accès encadré, pas d’administration | RH administrative, variables paie | RH opérationnelle limitée | équipe | collaborateurs | dossier et bulletins propres | paie, bulletins et données nécessaires aux virements |
@@ -668,7 +668,7 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | Quality | droits métier globaux | view plans/NCR selon §5 ; autres capacités transversales à qualifier en A-16 si confirmées | — | contrôles | contrôles, NCR | contrôles, NCR, clôture | signalements | — |
 | Safety | droits métier globaux | transversal à normaliser | — | inspections | inspections, incidents | atelier | signalements | — |
 | Documents | droits métier globaux | view selon §5 ; autres capacités transversales à qualifier en A-16 si confirmées | documents admin | documents chantier | documents, diffusion | documents atelier | documents personnels | lecture |
-| Handover | droits métier globaux | view selon §5 ; toute autre capacité non traduite reste suivie en A-16 si confirmée | clôture à normaliser | réceptions, réserves | réserves | — | — | — |
+| Handover | droits métier globaux | view global dossiers de réception, réserves, levées et DOE ; approve dossier de réception final uniquement | clôture à normaliser | réceptions, réserves | réserves | — | — | — |
 | Reporting | droits métier globaux | view stratégique et autres droits uniquement selon §5 ; exports DIR à confirmer selon M-05/A-16 | rapports | rapports | rapports quotidiens | reporting production | — | exports |
 | Accounting | droits métier globaux selon périmètre retenu | approve paiements + valider paie | — | — | — | — | — | préparation et exécution après autorisation |
 
@@ -796,7 +796,7 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-04 | Singulier/pluriel et libellés de ressources | Collections au pluriel, objets uniques au singulier proposés | Appliquer la convention à toutes les ressources, y compris les correspondances français/anglais comme `timesheets` / `feuilles_de_temps` | Codes | Architecture |
 | A-05 | Ressource Budget | `budgets` et `budget` apparaissent selon les usages | Retenir un identifiant canonique selon la règle collection/objet | Codes | Architecture |
 | A-06 | Factures clients | `factures_clients` et `factures` apparaissent selon les usages | Retenir un identifiant canonique et le propriétaire | Codes | Architecture |
-| A-07 | Registre d’actions | `view`, `create`, `update`, `delete`, `submit`, `validate`, `approve`, `issue`, `prepare`, `execute`, `export`, `reverse`, `reconcile`, `lock`, `unlock`, `reopen`, `close`, `download`, `acknowledge`, `sign`, `assign`, `access` définis | Stabiliser ou refuser explicitement : `deactivate`, `archive`, `revoke`, `send`, `adjust`, `arbitrate`, `review`, `control`, `declare`, `process`, `request_update`, `supervise`, `validate_excess`, `suspend`, `authorize` | Registre commun | Architecture |
+| A-07 | Registre d’actions | `view`, `create`, `update`, `delete`, `submit`, `validate`, `approve`, `issue`, `prepare`, `execute`, `export`, `reverse`, `reconcile`, `lock`, `unlock`, `reopen`, `close`, `download`, `acknowledge`, `sign`, `assign`, `access` définis | Stabiliser ou refuser explicitement : `deactivate`, `archive`, `revoke`, `send`, `adjust`, `arbitrate` (requis pour l'arbitrage DIR des litiges et à distinguer de `approve`), `review`, `control`, `declare`, `process`, `request_update`, `supervise`, `validate_excess`, `suspend`, `authorize` | Registre commun | Architecture |
 | A-08 | Source de vérité du catalogue | Catalogue central recommandé | Confirmer l’emplacement et la structure des définitions | Architecture Identity | Architecture |
 | A-09 | Versionnement | Codes immuables recommandés | Définir le mécanisme de version et de migration du catalogue | Maintenance | Architecture |
 | A-10 | Seeders | Seeders idempotents requis par CHAN-40 | Définir stratégie d’upsert, suppression contrôlée et synchronisation | Implémentation | Développement |
@@ -805,7 +805,7 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-13 | Cache Spatie | Cache standard constaté | Documenter l’invalidation après synchronisation et opérations SQL directes | Exploitation | Développement |
 | A-14 | Intégration comptable externe | Périmètre non défini dans les commentaires disponibles | Déterminer l’interface et la frontière avec un logiciel/prestataire comptable | Architecture | Direction / architecture |
 | A-15 | Périmètre CHAN-45 et audit | CHAN-45 est mentionné dans la documentation du dépôt comme journalisation de sécurité ; le périmètre exact sur l’audit métier immuable n’est pas vérifié | Confirmer si CHAN-45 porte l’audit métier ou prévoir un lot dédié | Périmètre du stockage d’audit | Architecture / sécurité |
-| A-16 | Droits transversaux DIR non traduits | La responsabilité métier transversale de DIR est validée, mais les permissions ne sont pas encore traduites de façon exhaustive dans le catalogue §5. Les droits explicites de §5 restent applicables et sont les seuls repris en §6 | Pour chaque ressource et chaque domaine de §5, effectuer une comparaison exhaustive et tracer le résultat dans cette ligne : (1) droit confirmé et déjà traduit dans §5 ; (2) droit transversal DIR confirmé mais non traduit, à ajouter uniquement après détermination explicite de la ressource, de l’action et du scope ; (3) droit dont l’existence, l’action ou l’étendue reste à arbitrer. La portée transversale n’est pas une permission et ne permet pas de déduire un CRUDV générique. Ne jamais inférer `delete`, une validation opérationnelle attribuée à CT/CC/RA, l’administration Identity, ni un accès médical non autorisé. Vérifier en particulier les ressources sans droit DIR explicite, y compris Inventory, Equipment, Logistics et Safety ; préserver les approbations, contrôles financiers, restrictions RH et workflows spécifiques. La ligne reste ouverte jusqu’à ce que la couverture de chaque ressource soit documentée, et §6 doit continuer à refléter uniquement les droits effectivement inscrits en §5 | Compléter la revue ressource par ressource ; consigner distinctement les droits confirmés non traduits et les arbitrages métier requis ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
+| A-16 | Droits transversaux DIR non traduits | Groupe 1 A.4.2 arbitré sur Identity, Clients, Projects et Planning : consultations globales explicites ajoutées/confirmées ; approbations commerciales et réceptions confirmées ; arbitrage des litiges confirmé avec workflow financier distinct. Les autres domaines restent à couvrir | Poursuivre la revue exhaustive des 15 domaines restants et des ressources/actions non résolues du groupe 1 ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Ne pas déduire de CRUDV générique. Le scope global décidé pour les consultations DIR ne s'étend pas aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
 | A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent de scopes distincts (`assigned_projects` et `assigned_sites`) ; aucun élément validé ne permet d’attribuer un scope aux `lots_phases` | Confirmer si chaque lot/phase relève de l’affaire, du chantier ou d’une relation propre. Tant que ce rattachement n’est pas validé, conserver la ressource sans permission opérationnelle ni scope attribué ; ne pas déduire `assigned_projects`, `assigned_sites` ou `policy_defined` de l’ancien regroupement | §5.3 et §8 ; accès non attribué en attente d’arbitrage | Architecture / métier |
 
 
@@ -852,6 +852,46 @@ Pour chaque ligne « À examiner », la Direction doit choisir explicitement l'u
 3. **Reporter** : conserver le point ouvert avec son responsable et son ticket éventuel.
 
 Une réponse « accès transversal » ou « accès complet » n'est pas suffisante : elle doit être décomposée en ressources et actions explicites. Toute action de validation doit être distinguée d'une approbation stratégique ou financière. Les décisions seront ensuite reportées dans les lignes concernées du §5, puis dans la synthèse §6 et dans A-16.
+
+### A.4.2 — Registre des arbitrages DIR, Groupe 1
+
+**Décisions métier reçues et confirmées par la Direction le 23/11/2026.** Elles complètent les sources Jira antérieures, sans valoir gel du catalogue ni implémentation.
+
+| Domaine / ressource | Décision DIR | Action atomique / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Identity / panel et habilitations | Confirmer les droits existants | `identity.admin_panel.access` ; aucun droit sur users, roles, permissions, role_assignments ou access_settings | Global pour le panel | Confirmé ; aucune extension des habilitations |
+| Clients / factures, avoirs, relances, échéanciers, litiges, règlements | Consultation | `view` sur chacune des ressources | Global | Confirmé ; CPT conserve préparation, modification, émission et rapprochement selon §5 |
+| Clients / litiges de facturation | Arbitrage commercial et financier | `arbitrate` sur le litige ; approbation d'une régularisation financière dans un workflow distinct | Global | Arbitrage confirmé ; action `arbitrate` à normaliser (A-07) ; nature exacte de la régularisation, objet approuvé et action atomique restent à préciser |
+| Clients / conditions commerciales | Approbation de toutes les conditions, y compris modifications et dérogations | `approve` ; pas de `create` ni `update` DIR | Global | Confirmé ; workflow et seuils éventuels à définir sans attribuer de modification |
+| Projects / affaires, chantiers, études | Consultation | `view` | Global pour DIR | Confirmé ; CHAN-42 doit appliquer le périmètre global DIR sans modifier les scopes CT/CC |
+| Projects / lots et phases | Besoin de consultation | Aucune permission attribuée avant décision A-17 | Non attribué à ce stade | Consultation souhaitée, mais modèle de rattachement non arbitré |
+| Projects / avenants | Approbation uniquement pour DIR | `approve` ; aucun `prepare` ni `submit` DIR | Global pour DIR | Confirmé ; préparation/soumission CT restent à arbitrer |
+| Projects / réception contractuelle | Approbation | `projects.receptions.approve` | Global pour DIR | Confirmé ; workflow distinct de Handover |
+| Planning / plannings contractuels et opérationnels, affectations | Consultation seule | `view` ; aucun `create`, `update` ou `assign` DIR | Global pour DIR | Confirmé ; responsabilités quotidiennes CT/RA conservées |
+| Planning / conflits | Consultation ; arbitrage non explicitement confirmé par la décision « consultation des plannings » | `view` ; pas de permission `arbitrate` confirmée à ce stade | Global pour DIR | Arbitrage des conflits conservé comme point ouvert |
+| Handover / dossier de réception | Approbation finale | `handover.dossiers_reception.approve` | Global pour DIR | Confirmé ; distinct de la réception contractuelle Projects ; ne valide pas automatiquement réserves, levées de réserves ou DOE |
+
+**Garde-fous associés.**
+
+- Les consultations globales DIR sont des décisions fonctionnelles ; leur application aux ressources relève des Policies CHAN-42. Les scopes des autres rôles ne changent pas.
+- L'approbation des conditions commerciales n'accorde pas de droit de modification.
+- L'arbitrage d'un litige et l'approbation d'une régularisation financière ne donnent pas à DIR le droit de créer/émettre un avoir ou d'exécuter un paiement. CPT conserve l'exécution après autorisation ; l'auto-autorisation reste interdite.
+- Les deux approbations de réception sont distinctes : réception contractuelle Projects et approbation finale du dossier Handover. Les validations opérationnelles des réserves, levées de réserves et DOE ne sont pas transférées à DIR.
+- Les consultations de lots/phases restent non attribuées tant que A-17 n'est pas arbitré.
+- Les actions `arbitrate` et l'approbation de régularisation financière nécessitent une normalisation et une définition du workflow avant intégration définitive au catalogue.
+
+**Points non tranchés conservés.**
+
+- Action atomique, objet et circuit de l'approbation des régularisations financières liées aux litiges.
+- Arbitrage des conflits de planning.
+- Rattachement métier et scope des lots/phases (A-17).
+- Préparation/soumission des avenants par CT.
+- Actions sur réserves, levées de réserves et DOE au-delà des droits déjà inscrits.
+- M-16 et les autres points M-01 à M-15, M-17.
+- A-01 à A-15, dont A-07 pour la normalisation du registre d'actions.
+- Couverture des 15 autres domaines de A-16.
+
+**État du lot.** Le groupe 1 est arbitré fonctionnellement, sous les réserves explicites ci-dessus. A-16 reste ouvert jusqu'à la couverture des 19 domaines ; A-17 reste ouvert. Aucun code, migration, seeder, test ou paramètre applicatif n'est modifié par cette mise à jour documentaire.
 
 ### Arbitrage A-17 — rattachement des lots et phases
 
