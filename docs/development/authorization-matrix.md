@@ -473,7 +473,7 @@ Les règles de portée globale sont fonctionnellement `Validé` et techniquement
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
 | `plannings`, `affectations` | `view`, `create`, `update`, `assign` : CT ; `view` : CC, RA, SAL, DIR ; `update` atelier : RA | global pour DIR ; assigned_projects / own_team pour les rôles opérationnels | Consultation DIR des plannings contractuels et opérationnels ; aucune gestion quotidienne | 10298, arbitrage A.4.2 Groupe 1 | Consultation DIR validée ; permission à intégrer |
-| `conflits` | `view` : CT, DIR ; arbitrage : DIR à confirmer séparément | global pour DIR ; assigned_projects pour CT | Consultation DIR ; arbitrage des conflits non décidé par le seul choix de consultation des plannings | 10298, arbitrage A.4.2 Groupe 1 | Consultation confirmée ; action `arbitrate` sur conflits reste à arbitrer |
+| `conflits` | `view`, `arbitrate` : DIR ; `view` : CT | global pour DIR ; assigned_projects pour CT | DIR consulte et arbitre les conflits de planning ; CT conserve son périmètre opérationnel affecté | 10298, arbitrage A.4.2 Groupe 1 et Groupe 2 | Arbitrage DIR validé fonctionnellement ; permission à normaliser (A-07) et Policy à appliquer dans CHAN-42 |
 | `avancement` | `view`, `update` : CT, CC ; `view` : DIR | assigned_projects | Avancement | 10298 | `Proposé` |
 
 ### 5.5 Budgets
@@ -655,7 +655,7 @@ Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droi
 | Identity | administration complète des habilitations, panel | panel, sans administration des habilitations | panel | panel | panel | panel | portail personnel, panel non | panel |
 | Clients | droits métier globaux | view factures, avoirs, relances, échéanciers, litiges, règlements ; approve conditions commerciales/devis ; arbitrate litiges ; approbation de régularisation financière à modéliser | prospects, clients, contacts, devis | lecture | — | — | — | factures, avoirs, relances |
 | Projects | droits métier globaux | view global affaires, chantiers, études, jalons, rapports, commandes, contrats, avenants et réceptions ; approve commandes/avenants/contrats/réception contractuelle et dossier Handover | lecture | affaires, chantiers, lots | lecture | — | — | lecture chantiers |
-| Planning | droits métier globaux | view global plannings contractuels/opérationnels, affectations, conflits et avancement ; arbitrage conflits reste à arbitrer | — | planning, affectations | lecture | planning atelier | planning personnel | — |
+| Planning | droits métier globaux | view global plannings contractuels/opérationnels, affectations, conflits et avancement ; arbitrate conflits | — | planning, affectations | lecture | planning atelier | planning personnel | — |
 | Budgets | droits métier globaux | view budgets ; approbations explicitement listées au §5, autres actions à qualifier en A-16 si confirmées | lecture | budgets, révisions | — | — | — | révisions à normaliser |
 | Costing | droits métier globaux | view chiffrages/coûts/marges/écarts/provisions + approve provisions | — | coûts, marges, écarts | — | coûts atelier | — | coûts |
 | Workforce | données RH métier hors exception médicale | view RH selon §5, accès encadré, pas d’administration | RH administrative, variables paie | RH opérationnelle limitée | équipe | collaborateurs | dossier et bulletins propres | paie, bulletins et données nécessaires aux virements |
@@ -805,7 +805,7 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-13 | Cache Spatie | Cache standard constaté | Documenter l’invalidation après synchronisation et opérations SQL directes | Exploitation | Développement |
 | A-14 | Intégration comptable externe | Périmètre non défini dans les commentaires disponibles | Déterminer l’interface et la frontière avec un logiciel/prestataire comptable | Architecture | Direction / architecture |
 | A-15 | Périmètre CHAN-45 et audit | CHAN-45 est mentionné dans la documentation du dépôt comme journalisation de sécurité ; le périmètre exact sur l’audit métier immuable n’est pas vérifié | Confirmer si CHAN-45 porte l’audit métier ou prévoir un lot dédié | Périmètre du stockage d’audit | Architecture / sécurité |
-| A-16 | Droits transversaux DIR non traduits | Groupe 1 A.4.2 arbitré sur Identity, Clients, Projects et Planning : consultations globales explicites ajoutées/confirmées ; approbations commerciales et réceptions confirmées ; arbitrage des litiges confirmé avec workflow financier distinct. Les autres domaines restent à couvrir | Poursuivre la revue exhaustive des 15 domaines restants et des ressources/actions non résolues du groupe 1 ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Ne pas déduire de CRUDV générique. Le scope global décidé pour les consultations DIR ne s'étend pas aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
+| A-16 | Droits transversaux DIR non traduits | Groupe 1 arbitré sur Identity, Clients, Projects et Planning ; Groupe 2 : arbitrage global des conflits de planning confirmé. Les autres domaines restent à couvrir | Poursuivre la revue exhaustive des 15 domaines restants et des ressources/actions non résolues des groupes déjà traités ; intégrer les permissions atomiques après normalisation, puis synchroniser §5 et §6. Ne pas déduire de CRUDV générique. Le scope global des consultations DIR ne s'étend pas aux lots/phases tant que A-17 reste ouvert | Compléter la revue ressource par ressource ; conserver les points non tranchés avec responsable et motif ; synchroniser §5 et §6 après décision explicite | Architecture / métier / Direction |
 | A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent de scopes distincts (`assigned_projects` et `assigned_sites`) ; aucun élément validé ne permet d’attribuer un scope aux `lots_phases` | Confirmer si chaque lot/phase relève de l’affaire, du chantier ou d’une relation propre. Tant que ce rattachement n’est pas validé, conserver la ressource sans permission opérationnelle ni scope attribué ; ne pas déduire `assigned_projects`, `assigned_sites` ou `policy_defined` de l’ancien regroupement | §5.3 et §8 ; accès non attribué en attente d’arbitrage | Architecture / métier |
 
 
@@ -892,6 +892,17 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 - Couverture des 15 autres domaines de A-16.
 
 **État du lot.** Le groupe 1 est arbitré fonctionnellement, sous les réserves explicites ci-dessus. A-16 reste ouvert jusqu'à la couverture des 19 domaines ; A-17 reste ouvert. Aucun code, migration, seeder, test ou paramètre applicatif n'est modifié par cette mise à jour documentaire.
+
+
+### A.4.2 — Registre des arbitrages DIR, Groupe 2
+
+**Décision métier reçue le 23/11/2026.** Elle complète le groupe 1 sans valoir gel du catalogue ni implémentation.
+
+| Domaine / ressource | Décision DIR | Action atomique / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Planning / conflits | Arbitrage des conflits | `arbitrate` sur les conflits de planning, en complément de `view` | Global pour DIR ; CT reste limité à assigned_projects | Décision fonctionnelle confirmée ; permission à normaliser dans A-07 et contrôle de périmètre à implémenter dans CHAN-42 |
+
+**Limites conservées.** Ce droit permet à DIR de trancher les conflits de planning. Il ne lui attribue pas la création, la modification ou l'affectation quotidienne des plannings, et ne transfère pas les responsabilités opérationnelles de CT, CC ou RA. La portée globale concerne l'arbitrage DIR ; les scopes des rôles opérationnels restent inchangés.
 
 ### Arbitrage A-17 — rattachement des lots et phases
 
