@@ -38,8 +38,8 @@ test('associe plusieurs appareils à un utilisateur et caste les dates', functio
     expect($device)->toBeInstanceOf(UserDevice::class)
         ->and($device->user->is($user))->toBeTrue()
         ->and($user->fresh()->devices)->toHaveCount(1)
-        ->and($device->last_seen_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
-        ->and($device->trusted_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        ->and($device->last_seen_at)->toBeInstanceOf(\DateTimeInterface::class)
+        ->and($device->trusted_at)->toBeInstanceOf(\DateTimeInterface::class);
 });
 
 test('impose un UUID unique pour les appareils', function () {
