@@ -662,3 +662,12 @@ En particulier, aucune permission n'est créée pour l'administration des utilis
 DIR est associé explicitement à toutes les permissions fonctionnelles retenues dans cette version. Les restrictions médicales, de séparation des tâches, de conservation et d'audit demeurent applicables. Les rôles autres que DIR ne reçoivent que les associations écrites dans le catalogue PHP.
 
 **État :** socle technique initial écrit ; catalogue fonctionnel global toujours non gelé. La version 0.1.0 est une base minimale versionnée et extensible, pas une validation implicite des actions exclues.
+
+
+### 23.1 Sécurisation de la synchronisation et tests complémentaires
+
+- `PermissionCatalogSeeder` utilise `syncPermissions()` : pour chacun des huit rôles gérés par `RoleCatalog`, les associations du catalogue remplacent intégralement les associations présentes en base. Toute permission attribuée manuellement à l'un de ces rôles hors catalogue sera donc retirée à la prochaine exécution. Les attributions doivent être réalisées dans le catalogue versionné, et non manuellement en base ou via une interface.
+- Un test vérifie que DIR possède exactement toutes les permissions fonctionnelles du catalogue, à l'exclusion de `identity.admin_panel.access`, qui est une permission d'accès au panel et non une permission métier.
+- Un test vérifie une requête authentifiée par Sanctum et la résolution d'une permission Spatie `web` sur l'utilisateur authentifié.
+- Le rôle SA n'est pas élargi par cette correction. Sa portée fonctionnelle et l'administration des habilitations doivent être clarifiées par des permissions atomiques justifiées avant toute nouvelle association.
+
