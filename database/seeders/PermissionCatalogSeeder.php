@@ -14,16 +14,27 @@ class PermissionCatalogSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $roles = Role::query()
+        $catalog = PermissionCatalog::all();
+
+        foreach (array_keys($catalog) as $name) {
+            Permission::findOrCreate($name, 'web');
+        }
+
+        $permissions = Permission::query()
             ->where('guard_name', 'web')
+            ->whereIn('name', array_keys($catalog))
             ->get()
             ->keyBy('name');
 
-        foreach (PermissionCatalog::all() as $name => $roleNames) {
-            $permission = Permission::findOrCreate($name, 'web');
-            $permission->syncRoles(
-                collect($roleNames)
-                    ->map(fn (string $roleName) => $roles->get($roleName))
+        foreach (Role::query()->where('guard_name', 'web')->get() as $role) {
+            $permissionNames = collect($catalog)
+                ->filter(fn (array $roleNames) => in_array($role->name, $roleNames, true))
+                ->keys()
+                ->all();
+
+            $role->syncPermissions(
+                collect($permissionNames)
+                    ->map(fn (string $name) => $permissions->get($name))
                     ->filter()
                     ->values()
                     ->all(),
