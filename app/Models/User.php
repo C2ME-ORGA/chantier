@@ -4,8 +4,6 @@ namespace App\Models;
 
 use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Models\UserProfile;
-
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
