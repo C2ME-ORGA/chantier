@@ -1509,3 +1509,33 @@ Cette section consigne les décisions métier confirmées pendant la séance du 
 | M-16 — Délégations financières | suspend = suspension temporaire réactivable ; revoke = retrait définitif ; delete = suppression technique uniquement si justifiée, sans effacement de l'audit. Administration réservée à DIR et SA. | Toute modification conserve l'historique et la traçabilité. |
 
 **État :** décisions fonctionnelles M-01 à M-06 et M-08 à M-16 confirmées. M-07 est partiellement ouvert sur le canal de signalement. Les tâches techniques et responsabilités non désignées restent ouvertes sans remettre en cause les décisions prises. Aucun droit atomique non validé n'est créé par cette synthèse.
+
+
+## 20. Arbitrages M-07 à M-09 — demandes internes et signalements (24/11/2026)
+
+### M-07 — Demandes internes des chefs de chantier
+
+- Le signalement d'un besoin ne se fait pas directement depuis la fiche chantier.
+- Un espace dédié aux demandes internes, indépendant des fiches chantier, centralise les demandes.
+- ADM assure la réception, la centralisation, le contrôle de complétude et l'orientation vers le responsable ou service compétent.
+- ADM peut également accepter ou refuser les demandes relevant de la gestion administrative courante et de sa délégation.
+- Les demandes techniques, opérationnelles ou financières sont décidées par le responsable compétent dans son périmètre ; DIR intervient pour les arbitrages supérieurs ou les décisions dépassant les délégations.
+- La décision d'ADM ne constitue pas une autorisation d'achat ni un engagement financier. Les seuils et circuits d'approbation des engagements restent applicables, notamment le seuil de 100 000 € HT cumulés par opération.
+- Le dépôt ou le traitement d'une demande ne confère aucun droit implicite de création de commande ou d'engagement d'achat.
+
+### M-08 — Incidents sous-traitants
+
+- CC peut créer et signaler un incident concernant un sous-traitant.
+- RA est responsable du traitement opérationnel, du suivi et de la clôture.
+- DIR intervient pour les incidents nécessitant un arbitrage supérieur ou une décision dépassant les délégations du RA.
+- La création d'un incident par CC ne lui confère pas automatiquement les droits de traitement ou de clôture.
+
+### M-09 — Signalements qualité et sécurité
+
+- Deux circuits distincts sont maintenus : signalements qualité et signalements sécurité.
+- Chaque circuit couvre la création, l'attribution, le traitement, le suivi et la clôture, avec historique des actions et décisions.
+- RA est responsable du traitement opérationnel des deux circuits, de leur attribution, de leur suivi et de leur clôture.
+- DIR intervient pour les situations graves ou nécessitant un arbitrage supérieur.
+- Les responsabilités de traitement qualité et sécurité sont ainsi attribuées sans fusionner les deux workflows.
+
+Ces décisions complètent les arbitrages M-01 à M-16. Elles ne gèlent pas le catalogue et ne valent pas implémentation de permissions atomiques, de workflows ou de contrôles techniques.
