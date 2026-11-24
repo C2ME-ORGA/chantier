@@ -316,34 +316,25 @@ Divergences entre documentation et code :
 
 ### 3.8 Gestion administrative et financière opérationnelle
 
-**Finalité.** Gestion administrative et financière opérationnelle, facturation, paiements autorisés, paie comptable, banque, clôtures et exports.
+**Finalité.** Assurer le traitement administratif et le suivi financier opérationnel des activités, sans exercer de fonctions de comptabilité générale ni d'opérations bancaires.
 
-**Périmètre.** Factures clients, avoirs, relances, échéanciers, litiges, factures fournisseurs, rapprochement commande/facture, consultation des commandes, préparation et exécution des paiements autorisés, trésorerie, relevés et rapprochements bancaires, éléments de paie, salaires, cotisations, bulletins, clôtures et déclarations, comptabilité analytique, écritures, journaux, plan comptable, périodes, contrepassations, immobilisations, amortissements, indemnités de grands déplacements, exports comptables, analytiques, paie, immobilisations, trésorerie, fournisseurs et clients.
+**Périmètre.**
+- **Clients :** factures, avoirs, relances, échéanciers, litiges et suivi opérationnel des règlements.
+- **Achats :** traitement administratif des commandes et factures fournisseurs.
+- **Ressources humaines :** paie, bulletins, éléments variables et données strictement nécessaires à la gestion administrative.
+- **Budgets et Costing :** consultation et suivi opérationnel selon les permissions définies pour chaque ressource.
 
-**Consultation.** Factures, commandes, paie, banque, trésorerie, comptabilité, données financières.
+**Consultation, création et modification.** Uniquement les opérations administratives expressément attribuées dans le catalogue des permissions ; aucun droit n'est déduit du seul intitulé du rôle.
 
-**Création.** Factures, avoirs, relances, échéanciers, litiges, factures fournisseurs, suivi opérationnel des règlements clients, indemnités de grands déplacements et exports métier.
+**Paie.** GAF prépare et contrôle les éléments variables et les éléments nécessaires à la paie. DIR ou SA conserve la validation finale. Toute modification postérieure à cette validation suit le mécanisme de nouvelle validation prévu par le workflow.
 
-**Modification.** Mêmes périmètres ; contrepassations, régularisations, verrouillage/déverrouillage des périodes.
+**Données RH.** Accès limité aux bulletins, éléments variables et données strictement nécessaires à la gestion administrative et à la paie. Aucun accès général aux dossiers disciplinaires ni aux justificatifs personnels sans lien avec ces finalités. Les coordonnées bancaires éventuellement consultables pour la gestion administrative de la paie ne confèrent aucun droit sur les virements.
 
-**Suppression.** Non explicitement décidée ; contrepassation à privilégier.
+**Validation.** Aucune approbation générale d'engagement ou de commande, aucune validation finale de paie et aucune auto-validation lorsque le workflow impose une séparation des tâches.
 
-**Paie.** Prépare et contrôle les éléments de paie ; DIR ou SA valide définitivement la paie. Toute modification postérieure à la validation impose une nouvelle validation. Aucun paiement bancaire n'est préparé, autorisé ou exécuté dans le périmètre actuel.
+**Exclusions impératives.** Aucune écriture comptable, journal, plan comptable, rapprochement bancaire comptable, trésorerie comptable, déclaration, clôture comptable, immobilisation ou amortissement. Aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire. Aucun mandat bancaire.
 
-**Données RH.** Accès aux informations nécessaires à la paie et à la administration de la paie, notamment bulletins et coordonnées bancaires nécessaires aux virements. Pas d’accès général aux dossiers disciplinaires ou aux justificatifs personnels sans lien avec la paie.
-
-**Validation.** Aucune approbation d’engagement, aucune validation de commande, aucune validation finale de paie, aucune validation des comptes annuels, aucune modification des mandats bancaires, aucune auto-autorisation de paiement.
-
-**Restrictions.**
-
-- Aucun droit de paiement bancaire n'est attribué dans le périmètre actuel.
-- Interdiction d’auto-autorisation d’un paiement.
-- Pas d’accès aux tableaux de bord stratégiques réservés à la Direction.
-- Opérations sensibles auditées.
-- Pas d’approbation budgétaire.
-- Pas de validation définitive des déclarations fiscales ou sociales.
-
-**Limites de périmètre.** Société entière pour la comptabilité ; données bancaires et paie restreintes.
+**Limites de périmètre.** Les scopes et restrictions de données sont définis ressource par ressource au §5 et par les Policies CHAN-42.
 
 ## 4. Catalogue normalisé des domaines et ressources
 
@@ -396,7 +387,7 @@ Points à vérifier :
 | Sujet | Proposition | Statut technique |
 | --- | --- | --- |
 | TimeTracking | `timetracking` | `À vérifier` |
-| Budgets | `budgets.budget` plutôt que `budgets.budgets` | `À vérifier` |
+| Budgets | droits métier globaux | view budgets ; approve tous budgets, révisions et contingences sans seuil ; accès complet aux lignes budgétaires selon §5 | lecture | budgets, révisions, contingences | — | — | — | consultation et suivi opérationnel selon §5 |
 | Factures clients | `clients.factures` plutôt que `clients.factures_clients` | `À vérifier` |
 | Consommations | `inventory.consommations` | `Normalisé` pour la correction orthographique |
 | Actions | Registre existant + actions complémentaires à valider | `À normaliser` |
@@ -481,10 +472,10 @@ La règle DIR est fonctionnellement `Validé` et techniquement `À normaliser`. 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
 | `chiffrages`, `couts`, `ecarts` | `view`, `create`, `update`, `validate` : DIR ; `view` : ADM, CT, RA, GAF ; `create`, `update` : CT, RA selon objet | global pour DIR ; assigned_projects pour CT/RA selon objet | Chiffrages, coûts et écarts financiers opérationnels | 10298, 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR, validation comprise, confirmé fonctionnellement ; workflow et séparation des tâches à préciser |
-| `engagements` | `view` : DIR, CT, GAF ; `approve` : DIR, SA uniquement lorsque le seuil cumulé dépasse 100 000 € HT pour une même opération | global pour DIR/SA ; assigned_projects pour CT | Approbation préalable obligatoire au-delà de 100 000 € HT cumulés pour une même opération, en agrégeant commandes et avenants et en prévenant le fractionnement ; en dessous ou au seuil, pas d'approbation DIR au titre de cette règle | 10297, 10298, 10303, arbitrage A.4.2 Groupe 2 | Seuil et cumul validés ; modalités de délégation sous seuil et workflow à préciser
+| `engagements` | `view` : DIR, CT ; `approve` : DIR, SA uniquement lorsque le seuil cumulé dépasse 100 000 € HT pour une même opération | global pour DIR/SA ; assigned_projects pour CT | Approbation préalable obligatoire au-delà de 100 000 € HT cumulés pour une même opération, en agrégeant commandes et avenants et en prévenant le fractionnement ; en dessous ou au seuil, pas d'approbation DIR au titre de cette règle | 10297, 10298, 10303, arbitrage A.4.2 Groupe 2 | Seuil et cumul validés ; aucune approbation ni permission d'engagement attribuée à GAF |
 | `marges` | `view` : DIR, CT, RA, GAF | assigned_projects / global | Rentabilité | 10298, 10300 | `Proposé` |
 | `provisions_analytiques` | `view` : DIR, CT, GAF ; `approve` : DIR, SA pour toutes les provisions analytiques, sans seuil de montant | global | Provisions | 10298, 10301, arbitrage A.4.2 Groupe 2 | Approbation DIR systématique confirmée ; workflow et séparation des tâches à préciser |
-| `periodes_analytiques` | `view`, `lock`, `unlock`, `close` : DIR, GAF | global | Périodes analytiques | 10300, arbitrage A.4.2 Groupe 2 | Droits DIR confirmés sur consultation, verrouillage, déverrouillage et clôture ; workflow et séparation des tâches à préciser |
+| `periodes_analytiques` | `view`, `lock`, `unlock`, `close` : DIR ; `view` : GAF | global | Périodes analytiques | 10300, arbitrage A.4.2 Groupe 2 | DIR conserve l'administration des périodes analytiques ; GAF dispose uniquement de la consultation |
 
 ### 5.7 Workforce
 
@@ -632,7 +623,7 @@ Cette matrice synthétise les droits des huit rôles. Pour DIR, la règle géné
 | Projects | droits métier globaux | view global affaires, chantiers, études, jalons et rapports opérationnels ; view/approve commandes clients et contrats ; view/approve avenants ; approve réceptions contractuelles ; accès complet aux lignes budgétaires ; lots/phases non attribués (A-17) |
 | Planning | droits métier globaux | view global plannings contractuels/opérationnels, affectations, conflits et avancement (consultation globale) ; arbitrate conflits | — | planning, affectations | lecture | planning atelier | planning personnel | — |
 | Budgets | droits métier globaux | view budgets ; approve tous budgets, révisions et contingences sans seuil ; accès complet aux lignes budgétaires selon §5 | lecture | budgets, révisions, contingences | — | — | — | workflows à préciser |
-| Costing | droits métier globaux | view/create/update/validate chiffrages, coûts et écarts ; view marges/provisions ; approve provisions ; approve engagements uniquement au-delà de 100 000 € HT cumulés par opération ; view/lock/unlock/close périodes analytiques | — | coûts, marges, écarts | — | coûts atelier | — | coûts |
+| Costing | droits métier globaux | view/create/update/validate chiffrages, coûts et écarts ; view marges/provisions ; approve provisions ; approve engagements uniquement au-delà de 100 000 € HT cumulés par opération ; view/lock/unlock/close périodes analytiques | — | coûts, marges, écarts | — | coûts atelier | — | consultation et suivi opérationnel selon §5 |
 | Workforce | données RH métier hors exception médicale | accès complet global à toutes les ressources RH et actions applicables, y compris create/update/validate/delete ; secret médical, conservation légale et séparation des tâches maintenus | RH administrative, variables paie selon §5 | RH opérationnelle limitée | équipe | collaborateurs | dossier et bulletins propres | paie, bulletins et données nécessaires aux virements |
 | TimeTracking | droits métier globaux | accès complet global à toutes les ressources et actions applicables, y compris create/update/delete/validate/authorize/close/reopen ; hors documents médicaux détaillés | absences courantes | pointages chantier affectés, corrections/réouvertures | pointages équipe | pointages équipe atelier | pointages et absences propres | lecture des temps validés pour paie |
 | Workshop | droits métier globaux | accès complet global à toutes les ressources et actions applicables (view/create/update/delete/validate et actions spécifiques) | — | lecture | OF, comptes rendus | OF, production | OF personnels | — |
@@ -657,7 +648,7 @@ Cette matrice synthétise les droits des huit rôles. Pour DIR, la règle géné
 | CC | Aucun budget, coût, marge ou rentabilité ; aucun accès financier ; pas de commande ; pas de modification du planning ; pas de clôture NCR relevant du Conducteur ; pas de réception formelle ; pas d’accès RH sensible |
 | RA | Pas d’engagement financier autonome ; commandes soumises à approbation ; pas d’approbation des plans de conception ; validations personnelles et auditées ; pas d’accès RH sensible |
 | SAL | Pas de panel ; pas d’auto-validation ; pas de finances, commerce ou comptabilité ; pas de frais professionnels ; pas de rapports ou livraisons ; pas de stock ou équipement ; pas d’accès aux données d’un autre salarié |
-| GAF | Pas d’approbation d’engagement ; pas de création/validation de commande ; pas de validation finale de paie ; pas de validation des comptes annuels ; pas de mandats bancaires ; pas de tableaux de bord stratégiques ; pas de validation de ses propres frais ; pas d’accès général aux dossiers disciplinaires ou justificatifs personnels sans lien avec la paie |
+| GAF | Pas d’approbation d’engagement ; pas de pouvoir d'approbation ou d'engagement sur les commandes ; pas de validation finale de paie ; aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire ; aucune fonction comptable ; pas de tableaux de bord stratégiques ; pas de validation de ses propres frais ; pas d’accès général aux dossiers disciplinaires ou justificatifs personnels sans lien avec la paie |
 
 ## 8. Matrice des scopes d’accès
 
@@ -1002,11 +993,11 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 
 ### Arbitrage de périmètre — rôle GAF
 
-Le rôle GAF remplace l'ancien profil CPT. Il couvre exclusivement les opérations administratives et financières nécessaires à l'exploitation du logiciel : gestion des pièces de facturation clients et de leur suivi, traitement opérationnel des factures fournisseurs et commandes, consultation des budgets et données de costing selon les droits définis, préparation et contrôle des éléments de paie, suivi des temps nécessaires à la paie et gestion administrative des données associées.
+Le rôle GAF remplace l'ancien rôle CPT. Il couvre les opérations administratives et financières opérationnelles : factures, avoirs, relances, échéanciers, litiges et suivi opérationnel des règlements clients ; traitement administratif des commandes et factures fournisseurs ; paie, bulletins, éléments variables et données nécessaires à la gestion administrative ; consultation et suivi opérationnel des budgets et du Costing selon les permissions définies pour chaque ressource.
 
-Le rôle GAF ne comporte aucun droit sur des écritures comptables, journaux, plan comptable, rapprochements bancaires comptables, trésorerie comptable, déclarations, clôtures, immobilisations, amortissements ou exports comptables. Aucun workflow de préparation/exécution/autorisation de paiement bancaire n'est défini par le présent rôle ; il devra faire l'objet d'un arbitrage distinct s'il est nécessaire dans le logiciel.
+Sont exclus : écritures comptables, journaux, plan comptable, rapprochements bancaires comptables, trésorerie comptable, déclarations, clôtures comptables, immobilisations et amortissements. Aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire n'est attribué à GAF.
 
-GAF ne dispose pas d'approbation générale des engagements, commandes, contrats ou validation finale de paie. Les validations restent attribuées à DIR/SA ou au responsable opérationnel explicitement désigné. Les séparations de tâches et la traçabilité demeurent obligatoires.
+GAF ne dispose d'aucune approbation générale d'engagement ou de commande ni de validation finale de paie. Les validations restent attribuées à DIR/SA ou au responsable opérationnel explicitement désigné. Les séparations de tâches et la traçabilité demeurent obligatoires.
 
 ### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Reporting
 
