@@ -1,9 +1,9 @@
 <?php
 
-use App\\Domains\\Identity\\Models\\UserDevice;
-use App\\Models\\User;
-use Illuminate\\Database\\QueryException;
-use Illuminate\\Support\\Facades\\Schema;
+use App\Domains\Identity\Models\UserDevice;
+use App\Models\User;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Schema;
 
 test('applique le schéma des profils utilisateurs et appareils sur MariaDB', function () {
     expect(Schema::hasColumns('user_profiles', [
