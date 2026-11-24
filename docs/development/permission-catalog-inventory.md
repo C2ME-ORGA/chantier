@@ -508,7 +508,7 @@ M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent 
 
 ## 13. Décision de périmètre — exclusion de la comptabilité (24/11/2026)
 
-Décision utilisateur : le logiciel C2ME ne comportera aucune partie comptable. Le domaine D19 Accounting et toutes ses ressources, actions et permissions sont exclus du catalogue CHAN-40. Aucun rôle Gestion administrative et financière opérationnelle/GAF ne doit être créé. Les processus opérationnels de facturation client, achats/factures fournisseurs, budgets, costing et paie restent dans leurs domaines métier respectifs uniquement pour leurs besoins de gestion ; aucune écriture, journal, rapprochement, trésorerie comptable, déclaration, clôture, immobilisation ou amortissement comptable n'est géré dans le logiciel.
+Décision utilisateur : le logiciel C2ME ne comportera aucune partie comptable. Le domaine D19 Accounting et toutes ses ressources, actions et permissions sont exclus du catalogue CHAN-40. Le rôle GAF est conservé comme profil de gestion administrative et financière opérationnelle ; aucune permission ni ressource comptable ne doit être créée. Les processus opérationnels de facturation client, achats/factures fournisseurs, budgets, costing et paie restent dans leurs domaines métier respectifs uniquement pour leurs besoins de gestion ; aucune écriture, journal, rapprochement, trésorerie comptable, déclaration, clôture, immobilisation ou amortissement comptable n'est géré dans le logiciel.
 
 
 ## 15. Définition du rôle GAF — gestion administrative et financière opérationnelle
