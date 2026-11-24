@@ -26,9 +26,10 @@ class PermissionCatalogSeeder extends Seeder
             ->get()
             ->keyBy('name');
 
-        foreach (Role::query()->where('guard_name', 'web')->get() as $role) {
+        foreach (array_keys(\App\Domains\Identity\Catalog\RoleCatalog::all()) as $roleName) {
+            $role = Role::findByName($roleName, 'web');
             $permissionNames = collect($catalog)
-                ->filter(fn (array $roleNames) => in_array($role->name, $roleNames, true))
+                ->filter(fn (array $roleNames) => in_array($roleName, $roleNames, true))
                 ->keys()
                 ->all();
 
