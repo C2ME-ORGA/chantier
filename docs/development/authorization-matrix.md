@@ -328,7 +328,7 @@ Divergences entre documentation et code :
 
 **Suppression.** Non explicitement décidée ; contrepassation à privilégier.
 
-**Paie et paiements.** Prépare et contrôle les éléments de paie ; DIR ou SA valide définitivement la paie. Après validation, GAF transmet et traite le paiement. Toute modification postérieure à la validation impose une nouvelle validation. Prépare les paiements et leurs justificatifs ; DIR ou SA autorise ou refuse ; GAF exécute uniquement après autorisation. Le préparateur ne peut pas autoriser son propre paiement.
+**Paie.** Prépare et contrôle les éléments de paie ; DIR ou SA valide définitivement la paie. Toute modification postérieure à la validation impose une nouvelle validation. Aucun paiement bancaire n'est préparé, autorisé ou exécuté dans le périmètre actuel.
 
 **Données RH.** Accès aux informations nécessaires à la paie et à la administration de la paie, notamment bulletins et coordonnées bancaires nécessaires aux virements. Pas d’accès général aux dossiers disciplinaires ou aux justificatifs personnels sans lien avec la paie.
 
@@ -1291,7 +1291,7 @@ Cette décision complète les droits DIR déjà confirmés sur les budgets, leur
 | --- | --- | --- | --- | --- |
 | Clients / `factures_clients` | Accès complet DIR | Toutes les actions applicables, dont `view`, `create`, `update`, `issue` et `delete` si disponible | global pour DIR | Décision validée ; suppression soumise aux obligations de conservation, à la traçabilité et aux règles comptables applicables |
 
-Cette décision concerne exclusivement les factures clients. Elle n’étend pas automatiquement les droits DIR aux avoirs, aux relances, aux échéanciers, aux règlements ou à l’exécution des paiements. La séparation des tâches sur les paiements reste inchangée : DIR/SA autorisent ou refusent, GAF prépare et exécute ; le préparateur ne peut pas autoriser son propre paiement.
+Cette décision concerne exclusivement les factures clients. Elle n’étend pas automatiquement les droits DIR aux avoirs, aux relances, aux échéanciers, aux règlements ou à l’exécution des paiements. Aucun workflow de paiement bancaire n'est défini dans le périmètre actuel.
 
 
 ### A.4.2 — Registre des arbitrages DIR — Avoirs clients
@@ -1302,7 +1302,7 @@ Cette décision concerne exclusivement les factures clients. Elle n’étend pas
 | --- | --- | --- | --- | --- |
 | Clients / `avoirs` | Accès complet DIR | Toutes les actions applicables, dont `view`, `create`, `update`, `issue` et `delete` si disponible | global pour DIR | Décision validée ; suppression soumise aux obligations comptables de conservation et à la traçabilité |
 
-Cette décision ne modifie pas la séparation des tâches relative aux paiements : DIR/SA autorisent ou refusent, GAF prépare et exécute ; le préparateur ne peut pas autoriser son propre paiement.
+Aucun workflow de paiement bancaire n'est défini dans le périmètre actuel.
 
 
 ### A.4.2 — Registre des arbitrages DIR — Relances clients
@@ -1346,7 +1346,7 @@ L'accès complet aux litiges n'autorise pas implicitement l'émission d'un avoir
 | --- | --- | --- | --- | --- |
 | Clients / `reglements` | Accès complet DIR aux opérations de gestion des règlements | Toutes les actions métier applicables, dont `view`, `create`, `update`, `validate`, `reconcile`, `close` ; `delete` uniquement si disponible et légalement autorisée | global pour DIR | Décision validée ; aucun droit de préparation ni d'exécution des paiements ; conservation et traçabilité obligatoires |
 
-**Séparation des tâches impérative :** DIR et SA autorisent ou refusent les paiements ; GAF prépare et exécute les paiements autorisés ; le préparateur ne peut pas autoriser son propre paiement. Le présent accès complet aux règlements clients ne modifie pas ce circuit et ne confère à DIR aucun droit `prepare` ou `execute` sur les paiements.
+**Périmètre des règlements clients :** les droits sur les règlements concernent leur suivi opérationnel dans Clients. Ils ne créent aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire.
 
 
 ### A.4.2 — Registre des arbitrages DIR — Devis commerciaux
