@@ -887,18 +887,15 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 - Les consultations de lots/phases restent non attribuées tant que A-17 n'est pas arbitré.
 - Les actions `arbitrate` et l'approbation de régularisation financière nécessitent une normalisation et une définition du workflow avant intégration définitive au catalogue.
 
-**Points non tranchés conservés.**
+**Points non tranchés conservés après les décisions ultérieures.**
 
 - Action atomique, objet et circuit de l'approbation des régularisations financières liées aux litiges.
-- Arbitrage des conflits de planning.
 - Rattachement métier et scope des lots/phases (A-17).
-- Préparation/soumission des avenants par CT.
-- Actions sur réserves, levées de réserves et DOE au-delà des droits déjà inscrits.
-- M-16 et les autres points M-01 à M-15, M-17.
-- A-01 à A-15, dont A-07 pour la normalisation du registre d'actions.
-- Couverture des 15 autres domaines de A-16.
+- M-16 et les autres points M encore ouverts ; M-05 est levé uniquement pour les exports Reporting et M-17 reste ouvert pour les catégories documentaires sensibles.
+- A-01 à A-15 selon leur état respectif ; A-07 reste notamment ouvert pour la normalisation de `arbitrate`.
+- Les actions et workflows non explicitement arbitrés demeurent à définir sans déduire de permission supplémentaire.
 
-**État du lot.** Le groupe 1 est arbitré fonctionnellement, sous les réserves explicites ci-dessus. A-16 reste ouvert jusqu'à la couverture des 19 domaines ; A-17 reste ouvert. Aucun code, migration, seeder, test ou paramètre applicatif n'est modifié par cette mise à jour documentaire.
+**État du lot.** Les décisions du Groupe 1 sont complétées par les arbitrages des Groupes 2 à 4. La couverture métier des 19 domaines a été revue ; A-16 reste ouvert uniquement pour la normalisation, la synchronisation et les dépendances techniques ou de workflow identifiées. A-17 reste ouvert. Aucun code, migration, seeder, test ou paramètre applicatif n'est modifié par cette mise à jour documentaire.
 
 
 ### A.4.2 — Registre des arbitrages DIR, Groupe 2
