@@ -21,7 +21,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions candidates | Rôles hors DIR / portée | Statut |
 | --- | --- | --- | --- |
-| `admin_panel` | `access` | SA, ADM, CT, CC, RA, CPT / global | Retenu ; SAL exclu du panel |
+| `admin_panel` | `access` | SA, ADM, CT, CC, RA, GAF / global | Retenu ; SAL exclu du panel |
 | `users` | `view`, `create`, `update`, `deactivate` | SA / global | Proposé ; désactivation à confirmer |
 | `roles` | `view`, `create`, `update`, `delete`, `assign` | SA / global | Proposé ; suppression à confirmer |
 | `permissions` | `view`, `create`, `update`, `delete` | SA / global | Proposé |
@@ -44,12 +44,12 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `relations_commerciales` | `view`, `create`, `update`, `qualify`, `track`, `archive` ; `delete` conditionnel | ADM : view/create/update / global-company | Retenu |
 | `conditions_commerciales` | `view`, `create`, `update`, `approve` ; `delete` conditionnel | ADM : view/create/update ; SA : approve | Retenu ; approbation DIR des conditions initiales, modifications et dérogations |
 | `devis_commerciaux` | `view`, `create`, `update`, `submit`, `approve`, `issue`, `close` ; `delete` conditionnel | ADM : view/create/update/submit ; SA : approve | Retenu ; workflow à préciser |
-| `factures_clients` | `view`, `create`, `update`, `issue` ; `delete` conditionnel | CPT : view/create/update/issue | Retenu ; conservation comptable |
-| `avoirs` | `view`, `create`, `update`, `issue` ; `delete` conditionnel | CPT : view/create/update/issue | Retenu ; conservation comptable |
-| `relances` | `view`, `create`, `update`, `issue`, `close` ; `delete` conditionnel | CPT : view/create/update | Retenu |
-| `echeanciers` | `view`, `create`, `update`, `validate`, `close` ; `delete` conditionnel | CPT : view/create/update | Retenu |
-| `litiges_facturation` | `view`, `create`, `update`, `arbitrate`, `close` ; traitement à normaliser | CPT : view/create/update | Anomalie A-07 : `treat` absent du registre ; régularisation financière distincte |
-| `reglements` | `view`, `create`, `update`, `validate`, `reconcile`, `close` ; `delete` conditionnel | CPT : view/reconcile | Retenu ; aucun droit de préparation/exécution de paiement |
+| `factures_clients` | `view`, `create`, `update`, `issue` ; `delete` conditionnel | GAF : view/create/update/issue | Retenu ; conservation comptable |
+| `avoirs` | `view`, `create`, `update`, `issue` ; `delete` conditionnel | GAF : view/create/update/issue | Retenu ; conservation comptable |
+| `relances` | `view`, `create`, `update`, `issue`, `close` ; `delete` conditionnel | GAF : view/create/update | Retenu |
+| `echeanciers` | `view`, `create`, `update`, `validate`, `close` ; `delete` conditionnel | GAF : view/create/update | Retenu |
+| `litiges_facturation` | `view`, `create`, `update`, `arbitrate`, `close` ; traitement à normaliser | GAF : view/create/update | Anomalie A-07 : `treat` absent du registre ; régularisation financière distincte |
+| `reglements` | `view`, `create`, `update`, `validate`, `reconcile`, `close` ; `delete` conditionnel | GAF : view/reconcile | Retenu ; aucun droit de préparation/exécution de paiement |
 
 **Propriété des ressources :** les documents de facturation et de gestion client restent dans `clients`.  ne duplique pas ces ressources.
 
@@ -57,13 +57,13 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions candidates | Rôles hors DIR / portée | Statut |
 | --- | --- | --- | --- |
-| `affaires` | `view`, `create`, `update` | CT : view/create/update ; ADM, CC, CPT : view | Retenu |
-| `chantiers` | `view`, `create`, `update` | CT : view/create/update ; ADM, CC, CPT : view | Retenu |
+| `affaires` | `view`, `create`, `update` | CT : view/create/update ; ADM, CC, GAF : view | Retenu |
+| `chantiers` | `view`, `create`, `update` | CT : view/create/update ; ADM, CC, GAF : view | Retenu |
 | `lots_phases` | — | — | À arbitrer ; A-17, aucun scope déduit |
 | `etudes` | `view`, `create`, `update` | CT : view/create/update | Retenu |
-| `commandes_clients` | `view`, `approve` | ADM, CT, CPT : view ; SA : approve | Retenu ; DIR approuve toutes les commandes, sans seuil |
+| `commandes_clients` | `view`, `approve` | ADM, CT, GAF : view ; SA : approve | Retenu ; DIR approuve toutes les commandes, sans seuil |
 | `avenants` | `view`, `prepare`, `submit`, `approve` | CT : view/prepare/submit ; SA : approve | Retenu ; DIR n'assure ni préparation ni soumission |
-| `contrats` | `view`, `approve` | ADM, CT, CPT : view ; SA : approve | Retenu ; DIR approuve tous les contrats, sans seuil |
+| `contrats` | `view`, `approve` | ADM, CT, GAF : view ; SA : approve | Retenu ; DIR approuve tous les contrats, sans seuil |
 | `jalons` | `view`, `update` | CT : view/update ; CC : view | Retenu |
 | `receptions` | `view`, `prepare`, `approve` | CT : view/prepare ; CC : view | Retenu ; distinct de Handover |
 | `rapports_operationnels` | `view`, `create`, `update` | CT/CC : view/create/update | Retenu |
@@ -81,22 +81,22 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions candidates | Rôles hors DIR / portée | Statut |
 | --- | --- | --- | --- |
-| `budgets` | `view`, `create`, `update`, `submit`, `approve` | CT : view/create/update/submit ; ADM/CPT : view ; SA : approve | Retenu ; approbation DIR sans seuil |
-| `lignes_budgetaires` | `view`, `create`, `update`, `submit`, `validate`, `approve` ; delete conditionnel | CT : view/create/update ; ADM/CPT : view | Retenu ; accès complet DIR |
-| `revisions_budgetaires` | `view`, `create`, `update`, `submit`, `approve` | CT : view/create/update/submit ; ADM/CPT : view ; SA : approve | Retenu ; approbation DIR sans seuil |
+| `budgets` | `view`, `create`, `update`, `submit`, `approve` | CT : view/create/update/submit ; ADM/GAF : view ; SA : approve | Retenu ; approbation DIR sans seuil |
+| `lignes_budgetaires` | `view`, `create`, `update`, `submit`, `validate`, `approve` ; delete conditionnel | CT : view/create/update ; ADM/GAF : view | Retenu ; accès complet DIR |
+| `revisions_budgetaires` | `view`, `create`, `update`, `submit`, `approve` | CT : view/create/update/submit ; ADM/GAF : view ; SA : approve | Retenu ; approbation DIR sans seuil |
 | `contingences` | `view`, `create`, `update`, `approve` | CT : view/create/update | Retenu ; approbation DIR sans seuil |
 
 ### Costing
 
 | Ressource | Actions candidates | Rôles hors DIR / portée | Statut |
 | --- | --- | --- | --- |
-| `chiffrages` | `view`, `create`, `update`, `validate` | ADM/CT/RA/CPT : view ; CT/RA : create/update selon objet | Retenu |
-| `couts` | `view`, `create`, `update`, `validate` | ADM/CT/RA/CPT : view ; CT/RA : create/update selon objet | Retenu |
-| `ecarts` | `view`, `create`, `update`, `validate` | ADM/CT/RA/CPT : view ; CT/RA : create/update selon objet | Retenu |
-| `engagements` | `view`, `approve` | CT/CPT : view ; SA : approve selon seuil | Retenu ; DIR/SA approuvent seulement au-delà de 100 000 € HT cumulés par opération |
-| `marges` | `view` | CT/RA/CPT : view selon matrice | À préciser ; source au statut « Proposé » |
-| `provisions_analytiques` | `view`, `approve` | CT/CPT : view ; SA : approve | Retenu ; approbation sans seuil |
-| `periodes_analytiques` | `view`, `lock`, `unlock`, `close` | CPT : view/lock/unlock/close | Retenu |
+| `chiffrages` | `view`, `create`, `update`, `validate` | ADM/CT/RA/GAF : view ; CT/RA : create/update selon objet | Retenu |
+| `couts` | `view`, `create`, `update`, `validate` | ADM/CT/RA/GAF : view ; CT/RA : create/update selon objet | Retenu |
+| `ecarts` | `view`, `create`, `update`, `validate` | ADM/CT/RA/GAF : view ; CT/RA : create/update selon objet | Retenu |
+| `engagements` | `view`, `approve` | CT/GAF : view ; SA : approve selon seuil | Retenu ; DIR/SA approuvent seulement au-delà de 100 000 € HT cumulés par opération |
+| `marges` | `view` | CT/RA/GAF : view selon matrice | À préciser ; source au statut « Proposé » |
+| `provisions_analytiques` | `view`, `approve` | CT/GAF : view ; SA : approve | Retenu ; approbation sans seuil |
+| `periodes_analytiques` | `view`, `lock`, `unlock`, `close` | GAF : view/lock/unlock/close | Retenu |
 
 
 ## 6. Lot 2 — Workforce, TimeTracking, Workshop, Procurement, Inventory et Equipment
@@ -116,14 +116,14 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `disponibilites` | `view`, `create`, `update`, `delete` | ADM : view/create/update ; consultations limitées | Retenu |
 | `dossiers_rh` | `view`, `create`, `update`, `delete` | ADM : view/create/update ; SAL : view own | Retenu ; hors documents médicaux confidentiels |
 | `dossiers_disciplinaires` | `view`, `create`, `update`, `delete` | SA conserve ses droits globaux sous restrictions applicables | Retenu ; données sensibles et scope restricted |
-| `donnees_medicales` | Aucune permission générale de consultation détaillée à générer | DIR : seules informations légalement accessibles et strictement nécessaires ; ADM : traitement administratif ; CPT : informations nécessaires paie/comptabilité sociale | Exception ; documents médicaux détaillés détenus par les professionnels de santé exclus |
-| `coordonnees_bancaires` | `view`, `create`, `update`, `delete`, `validate` | SA et CPT conservent leurs droits ; SAL : view own, `request_update` | Retenu ; validation indépendante du demandeur/modificateur et historique sécurisé |
-| `elements_variables_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `submit`, `validate` | ADM : préparation/soumission ; CPT : view | Retenu ; séparation des tâches maintenue |
-| `paies` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | CPT : view/prepare/control ; SA conserve ses droits | Retenu ; interdiction d'auto-approbation |
-| `bulletins_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | CPT : view/prepare/control ; SAL : view own ; SA conserve ses droits | Retenu ; confidentialité et conservation |
-| `ecritures_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | CPT : view/prepare/control ; SA conserve ses droits | Retenu ; validation finale indépendante |
-| `indemnites_grands_deplacements` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `process`, `validate` | SAL : view own ; ADM/CPT conservent leurs droits | Retenu |
-| `grands_deplacements` | `view`, `create`, `update`, `delete`, `declare`, `control`, `prepare`, `process`, `validate` | CT/RA : déclaration de leurs équipes ; ADM/CPT/SAL conservent leurs droits | Retenu |
+| `donnees_medicales` | Aucune permission générale de consultation détaillée à générer | DIR : seules informations légalement accessibles et strictement nécessaires ; ADM : traitement administratif ; GAF : informations nécessaires paie/administration de la paie | Exception ; documents médicaux détaillés détenus par les professionnels de santé exclus |
+| `coordonnees_bancaires` | `view`, `create`, `update`, `delete`, `validate` | SA et GAF conservent leurs droits ; SAL : view own, `request_update` | Retenu ; validation indépendante du demandeur/modificateur et historique sécurisé |
+| `elements_variables_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `submit`, `validate` | ADM : préparation/soumission ; GAF : view | Retenu ; séparation des tâches maintenue |
+| `paies` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SA conserve ses droits | Retenu ; interdiction d'auto-approbation |
+| `bulletins_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SAL : view own ; SA conserve ses droits | Retenu ; confidentialité et conservation |
+|  | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SA conserve ses droits | Retenu ; validation finale indépendante |
+| `indemnites_grands_deplacements` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `process`, `validate` | SAL : view own ; ADM/GAF conservent leurs droits | Retenu |
+| `grands_deplacements` | `view`, `create`, `update`, `delete`, `declare`, `control`, `prepare`, `process`, `validate` | CT/RA : déclaration de leurs équipes ; ADM/GAF/SAL conservent leurs droits | Retenu |
 | `baremes_grands_deplacements` | `view`, `create`, `update`, `delete` | SA conserve ses droits globaux | Retenu ; barèmes datés/historisés, aucune modification rétroactive des périodes traitées |
 
 **Règles transverses Workforce :** les suppressions sont conditionnées par les durées légales de conservation ; sinon privilégier archivage/désactivation si ces actions existent dans le workflow. Les changements de coordonnées bancaires doivent être validés indépendamment de leur demandeur/modificateur. Les documents médicaux détaillés restent exclus.
@@ -132,13 +132,13 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions explicitement citées / candidates | Rôles hors DIR et portée | Statut / contraintes |
 | --- | --- | --- | --- |
-| `pointages` | `view`, `create`, `update`, `delete`, `submit`, `validate`, `reopen`, `supervise` ; `correct` en anomalie A-07 | CC/RA/SAL conservent leurs droits ; CT contrôle/corrige ; CPT : view paie | Retenu ; historique et motifs de correction obligatoires |
-| `feuilles_de_temps` | `view`, `create`, `update`, `delete`, `submit`, `validate`, `reopen`, `supervise` ; `correct` en anomalie A-07 | CC/RA/SAL conservent leurs droits ; CT contrôle/corrige après CC ; CPT : view paie | Retenu ; candidat historique `timetracking.timesheets.validate` à normaliser vers la ressource canonique |
+| `pointages` | `view`, `create`, `update`, `delete`, `submit`, `validate`, `reopen`, `supervise` ; `correct` en anomalie A-07 | CC/RA/SAL conservent leurs droits ; CT contrôle/corrige ; GAF : view paie | Retenu ; historique et motifs de correction obligatoires |
+| `feuilles_de_temps` | `view`, `create`, `update`, `delete`, `submit`, `validate`, `reopen`, `supervise` ; `correct` en anomalie A-07 | CC/RA/SAL conservent leurs droits ; CT contrôle/corrige après CC ; GAF : view paie | Retenu ; candidat historique `timetracking.timesheets.validate` à normaliser vers la ressource canonique |
 | `corrections` | `view`, `create`, `update`, `delete`, `submit`, `validate`, `reopen` | SAL, CC, RA, CT selon leurs périmètres | Retenu ; valeur initiale/nouvelle, auteur, date, motif et valideur à tracer |
 | `periodes` | `view`, `create`, `update`, `delete`, `close`, `reopen` | SA conserve `reopen` | Retenu ; clôture après contrôles, réouverture motivée et auditée |
-| `absences` | `view`, `create`, `update`, `delete`, `submit`, `review`, `validate`, `arbitrate` | SAL, CC, CT, RA, ADM selon responsabilités ; CPT : consultation paie | Retenu ; historisation des décisions |
-| `justificatifs_medicaux` | Pas de droit général aux documents médicaux détaillés | ADM : traitement administratif ; CPT : informations nécessaires à paie/comptabilité sociale ; DIR : informations administratives/d'indisponibilité légalement accessibles | Exception secret médical ; accès restreint |
-| `heures_supplementaires` | `view`, `create`, `update`, `delete`, `authorize`, `submit`, `validate`, `validate_excess`, `control`, `process` | SAL, CT, RA, ADM, CPT conservent leurs droits | Retenu ; distinguer heures autorisées, déclarées, réellement travaillées et validées ; un dépassement refusé reste tracé comme temps travaillé |
+| `absences` | `view`, `create`, `update`, `delete`, `submit`, `review`, `validate`, `arbitrate` | SAL, CC, CT, RA, ADM selon responsabilités ; GAF : consultation paie | Retenu ; historisation des décisions |
+| `justificatifs_medicaux` | Pas de droit général aux documents médicaux détaillés | ADM : traitement administratif ; GAF : informations nécessaires à paie/administration de la paie ; DIR : informations administratives/d'indisponibilité légalement accessibles | Exception secret médical ; accès restreint |
+| `heures_supplementaires` | `view`, `create`, `update`, `delete`, `authorize`, `submit`, `validate`, `validate_excess`, `control`, `process` | SAL, CT, RA, ADM, GAF conservent leurs droits | Retenu ; distinguer heures autorisées, déclarées, réellement travaillées et validées ; un dépassement refusé reste tracé comme temps travaillé |
 
 **Anomalie A-07 :** `correct` est cité dans la matrice mais absent du registre canonique. Ne pas générer `timetracking.pointages.correct` ni `timetracking.feuilles_de_temps.correct` avant décision ; vérifier si `update` suffit, en préservant l'événement de correction et son historique. Le scope de validation opérationnelle de CT ne doit pas être élargi : CT contrôle après CC et corrige/réouvre via `corrections`.
 
@@ -161,18 +161,18 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions explicitement citées / candidates | Rôles hors DIR | Statut / contraintes |
 | --- | --- | --- | --- |
-| `fournisseurs` | Actions fonctionnelles à décomposer à partir du CRUD et du workflow réellement disponibles | ADM, CT, CC, RA, CPT conservent leurs droits | Ressource retenue ; actions DIR globales à inventorier sans inventer les actions absentes |
-| `sous_traitants` | Actions fonctionnelles à décomposer à partir du CRUD et du workflow réellement disponibles | ADM, CT, CC, RA, CPT conservent leurs droits | Ressource retenue |
+| `fournisseurs` | Actions fonctionnelles à décomposer à partir du CRUD et du workflow réellement disponibles | ADM, CT, CC, RA, GAF conservent leurs droits | Ressource retenue ; actions DIR globales à inventorier sans inventer les actions absentes |
+| `sous_traitants` | Actions fonctionnelles à décomposer à partir du CRUD et du workflow réellement disponibles | ADM, CT, CC, RA, GAF conservent leurs droits | Ressource retenue |
 | `demandes_achat` | Actions fonctionnelles à décomposer ; soumission à confirmer selon workflow | ADM, CT, RA conservent leurs droits | Ressource retenue ; scope opérationnel CHAN-42 |
 | `besoins` | Actions fonctionnelles à décomposer | CC, CT, RA conservent leurs droits | Ressource retenue |
 | `offres_fournisseurs` | Actions fonctionnelles à décomposer | ADM, RA conservent leurs droits | Ressource retenue |
-| `commandes_achats` | `view`, `prepare`, `update`, `submit`, `approve` (actions citées dans l'arbitrage) | ADM, CT, RA, CPT, SA conservent leurs droits | Retenu ; DIR approuve uniquement au-delà de 100 000 € HT cumulés par opération |
-| `lignes_commande` | `view`, `prepare`, `update`, `submit`, `approve` (à confirmer si action portée par la ligne ou la commande) | ADM, CT, RA, CPT, SA conservent leurs droits | À préciser ; ne pas dupliquer l'approbation si elle appartient à la commande |
-| `commandes_sous_traitance` | `view`, `prepare`, `update`, `submit`, `approve` (actions citées dans l'arbitrage) | ADM, CT, RA, CPT, SA conservent leurs droits | Retenu ; même seuil cumulé que les achats |
+| `commandes_achats` | `view`, `prepare`, `update`, `submit`, `approve` (actions citées dans l'arbitrage) | ADM, CT, RA, GAF, SA conservent leurs droits | Retenu ; DIR approuve uniquement au-delà de 100 000 € HT cumulés par opération |
+| `lignes_commande` | `view`, `prepare`, `update`, `submit`, `approve` (à confirmer si action portée par la ligne ou la commande) | ADM, CT, RA, GAF, SA conservent leurs droits | À préciser ; ne pas dupliquer l'approbation si elle appartient à la commande |
+| `commandes_sous_traitance` | `view`, `prepare`, `update`, `submit`, `approve` (actions citées dans l'arbitrage) | ADM, CT, RA, GAF, SA conservent leurs droits | Retenu ; même seuil cumulé que les achats |
 | `evaluations_fournisseurs` | Actions à décomposer selon les étapes d'évaluation effectivement disponibles | ADM, RA conservent leurs droits | Ressource retenue |
 | `accords_cadres` | Actions à décomposer ; approbation uniquement si le workflow prévoit une action distincte | ADM, RA conservent leurs droits | Ressource retenue |
 | `garanties_fournisseurs` | Actions à décomposer selon suivi, consultation et gestion des garanties | ADM, RA conservent leurs droits | Ressource retenue |
-| `factures_fournisseurs` | `view`, `create`, `update`, `reconcile` | CPT et ADM conservent leurs droits | Retenu ; aucun droit d'exécution des paiements n'est impliqué |
+| `factures_fournisseurs` | `view`, `create`, `update`, `reconcile` | GAF et ADM conservent leurs droits | Retenu ; aucun droit d'exécution des paiements n'est impliqué |
 | `incidents_sous_traitance` | Actions à décomposer selon déclaration, traitement et clôture réellement disponibles | CC, CT, RA conservent leurs droits | Ressource retenue |
 
 **Règle financière Procurement :** l'approbation DIR des commandes d'achat et de sous-traitance est exigée uniquement lorsque le seuil cumulé de 100 000 € HT par opération est dépassé, en agrégeant commandes et avenants et en empêchant le fractionnement artificiel. La préparation et l'exécution des paiements restent séparées et réservées au workflow financier dédié.
@@ -181,16 +181,16 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions explicites / candidates | Rôles hors DIR | Statut / contraintes |
 | --- | --- | --- | --- |
-| `articles` | Actions fonctionnelles à décomposer ; référentiel | RA, CT, CC, CPT conservent leurs droits | Retenu |
-| `entrepots` | Actions fonctionnelles à décomposer ; référentiel | RA, CT, CC, CPT conservent leurs droits | Retenu |
-| `emplacements` | Actions fonctionnelles à décomposer ; référentiel | RA, CT, CC, CPT conservent leurs droits | Retenu |
-| `lots_stock` | Actions fonctionnelles à décomposer ; suivi des lots | RA, CT, CC, CPT conservent leurs droits | Retenu |
-| `mouvements_stock` | `view`, `create`, `update`, `reverse`, `validate` si applicable | RA, CT, CC, CPT conservent leurs droits | Retenu ; inversion plutôt qu'effacement de l'historique |
+| `articles` | Actions fonctionnelles à décomposer ; référentiel | RA, CT, CC, GAF conservent leurs droits | Retenu |
+| `entrepots` | Actions fonctionnelles à décomposer ; référentiel | RA, CT, CC, GAF conservent leurs droits | Retenu |
+| `emplacements` | Actions fonctionnelles à décomposer ; référentiel | RA, CT, CC, GAF conservent leurs droits | Retenu |
+| `lots_stock` | Actions fonctionnelles à décomposer ; suivi des lots | RA, CT, CC, GAF conservent leurs droits | Retenu |
+| `mouvements_stock` | `view`, `create`, `update`, `reverse`, `validate` si applicable | RA, CT, CC, GAF conservent leurs droits | Retenu ; inversion plutôt qu'effacement de l'historique |
 | `receptions_stock` | Actions fonctionnelles à décomposer selon réception et contrôle réellement disponibles | RA, CT, CC conservent leurs droits | Retenu |
 | `reservations_stock` | Actions fonctionnelles à décomposer selon réservation/libération réellement disponibles | RA, CT, CC conservent leurs droits | Retenu |
-| `consommations` | `view`, `create`, `update`, `reverse`, `validate` si applicable | CC, RA, CT, CPT conservent leurs droits | Retenu ; slug canonique `inventory.consommations` |
+| `consommations` | `view`, `create`, `update`, `reverse`, `validate` si applicable | CC, RA, CT, GAF conservent leurs droits | Retenu ; slug canonique `inventory.consommations` |
 | `bons_sortie` | Actions fonctionnelles à décomposer selon préparation, validation et émission réellement disponibles | RA, CC conservent leurs droits | Retenu |
-| `inventaires_physiques` | Actions fonctionnelles à décomposer selon préparation, comptage, validation et clôture réellement disponibles | RA, CPT conservent leurs droits | Retenu |
+| `inventaires_physiques` | Actions fonctionnelles à décomposer selon préparation, comptage, validation et clôture réellement disponibles | RA, GAF conservent leurs droits | Retenu |
 | `ajustements` | `view`, `create`, `update`, `validate`, `reverse` ; `delete` uniquement si légalement et techniquement autorisé | RA conserve ses droits | Retenu ; piste d'audit obligatoire |
 
 **Règle Inventory :** conserver la piste d'audit des mouvements, consommations, inventaires et ajustements. Privilégier `reverse` pour annuler une opération historisée ; la suppression physique ne doit pas effacer une preuve comptable ou opérationnelle.
@@ -273,14 +273,14 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
 | --- | --- | --- | --- |
-| `documents` | À décomposer : `view`, `create`, `update`, `delete` conditionnel, `download`, `sign`, `archive`, `validate` selon fonctionnalités présentes | ADM, CT, CC, RA, CPT, SAL conservent leurs droits selon périmètre | Retenu ; inclut les dossiers administratifs clients et leurs pièces ; M-17 reste ouvert |
+| `documents` | À décomposer : `view`, `create`, `update`, `delete` conditionnel, `download`, `sign`, `archive`, `validate` selon fonctionnalités présentes | ADM, CT, CC, RA, GAF, SAL conservent leurs droits selon périmètre | Retenu ; inclut les dossiers administratifs clients et leurs pièces ; M-17 reste ouvert |
 | `versions` | À décomposer selon création de version, consultation et restauration si elle existe | Droits documentaires existants | Retenu ; versions et traces conservées |
-| `dossiers_documentaires` | À décomposer selon création, classement, modification, validation et clôture | ADM, CT, CC, RA, CPT, SAL selon périmètre | Retenu ; ne pas créer de ressource séparée pour les dossiers administratifs clients |
+| `dossiers_documentaires` | À décomposer selon création, classement, modification, validation et clôture | ADM, CT, CC, RA, GAF, SAL selon périmètre | Retenu ; ne pas créer de ressource séparée pour les dossiers administratifs clients |
 | `types_document` | À décomposer selon gestion du référentiel | ADM conserve ses droits | Retenu |
 | `regles_conservation` | À décomposer selon consultation, création et modification réellement disponibles | ADM conserve ses droits | Retenu ; aucune suppression contraire à une obligation légale |
 | `diffusions` | À décomposer selon préparation, envoi, suivi et accusé de réception | ADM, CT, CC, RA, SAL conservent leurs droits | Retenu ; destinataires, dates, versions diffusées et accusés conservés |
 | `download` / `sign` | Actions transverses à rattacher à la ressource documentaire selon le modèle technique, pas de ressource autonome présumée | SAL : téléchargement/signature own | À modéliser ; signature selon délégation, identité et preuve |
-| `exports` | `export` candidat, avec génération/téléchargement selon le workflow | ADM, CPT conservent leurs droits | Retenu ; mêmes restrictions de confidentialité et d'accès que les documents sources |
+| `exports` | `export` candidat, avec génération/téléchargement selon le workflow | ADM, GAF conservent leurs droits | Retenu ; mêmes restrictions de confidentialité et d'accès que les documents sources |
 
 **Restriction M-17 :** qualifier les catégories et champs documentaires sensibles avant de définir les permissions finales. L'accès DIR global ne lève ni secret médical, ni confidentialité légale, ni obligation de conservation.
 
@@ -304,7 +304,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `tableaux_bord` | À décomposer selon consultation, configuration et partage | Droits existants selon rôle | Retenu |
 | `tableaux_bord_strategiques` | À décomposer selon consultation et configuration | DIR global | Retenu |
 | `snapshots` | À décomposer selon création, consultation, export et suppression techniquement permise | SAL : consultation own si applicable | Retenu ; horodatage, périmètre, source et intégrité préservés |
-| `exports` | À décomposer selon préparation, génération, consultation, téléchargement et export | ADM, CPT conservent leurs droits | Retenu ; M-05 levé pour Reporting ; confidentialité et traçabilité restent actives |
+| `exports` | À décomposer selon préparation, génération, consultation, téléchargement et export | ADM, GAF conservent leurs droits | Retenu ; M-05 levé pour Reporting ; confidentialité et traçabilité restent actives |
 
 ## 9. Anomalies et précisions du lot 3
 
@@ -316,11 +316,11 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | Documents | M-17 catégories/champs sensibles | Définir les restrictions de consultation, téléchargement, export et signature ; secret médical exclu |
 | Handover | Réception chantier logistique vs réception finale | Confirmer la frontière entre `logistics.receptions_chantier` et `handover.dossiers_reception` |
 | Reporting | Exports du domaine Reporting | M-05 levé selon matrice ; garder les contrôles de confidentialité |
-| comptabilité hors périmètre | `payments` vs `paiements` | Choisir un slug canonique et traiter le refus comme permission ou résultat de workflow (A-07) |
-| comptabilité hors périmètre | `revisions_budgetaires` | Distinguer ou dédupliquer avec Budgets `revisions` |
-| comptabilité hors périmètre | `analytique` | Distinguer ou dédupliquer avec Costing |
-| comptabilité hors périmètre | `donnees_financieres` | Préciser les données réellement propres à cette ressource ; aucun contournement des permissions sources |
-| comptabilité hors périmètre | `exports` | Dédupliquer avec les exports Documents/Reporting si mêmes opérations |
+| comptabilité (hors périmètre) | `payments` vs `paiements` | Choisir un slug canonique et traiter le refus comme permission ou résultat de workflow (A-07) |
+| comptabilité (hors périmètre) | `revisions_budgetaires` | Distinguer ou dédupliquer avec Budgets `revisions` |
+| comptabilité (hors périmètre) | `analytique` | Distinguer ou dédupliquer avec Costing |
+| comptabilité (hors périmètre) | `donnees_financieres` | Préciser les données réellement propres à cette ressource ; aucun contournement des permissions sources |
+| comptabilité (hors périmètre) | `exports` | Dédupliquer avec les exports Documents/Reporting si mêmes opérations |
 | DIR | Accès global au lot 3 | Attribuer explicitement chaque permission fonctionnelle retenue, sauf préparation/exécution des paiements et restrictions légales/documentaires |
 
 
@@ -346,7 +346,7 @@ La revue porte sur les 18 domaines fonctionnels inventoriés dans les lots 1 à 
 | Contrôle | Résultat | Conclusion |
 | --- | --- | --- |
 | Couverture des domaines | 6 domaines lot 1, 6 domaines lot 2, 7 domaines lot 3 | 18 domaines couverts dans l'inventaire |
-| Couverture des rôles | SA, DIR, ADM, CT, CC, RA, SAL, CPT présents dans la matrice §6 | Matrice synthétique des 8 rôles existante ; associations atomiques à matérialiser au catalogue |
+| Couverture des rôles | SA, DIR, ADM, CT, CC, RA, SAL, GAF présents dans la matrice §6 | Matrice synthétique des 8 rôles existante ; associations atomiques à matérialiser au catalogue |
 | Atomicité | Actions séparées par ressource dans les lots 1 et 2 ; plusieurs ressources lot 3 encore « à décomposer » | Non gelable à ce stade |
 | Règle DIR | Règle globale documentée ; exceptions Identity, secret médical, paiements, auto-approbation, conservation et audit | Principe stable ; associations explicites à générer au catalogue |
 | Slugs | A-01 à A-09 établissent les conventions | Mapping complet ressource/action encore à vérifier |
@@ -358,10 +358,10 @@ La revue porte sur les 18 domaines fonctionnels inventoriés dans les lots 1 à 
 
 | Objets ou fonctions proches | Décision de revue | Conséquence pour le catalogue |
 | --- | --- | --- |
-| Clients / comptabilité hors périmètre — factures, avoirs, relances, échéanciers, litiges, règlements | Propriétaire métier unique : Clients. comptabilité hors périmètre porte les écritures et traitements comptables associés. | Conserver les permissions de pièces client dans `clients`; ne pas recréer ces ressources dans . |
-| Budgets / comptabilité hors périmètre — révisions budgétaires | Budgets reste propriétaire des budgets et de leurs révisions. comptabilité hors périmètre peut référencer les données comptables résultantes, sans seconde ressource de révision identique. | Exclure `accounting.revisions_budgetaires.*` si aucun workflow comptable distinct n'est démontré. |
-| Costing / comptabilité hors périmètre — analytique | Costing conserve chiffrages, coûts, écarts, marges, provisions et périodes analytiques. comptabilité hors périmètre porte les écritures/ventilations comptables analytiques seulement si un objet distinct est démontré. | Ne pas créer `accounting.analytique.*` générique en doublon ; préciser l'objet comptable avant ajout. |
-| Documents / Reporting / comptabilité hors périmètre — exports | Pas de fusion automatique : l'export documentaire, le rendu d'un rapport et l'extraction comptable peuvent être des workflows distincts. | Garder les ressources candidates en attente ; identifier données sources, format, acteurs et finalité avant de décider de fusionner ou séparer. |
+| Clients / comptabilité (hors périmètre) — factures, avoirs, relances, échéanciers, litiges, règlements | Propriétaire métier unique : Clients. comptabilité (hors périmètre) porte les écritures et traitements comptables associés. | Conserver les permissions de pièces client dans `clients`; ne pas recréer ces ressources dans . |
+| Budgets / comptabilité (hors périmètre) — révisions budgétaires | Budgets reste propriétaire des budgets et de leurs révisions. Aucun traitement comptable n'est géré dans le logiciel. | Exclure `accounting.revisions_budgetaires.*` si aucun workflow comptable distinct n'est démontré. |
+| Costing / comptabilité (hors périmètre) — analytique | Costing conserve chiffrages, coûts, écarts, marges, provisions et périodes analytiques comme outils de gestion opérationnelle, sans écritures comptables. | Ne pas créer `accounting.analytique.*` générique en doublon ; préciser l'objet comptable avant ajout. |
+| Documents / Reporting / comptabilité (hors périmètre) — exports | Pas de fusion automatique : l'export documentaire, le rendu d'un rapport et l'extraction comptable peuvent être des workflows distincts. | Garder les ressources candidates en attente ; identifier données sources, format, acteurs et finalité avant de décider de fusionner ou séparer. |
 | Quality / Safety — signalements | La matrice attribue des signalements à chaque domaine et distingue les circuits qualité/sécurité. La ressemblance du nom ne suffit pas à conclure à un doublon. | Conserver deux candidats distincts jusqu'à confirmation du modèle : `quality.signalements` et `safety.signalements`. |
 | Logistics / Handover — réceptions | La réception logistique sur chantier et la réception contractuelle/finale n'ont pas la même finalité. Projects possède également `receptions` contractuelles. | Trois objets candidats distincts à confirmer par modèle : `logistics.receptions_chantier`, `projects.receptions`, `handover.dossiers_reception`. Ne pas fusionner par homonymie. |
 | Workforce / Safety — qualifications et habilitations | Workforce porte les qualifications/formations RH ; Safety porte les habilitations et autorisations de sécurité si elles ont un cycle réglementaire propre. | Référencer les justificatifs et statuts communs ; ne pas dupliquer une même entité sans distinction de cycle de vie. |
@@ -393,7 +393,7 @@ La matrice §6 de `authorization-matrix.md` est la référence synthétique pour
 | CC | Exécution quotidienne sur chantiers/équipes affectés | Pas de budgets/coûts/marges, finance, commande ou réception formelle ; scopes CHAN-42 |
 | RA | Production/atelier, équipe, stocks, équipements, qualité/sécurité atelier | Pas d'engagement financier autonome ; validations personnelles auditées |
 | SAL | Accès personnel `own` aux informations et opérations expressément prévues | Pas de panel, d'accès aux données d'autrui, d'auto-validation, de finance/commerce/comptabilité |
-| CPT | Comptabilité/finance et paie selon matrice ; préparation et exécution des paiements | Pas d'approbation d'engagement, de commande, de paie finale ou de ses propres frais ; pas d'auto-autorisation |
+| GAF | Gestion administrative et financière opérationnelle/finance et paie selon matrice ; préparation et exécution des paiements | Pas d'approbation d'engagement, de commande, de paie finale ou de ses propres frais ; pas d'auto-autorisation |
 
 Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustive de permissions. Les associations finales doivent être explicites par permission atomique, sans héritage implicite.
 
@@ -406,11 +406,11 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 | Identity `financial_delegations` | DIR exclu de l'administration des habilitations ; SA administre | Déterminer si cette ressource est une délégation financière métier ou un paramètre d'accès Identity ; déplacer vers le domaine financier si nécessaire |
 | Costing `marges` | Statut source « proposé » | Exclure du catalogue initial tant que la ressource n'est pas confirmée |
 | Projects `lots_phases` | A-17 ouvert | Modèle de rattachement affaire/chantier à trancher avant permissions et scopes |
-| Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité hors périmètre | Plusieurs lignes « à décomposer » | Reprendre les opérations du code/métier et finaliser chaque action réelle |
-| comptabilité hors périmètre | Domaine fonctionnel distinct retenu dans les décisions A-01 ; incohérence documentaire de §4.2 corrigée dans ce lot | Garder seulement les ressources comptables propres ; exclure les doublons Clients/Budgets/Costing |
+| Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité (hors périmètre) | Plusieurs lignes « à décomposer » | Reprendre les opérations du code/métier et finaliser chaque action réelle |
+| comptabilité (hors périmètre) | Domaine fonctionnel distinct retenu dans les décisions A-01 ; incohérence documentaire de §4.2 corrigée dans ce lot | Garder seulement les ressources comptables propres ; exclure les doublons Clients/Budgets/Costing |
 | M-17 | Ouvert | Définir catégories/champs sensibles et droits download/sign/export par catégorie |
 | M-01 à M-16 | Paramètres/workflows résiduels documentés dans la matrice | Résoudre ceux qui conditionnent les permissions concernées ; ne pas bloquer les permissions indépendantes |
-| Matrice des 8 rôles | Synthèse existante, associations atomiques non générées | Décliner chaque ligne de ressource/action vers SA, DIR, ADM, CT, CC, RA, SAL, CPT |
+| Matrice des 8 rôles | Synthèse existante, associations atomiques non générées | Décliner chaque ligne de ressource/action vers SA, DIR, ADM, CT, CC, RA, SAL, GAF |
 | Audit | Événements définis, stockage technique non confirmé | Confirmer l'affectation CHAN-45 ou ticket dédié |
 
 ### 11.6 Décision de gel
@@ -430,20 +430,20 @@ Contrôle documentaire réalisé le 24/11/2026 sur :
 - l'arborescence Git de la branche `chan-40-roles-permissions` ;
 - `app/Models/User.php` et `config/permission.php`.
 
-Le catalogue des objets métier précise explicitement qu'il décrit des objets cibles et non des modèles Eloquent existants. Il recense 132 objets dans 18 domaines (D01 à D18). Le référentiel RBAC recense désormais 18 domaines avec  comptabilité hors périmètre. Les domaines `app/Domains/*` sont encore des répertoires vides contenant uniquement `.gitkeep` ; aucun workflow métier PHP ne permet donc de confirmer les actions candidates des lots 2 et 3. Le contrôle ne doit pas être présenté comme une revue du comportement applicatif.
+Le catalogue des objets métier précise explicitement qu'il décrit des objets cibles et non des modèles Eloquent existants. Il recense 132 objets dans 18 domaines (D01 à D18). Le référentiel RBAC recense désormais 18 domaines avec  comptabilité (hors périmètre). Les domaines `app/Domains/*` sont encore des répertoires vides contenant uniquement `.gitkeep` ; aucun workflow métier PHP ne permet donc de confirmer les actions candidates des lots 2 et 3. Le contrôle ne doit pas être présenté comme une revue du comportement applicatif.
 
 ### 12.2 Écarts entre le catalogue des objets et l'inventaire RBAC
 
 | Sujet | Constat sourcé | Traitement requis avant gel |
 | --- | --- | --- |
-| comptabilité hors périmètre /  | La matrice RBAC définit  et ses ressources. Le catalogue des objets métier s'arrête à D18 et ne décrit aucun objet comptabilité hors périmètre. | Ajouter un inventaire d'objets comptables propre à  dans le référentiel métier, ou référencer une source métier validée équivalente. Ne pas déduire les objets comptables de simples libellés de permissions. |
+| comptabilité (hors périmètre) /  | La matrice RBAC définit  et ses ressources. Le catalogue des objets métier s'arrête à D18 et ne décrit aucun objet comptabilité (hors périmètre). | Ajouter un inventaire d'objets comptables propre à  dans le référentiel métier, ou référencer une source métier validée équivalente. Ne pas déduire les objets comptables de simples libellés de permissions. |
 | Projects / `lots_phases` | L'objet `PRJ-03 LotPhase` existe dans le catalogue métier ; la matrice RBAC laisse encore A-17 ouvert sur le rattachement affaire/chantier et la modélisation. | A-17 porte sur la relation et les règles de rattachement, pas sur l'existence nominale de l'objet. Décrire les relations et le cycle de vie avant de définir les actions et scopes. |
 | Identity / `financial_delegations` | Le catalogue métier contient `IDN-05 Délégation`, tandis que la matrice place `financial_delegations` dans Identity et interdit à DIR l'administration technique des habilitations. | Distinguer la délégation de pouvoir financier métier de l'administration RBAC. Identifier le propriétaire du workflow, les acteurs, les catégories et les effets sur l'autorisation avant de fixer les permissions DIR/SA. |
 | Costing / `marges` | `CST-05 Marge` figure parmi les 8 objets Costing, mais l'inventaire RBAC conserve la ressource au statut « à préciser / proposé ». | L'objet métier est identifié ; cela ne valide pas automatiquement une ressource autonome ni une permission `view`. Confirmer si la marge est une donnée calculée de Costing ou un objet consultable distinct. |
 | Workforce | Le catalogue métier D07 liste 9 objets, mais la matrice/inventaire RBAC mentionne aussi paies, bulletins, écritures de paie, coordonnées bancaires, dossiers disciplinaires, données médicales et grands déplacements. | Qualifier chacun comme objet autonome, sous-objet du dossier RH ou donnée/processus géré par un autre domaine. Maintenir les restrictions médicales, bancaires et de paie pendant cette qualification. |
 | TimeTracking | Le catalogue métier comprend l'imputation de temps, les corrections et les absences ; l'inventaire RBAC ne décrit pas encore clairement une ressource autonome pour l'imputation et mentionne en plus les heures supplémentaires et justificatifs médicaux. | Déterminer si l'imputation est une ressource autonome ou une capacité de pointage ; qualifier les heures supplémentaires comme workflow/objet ; garder les justificatifs médicaux hors des permissions générales de documents détaillés. |
 | Workshop | Le catalogue métier comprend `DossierDeFabricationExterne` (WKS-08), absent des ressources listées dans l'inventaire RBAC. | Confirmer si l'objet est utilisé dans le périmètre CHAN-40 et, si oui, définir ses actions et rôles ; sinon le déclarer explicitement hors catalogue initial. |
-| Procurement | Le catalogue des objets ne liste pas explicitement `besoins`, `factures_fournisseurs` et `incidents_sous_traitance`, alors que la matrice RBAC les cite. | Distinguer objets autonomes, processus d'approvisionnement et objets possédés par comptabilité hors périmètre/Quality. Confirmer la propriété avant d'attribuer des permissions. |
+| Procurement | Le catalogue des objets ne liste pas explicitement `besoins`, `factures_fournisseurs` et `incidents_sous_traitance`, alors que la matrice RBAC les cite. | Distinguer objets autonomes, processus d'approvisionnement et objets possédés par comptabilité (hors périmètre)/Quality. Confirmer la propriété avant d'attribuer des permissions. |
 | Quality / Safety | Les ressources `signalements` sont présentes dans la matrice RBAC, mais ne figurent pas dans les catalogues d'objets D14/D15. | Confirmer leur autonomie et leur distinction entre signalement qualité et signalement sécurité, ou les rattacher à un objet existant avec une catégorie explicite. |
 | Documents | L'inventaire RBAC ajoute `exports`, alors que le catalogue métier identifie les six objets DOC-01 à DOC-06 sans objet Export dédié. | Traiter l'export comme action sur une ressource documentaire ou confirmer un objet d'export autonome avec cycle de vie, destinataires et conservation. |
 | Reporting | La matrice RBAC cite `tableaux_bord_strategiques` et `exports`, alors que le catalogue métier D18 liste `TableauDeBord` et `Export` sans distinction stratégique. | Déterminer si le tableau stratégique est une audience/configuration du tableau de bord ou un objet distinct ; séparer les exports uniquement si le workflow et les données sources diffèrent. |
@@ -463,20 +463,20 @@ Le catalogue des objets métier précise explicitement qu'il décrit des objets 
 
 | Priorité | Blocage | Pourquoi il bloque | Décision ou preuve attendue |
 | --- | --- | --- | --- |
-| P0 |  comptabilité hors périmètre absent du catalogue d'objets métier | Impossible de confirmer les objets propres et les frontières de propriété du domaine | Référentiel comptable validé |
-| P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et CPT | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
+| P0 |  comptabilité (hors périmètre) absent du catalogue d'objets métier | Impossible de confirmer les objets propres et les frontières de propriété du domaine | Référentiel comptable validé |
+| P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et GAF | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
 | P0 | Ressources/actions des lots 2 et 3 non décomposées | Les lignes « toutes actions applicables » ne sont pas des permissions atomiques | Définition métier des actions et preuve du workflow ou de l'objet |
 | P1 | A-17 — rattachement lots/phases | Les actions et les périmètres dépendront du modèle de rattachement | Relations affaire/chantier/lot/phase et cycle de vie |
 | P1 | M-17 — catégories documentaires sensibles | Les permissions de lecture, téléchargement, signature et export peuvent exposer des données protégées | Classification des catégories/champs et règles d'accès |
 | P1 | Workforce / paie / données bancaires / médicales | Objets, sous-objets et processus ne sont pas distingués partout | Cartographie de propriété et matrice de confidentialité |
 | P1 | Procurement / Inventory / Equipment / Logistics / Quality / Safety / Handover / Reporting | Les actions et parfois la propriété des objets restent à préciser | Décomposition par workflow, sans action générique |
-| P1 | comptabilité hors périmètre : paiements, révisions, analytique, données financières, exports | Slugs et frontières de propriété non stabilisés | Ressources comptables propres et séparation de paiement explicite |
+| P1 | comptabilité (hors périmètre) : paiements, révisions, analytique, données financières, exports | Slugs et frontières de propriété non stabilisés | Ressources comptables propres et séparation de paiement explicite |
 | P2 | A-07 : `treat`, `correct`, `refuse` | Les mappings du lot 4 sont des propositions, pas des validations métier | Confirmation des workflows concernés |
 | P2 | Identity : délégations financières, annuaire, messagerie | Propriété et périmètre fonctionnel non confirmés | Décisions métier et séparation Identity / Finance |
 
 ### 12.5 Ordre de résolution recommandé
 
-1. Compléter le référentiel des objets métier pour comptabilité hors périmètre  et trancher les objets RBAC qui ne figurent pas dans le catalogue de 132 objets.
+1. Compléter le référentiel des objets métier pour comptabilité (hors périmètre)  et trancher les objets RBAC qui ne figurent pas dans le catalogue de 132 objets.
 2. Résoudre la propriété et la nature des ressources transverses ou sensibles : délégations financières, paie, données bancaires, signalements, exports.
 3. Décomposer les actions réelles des ressources des lots 2 et 3 à partir de workflows métier validés ; le dépôt ne contient pas encore de code permettant cette vérification.
 4. Résoudre A-17 et M-17, sans étendre leurs effets aux permissions indépendantes.
@@ -489,7 +489,7 @@ Le catalogue des objets métier précise explicitement qu'il décrit des objets 
 ## 13. Lots suivants
 
 - **Lot 2 :** Workforce, TimeTracking, Workshop, Procurement, Inventory, Equipment.
-- **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité hors périmètre.
+- **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité (hors périmètre).
 - **Lot 4 :** déduplication, normalisation finale des actions, matrice complète des huit rôles, contrôles de cohérence et proposition de gel.
 
 M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent isolés ; ils ne bloquent pas les permissions indépendantes.
@@ -502,10 +502,15 @@ M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent 
 4. Attribution explicite aux huit rôles, sans héritage implicite.
 5. Application explicite de la règle DIR et de ses exceptions.
 6. Scopes opérationnels documentés pour CHAN-42, hors slug.
-7. Absence de doublons entre domaines (notamment Clients/comptabilité hors périmètre et Budgets/comptabilité hors périmètre).
+7. Absence de doublons entre domaines (notamment Clients/comptabilité (hors périmètre) et Budgets/comptabilité (hors périmètre)).
 8. Validation des ressources proposées ou exclusion explicite du catalogue initial.
 
 
 ## 13. Décision de périmètre — exclusion de la comptabilité (24/11/2026)
 
-Décision utilisateur : le logiciel C2ME ne comportera aucune partie comptable. Le domaine D19 Accounting et toutes ses ressources, actions et permissions sont exclus du catalogue CHAN-40. Aucun rôle Comptabilité/CPT ne doit être créé. Les processus opérationnels de facturation client, achats/factures fournisseurs, budgets, costing et paie restent dans leurs domaines métier respectifs uniquement pour leurs besoins de gestion ; aucune écriture, journal, rapprochement, trésorerie comptable, déclaration, clôture, immobilisation ou amortissement comptable n'est géré dans le logiciel.
+Décision utilisateur : le logiciel C2ME ne comportera aucune partie comptable. Le domaine D19 Accounting et toutes ses ressources, actions et permissions sont exclus du catalogue CHAN-40. Aucun rôle Gestion administrative et financière opérationnelle/GAF ne doit être créé. Les processus opérationnels de facturation client, achats/factures fournisseurs, budgets, costing et paie restent dans leurs domaines métier respectifs uniquement pour leurs besoins de gestion ; aucune écriture, journal, rapprochement, trésorerie comptable, déclaration, clôture, immobilisation ou amortissement comptable n'est géré dans le logiciel.
+
+
+## 15. Définition du rôle GAF — gestion administrative et financière opérationnelle
+
+Le rôle GAF remplace l'ancien rôle CPT/Comptabilité. Il est conservé comme profil métier dédié aux opérations administratives et financières du logiciel, sans constituer un module comptable. Il peut intervenir sur les factures et règlements clients au titre du suivi opérationnel, les factures fournisseurs et commandes au titre du traitement administratif, les éléments de paie et les données RH strictement nécessaires, ainsi que la consultation des budgets et du costing selon les permissions de chaque ressource. Il ne reçoit aucune permission d'écriture comptable, de journal, de plan comptable, de rapprochement bancaire comptable, de trésorerie comptable, de déclaration ou clôture comptable, d'immobilisation ou d'amortissement. Les paiements bancaires exécutables ne sont pas présumés inclus : leur éventuelle gestion nécessitera un arbitrage distinct.
