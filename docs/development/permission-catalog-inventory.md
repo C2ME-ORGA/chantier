@@ -640,3 +640,25 @@ La règle de gel de la section 21 s'applique à toute la liste initiale : aucune
 - A-07 est clôturé fonctionnellement par Jira 10307 ; les mappings sont consignés en §11.3 et en section 22. Aucun des trois cas ne justifie une permission `treat`, `correct` ou `refuse`.
 - M-07 à M-09 sont arbitrés par Jira 10311 et décrits en §20 ; leurs actions atomiques doivent être limitées aux responsabilités explicites de ADM, CC, RA et DIR.
 - `financial_delegations` ne doit pas être confondue avec l'administration des rôles et permissions. Bien que M-16 confirme les responsabilités fonctionnelles DIR/SA sur les délégations financières, le rattachement de cette ressource au domaine Identity et son workflow ne sont pas suffisamment qualifiés : elle est exclue du catalogue initial tant que sa propriété métier n'est pas confirmée.
+
+## 23. Implémentation initiale du catalogue RBAC — version 0.1.0
+
+Le catalogue technique initial est créé dans le code sur la base des associations explicitement documentées et non ambiguës :
+
+- Source de rôles : `app/Domains/Identity/Catalog/RoleCatalog.php` ; huit codes initiaux : SA, DIR, ADM, CT, CC, RA, SAL et GAF.
+- Source de permissions et d'associations : `app/Domains/Identity/Catalog/PermissionCatalog.php`.
+- Seeders : `RoleCatalogSeeder`, `PermissionCatalogSeeder` et `RbacCatalogSeeder`, appelés par `DatabaseSeeder`.
+- Guard unique : `web`. Aucun rôle n'est attribué automatiquement à un utilisateur existant.
+- Le seeder synchronise les permissions des seuls rôles du catalogue initial ; il ne modifie pas les rôles extérieurs à ce catalogue.
+- Le panel Filament exige désormais `identity.admin_panel.access` dans `User::canAccessPanel()`. SAL ne dispose pas de cette permission.
+- Test dédié : `tests/Feature/Authorization/RbacCatalogTest.php` (rôles, permissions, associations, idempotence, absence d'affectation automatique et accès panel).
+
+### Limite volontaire de la version 0.1.0
+
+Cette version ne prétend pas représenter les 18 domaines au complet. Elle ne contient que les actions pour lesquelles la ressource, l'action et l'association de rôle sont explicitement établies dans la matrice. Les actions conditionnelles (suppression, archivage, etc.), les ressources « à décomposer », les workflows sans acteurs/action atomiques établis et les associations seulement déduites d'un intitulé sont exclus.
+
+En particulier, aucune permission n'est créée pour l'administration des utilisateurs/rôles/permissions, les délégations financières, les lots/phases, les domaines des lots 2 et 3 encore à décomposer, les documents sans association existante vérifiée, les exports transverses, les ressources non qualifiées, les paiements bancaires ou la comptabilité.
+
+DIR est associé explicitement à toutes les permissions fonctionnelles retenues dans cette version. Les restrictions médicales, de séparation des tâches, de conservation et d'audit demeurent applicables. Les rôles autres que DIR ne reçoivent que les associations écrites dans le catalogue PHP.
+
+**État :** socle technique initial écrit ; catalogue fonctionnel global toujours non gelé. La version 0.1.0 est une base minimale versionnée et extensible, pas une validation implicite des actions exclues.
