@@ -17,7 +17,7 @@ Sources fonctionnelles :
 - Jira 10301 — consolidation ;
 - Jira 10303 — arbitrages actualisés du 20/11/2026.
 
-Les décisions Jira 10297 à 10303 sont utilisées comme cadrage à partir des éléments fournis pour cette mission. La relecture directe des commentaires Jira n’a pas été possible dans l’environnement (API/Jira inaccessible, `404`). Le commentaire 10303 du 20/11/2026 complète les commentaires 10297 à 10301 ; il ne les remplace pas. Les décisions antérieures restent applicables lorsqu’elles ne sont pas modifiées ou précisées par 10303.
+Les décisions Jira 10297 à 10303 constituent le cadrage initial. Les commentaires Jira 10307 à 10311 ont ensuite été relus directement : ils clôturent A-07, A-17, M-17, consolident M-01 à M-16 et complètent M-07 à M-09. Ils prévalent sur les statuts historiques antérieurs lorsqu'ils les mettent à jour.
 
 Priorité d’interprétation :
 
@@ -31,7 +31,7 @@ Priorité d’interprétation :
 | Décisions Jira | 10297 à 10303, reprises via le cadrage fourni | Utilisées |
 | Constat de code | Dépôt `develop`, commit `e305736` | Vérifié |
 | Proposition de conception | Présent document | Non validée |
-| Vérification directe Jira | API/Jira | Non accessible (`404`) |
+| Vérification directe Jira | Commentaires 10307 à 10311 de CHAN-40 | Relus le 24/11/2026 |
 
 ## Légende
 
@@ -1552,3 +1552,26 @@ Ces décisions complètent les arbitrages M-01 à M-16. Elles ne gèlent pas le 
 - Cette règle autorise la finalisation du catalogue à partir des éléments prouvés ; elle ne transforme pas les lignes « à décomposer » en droits implicites.
 
 **Conséquence pour CHAN-40 :** le gel est conditionné à la traçabilité de chaque permission et association retenue, à l'explicitation des exclusions et à la vérification technique du catalogue généré. Les décisions fonctionnelles clôturées ne sont pas rouvertes par cette règle.
+
+## 22. Mise en cohérence des statuts historiques — 24/11/2026
+
+Cette section prévaut sur les statuts des tableaux historiques des sections précédentes lorsqu'ils contredisent les arbitrages postérieurs. Les anciennes lignes sont conservées pour la traçabilité et ne constituent plus des points ouverts.
+
+| Référence | État courant faisant foi | Réserve résiduelle |
+| --- | --- | --- |
+| A-07 | **Clôturé fonctionnellement** (Jira 10307). Litiges : `process` pour le traitement opérationnel et `arbitrate` pour l'arbitrage engageant. Pointages : `update` sur workflow de correction tracé ; aucune action `correct`. Paiements bancaires hors périmètre ; aucun droit `refuse`, `authorize` ou d'exécution. | Appliquer les actions uniquement aux ressources dont le workflow les justifie. |
+| A-17 | **Clôturé fonctionnellement** (Jira 10308). Affaire 1—N Chantier, Chantier 1—N Lot, Lot 1—N Phase. | Les actions atomiques lots/phases et les attributions autres que celles explicitement prouvées restent exclues jusqu'à justification. |
+| M-01 à M-16 | **Arbitrages fonctionnels consolidés** (Jira 10310). | Les acteurs M-02, la date et le rattachement RH M-03, et les détails de paramétrage mentionnés dans les arbitrages restent à configurer ; ils ne rouvrent pas les décisions fonctionnelles. |
+| M-07 à M-09 | **Complétés et arbitrés** (Jira 10311) : demandes internes en espace dédié ; incidents sous-traitants traités/suivis/clôturés par RA après signalement CC ; circuits qualité et sécurité distincts traités par RA. | Décliner uniquement les actions atomiques justifiées par ces workflows ; aucun droit de commande implicite. |
+| M-17 | **Clôturé fonctionnellement** (Jira 10309) pour DOC-01 à DOC-10 et `view`, `download`, `sign`, `export`. | Vérifier les associations et scopes existants sans extension automatique ; secret médical et restrictions légales prioritaires. |
+| Catalogue global | **Non gelé.** La règle de gel de la section 21 s'applique. | Chaque permission et association rôle × permission doit être justifiée et vérifiable avant implémentation. |
+
+### 22.1 Conséquence sur la lecture de la matrice
+
+- Les lignes historiques §11 et les mentions « ouvert » des dossiers A-07, A-17, M-01 à M-17 sont des instantanés antérieurs ; elles ne doivent pas être reprises comme état courant lorsqu'une décision postérieure les clôture ou les complète.
+- Les descriptions de rôle ou les formulations « accès complet » ne créent pas, à elles seules, des actions atomiques. Seules les permissions dont l'action et l'association sont justifiées par une décision, un workflow documenté ou un droit existant confirmé entrent dans le catalogue initial.
+- DIR reçoit chaque permission fonctionnelle atomique effectivement retenue, sans wildcard ni génération automatique d'actions supposées ; les exceptions de sécurité, secret médical, séparation des tâches, habilitations, conservation et audit demeurent applicables.
+- Les demandes internes, incidents sous-traitants, signalements qualité et signalements sécurité suivent les circuits détaillés dans les arbitrages M-07 à M-09 ; les rôles et actions ne sont pas étendus au-delà de ces responsabilités explicites.
+- Le catalogue des documents DOC-01 à DOC-10 conserve les droits existants pour les quatre opérations documentaires ; aucune attribution nouvelle n'est déduite de la classification.
+
+**État courant :** référentiel fonctionnel consolidé sur les arbitrages cités ; catalogue atomique et associations rôle × permission non encore générés ni gelés. Aucun changement de statut Jira n'est effectué par cette mise à jour documentaire.
