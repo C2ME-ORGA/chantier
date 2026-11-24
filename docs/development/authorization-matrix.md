@@ -369,18 +369,20 @@ Divergences entre documentation et code :
 | D16 | Documents | `documents` | Document, Version, Dossier, TypeDocument, Diffusion, RègleDeConservation |
 | D17 | Handover | `handover` | DossierDeRéception, Réserve, LevéeDeRéserve, DOE, GarantieClient, DossierDeClôture |
 | D18 | Reporting | `reporting` | Rapport, TableauDeBord, Indicateur, Snapshot, Export, TableauDeBordStratégique |
+| D19 | Accounting | `accounting` | Écriture, Journal, PlanComptable, PériodeComptable, RapprochementBancaire, Trésorerie, Déclaration, Clôture, AnalytiqueComptable, Immobilisation, Amortissement, Paiement, RelationOrganisme |
 
 ### 4.2 Namespace `accounting`
 
-Le namespace `accounting` est introduit par 10300 mais n’est pas un domaine validé.
+**Décision d'architecture retenue :** `accounting` est un domaine fonctionnel distinct du catalogue, conformément à A-01. Il porte les ressources propres à la comptabilité générale, aux journaux, périodes comptables, rapprochements bancaires, trésorerie, déclarations/clôtures, immobilisations, amortissements, paiements et relations avec les organismes.
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| Domaine distinct | Périmètre cohérent, propriétaire unique | Contredit les 18 domaines ; chevauche Clients, Procurement, Workforce, Budgets et Costing |
-| Répartition dans les domaines existants | Respecte les 18 domaines | Éclate la comptabilité ; banque, journaux, immobilisations et déclarations sans propriétaire |
-| Module ou contexte séparé | Préserve les 18 domaines, isole la finance | Nécessite une convention d’intégration et une décision d’architecture |
+Cette séparation ne crée aucun doublon de propriété :
+- les factures clients, avoirs, relances, échéanciers, litiges et règlements clients restent dans `clients` ;
+- les écritures et traitements comptables associés à ces pièces relèvent de `accounting` et référencent les objets Clients ;
+- les budgets et révisions budgétaires restent dans `budgets` ;
+- les chiffrages, coûts, écarts, marges, provisions et périodes analytiques de gestion restent dans `costing`. Une analytique comptable distincte ne pourra être ajoutée que si son objet et son workflow propres sont établis ;
+- aucune ressource générique `donnees_financieres` ne doit contourner les permissions des ressources sources.
 
-**Décision d’architecture :** à arbitrer. Le rattachement du namespace `accounting` n’est pas tranché. Les décisions fonctionnelles sur les paiements, la paie, la banque et les clôtures sont validées ; leurs codes restent techniquement `À normaliser` et leur rattachement de domaine reste `À arbitrer`.
+Le domaine Accounting est donc le domaine D19. Les ressources et actions candidates du §5.19 doivent être alignées sur ces frontières avant le gel ; les doublons `revisions_budgetaires` et `analytique` sont à exclure sauf preuve d'un workflow distinct.
 
 ### 4.3 Convention de nommage
 
