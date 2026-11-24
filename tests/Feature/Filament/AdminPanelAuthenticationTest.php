@@ -81,3 +81,84 @@ test('refuse un jeton de réinitialisation invalide sans modifier le mot de pass
 
     expect($user->fresh()->password)->toBe($originalPassword);
 });
+
+test('renouvelle l’identifiant de session après une connexion réussie', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+    $sessionId = session()->getId();
+
+    Livewire::test(\\Filament\\Auth\\Pages\\Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $this->assertAuthenticatedAs($user);
+    expect(session()->getId())->not->toBe($sessionId);
+});
+
+test('limite les tentatives de connexion après cinq échecs', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+
+    $component = Livewire::test(\\Filament\\Auth\\Pages\\Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'incorrect-password',
+        ]);
+
+    foreach (range(1, 5) as $attempt) {
+        $component->call('authenticate')
+            ->assertHasFormErrors(['data.email']);
+    }
+
+    $component->call('authenticate')
+        ->assertNotified();
+
+    $this->assertGuest();
+});
+
+test('refuse la connexion d’un utilisateur sans permission d’accès au panel', function () {
+    $user = User::factory()->create();
+
+    Livewire::test(\\Filament\\Auth\\Pages\\Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasFormErrors(['data.email']);
+
+    $this->assertGuest();
+});
+
+test('ne transmet pas de lien de réinitialisation à un utilisateur sans accès au panel', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+
+    Livewire::test(RequestPasswordReset::class)
+        ->fillForm(['email' => $user->email])
+        ->call('request');
+
+    Notification::assertNotSentTo($user, ResetPasswordNotification::class);
+});
+
+test('ne réinitialise pas le mot de passe d’un utilisateur sans accès au panel', function () {
+    $user = User::factory()->create();
+    $originalPassword = $user->password;
+    $token = Password::broker('users')->createToken($user);
+
+    Livewire::test(ResetPassword::class, [
+        'email' => $user->email,
+        'token' => $token,
+    ])
+        ->set('password', 'NewSecurePassword123!')
+        ->set('passwordConfirmation', 'NewSecurePassword123!')
+        ->call('resetPassword');
+
+    expect($user->fresh()->password)->toBe($originalPassword);
+    $this->assertGuest();
+});
