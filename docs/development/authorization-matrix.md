@@ -161,7 +161,7 @@ Divergences entre documentation et code :
 
 **Policies et périmètre technique.** Le scope fonctionnel de DIR est global société. Les Policies CHAN-42 continuent d'appliquer les restrictions légales, de confidentialité et de sécurité ; elles ne doivent pas réintroduire de limitation métier par chantier pour DIR en dehors de ces restrictions.
 
-**Lots et phases.** La règle générale d'accès intégral s'applique également aux ressources métier de lots et phases dès leur intégration au catalogue. A-17 reste ouvert uniquement pour fixer leur modèle de rattachement et leur modélisation technique, pas pour demander un nouvel arbitrage sur le principe des droits DIR.
+**Lots et phases.** La règle générale d'accès intégral s'applique également aux ressources métier de lots et phases. Le rattachement A-17 est validé : Affaire 1—N Chantier, Chantier 1—N Lot, Lot 1—N Phase ; chaque lot appartient à un seul chantier et chaque phase à un seul lot. DIR conserve un scope global ; les accès opérationnels CT/CC suivent `assigned_sites` via le chantier parent. Les actions atomiques restent à définir.
 
 ### 3.3 Administratif
 
@@ -442,7 +442,7 @@ La règle DIR est fonctionnellement `Validé` et techniquement `À normaliser`. 
 | --- | --- | --- | --- | --- | --- |
 | `affaires` | `view`, `create`, `update` : CT ; `view` : ADM, CC, GAF, DIR | global pour DIR ; assigned_projects pour CT | Affaires au niveau contractuel/commercial ; consultation DIR globale | 10298, arbitrage A.4.2 Groupe 1 | Consultation DIR validée ; permissions à intégrer |
 | `chantiers` | `view`, `create`, `update` : CT ; `view` : ADM, CC, GAF, DIR | global pour DIR ; assigned_sites pour CT | Gestion opérationnelle ; consultation DIR globale | 10298, arbitrage A.4.2 Groupe 1 | Consultation DIR validée ; permissions à intégrer |
-| `lots_phases` | Actions et attribution à confirmer selon le rattachement métier au niveau affaire ou chantier | À arbitrer | Le document source ne permet pas de fixer un scope unique sans arbitrage | 10298 | `À arbitrer` |
+| `lots_phases` | Actions métier à définir ; DIR : accès complet à toutes les actions applicables ; CT : accès sur les chantiers affectés ; CC : accès opérationnel sur les chantiers affectés, selon actions à définir | global pour DIR ; assigned_sites pour CT/CC | Un lot appartient à un seul chantier ; une phase appartient à un seul lot et hérite du chantier | Décision métier A-17 du 24/11/2026 | Rattachement validé ; actions atomiques et attribution des autres rôles à définir |
 | `etudes` | `view`, `create`, `update` : CT ; `view` : DIR | global pour DIR ; assigned_projects pour CT | Consultation DIR des études | 10298, arbitrage A.4.2 Groupe 1 | Consultation DIR validée ; permission à intégrer |
 | `commandes_clients` | `view` : DIR, ADM, CT, GAF ; `approve` : DIR, SA | global pour DIR ; assigned_projects pour CT | Approbation obligatoire par DIR de toutes les commandes clients, sans restriction de montant ; consultation globale DIR | 10298, 10301, arbitrage A.4.2 | Décision métier validée ; workflow à préciser |
 | `avenants` | `view`, `prepare`, `submit` : CT ; `view` : DIR, ADM ; `approve` : DIR, SA | global pour DIR ; assigned_projects pour CT | CT prépare et soumet les avenants dans son périmètre ; DIR et SA approuvent ; DIR n’assure ni préparation ni soumission | 10298, 10303, arbitrage A.4.2 Groupe 1 et décision du 24/11/2026 | Décision métier validée ; workflow, seuil et cumul applicables à préciser |
@@ -672,7 +672,7 @@ Vocabulaire documentaire retenu :
 | `restricted` | Accès restreint ou besoin d’en connaître (RH sensible, médical, banque) | dossiers RH, justificatifs médicaux, coordonnées bancaires |
 | `policy_defined` | Périmètre effectif déterminé par les Policies métier définies dans CHAN-42 | documents, clients, absences, etc. |
 
-Les cellules composites (`assigned_projects / own_team`, `company / own`, etc.) listent les scopes applicables ; le scope `policy_defined` est déterminé par les Policies métier de CHAN-42. `assigned_projects` est réservé aux affaires et projets affectés au niveau contractuel/commercial ; `assigned_sites` aux sites ou chantiers affectés au niveau opérationnel ; `assigned_workers` aux salariés affectés à un chantier ou à un périmètre opérationnel. Une affaire n’implique pas automatiquement l’accès à tous ses chantiers, et un chantier n’implique pas l’accès aux données commerciales ou comptables de l’affaire. Les `lots_phases` ne reçoivent pas de scope par déduction : leur rattachement à l’affaire ou au chantier doit être confirmé ; dans l’attente, ils restent `À arbitrer`. `transversal` est représenté dans la matrice §6 et ne remplace pas les scopes de ressource du §5. Aucun mécanisme de Policy n’est implémenté par ce lot.
+Les cellules composites (`assigned_projects / own_team`, `company / own`, etc.) listent les scopes applicables ; le scope `policy_defined` est déterminé par les Policies métier de CHAN-42. `assigned_projects` est réservé aux affaires et projets affectés au niveau contractuel/commercial ; `assigned_sites` aux sites ou chantiers affectés au niveau opérationnel ; `assigned_workers` aux salariés affectés à un chantier ou à un périmètre opérationnel. Une affaire n’implique pas automatiquement l’accès à tous ses chantiers, et un chantier n’implique pas l’accès aux données commerciales ou comptables de l’affaire. `lots_phases` est rattaché exclusivement au chantier : un lot appartient à un seul chantier et une phase appartient à un seul lot. Le scope opérationnel est donc `assigned_sites` (notamment CT/CC), tandis que DIR conserve son scope global. La phase hérite du chantier via son lot ; aucun rattachement direct phase-chantier indépendant n’existe. `transversal` est représenté dans la matrice §6 et ne remplace pas les scopes de ressource du §5. Aucun mécanisme de Policy n’est implémenté par ce lot.
 
 ## 9. Règles de validation et séparation des responsabilités
 
@@ -772,7 +772,7 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-14 | Intégration comptable externe | Périmètre non défini dans les commentaires disponibles | Déterminer l’interface et la frontière avec un logiciel/prestataire comptable | Architecture | Direction / architecture |
 | A-15 | Périmètre CHAN-45 et audit | CHAN-45 est mentionné dans la documentation du dépôt comme journalisation de sécurité ; le périmètre exact sur l’audit métier immuable n’est pas vérifié | Confirmer si CHAN-45 porte l’audit métier ou prévoir un lot dédié | Périmètre du stockage d’audit | Architecture / sécurité |
 | A-16 | Règle générale d'accès intégral DIR et normalisation | La Direction a confirmé le 24/11/2026 que DIR doit disposer de toutes les permissions fonctionnelles, présentes et futures, sur tous les modules et ressources métier, avec scope global société. Il n'est plus nécessaire de faire arbitrer les actions DIR une par une. | Appliquer automatiquement à DIR chaque permission atomique du catalogue, sans wildcard ni permission générique ; conserver uniquement les exceptions explicitement définies (administration des habilitations, secret médical, séparation des tâches, auto-approbation interdite, obligations légales de conservation/confidentialité/audit). | Les droits métier DIR ne sont plus à arbitrer ressource par ressource. A-16 est clos sur le plan fonctionnel. Les conventions A-01 à A-09 sont normalisées ; restent la construction du catalogue canonique, la synchronisation des associations et les vérifications de cohérence avant gel. Aucun workflow de paiement bancaire n'est inclus dans le périmètre. | Construire `PermissionCatalog` et `RoleCatalog`, associer automatiquement toutes les permissions fonctionnelles à DIR, intégrer les exceptions et tester les séparations CHAN-46. | Architecture / développement |
-| A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent de scopes distincts (`assigned_projects` et `assigned_sites`) ; aucun élément validé ne permet d’attribuer un scope aux `lots_phases` | Confirmer si chaque lot/phase relève de l’affaire, du chantier ou d’une relation propre. Tant que ce rattachement n’est pas validé, conserver la ressource sans permission opérationnelle ni scope attribué ; ne pas déduire `assigned_projects`, `assigned_sites` ou `policy_defined` de l’ancien regroupement | §5.3 et §8 ; accès non attribué en attente d’arbitrage | Architecture / métier |
+| A-17 | Rattachement des lots et phases | Décision métier validée le 24/11/2026 : Affaire 1—N Chantier ; Chantier 1—N Lot ; Lot 1—N Phase. Chaque lot appartient à un seul chantier ; chaque phase appartient obligatoirement à un seul lot et hérite du chantier via ce lot. | Appliquer `assigned_sites` aux accès opérationnels CT/CC sur lots et phases ; DIR conserve le scope global. Ne pas créer de rattachement direct phase-chantier indépendant. Les actions atomiques et les attributions des autres rôles restent à définir à partir des workflows réels. | Décision utilisateur du 24/11/2026 ; §5.3, §8 et arbitrage A.4.1 | Métier validé ; permissions détaillées à définir |
 
 
 ### A.4.2 — Décision générale complémentaire DIR (24/11/2026)
@@ -790,7 +790,7 @@ Cette règle s'applique aux actions de consultation, création, modification, su
 - Le seuil d'approbation de 100 000 € HT cumulés par opération et les workflows financiers existants sont maintenus.
 - Les Policies CHAN-42 continuent d'appliquer les restrictions légales et de sécurité ; elles ne doivent pas réduire le scope métier global de DIR sans fondement explicite dans ces exceptions.
 
-**Conséquences sur les points ouverts.** A-16 est clos sur l'arbitrage fonctionnel : seules restent la normalisation des permissions atomiques et la synchronisation des associations rôle/permission. A-07, A-01, M-17 et A-17 restent des dépendances de nomenclature, architecture, conformité ou modélisation ; elles ne nécessitent pas une nouvelle validation des droits DIR. Pour les lots/phases, l'accès intégral DIR s'appliquera dès que la ressource et son modèle de rattachement seront intégrés au catalogue.
+**Conséquences sur les points ouverts.** A-16 est clos sur l'arbitrage fonctionnel : seules restent la normalisation des permissions atomiques et la synchronisation des associations rôle/permission. A-07, A-01 et M-17 restent des dépendances de nomenclature, architecture ou conformité ; A-17 est clos sur le rattachement métier. Pour les lots/phases, DIR conserve l'accès global et les accès opérationnels CT/CC suivent `assigned_sites` via le chantier parent ; les actions atomiques et les attributions des autres rôles restent à définir.
 
 **Effet sur les décisions précédentes.** Cet arbitrage remplace toute formulation antérieure indiquant que DIR ne dispose que des actions explicitement listées ligne par ligne, qu'un CRUDV doit être validé ressource par ressource ou qu'une action supplémentaire doit être confirmée individuellement. Les exceptions expressément conservées ci-dessus prévalent.
 
@@ -863,7 +863,7 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 | Clients / litiges de facturation | Arbitrage commercial et financier | `arbitrate` sur le litige ; approbation d'une régularisation financière dans un workflow distinct | Global | Arbitrage confirmé ; action `arbitrate` à normaliser (A-07) ; nature exacte de la régularisation, objet approuvé et action atomique restent à préciser |
 | Clients / conditions commerciales | Approbation initialement décidée, puis accès complet confirmé au Groupe 3 | Groupe 1 : `approve` ; Groupe 3 : toutes les actions métier applicables | Global | Décision complétée au Groupe 3 ; workflow à préciser |
 | Projects / affaires, chantiers, études | Consultation | `view` | Global pour DIR | Confirmé ; CHAN-42 doit appliquer le périmètre global DIR sans modifier les scopes CT/CC |
-| Projects / lots et phases | Besoin de consultation | Aucune permission attribuée avant décision A-17 | Non attribué à ce stade | Consultation souhaitée, mais modèle de rattachement non arbitré |
+| Projects / lots et phases | Rattachement validé par A-17 | DIR : accès global ; CT/CC : périmètre opérationnel `assigned_sites` via le chantier parent | Global DIR / assigned_sites CT-CC | Actions atomiques et attribution des autres rôles encore à définir |
 | Projects / avenants | Approbation uniquement pour DIR | `approve` ; aucun `prepare` ni `submit` DIR | Global pour DIR | Confirmé ; préparation/soumission CT restent à arbitrer |
 | Projects / réception contractuelle | Approbation | `projects.receptions.approve` | Global pour DIR | Confirmé ; workflow distinct de Handover |
 | Planning / plannings contractuels et opérationnels, affectations | Consultation seule | `view` ; aucun `create`, `update` ou `assign` DIR | Global pour DIR | Confirmé ; responsabilités quotidiennes CT/RA conservées |
@@ -876,7 +876,7 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 - L'approbation des conditions commerciales n'accorde pas de droit de modification.
 - L'arbitrage d'un litige et l'approbation d'une régularisation financière ne confèrent aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire. Le suivi des règlements clients par GAF reste limité aux opérations dans Clients.
 - Les deux approbations de réception sont distinctes : réception contractuelle Projects et approbation finale du dossier Handover. Les validations opérationnelles des réserves, levées de réserves et DOE ne sont pas transférées à DIR.
-- Les consultations de lots/phases restent non attribuées tant que A-17 n'est pas arbitré.
+- Le rattachement des lots/phases est validé par A-17 ; les actions atomiques et les attributions détaillées restent à définir.
 - Les actions `arbitrate` et l'approbation de régularisation financière nécessitent une normalisation et une définition du workflow avant intégration définitive au catalogue.
 
 **Points non tranchés conservés après les décisions ultérieures.**
@@ -1149,31 +1149,37 @@ GAF ne dispose d'aucune approbation générale d'engagement ou de commande ni de
 - Les heures réellement travaillées restent enregistrées, y compris lorsqu’un dépassement d’heures supplémentaires est refusé.
 - Les responsabilités opérationnelles des autres rôles restent décrites dans leurs lignes ; les droits complets de DIR ne modifient pas leurs périmètres.
 
-### Arbitrage A-17 — rattachement des lots et phases
+### Arbitrage A-17 — rattachement des lots et phases — décision validée le 24/11/2026
 
-Le catalogue distingue déjà :
+**Modèle métier retenu :**
 
-- affaires : objet contractuel/commercial, scope candidat actuellement inscrit assigned_projects ;
-- chantiers : objet opérationnel/site, scope candidat actuellement inscrit assigned_sites ;
-- lots_phases : relation métier non déterminée, sans permission opérationnelle ni scope attribué.
+```text
+Affaire (1) ─── (N) Chantier
+Chantier (1) ─── (N) Lot
+Lot (1) ─── (N) Phase
+```
 
-**Options à faire confirmer par le métier :**
+- Une affaire peut comporter plusieurs chantiers ; chaque chantier est rattaché à une affaire.
+- Un chantier peut comporter plusieurs lots ; chaque lot appartient à un seul chantier.
+- Un lot peut comporter plusieurs phases ; chaque phase appartient obligatoirement à un seul lot.
+- Une phase ne peut pas être rattachée directement à un chantier indépendamment d'un lot.
+- Le chantier et l'affaire d'une phase sont obtenus par héritage de son lot puis du chantier parent.
 
-| Option | Rattachement envisagé | Conséquence possible | Point à confirmer |
-| --- | --- | --- | --- |
-| A | Un lot/une phase appartient à une affaire | Héritage du contexte affaire et du scope assigned_projects à étudier | Un lot peut-il exister sans chantier ou couvrir plusieurs chantiers ? |
-| B | Un lot/une phase appartient à un chantier | Héritage du contexte site et du scope assigned_sites à étudier | Un lot peut-il être partagé entre plusieurs chantiers ou affaires ? |
-| C | Un lot/une phase est une entité propre liée à l'affaire et au chantier | Relation et contrôle de périmètre spécifiques à définir dans CHAN-42 | Quelle est la cardinalité réelle et quelle affectation ouvre l'accès ? |
-| D | Autre modèle métier | Décrire le rattachement et les cardinalités attendues | Faire préciser le modèle par le responsable métier |
+**Conséquences sur les scopes :**
 
-Aucune option n'est retenue par le présent document. Jusqu'à décision, lots_phases reste sans permission opérationnelle et sans scope attribué. Le choix de modèle de données et les contrôles de périmètre devront être cohérents entre CHAN-40 et CHAN-42.
+- `assigned_projects` reste le scope des affaires au niveau contractuel/commercial.
+- `assigned_sites` est le scope des chantiers, lots et phases pour les accès opérationnels CT/CC.
+- DIR conserve le scope global sur toutes les ressources métier, conformément à A-16.
+- Aucun scope `assigned_projects` autonome n'est attribué aux lots/phases ; leur périmètre opérationnel est déterminé par le chantier parent.
+
+**Ce que la décision ne valide pas :** les actions atomiques propres aux lots/phases et l'attribution détaillée des permissions aux rôles autres que les règles globales déjà établies. Ces éléments doivent être dérivés des workflows réels avant intégration au catalogue canonique. Le modèle et les contrôles de périmètre devront rester cohérents entre CHAN-40 et CHAN-42.
 
 ### État A.4.1
 
 - Revue des 19 domaines préparée ; les droits DIR déjà explicites sont recensés sans les élargir.
 - Les domaines sans droit DIR explicite sont signalés comme sujets de décision, sans permission ajoutée.
 - Les workflows financiers, RH, médicaux, de paie, de temps et de validation opérationnelle restent prioritaires et inchangés.
-- Les arbitrages A-16 et A-17 restent **ouverts** jusqu'à validation explicite par la Direction.
+- A-16 est clos sur le plan fonctionnel ; A-17 est validé sur le rattachement métier le 24/11/2026. Les actions atomiques des lots/phases restent à définir.
 - Ce dossier ne vaut pas gel du catalogue et n'autorise pas encore la génération des seeders RBAC.
 
 ## 12. Correspondance avec CHAN-40, CHAN-42, CHAN-43, CHAN-45 et CHAN-46
@@ -1418,7 +1424,7 @@ Cette section fait foi pour la lecture de l'état documentaire après les lots 1
 | Référence | Point restant | Ce qui est nécessaire | Effet |
 | --- | --- | --- | --- |
 | A-07 | Mappings `treat`, `correct`, `refuse` | Confirmer les workflows réels. `process` reste candidat pour le traitement d'un litige ; `update` reste candidat pour la correction tracée d'un pointage ; aucun `refuse` autonome n'est ajouté sans capacité distincte démontrée. | Ne pas créer ces permissions avant confirmation du workflow. |
-| A-17 | Rattachement des lots/phases | Décrire la relation affaire/chantier/lot/phase et son cycle de vie. | Aucune permission opérationnelle ni aucun scope ne sont déduits pour `lots_phases`. |
+| A-17 | Rattachement des lots/phases | Décision validée : Affaire 1—N Chantier, Chantier 1—N Lot, Lot 1—N Phase ; scopes opérationnels `assigned_sites` via le chantier parent. | Rattachement clos ; actions atomiques et attribution détaillée des rôles restant à définir sans supposition. |
 | M-01 à M-16 | Paramètres et workflows | Résoudre chaque point uniquement pour les ressources et actions qu'il conditionne. | Les permissions indépendantes ne sont pas bloquées. |
 | M-17 | Catégories documentaires sensibles | Définir les catégories/champs et les règles de lecture, téléchargement, signature et export. | Ne pas généraliser les droits documentaires sensibles. |
 | Objets transverses | `financial_delegations`, `directory`, `messages`, exports, signalements, données paie/bancaires/médicales | Confirmer propriétaire métier, cycle de vie et éventuelle autonomie comme ressource. | Ne pas créer de permission avant qualification. |
