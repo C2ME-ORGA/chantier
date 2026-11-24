@@ -1,8 +1,8 @@
 # Inventaire canonique des permissions — CHAN-40
 
-> **Statut :** inventaire des 18 domaines documenté — lots 1 à 5 ; catalogue non gelé, implémentation non commencée.
+> **Statut :** inventaire des 18 domaines documenté — lots 1 à 5 ; catalogue technique initial v0.1.0 implémenté (8 rôles, 61 permissions) et vérifié localement ; catalogue global non gelé.
 > **Référentiel :** `docs/development/authorization-matrix.md`, relu le 24/11/2026.
-> **Gel :** non effectué. Aucun seeder, migration ou code d'autorisation ne doit être généré à ce stade.
+> **Gel :** non effectué. Le catalogue PHP et ses seeders initiaux existent ; les permissions non justifiées et les domaines/actions encore à décomposer restent exclus. La version 0.1.0 ne constitue pas le gel global du référentiel.
 
 ## 1. Méthode
 
@@ -551,7 +551,7 @@ Le catalogue pourra être présenté au gel lorsque :
 7. les données sensibles et les règles de conservation sont traitées sans créer de droits trop larges ;
 8. aucune ressource, permission ou workflow comptable n'est introduit.
 
-**État à la fin de la finalisation documentaire :** lots 1 à 5 documentés, référentiel clarifié, catalogue non gelé, associations atomiques non finalisées, implémentation non commencée. Aucun code, migration, seeder ou test n'est créé par cette phase.
+**État historique à la fin de cette phase documentaire :** lots 1 à 5 documentés, référentiel clarifié, catalogue non gelé et implémentation non commencée à cette date. Cet état a été dépassé par l'implémentation technique décrite en section 23.
 
 ## 10. Arbitrage M-17 — catégories documentaires (24/11/2026)
 
@@ -649,9 +649,17 @@ Le catalogue technique initial est créé dans le code sur la base des associati
 - Source de permissions et d'associations : `app/Domains/Identity/Catalog/PermissionCatalog.php`.
 - Seeders : `RoleCatalogSeeder`, `PermissionCatalogSeeder` et `RbacCatalogSeeder`, appelés par `DatabaseSeeder`.
 - Guard unique : `web`. Aucun rôle n'est attribué automatiquement à un utilisateur existant.
-- Le seeder synchronise les permissions des seuls rôles du catalogue initial ; il ne modifie pas les rôles extérieurs à ce catalogue.
+- `PermissionCatalogSeeder` crée les permissions du catalogue si elles sont absentes, puis remplace intégralement les associations de permissions des huit rôles gérés via `syncPermissions()`. Les permissions supplémentaires peuvent rester dans la table `permissions`, mais elles sont détachées des rôles gérés si elles ne figurent pas dans le catalogue. Les rôles extérieurs au catalogue, les rôles attribués aux utilisateurs et les permissions attribuées directement aux utilisateurs ne sont pas modifiés par cette synchronisation.
 - Le panel Filament exige désormais `identity.admin_panel.access` dans `User::canAccessPanel()`. SAL ne dispose pas de cette permission.
 - Test dédié : `tests/Feature/Authorization/RbacCatalogTest.php` (rôles, permissions, associations, idempotence, absence d'affectation automatique et accès panel).
+
+### Comportement et portée de la synchronisation des seeders
+
+- `RoleCatalogSeeder` crée les huit rôles avec le guard `web` s'ils n'existent pas ; il ne supprime aucun rôle existant et ne nettoie pas les rôles hors catalogue.
+- `PermissionCatalogSeeder` crée les permissions du catalogue si elles n'existent pas ; il ne supprime pas les permissions supplémentaires déjà présentes dans la table.
+- Pour chacun des huit rôles gérés, `syncPermissions()` remplace l'ensemble des associations rôle-permission : toute association manuelle absente du catalogue est détachée lors de la réexécution. Les associations prévues par `PermissionCatalog` sont réappliquées.
+- Les rôles hors catalogue ne sont pas synchronisés. Les rôles attribués aux utilisateurs ne sont pas modifiés. Les permissions attribuées directement aux utilisateurs ne sont pas touchées par `syncPermissions()` sur les rôles.
+- En conséquence, le catalogue PHP est la source de vérité pour les associations des huit rôles gérés. Toute évolution doit passer par une modification versionnée et testée du catalogue, et non par une attribution manuelle en base ou via l'interface.
 
 ### Limite volontaire de la version 0.1.0
 
