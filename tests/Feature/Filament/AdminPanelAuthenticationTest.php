@@ -112,7 +112,7 @@ test('limite les tentatives de connexion après cinq échecs', function () {
 
     foreach (range(1, 5) as $attempt) {
         $component->call('authenticate')
-            ->assertHasFormErrors(['data.email']);
+            ->assertHasFormErrors(['email']);
     }
 
     $component->call('authenticate')
@@ -130,7 +130,7 @@ test('refuse la connexion d’un utilisateur sans permission d’accès au panel
             'password' => 'password',
         ])
         ->call('authenticate')
-        ->assertHasFormErrors(['data.email']);
+        ->assertHasFormErrors(['email']);
 
     $this->assertGuest();
 });
