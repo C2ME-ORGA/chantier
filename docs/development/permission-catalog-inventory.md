@@ -122,7 +122,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `paies` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SA conserve ses droits | Retenu ; interdiction d'auto-approbation |
 | `bulletins_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SAL : view own ; SA conserve ses droits | Retenu ; confidentialité et conservation |
 | `indemnites_grands_deplacements` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `process`, `validate` | GAF conserve les droits administratifs et de préparation/contrôle paie attribués dans le workflow ; SAL : view own | Retenu ; validation finale indépendante |
-| `indemnites_grands_deplacements` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `process`, `validate` | SAL : view own ; ADM/GAF conservent leurs droits | Retenu |
+
 | `grands_deplacements` | `view`, `create`, `update`, `delete`, `declare`, `control`, `prepare`, `process`, `validate` | CT/RA : déclaration de leurs équipes ; ADM/GAF/SAL conservent leurs droits | Retenu |
 | `baremes_grands_deplacements` | `view`, `create`, `update`, `delete` | SA conserve ses droits globaux | Retenu ; barèmes datés/historisés, aucune modification rétroactive des périodes traitées |
 
@@ -273,7 +273,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
 | --- | --- | --- | --- |
-| `documents` | À décomposer : `view`, `create`, `update`, `delete` conditionnel, `download`, `sign`, `archive`, `validate` selon fonctionnalités présentes | ADM, CT, CC, RA, GAF, SAL conservent leurs droits selon périmètre | Retenu ; inclut les dossiers administratifs clients et leurs pièces ; M-17 reste ouvert |
+| `documents` | Actions atomiques à retenir uniquement lorsqu'elles sont justifiées par les workflows et droits existants ; `download` et `sign` rattachés à la ressource | ADM, CT, CC, RA, GAF, SAL conservent strictement leurs droits existants selon périmètre | Classification M-17 clôturée ; associations et scopes existants à vérifier sans extension |
 | `versions` | À décomposer selon création de version, consultation et restauration si elle existe | Droits documentaires existants | Retenu ; versions et traces conservées |
 | `dossiers_documentaires` | À décomposer selon création, classement, modification, validation et clôture | ADM, CT, CC, RA, GAF, SAL selon périmètre | Retenu ; ne pas créer de ressource séparée pour les dossiers administratifs clients |
 | `types_document` | À décomposer selon gestion du référentiel | ADM conserve ses droits | Retenu |
@@ -597,7 +597,7 @@ Les décisions ci-dessous complètent le registre et prévalent sur les ancienne
 
 **M-17 :** arbitrage fonctionnel déjà clôturé pour DOC-01 à DOC-10 et les opérations view, download, sign, export. La vérification technique des associations atomiques et scopes existants reste distincte. Les mentions historiques « M-17 ouvert » sont obsolètes pour la décision métier.
 
-**État :** M-01 à M-06 et M-08 à M-16 sont arbitrés. M-07 reste partiellement ouvert (canal de signalement). Les responsables qualité/sécurité et certains détails techniques restent à préciser ; ne pas déduire de permission ou d'affectation de rôle.
+**État historique au moment de cette section :** M-07 à M-09 n'étaient pas encore complètement arbitrés. Les décisions postérieures de la section 20 (Jira 10311) clôturent ces points fonctionnels ; les détails d'implémentation restent à traiter sans déduire de permissions.
 
 
 ## 19. Arbitrages M-07 à M-09 — demandes internes et signalements (24/11/2026)
