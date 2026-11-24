@@ -1586,7 +1586,7 @@ Le dépôt contient désormais une première version technique du référentiel 
 - Les seeders créent les rôles/permissions avec le guard `web` et synchronisent les associations des seuls rôles du catalogue.
 - Aucun utilisateur existant ne reçoit automatiquement un rôle.
 - `User::canAccessPanel()` contrôle `identity.admin_panel.access` ; l'accès au panel n'accorde aucun droit sur les ressources.
-- Un test Feature couvre les rôles, les permissions, les associations, l'idempotence, l'absence d'affectation automatique et le contrôle du panel.
+- Sept tests Feature couvrent les huit rôles, les 61 permissions, les associations, l'idempotence, l'absence d'affectation automatique, le contrôle du panel, la nomenclature atomique et la règle DIR.
 
 Cette version est volontairement partielle. Les ressources/actions des lots 2 et 3 encore « à décomposer », les actions conditionnelles, les droits documentaires existants non explicitement attribués, les ressources transverses non qualifiées et les droits d'administration des habilitations non atomisés restent exclus. Le catalogue ne peut donc pas être considéré comme gelé ni comme une implémentation complète des 18 domaines.
 
