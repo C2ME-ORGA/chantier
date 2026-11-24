@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domains\Identity\Catalog\PermissionCatalog;
+use App\Domains\Identity\Catalog\RoleCatalog;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -26,7 +27,7 @@ class PermissionCatalogSeeder extends Seeder
             ->get()
             ->keyBy('name');
 
-        foreach (array_keys(\App\Domains\Identity\Catalog\RoleCatalog::all()) as $roleName) {
+        foreach (array_keys(RoleCatalog::all()) as $roleName) {
             $role = Role::findByName($roleName, 'web');
             $permissionNames = collect($catalog)
                 ->filter(fn (array $roleNames) => in_array($roleName, $roleNames, true))
