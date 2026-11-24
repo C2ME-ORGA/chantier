@@ -382,15 +382,16 @@ Proposition :
 - pas de wildcard ;
 - pas de `manage` générique.
 
-Points à vérifier :
+### État de normalisation
 
-| Sujet | Proposition | Statut technique |
-| --- | --- | --- |
-| TimeTracking | `timetracking` | `À vérifier` |
-| Budgets | droits métier globaux | view budgets ; approve tous budgets, révisions et contingences sans seuil ; accès complet aux lignes budgétaires selon §5 | lecture | budgets, révisions, contingences | — | — | — | consultation et suivi opérationnel selon §5 |
-| Factures clients | `clients.factures` plutôt que `clients.factures_clients` | `À vérifier` |
-| Consommations | `inventory.consommations` | `Normalisé` pour la correction orthographique |
-| Actions | Registre existant + actions complémentaires à valider | `À normaliser` |
+Les conventions A-01 à A-09 sont désormais les références de nommage et de construction du catalogue :
+- domaine canonique TimeTracking : `timetracking` ;
+- ressource facture client : `clients.factures_clients` ; `clients.factures` est un alias interdit ;
+- ressource Budgets : `budgets`, avec ressources distinctes pour les lignes, révisions et contingences ;
+- ressource de consommation : `inventory.consomations` ;
+- actions limitées au registre A-07 et justifiées par le workflow réel.
+
+Les anciennes listes de « points à vérifier » présentes dans les versions antérieures sont historiques et ne constituent plus des arbitrages ouverts. Les contrôles mécaniques des clés et références restent à réaliser lors de la construction du catalogue technique.
 
 ## 5. Catalogue complet des permissions
 
@@ -1396,3 +1397,41 @@ Cette décision porte sur les devis commerciaux. Elle ne modifie pas la règle d
 ## Décision de périmètre — exclusion de la comptabilité (24/11/2026)
 
 Le logiciel Chantier ne comporte aucun module comptable. Le domaine D19 Accounting n'est pas retenu dans le catalogue fonctionnel ni dans la matrice RBAC. Le rôle GAF est conservé comme profil de gestion administrative et financière opérationnelle ; aucune permission ni ressource comptable ne doit être créée. Les fonctions opérationnelles Clients, Procurement, Budgets, Costing et Workforce restent limitées à leurs workflows de gestion et ne doivent pas implémenter d'écritures ou de traitements comptables.
+
+
+## 17. Finalisation documentaire — état consolidé (24/11/2026)
+
+Cette section fait foi pour la lecture de l'état documentaire après les lots 1 à 5. Elle prévaut sur les anciennes sections de planification qui décrivent encore les lots comme restant à produire, sans supprimer l'historique des décisions et des travaux.
+
+### 17.1 Éléments consolidés
+
+- Les huit rôles sont définis : SA, DIR, ADM, CT, CC, RA, SAL et GAF. La matrice synthétique des rôles existe ; elle ne constitue pas encore la table exhaustive des associations permission × rôle.
+- Les 18 domaines métier sont inventoriés. Aucun domaine, objet, module ou droit comptable n'est prévu.
+- Le rôle GAF remplace CPT et couvre uniquement les opérations administratives et financières opérationnelles dans Clients, Procurement, Workforce, Budgets et Costing, selon les droits propres à chaque ressource.
+- GAF ne dispose d'aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire, ni d'aucune permission comptable.
+- DIR reçoit explicitement chaque permission fonctionnelle atomique retenue, scope global, sauf les exceptions Identity/habilitations, secret médical, séparation des tâches, auto-approbation interdite, conservation, confidentialité et audit.
+- A-01 à A-09 sont les conventions canoniques retenues. Leur conformité mécanique sera vérifiée lors de la génération du catalogue.
+- Les scopes opérationnels et l'accès à une ressource ou à un chantier restent distincts des permissions fonctionnelles et relèvent de CHAN-42.
+
+### 17.2 Points encore ouverts — sans réouverture des décisions validées
+
+| Référence | Point restant | Ce qui est nécessaire | Effet |
+| --- | --- | --- | --- |
+| A-07 | Mappings `treat`, `correct`, `refuse` | Confirmer les workflows réels. `process` reste candidat pour le traitement d'un litige ; `update` reste candidat pour la correction tracée d'un pointage ; aucun `refuse` autonome n'est ajouté sans capacité distincte démontrée. | Ne pas créer ces permissions avant confirmation du workflow. |
+| A-17 | Rattachement des lots/phases | Décrire la relation affaire/chantier/lot/phase et son cycle de vie. | Aucune permission opérationnelle ni aucun scope ne sont déduits pour `lots_phases`. |
+| M-01 à M-16 | Paramètres et workflows | Résoudre chaque point uniquement pour les ressources et actions qu'il conditionne. | Les permissions indépendantes ne sont pas bloquées. |
+| M-17 | Catégories documentaires sensibles | Définir les catégories/champs et les règles de lecture, téléchargement, signature et export. | Ne pas généraliser les droits documentaires sensibles. |
+| Objets transverses | `financial_delegations`, `directory`, `messages`, exports, signalements, données paie/bancaires/médicales | Confirmer propriétaire métier, cycle de vie et éventuelle autonomie comme ressource. | Ne pas créer de permission avant qualification. |
+| Ressources des domaines lots 2 et 3 | Actions encore « à décomposer » | Décrire les opérations réelles et leur workflow ; les domaines applicatifs étant encore des squelettes au contrôle documentaire, aucune action ne peut être validée par inspection de code. | Ne pas remplacer « à décomposer » par un CRUD supposé. |
+| Audit métier | Périmètre CHAN-45 | Confirmer si CHAN-45 couvre l'audit métier immuable ou créer un lot dédié. | CHAN-40 décrit les capacités et événements, pas le stockage d'audit. |
+
+### 17.3 Séparation des travaux et critères de sortie
+
+1. **Nettoyage documentaire :** effectué dans cette phase pour les références manifestement obsolètes et les formulations ambiguës identifiées.
+2. **Arbitrages métier :** restent limités aux points du tableau §17.2 ; aucune décision métier nouvelle n'est supposée.
+3. **Contrôle du catalogue :** à réaliser après qualification des ressources et workflows ; il devra vérifier unicité des triplets, slugs canoniques, absence de doublons, actions justifiées et absence de domaine comptable.
+4. **Matrice atomique :** à générer explicitement pour les huit rôles à partir des permissions retenues ; DIR suit la règle générale et ses exceptions. Aucun héritage implicite.
+5. **Validation formelle :** le catalogue ne sera gelé qu'après présentation et validation de la liste atomique, des associations de rôles et des scopes séparés.
+6. **Implémentation :** seulement après gel : `PermissionCatalog`, `RoleCatalog`, seeders idempotents, synchronisation contrôlée, contrôle Filament et tests CHAN-40/CHAN-46 selon leur périmètre.
+
+**État à la fin de cette phase :** référentiel documentaire consolidé, mais catalogue non gelé et CHAN-40 non livré. Aucun code, migration, seeder, test ni statut Jira n'est modifié par la phase de finalisation documentaire.
