@@ -103,3 +103,37 @@ test('le catalogue respecte les conventions atomiques et la règle DIR', functio
         ->not->toContain('accounting.journals.view')
         ->not->toContain('bank_payments.execute');
 });
+
+
+test('DIR possède exactement toutes les permissions fonctionnelles du catalogue', function () {
+    $direction = Role::findByName('DIR', 'web');
+
+    $expected = collect(PermissionCatalog::all())
+        ->reject(fn (array $roles, string $permission) => $permission === 'identity.admin_panel.access')
+        ->keys()
+        ->sort()
+        ->values()
+        ->all();
+
+    $actual = $direction->permissions()
+        ->where('name', '!=', 'identity.admin_panel.access')
+        ->pluck('name')
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($actual)->toBe($expected);
+});
+
+test('Sanctum authentifie un utilisateur et conserve la résolution des permissions Spatie web', function () {
+    $user = User::factory()->create();
+    $user->assignRole('DIR');
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->getJson('/api/user');
+
+    $response->assertOk()
+        ->assertJsonPath('id', $user->id);
+
+    expect(auth('sanctum')->user()->can('clients.reglements.validate'))->toBeTrue();
+});
