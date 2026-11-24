@@ -1591,3 +1591,21 @@ Le dépôt contient désormais une première version technique du référentiel 
 Cette version est volontairement partielle. Les ressources/actions des lots 2 et 3 encore « à décomposer », les actions conditionnelles, les droits documentaires existants non explicitement attribués, les ressources transverses non qualifiées et les droits d'administration des habilitations non atomisés restent exclus. Le catalogue ne peut donc pas être considéré comme gelé ni comme une implémentation complète des 18 domaines.
 
 **Validation technique locale (24/11/2026) :** `php artisan test --filter=RbacCatalogTest` : 9 tests réussis, 342 assertions ; `composer lint:check` : 92 fichiers validés ; `composer types:check` : PHPStan 32/32, aucune erreur. Ces contrôles ont été exécutés localement ; la CI GitHub reste à vérifier sur la Pull Request vers `develop`. Le catalogue global demeure non gelé et pourra être étendu par lots justifiés, sans élargissement implicite des rôles.
+
+
+### 23.1 Provisionnement du premier administrateur
+
+Le seeder général ne crée aucun compte utilisateur et n'attribue aucun rôle par défaut. Cette règle évite de créer un compte de démonstration prévisible ou d'accorder implicitement des privilèges.
+
+Après création du premier compte utilisateur par le processus normal d'administration, l'accès initial au panel doit être accordé explicitement à un compte nominatif de confiance. Depuis un environnement maîtrisé, l'administrateur peut effectuer cette opération via Tinker :
+
+```bash
+php artisan tinker
+```
+
+```php
+$user = App\\Models\\User::where('email', 'administrateur@exemple.fr')->firstOrFail();
+$user->assignRole('SA');
+```
+
+Remplacer l'adresse par celle du compte nominatif préalablement créé et vérifié. Ne pas utiliser une adresse générique ni intégrer cette attribution dans `DatabaseSeeder`. L'opération doit être réalisée par une personne autorisée et dans le respect de la procédure de contrôle des accès de l'entreprise.
