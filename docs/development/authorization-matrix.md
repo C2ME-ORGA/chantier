@@ -1590,7 +1590,7 @@ Le dépôt contient désormais une première version technique du référentiel 
 
 Cette version est volontairement partielle. Les ressources/actions des lots 2 et 3 encore « à décomposer », les actions conditionnelles, les droits documentaires existants non explicitement attribués, les ressources transverses non qualifiées et les droits d'administration des habilitations non atomisés restent exclus. Le catalogue ne peut donc pas être considéré comme gelé ni comme une implémentation complète des 18 domaines.
 
-**Validation technique locale (24/11/2026) :** `php artisan test --filter=RbacCatalogTest` : 9 tests réussis, 342 assertions ; `composer lint:check` : 92 fichiers validés ; `composer types:check` : PHPStan 32/32, aucune erreur. Ces contrôles ont été exécutés localement ; la CI GitHub reste à vérifier sur la Pull Request vers `develop`. Le catalogue global demeure non gelé et pourra être étendu par lots justifiés, sans élargissement implicite des rôles.
+**Validation technique locale (24/11/2026) :** `php artisan test --filter=RbacCatalogTest` : 9 tests réussis, 342 assertions ; `composer lint:check` : 92 fichiers validés ; `composer types:check` : PHPStan 32/32, aucune erreur. Ces contrôles ont été exécutés localement. La CI GitHub Actions du commit `4a339e18a2a1b4256e26f002b1b8667a11776b1f` (workflow #173) a également réussi : les quatre jobs `ci`, `sqlite`, `mariadb-10.11` et `package-linux` sont terminés avec le résultat `success`. Le catalogue global demeure non gelé et pourra être étendu par lots justifiés, sans élargissement implicite des rôles.
 
 
 ### 23.1 Provisionnement du premier administrateur
