@@ -34,6 +34,8 @@ class PermissionCatalogSeeder extends Seeder
                 ->keys()
                 ->all();
 
+            // Le catalogue est la source de vérité : toute attribution manuelle
+            // sur un rôle géré ici sera remplacée lors de cette synchronisation.
             $role->syncPermissions(
                 collect($permissionNames)
                     ->map(fn (string $name) => $permissions->get($name))
