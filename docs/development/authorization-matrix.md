@@ -695,7 +695,7 @@ Les règles ci-dessous sont fonctionnellement validées. Leur implémentation te
 | Corrections et réouvertures de pointages tracées | Pointages | 10303 | Validé |
 | Contrôle CT après validation CC : pas une seconde validation systématique | Pointages | 10303 | Validé |
 | Congés/absences : avis CC/CT/RA, validation ADM, arbitrage DIR | Absences | 10303 | Validé |
-| Paiements : GAF prépare, DIR/SA autorise, GAF exécute | Paiements | 10303 | Validé |
+| Paiements bancaires | Hors périmètre actuel ; aucun droit de préparation, autorisation ou exécution | — | À arbitrer uniquement si cette fonction est demandée |
 | Pas d’auto-autorisation de paiement | Paiements | 10303 | Validé |
 | Préparation / validation finale séparées | Paie | 10303 | Validé |
 | Seuil global 100 000 € HT | Engagements | 10303 | Validé |
@@ -1335,7 +1335,7 @@ Cette décision est limitée aux échéanciers. Elle ne modifie pas les droits D
 | --- | --- | --- | --- | --- |
 | Clients / `litiges_facturation` | Accès complet DIR | Toutes les actions applicables, dont `view`, `create`, `update`, `treat`, `arbitrate`, `close` et `delete` si disponible | global pour DIR | Décision validée ; normalisation de `arbitrate` maintenue dans A-07 ; régularisation financière via workflow distinct ; suppression soumise à conservation et traçabilité |
 
-L'accès complet aux litiges n'autorise pas implicitement l'émission d'un avoir ni l'exécution d'un paiement. L'approbation d'une régularisation financière reste un workflow distinct à modéliser ; les paiements restent soumis à la séparation des tâches : DIR/SA autorisent ou refusent, GAF prépare et exécute, et le préparateur ne peut autoriser son propre paiement.
+L'accès complet aux litiges n'autorise pas implicitement l'émission d'un avoir ni l'exécution d'un paiement. L'approbation d'une régularisation financière reste un workflow distinct à modéliser. Aucun workflow de paiement bancaire n'est défini dans le périmètre actuel.
 
 
 ### A.4.2 — Registre des arbitrages DIR — Règlements clients
