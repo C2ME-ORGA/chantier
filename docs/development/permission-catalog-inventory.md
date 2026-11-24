@@ -223,7 +223,137 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | DIR | Accès complet aux domaines du lot 2 | Associer DIR à chaque permission fonctionnelle retenue ; les limites légales, médicales et de séparation des tâches restent actives |
 
 
-## 8. Anomalies à résoudre avant gel
+
+
+## 8. Lot 3 — Logistics, Quality, Safety, Documents, Handover, Reporting et Accounting
+
+> Les ressources et contraintes sont reprises des sections 5.13 à 5.19 de la matrice. Les formulations « toutes actions applicables » restent à décomposer à partir des opérations réellement disponibles ; aucune action supplémentaire n'est créée par simple déduction. DIR reçoit chaque permission fonctionnelle retenue, avec les exceptions de confidentialité, de séparation des tâches, de conservation et de preuve.
+
+### 8.1 Logistics
+
+| Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
+| --- | --- | --- | --- |
+| `demandes_transport` | À décomposer selon création, mise à jour, soumission, validation et traitement réellement disponibles | RA, CT conservent leurs droits | Retenu ; périmètres atelier/chantiers selon affectation |
+| `plans_transport` | À décomposer selon préparation, modification, validation et clôture réellement disponibles | RA, CT conservent leurs droits | Retenu ; versions et historique à conserver |
+| `tournees` | À décomposer selon planification, affectation, modification et clôture réellement disponibles | RA, CT conservent leurs droits | Retenu ; historique des tournées |
+| `livraisons` | À décomposer selon préparation, expédition, suivi, preuve de livraison et traitement des écarts | RA, CT, CC conservent leurs droits | Retenu ; preuves et événements de livraison conservés |
+| `receptions_chantier` | À décomposer selon réception, constat, réserves et validation réellement disponibles | RA, CT, CC conservent leurs droits | Retenu ; ne pas confondre avec la réception finale Handover |
+| `retours` | À décomposer selon déclaration, traitement, réception retour et clôture | RA conserve ses droits | Retenu ; historique des retours |
+| `acces_chantier` | `view`, `create`, `update`, `delete` candidats ; autres actions spécifiques à identifier | CT : `view` ; `update` à arbitrer ; CC : `view` | Retenu pour DIR ; CT update reste à arbitrer ; autorisations d'accès historisées |
+
+### 8.2 Quality
+
+| Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
+| --- | --- | --- | --- |
+| `plans_qualite` | À décomposer selon création, révision, validation et diffusion | CT, RA, CC conservent leurs droits | Retenu ; versions conservées |
+| `plans_controle` | À décomposer selon définition, modification, validation et exécution | CT, RA, CC conservent leurs droits | Retenu |
+| `controles_qualite` | À décomposer selon création, réalisation, revue et validation | CT, CC, RA conservent leurs droits | Retenu ; résultats et validations tracés |
+| `non_conformites` | À décomposer selon déclaration, qualification, traitement, vérification et clôture | CT, CC, RA conservent leurs droits | Retenu ; historique complet du traitement et de la clôture |
+| `actions_correctives` | À décomposer selon création, affectation, suivi, vérification et clôture | RA, CT conservent leurs droits | Retenu ; preuves conservées |
+| `audits_qualite` | À décomposer selon planification, réalisation, constats, rapport et clôture | RA, CT conservent leurs droits | Retenu ; piste d'audit |
+| `certificats_qualite` | À décomposer selon dépôt, consultation, renouvellement et archivage | RA, CT conservent leurs droits | Retenu ; échéances et versions conservées |
+| `qualifications_techniques` | À décomposer selon gestion du référentiel et justificatifs | RA, CT conservent leurs droits | Retenu ; cohérence avec Workforce à vérifier sans dupliquer les objets |
+| `signalements` | `create` SAL ; traitement des signalements à décomposer | SAL : `create` / own | Retenu ; distinct des non-conformités ; auteur et historique préservés |
+
+### 8.3 Safety
+
+| Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
+| --- | --- | --- | --- |
+| `analyses_risques` | À décomposer selon création, révision, validation et diffusion | RA, CT, CC conservent leurs droits | Retenu ; versions et preuves conservées |
+| `plans_prevention` | À décomposer selon préparation, mise à jour, validation et diffusion | RA, CT, CC conservent leurs droits | Retenu |
+| `inspections_securite` | À décomposer selon planification, réalisation, constat, suivi et clôture | CC, RA, CT conservent leurs droits | Retenu ; constats et suites tracés |
+| `incidents` | À décomposer selon déclaration, traitement, analyse, action et clôture | CC, RA, CT conservent leurs droits | Retenu ; historique des incidents |
+| `actions_securite` | À décomposer selon création, affectation, suivi, vérification et clôture | RA, CT conservent leurs droits | Retenu ; suivi et clôture tracés |
+| `habilitations` | À décomposer selon création, contrôle, renouvellement, suspension et archivage | RA, ADM, CT, CC conservent leurs droits | Retenu ; validités et justificatifs conservés |
+| `autorisations_travail` | À décomposer selon demande, délivrance, modification, suspension et clôture | RA, ADM, CT, CC conservent leurs droits | Retenu ; autorisations et preuves historisées |
+| `inductions` | À décomposer selon planification, réalisation, validation et preuve de participation | RA, ADM, CT, CC conservent leurs droits | Retenu |
+| `signalements` | `create` SAL ; traitement des signalements à décomposer | SAL : `create` / own | Retenu ; distinct des incidents ; auteur et historique préservés |
+
+### 8.4 Documents
+
+| Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
+| --- | --- | --- | --- |
+| `documents` | À décomposer : `view`, `create`, `update`, `delete` conditionnel, `download`, `sign`, `archive`, `validate` selon fonctionnalités présentes | ADM, CT, CC, RA, CPT, SAL conservent leurs droits selon périmètre | Retenu ; inclut les dossiers administratifs clients et leurs pièces ; M-17 reste ouvert |
+| `versions` | À décomposer selon création de version, consultation et restauration si elle existe | Droits documentaires existants | Retenu ; versions et traces conservées |
+| `dossiers_documentaires` | À décomposer selon création, classement, modification, validation et clôture | ADM, CT, CC, RA, CPT, SAL selon périmètre | Retenu ; ne pas créer de ressource séparée pour les dossiers administratifs clients |
+| `types_document` | À décomposer selon gestion du référentiel | ADM conserve ses droits | Retenu |
+| `regles_conservation` | À décomposer selon consultation, création et modification réellement disponibles | ADM conserve ses droits | Retenu ; aucune suppression contraire à une obligation légale |
+| `diffusions` | À décomposer selon préparation, envoi, suivi et accusé de réception | ADM, CT, CC, RA, SAL conservent leurs droits | Retenu ; destinataires, dates, versions diffusées et accusés conservés |
+| `download` / `sign` | Actions transverses à rattacher à la ressource documentaire selon le modèle technique, pas de ressource autonome présumée | SAL : téléchargement/signature own | À modéliser ; signature selon délégation, identité et preuve |
+| `exports` | `export` candidat, avec génération/téléchargement selon le workflow | ADM, CPT conservent leurs droits | Retenu ; mêmes restrictions de confidentialité et d'accès que les documents sources |
+
+**Restriction M-17 :** qualifier les catégories et champs documentaires sensibles avant de définir les permissions finales. L'accès DIR global ne lève ni secret médical, ni confidentialité légale, ni obligation de conservation.
+
+### 8.5 Handover
+
+| Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
+| --- | --- | --- | --- |
+| `dossiers_reception` | À décomposer ; `approve`, `validate`, `close` explicitement candidats | CT, CC conservent leurs droits | Retenu ; preuves, décisions, réserves et historique de clôture conservés |
+| `reserves` | À décomposer selon création, affectation, suivi et clôture | CT, CC conservent leurs droits | Retenu |
+| `levees_reserves` | À décomposer selon constat, preuve, vérification et validation | CT, CC conservent leurs droits | Retenu ; preuves, dates et responsables conservés |
+| `doe` | À décomposer selon constitution, mise à jour, validation et remise | CT, CC conservent leurs droits | Retenu ; versions et preuves de remise conservées |
+| `garanties_clients` | À décomposer selon enregistrement, suivi, déclaration et clôture | CT, ADM conservent leurs droits | Retenu ; échéances et historiques conservés |
+| `dossiers_cloture` | À décomposer ; `close` explicitement candidat | CT, ADM conservent leurs droits | Retenu ; pièces justificatives historisées |
+
+### 8.6 Reporting
+
+| Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
+| --- | --- | --- | --- |
+| `rapports` | `view`, `create`, `update`, `delete` conditionnel, `export`, `validate` si disponibles | ADM, CT, CC, RA conservent leurs droits selon rapport | Retenu ; sources et historiques préservés |
+| `indicateurs` | À décomposer selon définition, calcul, validation et publication | Droits existants selon rôle | Retenu ; définitions et périodes conservées |
+| `tableaux_bord` | À décomposer selon consultation, configuration et partage | Droits existants selon rôle | Retenu |
+| `tableaux_bord_strategiques` | À décomposer selon consultation et configuration | DIR global | Retenu |
+| `snapshots` | À décomposer selon création, consultation, export et suppression techniquement permise | SAL : consultation own si applicable | Retenu ; horodatage, périmètre, source et intégrité préservés |
+| `exports` | À décomposer selon préparation, génération, consultation, téléchargement et export | ADM, CPT conservent leurs droits | Retenu ; M-05 levé pour Reporting ; confidentialité et traçabilité restent actives |
+
+### 8.7 Accounting
+
+| Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
+| --- | --- | --- | --- |
+| `ecritures` | À décomposer : `view`, `create`, `update`, `validate`, `reverse`, `delete` conditionnel | CPT conserve ses droits | Retenu ; piste d'audit et périodes comptables |
+| `journaux` | À décomposer selon consultation et gestion du référentiel | CPT conserve ses droits | Retenu |
+| `plan_comptable` | À décomposer selon consultation et gestion du référentiel | CPT conserve ses droits | Retenu |
+| `periodes` | `view`, `create`, `update`, `lock`, `unlock`, `close` ; réouverture à préciser | CPT conserve ses droits | Retenu ; déverrouillage/réouverture tracés |
+| `rapprochements_bancaires` | À décomposer : `view`, `create`, `update`, `validate`, `close` | CPT conserve ses droits | Retenu ; relevés, écarts et justificatifs conservés |
+| `payments` / `paiements` | DIR/SA : autorisation et refus selon workflow ; CPT : `prepare`, `execute` | CPT : préparation/exécution ; SA : autorisation selon workflow | Exception impérative ; nom canonique anglais/français à arbitrer ; DIR ne prépare ni n'exécute ; aucun préparateur ne s'auto-autorise |
+| `tresorerie` | À décomposer selon consultation et opérations de trésorerie réellement disponibles | CPT conserve ses droits | Retenu |
+| `declarations` | À décomposer selon préparation, validation, soumission et suivi | CPT conserve ses droits | Retenu ; obligations et échéances légales |
+| `clotures` | À décomposer selon préparation, validation et clôture | CPT conserve ses droits | Retenu ; historique des clôtures |
+| `analytique` | À décomposer selon consultation et opérations analytiques réellement disponibles | CPT conserve ses droits | Retenu ; vérifier le non-recouvrement avec Costing |
+| `revisions_budgetaires` | À décomposer selon consultation, préparation, validation et intégration | CPT conserve ses droits | Retenu ; vérifier l'articulation avec Budgets |
+| `immobilisations` | À décomposer selon création, mise à jour, mise en service, sortie et archivage | CPT conserve ses droits | Retenu |
+| `amortissements` | À décomposer selon calcul, contrôle, validation et clôture | CPT conserve ses droits | Retenu ; plans et historiques conservés |
+| `donnees_financieres` | Ressource transverse à préciser ; ne pas créer de permission contournant les droits des ressources sources | CPT conserve ses droits selon source | À préciser ; éviter une permission générique d'accès qui élargirait les droits |
+| `exports` | À décomposer selon préparation, génération, consultation, téléchargement et export | CPT conserve ses droits | Retenu ; confidentialité, conservation et traçabilité |
+| `relations_organismes` | À décomposer selon gestion des organismes, échanges et justificatifs | CPT conserve ses droits | Retenu ; échanges et pièces conservés |
+
+**Séparation des paiements :** CPT prépare et exécute ; DIR/SA autorisent ou refusent. L'absence de permission DIR de préparation/exécution doit être explicitement représentée dans le catalogue et les contrôles d'autorisation. L'auto-approbation est interdite.
+
+**Frontières inter-domaines :**
+- Documents possède les documents administratifs clients et leurs pièces ; Clients conserve les processus de facturation client ; Accounting conserve les écritures et processus comptables.
+- Accounting `revisions_budgetaires` ne doit pas dupliquer Budgets `revisions` sans distinction fonctionnelle explicite.
+- Accounting `analytique` ne doit pas dupliquer Costing `provisions_analytiques` et `periodes_analytiques` ; les objets et responsabilités doivent être distingués avant gel.
+- Reporting `exports`, Documents `exports` et Accounting `exports` restent des ressources de domaines distincts uniquement si leurs workflows et données sources sont réellement distincts ; sinon déduplication au lot 4.
+
+## 9. Anomalies et précisions du lot 3
+
+| Référence | Constat | Traitement avant gel |
+| --- | --- | --- |
+| Logistics | `acces_chantier.update` CT est à confirmer | Arbitrer le droit CT sans modifier l'accès DIR global |
+| Quality / Safety | `signalements` existe dans les deux domaines | Confirmer s'il s'agit de deux flux distincts ou d'un objet commun catégorisé ; ne pas fusionner sans analyse |
+| Documents | `download` et `sign` sont présentés comme actions transverses dans la matrice | Rattacher aux ressources documentaires ; ne pas créer de ressources autonomes sans modèle technique |
+| Documents | M-17 catégories/champs sensibles | Définir les restrictions de consultation, téléchargement, export et signature ; secret médical exclu |
+| Handover | Réception chantier logistique vs réception finale | Confirmer la frontière entre `logistics.receptions_chantier` et `handover.dossiers_reception` |
+| Reporting | Exports du domaine Reporting | M-05 levé selon matrice ; garder les contrôles de confidentialité |
+| Accounting | `payments` vs `paiements` | Choisir un slug canonique et traiter le refus comme permission ou résultat de workflow (A-07) |
+| Accounting | `revisions_budgetaires` | Distinguer ou dédupliquer avec Budgets `revisions` |
+| Accounting | `analytique` | Distinguer ou dédupliquer avec Costing |
+| Accounting | `donnees_financieres` | Préciser les données réellement propres à cette ressource ; aucun contournement des permissions sources |
+| Accounting | `exports` | Dédupliquer avec les exports Documents/Reporting si mêmes opérations |
+| DIR | Accès global au lot 3 | Attribuer explicitement chaque permission fonctionnelle retenue, sauf préparation/exécution des paiements et restrictions légales/documentaires |
+
+
+## 10. Anomalies à résoudre avant gel
 
 | Référence | Constat | Traitement |
 | --- | --- | --- |
