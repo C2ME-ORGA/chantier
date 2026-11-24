@@ -1,6 +1,6 @@
 # Inventaire canonique des permissions — CHAN-40
 
-> **Statut :** inventaire en cours — lot 1 (Identity, Clients, Projects, Planning, Budgets, Costing).
+> **Statut :** inventaire des 19 domaines documenté — lots 1 à 4 ; catalogue non gelé, implémentation non commencée.
 > **Référentiel :** `docs/development/authorization-matrix.md`, relu le 24/11/2026.
 > **Gel :** non effectué. Aucun seeder, migration ou code d'autorisation ne doit être généré à ce stade.
 
@@ -365,7 +365,89 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | Projects | `lots_phases` sans modèle de rattachement | A-17 ; ne pas générer de permission définitive |
 | DIR | « Toutes actions applicables » n'est pas une liste d'actions | Identifier les actions légitimes par ressource, puis associer explicitement DIR |
 
-## 9. Lots suivants
+
+## 11. Lot 4 — déduplication, normalisation et contrôle de cohérence
+
+### 11.1 Résultat de la revue transversale
+
+La revue porte sur les 19 domaines fonctionnels inventoriés dans les lots 1 à 3, les huit rôles et les conventions A-01 à A-09. Elle constitue un contrôle documentaire, pas une validation technique issue d'un scan du code applicatif.
+
+| Contrôle | Résultat | Conclusion |
+| --- | --- | --- |
+| Couverture des domaines | 6 domaines lot 1, 6 domaines lot 2, 7 domaines lot 3 | 19 domaines couverts dans l'inventaire |
+| Couverture des rôles | SA, DIR, ADM, CT, CC, RA, SAL, CPT présents dans la matrice §6 | Matrice synthétique des 8 rôles existante ; associations atomiques à matérialiser au catalogue |
+| Atomicité | Actions séparées par ressource dans les lots 1 et 2 ; plusieurs ressources lot 3 encore « à décomposer » | Non gelable à ce stade |
+| Règle DIR | Règle globale documentée ; exceptions Identity, secret médical, paiements, auto-approbation, conservation et audit | Principe stable ; associations explicites à générer au catalogue |
+| Slugs | A-01 à A-09 établissent les conventions | Mapping complet ressource/action encore à vérifier |
+| Scopes | Portées opérationnelles décrites dans la matrice §8 | Implémentation des Policies et scopes réservée à CHAN-42 |
+| Workflow | Seuils, validations et séparation des tâches décrits séparément | Ne pas transformer les règles de workflow en permissions génériques |
+| Traçabilité | Événements sensibles recensés dans la matrice §10 | Stockage/audit technique non livré par CHAN-40 à ce stade |
+
+### 11.2 Déduplication et frontières de propriété
+
+| Objets ou fonctions proches | Décision de revue | Conséquence pour le catalogue |
+| --- | --- | --- |
+| Clients / Accounting — factures, avoirs, relances, échéanciers, litiges, règlements | Propriétaire métier unique : Clients. Accounting porte les écritures et traitements comptables associés. | Conserver les permissions de pièces client dans `clients`; ne pas recréer ces ressources dans `accounting`. |
+| Budgets / Accounting — révisions budgétaires | Budgets reste propriétaire des budgets et de leurs révisions. Accounting peut référencer les données comptables résultantes, sans seconde ressource de révision identique. | Exclure `accounting.revisions_budgetaires.*` si aucun workflow comptable distinct n'est démontré. |
+| Costing / Accounting — analytique | Costing conserve chiffrages, coûts, écarts, marges, provisions et périodes analytiques. Accounting porte les écritures/ventilations comptables analytiques seulement si un objet distinct est démontré. | Ne pas créer `accounting.analytique.*` générique en doublon ; préciser l'objet comptable avant ajout. |
+| Documents / Reporting / Accounting — exports | Pas de fusion automatique : l'export documentaire, le rendu d'un rapport et l'extraction comptable peuvent être des workflows distincts. | Garder les ressources candidates en attente ; identifier données sources, format, acteurs et finalité avant de décider de fusionner ou séparer. |
+| Quality / Safety — signalements | La matrice attribue des signalements à chaque domaine et distingue les circuits qualité/sécurité. La ressemblance du nom ne suffit pas à conclure à un doublon. | Conserver deux candidats distincts jusqu'à confirmation du modèle : `quality.signalements` et `safety.signalements`. |
+| Logistics / Handover — réceptions | La réception logistique sur chantier et la réception contractuelle/finale n'ont pas la même finalité. Projects possède également `receptions` contractuelles. | Trois objets candidats distincts à confirmer par modèle : `logistics.receptions_chantier`, `projects.receptions`, `handover.dossiers_reception`. Ne pas fusionner par homonymie. |
+| Workforce / Safety — qualifications et habilitations | Workforce porte les qualifications/formations RH ; Safety porte les habilitations et autorisations de sécurité si elles ont un cycle réglementaire propre. | Référencer les justificatifs et statuts communs ; ne pas dupliquer une même entité sans distinction de cycle de vie. |
+| Workforce / TimeTracking — absences et justificatifs | Workforce porte le dossier RH ; TimeTracking porte le workflow d'absence et ses justificatifs minimisés. | Séparer dossier administratif et workflow de temps ; données médicales détaillées exclues. |
+| Planning / Equipment — affectations | Planning porte les affectations de ressources aux activités ; Equipment porte les affectations et la garde des équipements. | Slugs distincts si les objets et historiques sont distincts ; éviter une permission générique d'affectation commune. |
+| Workshop / Inventory — mouvements et consommations | Workshop décrit la demande/consommation de production ; Inventory porte le mouvement de stock comptable/opérationnel. | Un workflow de consommation peut référencer un mouvement ; ne pas créer deux droits d'écriture sur le même événement stock. |
+
+### 11.3 Normalisation des actions A-07
+
+| Anomalie ou usage | Décision de normalisation | État |
+| --- | --- | --- |
+| `treat` sur les litiges de facturation | Utiliser `process` pour le traitement opérationnel si le workflow correspond ; `arbitrate` reste la décision d'arbitrage. | Mapping proposé, à confirmer dans le workflow litige |
+| `correct` sur les pointages | Ne pas créer une action supplémentaire : utiliser `update` sur le workflow de correction dédié, avec événement immuable contenant avant/après, auteur, date, motif et valideur. | Décision de normalisation proposée ; à vérifier dans le workflow réel |
+| `refuse` sur les paiements | Le refus est un résultat/état de la décision d'autorisation ; ne pas créer une permission `refuse` tant qu'aucune capacité distincte n'est démontrée. | Décision de normalisation proposée |
+| `approve` / `authorize` | `approve` désigne une approbation métier ; `authorize` l'autorisation explicite d'une opération, notamment paiement. | Sémantique A-07 conservée |
+| `delete` / `archive` / `deactivate` / `revoke` / `suspend` | Actions non interchangeables ; utiliser seulement selon le cycle de vie réel et les contraintes de conservation. | Sémantique A-07 conservée |
+| `download` / `sign` | Actions rattachées à une ressource documentaire ou à un type de document autorisé ; pas de ressource autonome. | À relier aux objets/documents dans le modèle |
+
+### 11.4 Cohérence de la matrice des huit rôles
+
+La matrice §6 de `authorization-matrix.md` est la référence synthétique pour les huit rôles. Les principes à préserver lors de la génération des associations explicites sont :
+
+| Rôle | Profil d'attribution à conserver | Contrôles structurants |
+| --- | --- | --- |
+| SA | Administration technique des habilitations et capacité métier globale | Secret médical, Policies CHAN-42, audit immuable, pas d'auto-approbation |
+| DIR | Toutes permissions fonctionnelles retenues, scope global | Exclusion Identity administration, secret médical détaillé, préparation/exécution des paiements ; pas d'auto-autorisation |
+| ADM | Administration et préparation administrative, RH courante et clients selon matrice | Pas d'approbation financière, de paiement, de validation finale paie, de données RH sensibles non autorisées |
+| CT | Pilotage des affaires/chantiers affectés, préparation/suivi et validations explicitement prévues | Pas d'approbation financière générale ni d'auto-approbation de ses révisions ; scopes CHAN-42 |
+| CC | Exécution quotidienne sur chantiers/équipes affectés | Pas de budgets/coûts/marges, finance, commande ou réception formelle ; scopes CHAN-42 |
+| RA | Production/atelier, équipe, stocks, équipements, qualité/sécurité atelier | Pas d'engagement financier autonome ; validations personnelles auditées |
+| SAL | Accès personnel `own` aux informations et opérations expressément prévues | Pas de panel, d'accès aux données d'autrui, d'auto-validation, de finance/commerce/comptabilité |
+| CPT | Comptabilité/finance et paie selon matrice ; préparation et exécution des paiements | Pas d'approbation d'engagement, de commande, de paie finale ou de ses propres frais ; pas d'auto-autorisation |
+
+Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustive de permissions. Les associations finales doivent être explicites par permission atomique, sans héritage implicite.
+
+### 11.5 Points consolidés et décisions non encore gelables
+
+| Sujet | État lot 4 | Action avant gel |
+| --- | --- | --- |
+| A-01 à A-06, A-08, A-09 | Conventions documentées | Contrôle mécanique de toutes les clés du catalogue à effectuer au moment de sa construction |
+| A-07 `treat`, `correct`, `refuse` | Mapping proposé | Confirmer les workflows réels ; ne pas ajouter ces actions au registre canonique |
+| Identity `financial_delegations` | DIR exclu de l'administration des habilitations ; SA administre | Déterminer si cette ressource est une délégation financière métier ou un paramètre d'accès Identity ; déplacer vers le domaine financier si nécessaire |
+| Costing `marges` | Statut source « proposé » | Exclure du catalogue initial tant que la ressource n'est pas confirmée |
+| Projects `lots_phases` | A-17 ouvert | Modèle de rattachement affaire/chantier à trancher avant permissions et scopes |
+| Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting, Accounting | Plusieurs lignes « à décomposer » | Reprendre les opérations du code/métier et finaliser chaque action réelle |
+| Accounting | Domaine fonctionnel distinct retenu dans les décisions A-01 ; incohérence documentaire de §4.2 corrigée dans ce lot | Garder seulement les ressources comptables propres ; exclure les doublons Clients/Budgets/Costing |
+| M-17 | Ouvert | Définir catégories/champs sensibles et droits download/sign/export par catégorie |
+| M-01 à M-16 | Paramètres/workflows résiduels documentés dans la matrice | Résoudre ceux qui conditionnent les permissions concernées ; ne pas bloquer les permissions indépendantes |
+| Matrice des 8 rôles | Synthèse existante, associations atomiques non générées | Décliner chaque ligne de ressource/action vers SA, DIR, ADM, CT, CC, RA, SAL, CPT |
+| Audit | Événements définis, stockage technique non confirmé | Confirmer l'affectation CHAN-45 ou ticket dédié |
+
+### 11.6 Décision de gel
+
+**Le catalogue n'est pas gelé.** Les lots 1 à 3 couvrent le périmètre documentaire des 19 domaines, mais une partie des actions du lot 3 reste à décomposer, des choix de modèle et de propriété demeurent ouverts, et la matrice des huit rôles n'est pas encore convertie en associations atomiques exhaustives. Les anomalies A-07 ont un mapping proposé, pas une validation issue d'un test de workflow. Aucun code, migration, seeder ou test d'autorisation n'a été créé dans les lots documentaires.
+
+
+## 12. Lots suivants
 
 - **Lot 2 :** Workforce, TimeTracking, Workshop, Procurement, Inventory, Equipment.
 - **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting, Accounting.
@@ -373,7 +455,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent isolés ; ils ne bloquent pas les permissions indépendantes.
 
-## 10. Critères de gel
+## 13. Critères de gel
 
 1. Une entrée unique par triplet domaine/ressource/action.
 2. Résolution des anomalies A-07 et des slugs ambigus.
