@@ -611,7 +611,7 @@ Le code candidat `timetracking.timesheets.validate` désigne la validation des f
 
 | Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
 | --- | --- | --- | --- | --- | --- |
-| `documents`, `versions`, `dossiers_documentaires` | Accès complet DIR : toutes les actions applicables ; ADM, CT, CC, RA, CPT et SAL conservent leurs droits | global DIR / company / assigned_projects / own | Documents, versions et dossiers documentaires | 10298, 10299, arbitrage A.4.2 Groupe 2 | Décision DIR confirmée ; droits soumis aux restrictions légales et catégories sensibles à qualifier (M-17) ; versions et traces conservées |
+| `documents`, `versions`, `dossiers_documentaires` | Accès complet DIR : toutes les actions applicables ; ADM, CT, CC, RA, CPT et SAL conservent leurs droits | global DIR / company / assigned_projects / own | Documents, versions et dossiers documentaires, y compris les dossiers administratifs clients et leurs pièces associées ; création, modification, validation, téléchargement, archivage et autres actions applicables | 10298, 10299, arbitrage A.4.2 Groupe 2 et décision du 24/11/2026 | Accès complet DIR confirmé pour les dossiers administratifs clients ; droits soumis aux restrictions légales et catégories sensibles à qualifier (M-17) ; versions et traces conservées |
 | `types_document`, `regles_conservation` | Accès complet DIR : toutes les actions applicables ; ADM conserve ses droits | global DIR / global | Types documentaires et règles de conservation | 10298, arbitrage A.4.2 Groupe 2 | Décision DIR confirmée ; ne pas autoriser une suppression contraire aux obligations de conservation |
 | `diffusions` | Accès complet DIR : toutes les actions applicables ; ADM, CT, CC, RA et SAL conservent leurs droits | global DIR / assigned_projects / own | Diffusion documentaire et accusés de réception | 10298, 10299, arbitrage A.4.2 Groupe 2 | Décision DIR confirmée ; conserver destinataires, dates, versions diffusées et accusés de réception |
 | `download`, `sign` | Accès complet DIR : téléchargement et signature sur les documents auxquels DIR est légalement habilité à accéder ; SAL conserve `download`, `sign` own | global DIR sous réserve des catégories sensibles / own / policy_defined | Téléchargement et signature documentaire | 10299, arbitrage A.4.2 Groupe 2 | Décision DIR confirmée ; signature soumise aux règles de délégation, d'identité et de preuve ; M-17 reste ouvert pour les catégories/champs sensibles |
@@ -1402,4 +1402,14 @@ Cette décision porte sur les devis commerciaux. Elle ne modifie pas la règle d
 | Domaine / ressource | Décision métier | Actions / portée | Scope métier | Statut / réserve |
 | --- | --- | --- | --- | --- |
 | Clients / `relations_commerciales` | Accès complet DIR | Toutes les actions applicables, dont `view`, `create`, `update`, `qualify`, `track`, `archive` ; `delete` si disponible et autorisée | global pour DIR | Décision validée ; conservation et traçabilité obligatoires |
+
+
+
+### A.4.2 — Registre des arbitrages DIR — Dossiers administratifs clients
+
+**Décision métier reçue le 24/11/2026.** DIR bénéficie d'un accès complet aux dossiers administratifs clients et à leurs pièces associées, via les ressources documentaires existantes `documents`, `versions` et `dossiers_documentaires`. Cet accès couvre toutes les actions applicables, notamment création, modification, validation, téléchargement et archivage. La suppression reste conditionnée à son existence dans le modèle applicatif et au respect des obligations légales de conservation et de traçabilité. Les restrictions légales et les catégories documentaires sensibles restent applicables ; M-17 demeure ouvert pour leur qualification. Aucun nouveau type de ressource ou droit documentaire distinct n'est créé par cet arbitrage.
+
+| Domaine / ressource | Décision métier | Actions / portée | Scope métier | Statut / réserve |
+| --- | --- | --- | --- | --- |
+| Documents clients / `documents`, `versions`, `dossiers_documentaires` | Accès complet DIR aux dossiers administratifs clients et pièces associées | Toutes les actions applicables, notamment `view`, `create`, `update`, `validate`, `download`, `archive` ; `delete` si disponible et légalement autorisée | global pour DIR dans le périmètre documentaire | Décision validée ; restrictions légales, conservation, traçabilité et M-17 maintenus |
 
