@@ -1539,3 +1539,16 @@ Cette section consigne les décisions métier confirmées pendant la séance du 
 - Les responsabilités de traitement qualité et sécurité sont ainsi attribuées sans fusionner les deux workflows.
 
 Ces décisions complètent les arbitrages M-01 à M-16. Elles ne gèlent pas le catalogue et ne valent pas implémentation de permissions atomiques, de workflows ou de contrôles techniques.
+
+## 21. Règle de gel du catalogue RBAC — décision utilisateur (24/11/2026)
+
+**Décision validée :** toute action ou association rôle × permission qui n'est pas explicitement justifiée par les décisions fonctionnelles, les workflows documentés ou les droits existants confirmés est exclue du catalogue initial. Aucune permission ni attribution ne peut être déduite d'une formulation générale telle que « toutes actions applicables », « conserve ses droits » ou de la seule existence d'une ressource.
+
+- Les permissions retenues sont atomiques : `domaine.ressource.action`.
+- Les associations des huit rôles sont explicites ; aucun héritage implicite, wildcard ou permission générique.
+- DIR reçoit toutes les permissions fonctionnelles atomiques effectivement retenues, sous réserve des exceptions légales, médicales, de confidentialité et de séparation des tâches déjà documentées.
+- Les actions ou associations insuffisamment justifiées sont exclues du catalogue initial et pourront être ajoutées ultérieurement par évolution versionnée, après justification et validation.
+- Les règles de scope, workflows, seuils et contrôles CHAN-42 restent séparés des slugs de permission.
+- Cette règle autorise la finalisation du catalogue à partir des éléments prouvés ; elle ne transforme pas les lignes « à décomposer » en droits implicites.
+
+**Conséquence pour CHAN-40 :** le gel est conditionné à la traçabilité de chaque permission et association retenue, à l'explicitation des exclusions et à la vérification technique du catalogue généré. Les décisions fonctionnelles clôturées ne sont pas rouvertes par cette règle.
