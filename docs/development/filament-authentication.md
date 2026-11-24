@@ -15,7 +15,7 @@ L'inscription n'est pas activée. Ne pas ajouter `registration()` sans décision
 
 ## Autorisation d'accès au panel
 
-Le modèle `App\\Models\\User` implémente `FilamentUser`. Sa méthode `canAccessPanel()` vérifie la permission Spatie `identity.admin_panel.access`.
+Le modèle `App\Models\User` implémente `FilamentUser`. Sa méthode `canAccessPanel()` vérifie la permission Spatie `identity.admin_panel.access`.
 
 Un mot de passe valide ne suffit donc pas à ouvrir le panel : l'utilisateur doit également posséder la permission d'accès prévue par le catalogue RBAC CHAN-40. Ne pas élargir cette permission ni attribuer automatiquement un rôle dans le parcours de connexion.
 
