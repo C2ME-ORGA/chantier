@@ -1,9 +1,14 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\RbacCatalogSeeder;
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->seed(RbacCatalogSeeder::class);
+});
 
 test('redirige un visiteur non authentifié vers la page de connexion du panel', function () {
     $this->get('/admin')
