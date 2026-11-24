@@ -1,6 +1,6 @@
 # Matrice RBAC CHAN-40 — Rôles et permissions
 
-> **Statut :** référentiel fonctionnel consolidé ; conventions A-01 à A-09 normalisées le 24 novembre 2026 ; catalogue technique et seeders à implémenter.
+> **Statut :** référentiel fonctionnel consolidé ; conventions A-01 à A-09 normalisées le 24 novembre 2026 ; catalogue RBAC technique v0.1.0 implémenté et contrôlé localement ; catalogue global non gelé.
 > **Ticket :** CHAN-40 — Créer le modèle de rôles et permissions initiaux.
 > **Date :** 23 novembre 2026.
 > **Périmètre :** catalogue des permissions, rôles, affectations RBAC et accès au panel Filament.
@@ -1574,7 +1574,7 @@ Cette section prévaut sur les statuts des tableaux historiques des sections pr�
 - Les demandes internes, incidents sous-traitants, signalements qualité et signalements sécurité suivent les circuits détaillés dans les arbitrages M-07 à M-09 ; les rôles et actions ne sont pas étendus au-delà de ces responsabilités explicites.
 - Le catalogue des documents DOC-01 à DOC-10 conserve les droits existants pour les quatre opérations documentaires ; aucune attribution nouvelle n'est déduite de la classification.
 
-**État courant :** référentiel fonctionnel consolidé sur les arbitrages cités ; catalogue atomique et associations rôle × permission non encore générés ni gelés. Aucun changement de statut Jira n'est effectué par cette mise à jour documentaire.
+**État à la date de cette section (24/11/2026) :** référentiel fonctionnel consolidé ; le catalogue atomique n'était pas encore généré. Cette mention est historique et est remplacée par l'état technique de la section 23. Aucun changement de statut Jira n'est effectué par cette mise à jour documentaire.
 
 ## 23. Implémentation technique initiale — catalogue RBAC 0.1.0 (24/11/2026)
 
@@ -1586,8 +1586,8 @@ Le dépôt contient désormais une première version technique du référentiel 
 - Les seeders créent les rôles/permissions avec le guard `web` et synchronisent les associations des seuls rôles du catalogue.
 - Aucun utilisateur existant ne reçoit automatiquement un rôle.
 - `User::canAccessPanel()` contrôle `identity.admin_panel.access` ; l'accès au panel n'accorde aucun droit sur les ressources.
-- Sept tests Feature couvrent les huit rôles, les 61 permissions, les associations, l'idempotence, l'absence d'affectation automatique, le contrôle du panel, la nomenclature atomique et la règle DIR.
+- Neuf tests Feature couvrent les huit rôles, les 61 permissions, les associations, l'idempotence, l'absence d'affectation automatique, le contrôle du panel, la nomenclature atomique, la règle DIR et la résolution des permissions après authentification Sanctum.
 
 Cette version est volontairement partielle. Les ressources/actions des lots 2 et 3 encore « à décomposer », les actions conditionnelles, les droits documentaires existants non explicitement attribués, les ressources transverses non qualifiées et les droits d'administration des habilitations non atomisés restent exclus. Le catalogue ne peut donc pas être considéré comme gelé ni comme une implémentation complète des 18 domaines.
 
-**Prochaine validation technique :** exécuter les tests Feature, Pint et Larastan/PHPStan ; corriger les éventuels défauts puis étendre le catalogue par lots justifiés, sans élargissement implicite des rôles.
+**Validation technique locale (24/11/2026) :** `php artisan test --filter=RbacCatalogTest` : 9 tests réussis, 342 assertions ; `composer lint:check` : 92 fichiers validés ; `composer types:check` : PHPStan 32/32, aucune erreur. Ces contrôles ont été exécutés localement ; la CI GitHub reste à vérifier sur la Pull Request vers `develop`. Le catalogue global demeure non gelé et pourra être étendu par lots justifiés, sans élargissement implicite des rôles.
