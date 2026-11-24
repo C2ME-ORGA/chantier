@@ -1575,3 +1575,19 @@ Cette section prévaut sur les statuts des tableaux historiques des sections pr�
 - Le catalogue des documents DOC-01 à DOC-10 conserve les droits existants pour les quatre opérations documentaires ; aucune attribution nouvelle n'est déduite de la classification.
 
 **État courant :** référentiel fonctionnel consolidé sur les arbitrages cités ; catalogue atomique et associations rôle × permission non encore générés ni gelés. Aucun changement de statut Jira n'est effectué par cette mise à jour documentaire.
+
+## 23. Implémentation technique initiale — catalogue RBAC 0.1.0 (24/11/2026)
+
+Le dépôt contient désormais une première version technique du référentiel :
+
+- `RoleCatalog` définit les huit codes de rôles initiaux.
+- `PermissionCatalog` contient uniquement les permissions dont l'action et les associations hors DIR sont explicitement justifiées.
+- DIR reçoit chaque permission fonctionnelle de cette version, sans wildcard ni permission générique.
+- Les seeders créent les rôles/permissions avec le guard `web` et synchronisent les associations des seuls rôles du catalogue.
+- Aucun utilisateur existant ne reçoit automatiquement un rôle.
+- `User::canAccessPanel()` contrôle `identity.admin_panel.access` ; l'accès au panel n'accorde aucun droit sur les ressources.
+- Un test Feature couvre les rôles, les permissions, les associations, l'idempotence, l'absence d'affectation automatique et le contrôle du panel.
+
+Cette version est volontairement partielle. Les ressources/actions des lots 2 et 3 encore « à décomposer », les actions conditionnelles, les droits documentaires existants non explicitement attribués, les ressources transverses non qualifiées et les droits d'administration des habilitations non atomisés restent exclus. Le catalogue ne peut donc pas être considéré comme gelé ni comme une implémentation complète des 18 domaines.
+
+**Prochaine validation technique :** exécuter les tests Feature, Pint et Larastan/PHPStan ; corriger les éventuels défauts puis étendre le catalogue par lots justifiés, sans élargissement implicite des rôles.
