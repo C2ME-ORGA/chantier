@@ -1,6 +1,6 @@
 # C2ME Chantier
 
-Application de gestion opérationnelle des chantiers de SARL C2ME online.
+Application de gestion opérationnelle des chantiers de SARL C2ME.
 
 ## Stack technique
 
