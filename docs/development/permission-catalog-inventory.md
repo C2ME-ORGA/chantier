@@ -59,7 +59,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | --- | --- | --- | --- |
 | `affaires` | `view`, `create`, `update` | CT : view/create/update ; ADM, CC, GAF : view | Retenu |
 | `chantiers` | `view`, `create`, `update` | CT : view/create/update ; ADM, CC, GAF : view | Retenu |
-| `lots_phases` | — | — | À arbitrer ; A-17, aucun scope déduit |
+| `lots_phases` | Actions atomiques à définir après description des workflows | DIR : toutes actions applicables ; CT/CC : actions opérationnelles sur chantiers affectés | Rattachement A-17 validé : Chantier 1—N Lot ; Lot 1—N Phase ; scope opérationnel `assigned_sites` hérité du chantier |
 | `etudes` | `view`, `create`, `update` | CT : view/create/update | Retenu |
 | `commandes_clients` | `view`, `approve` | ADM, CT, GAF : view ; SA : approve | Retenu ; DIR approuve toutes les commandes, sans seuil |
 | `avenants` | `view`, `prepare`, `submit`, `approve` | CT : view/prepare/submit ; SA : approve | Retenu ; DIR n'assure ni préparation ni soumission |
@@ -328,7 +328,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | A-07 | `refuse` apparaît dans le workflow paiement, absent du registre | Déterminer si le refus est un résultat de workflow ou une permission distincte |
 | Identity | `financial_delegations` sous Identity, mais DIR n'administre pas les habilitations | Clarifier propriétaire et exception DIR |
 | Costing | `marges` au statut « Proposé » | Exclure du catalogue initial ou obtenir validation |
-| Projects | `lots_phases` sans modèle de rattachement | A-17 ; ne pas générer de permission définitive |
+| Projects | Rattachement de `lots_phases` validé par A-17 ; actions atomiques non définies | Décrire les workflows réels avant de générer les permissions définitives |
 | DIR | « Toutes actions applicables » n'est pas une liste d'actions | Identifier les actions légitimes par ressource, puis associer explicitement DIR |
 
 
@@ -400,7 +400,7 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 | A-07 `treat`, `correct`, `refuse` | Mapping proposé | Confirmer les workflows réels ; ne pas ajouter ces actions au registre canonique |
 | Identity `financial_delegations` | DIR exclu de l'administration des habilitations ; SA administre | Déterminer si cette ressource est une délégation financière métier ou un paramètre d'accès Identity ; déplacer vers le domaine financier si nécessaire |
 | Costing `marges` | Statut source « proposé » | Exclure du catalogue initial tant que la ressource n'est pas confirmée |
-| Projects `lots_phases` | A-17 ouvert | Modèle de rattachement affaire/chantier à trancher avant permissions et scopes |
+| Projects `lots_phases` | A-17 validé le 24/11/2026 : Affaire 1—N Chantier, Chantier 1—N Lot, Lot 1—N Phase | Appliquer `assigned_sites` aux accès opérationnels CT/CC via le chantier parent ; définir les actions atomiques séparément |
 | Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting | Plusieurs lignes « à décomposer » | Reprendre les opérations métier et finaliser chaque action réelle |
 | M-17 | Ouvert | Définir catégories/champs sensibles et droits download/sign/export par catégorie |
 | M-01 à M-16 | Paramètres/workflows résiduels documentés dans la matrice | Résoudre ceux qui conditionnent les permissions concernées ; ne pas bloquer les permissions indépendantes |
@@ -431,7 +431,7 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 | Sujet | Constat sourcé | Traitement requis avant gel |
 | --- | --- | --- |
 | Comptabilité | Le catalogue des objets métier ne comporte aucun objet comptable et la décision de périmètre exclut tout module comptable. | Ne créer aucun objet, ressource ou permission comptable. |
-| Projects / `lots_phases` | L'objet `PRJ-03 LotPhase` existe dans le catalogue métier ; la matrice RBAC laisse encore A-17 ouvert sur le rattachement affaire/chantier et la modélisation. | A-17 porte sur la relation et les règles de rattachement, pas sur l'existence nominale de l'objet. Décrire les relations et le cycle de vie avant de définir les actions et scopes. |
+| Projects / `lots_phases` | L'objet `PRJ-03 LotPhase` existe dans le catalogue métier ; le rattachement a été validé par A-17 le 24/11/2026. | Modèle retenu : Affaire 1—N Chantier, Chantier 1—N Lot, Lot 1—N Phase. Un lot appartient à un seul chantier ; une phase appartient obligatoirement à un seul lot et hérite du chantier. Scope opérationnel `assigned_sites` via le chantier parent ; actions atomiques encore à définir. |
 | Identity / `financial_delegations` | Le catalogue métier contient `IDN-05 Délégation`, tandis que la matrice place `financial_delegations` dans Identity et interdit à DIR l'administration technique des habilitations. | Distinguer la délégation de pouvoir financier métier de l'administration RBAC. Identifier le propriétaire du workflow, les acteurs, les catégories et les effets sur l'autorisation avant de fixer les permissions DIR/SA. |
 | Costing / `marges` | `CST-05 Marge` figure parmi les 8 objets Costing, mais l'inventaire RBAC conserve la ressource au statut « à préciser / proposé ». | L'objet métier est identifié ; cela ne valide pas automatiquement une ressource autonome ni une permission `view`. Confirmer si la marge est une donnée calculée de Costing ou un objet consultable distinct. |
 | Workforce | Le catalogue métier D07 liste 9 objets, mais la matrice/inventaire RBAC mentionne aussi paies, bulletins, écritures de paie, coordonnées bancaires, dossiers disciplinaires, données médicales et grands déplacements. | Qualifier chacun comme objet autonome, sous-objet du dossier RH ou donnée/processus géré par un autre domaine. Maintenir les restrictions médicales, bancaires et de paie pendant cette qualification. |
@@ -459,7 +459,7 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 | --- | --- | --- | --- |
 | P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et GAF | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
 | P0 | Ressources/actions des lots 2 et 3 non décomposées | Les lignes « toutes actions applicables » ne sont pas des permissions atomiques | Définition métier des actions et preuve du workflow ou de l'objet |
-| P1 | A-17 — rattachement lots/phases | Les actions et les périmètres dépendront du modèle de rattachement | Relations affaire/chantier/lot/phase et cycle de vie |
+| P1 | A-17 — actions et scopes lots/phases | Le rattachement est validé ; les actions et attributions détaillées restent à établir | Décrire les workflows réels ; appliquer `assigned_sites` via le chantier parent pour CT/CC et le scope global DIR |
 | P1 | M-17 — catégories documentaires sensibles | Les permissions de lecture, téléchargement, signature et export peuvent exposer des données protégées | Classification des catégories/champs et règles d'accès |
 | P1 | Workforce / paie / données bancaires / médicales | Objets, sous-objets et processus ne sont pas distingués partout | Cartographie de propriété et matrice de confidentialité |
 | P1 | Procurement / Inventory / Equipment / Logistics / Quality / Safety / Handover / Reporting | Les actions et parfois la propriété des objets restent à préciser | Décomposition par workflow, sans action générique |
@@ -472,7 +472,7 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 1. Trancher les objets RBAC qui ne figurent pas dans le catalogue métier de 132 objets, sans introduire d'objet comptable.
 2. Résoudre la propriété et la nature des ressources transverses ou sensibles : délégations financières, paie, données bancaires, signalements, exports.
 3. Décomposer les actions réelles des ressources des lots 2 et 3 à partir de workflows métier validés ; le dépôt ne contient pas encore de code permettant cette vérification.
-4. Résoudre A-17 et M-17, sans étendre leurs effets aux permissions indépendantes.
+4. Définir les actions atomiques des lots/phases à partir des workflows réels et traiter M-17, sans étendre leurs effets aux permissions indépendantes.
 5. Construire la matrice atomique des huit rôles, appliquer explicitement la règle DIR et ses exceptions, puis effectuer les contrôles de cohérence des slugs et des doublons.
 6. Présenter le catalogue consolidé pour validation formelle ; aucun gel ni développement RBAC ne doit précéder cette validation.
 
@@ -487,7 +487,7 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 - **Lot 4 :** revue transversale, déduplication et normalisation ; les associations atomiques des huit rôles ne sont pas encore générées.
 - **Lot 5 :** audit croisé avec le catalogue des objets métier et le dépôt ; écarts et blocages consignés.
 
-Les lots 1 à 5 sont documentés. Cette couverture ne signifie pas que toutes les ressources et actions sont gelées : les points ouverts sont regroupés en §11.5, §12.4 et §17 ci-dessous. A-17 et M-17 ne bloquent pas les permissions indépendantes, mais restent nécessaires avant de définir les permissions et scopes qui en dépendent.
+Les lots 1 à 5 sont documentés. Cette couverture ne signifie pas que toutes les ressources et actions sont gelées : les points ouverts sont regroupés en §11.5, §12.4 et §17 ci-dessous. Le rattachement A-17 est validé ; seules les actions atomiques et attributions détaillées des lots/phases restent à définir. M-17 demeure ouvert pour les catégories documentaires sensibles.
 
 ## 14. Critères de gel
 
@@ -531,7 +531,7 @@ Cette synthèse prévaut sur les formulations historiques des lots précédents.
 | Référence | Travail restant | Règle de traitement |
 | --- | --- | --- |
 | A-07 | Confirmer les mappings proposés pour les litiges, corrections de pointage et refus | Ne pas ajouter `treat`, `correct` ou `refuse` au registre canonique sans workflow distinct confirmé ; `process` et `update` restent candidats selon la matrice. |
-| A-17 | Fixer le rattachement et le cycle de vie des lots/phases | Ne définir ni action ni scope par supposition. |
+| A-17 | Rattachement des lots/phases validé le 24/11/2026 : Affaire 1—N Chantier, Chantier 1—N Lot, Lot 1—N Phase | `assigned_sites` via le chantier parent pour les accès opérationnels CT/CC ; DIR global. Définir les actions atomiques et les attributions restantes à partir des workflows réels. |
 | M-01 à M-16 | Résoudre les paramètres/workflows qui conditionnent une permission | Ne bloquer que les ressources dépendantes ; conserver les permissions indépendantes. |
 | M-17 | Qualifier les catégories/champs documentaires sensibles | Appliquer des droits par catégorie et opération ; aucun accès général par défaut. |
 | Ressources transverses | Qualifier délégations financières, annuaire, messagerie, signalements, exports et sous-objets RH/paie | Confirmer propriétaire, autonomie, cycle de vie et confidentialité avant création de permissions. |
