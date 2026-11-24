@@ -316,11 +316,6 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | Documents | M-17 catégories/champs sensibles | Définir les restrictions de consultation, téléchargement, export et signature ; secret médical exclu |
 | Handover | Réception chantier logistique vs réception finale | Confirmer la frontière entre `logistics.receptions_chantier` et `handover.dossiers_reception` |
 | Reporting | Exports du domaine Reporting | M-05 levé selon matrice ; garder les contrôles de confidentialité |
-| comptabilité (hors périmètre) | `payments` vs `paiements` | Choisir un slug canonique et traiter le refus comme permission ou résultat de workflow (A-07) |
-| comptabilité (hors périmètre) | `revisions_budgetaires` | Distinguer ou dédupliquer avec Budgets `revisions` |
-| comptabilité (hors périmètre) | `analytique` | Distinguer ou dédupliquer avec Costing |
-| comptabilité (hors périmètre) | `donnees_financieres` | Préciser les données réellement propres à cette ressource ; aucun contournement des permissions sources |
-| comptabilité (hors périmètre) | `exports` | Dédupliquer avec les exports Documents/Reporting si mêmes opérations |
 | DIR | Accès global au lot 3 | Attribuer explicitement chaque permission fonctionnelle retenue, sauf préparation/exécution des paiements et restrictions légales/documentaires |
 
 
@@ -393,7 +388,7 @@ La matrice §6 de `authorization-matrix.md` est la référence synthétique pour
 | CC | Exécution quotidienne sur chantiers/équipes affectés | Pas de budgets/coûts/marges, finance, commande ou réception formelle ; scopes CHAN-42 |
 | RA | Production/atelier, équipe, stocks, équipements, qualité/sécurité atelier | Pas d'engagement financier autonome ; validations personnelles auditées |
 | SAL | Accès personnel `own` aux informations et opérations expressément prévues | Pas de panel, d'accès aux données d'autrui, d'auto-validation, de finance/commerce/comptabilité |
-| GAF | Gestion administrative et financière opérationnelle/finance et paie selon matrice ; préparation et exécution des paiements | Pas d'approbation d'engagement, de commande, de paie finale ou de ses propres frais ; pas d'auto-autorisation |
+| GAF | Gestion administrative et financière opérationnelle : clients, achats, RH/paie, consultation et suivi des budgets/Costing selon les permissions de chaque ressource | Aucune fonction comptable ; aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire ; aucune approbation générale d'engagement ou de commande ; aucune validation finale de paie |
 
 Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustive de permissions. Les associations finales doivent être explicites par permission atomique, sans héritage implicite.
 
@@ -407,7 +402,6 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 | Costing `marges` | Statut source « proposé » | Exclure du catalogue initial tant que la ressource n'est pas confirmée |
 | Projects `lots_phases` | A-17 ouvert | Modèle de rattachement affaire/chantier à trancher avant permissions et scopes |
 | Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité (hors périmètre) | Plusieurs lignes « à décomposer » | Reprendre les opérations du code/métier et finaliser chaque action réelle |
-| comptabilité (hors périmètre) | Domaine fonctionnel distinct retenu dans les décisions A-01 ; incohérence documentaire de §4.2 corrigée dans ce lot | Garder seulement les ressources comptables propres ; exclure les doublons Clients/Budgets/Costing |
 | M-17 | Ouvert | Définir catégories/champs sensibles et droits download/sign/export par catégorie |
 | M-01 à M-16 | Paramètres/workflows résiduels documentés dans la matrice | Résoudre ceux qui conditionnent les permissions concernées ; ne pas bloquer les permissions indépendantes |
 | Matrice des 8 rôles | Synthèse existante, associations atomiques non générées | Décliner chaque ligne de ressource/action vers SA, DIR, ADM, CT, CC, RA, SAL, GAF |
@@ -430,20 +424,20 @@ Contrôle documentaire réalisé le 24/11/2026 sur :
 - l'arborescence Git de la branche `chan-40-roles-permissions` ;
 - `app/Models/User.php` et `config/permission.php`.
 
-Le catalogue des objets métier précise explicitement qu'il décrit des objets cibles et non des modèles Eloquent existants. Il recense 132 objets dans 18 domaines (D01 à D18). Le référentiel RBAC recense désormais 18 domaines avec  comptabilité (hors périmètre). Les domaines `app/Domains/*` sont encore des répertoires vides contenant uniquement `.gitkeep` ; aucun workflow métier PHP ne permet donc de confirmer les actions candidates des lots 2 et 3. Le contrôle ne doit pas être présenté comme une revue du comportement applicatif.
+Le référentiel RBAC doit rester limité aux domaines métier retenus, sans domaine comptable. Les domaines
 
 ### 12.2 Écarts entre le catalogue des objets et l'inventaire RBAC
 
 | Sujet | Constat sourcé | Traitement requis avant gel |
 | --- | --- | --- |
-| comptabilité (hors périmètre) /  | La matrice RBAC définit  et ses ressources. Le catalogue des objets métier s'arrête à D18 et ne décrit aucun objet comptabilité (hors périmètre). | Ajouter un inventaire d'objets comptables propre à  dans le référentiel métier, ou référencer une source métier validée équivalente. Ne pas déduire les objets comptables de simples libellés de permissions. |
+| Comptabilité | Le catalogue des objets métier ne comporte aucun objet comptable et la décision de périmètre exclut tout module comptable. | Ne créer aucun objet, ressource ou permission comptable. |
 | Projects / `lots_phases` | L'objet `PRJ-03 LotPhase` existe dans le catalogue métier ; la matrice RBAC laisse encore A-17 ouvert sur le rattachement affaire/chantier et la modélisation. | A-17 porte sur la relation et les règles de rattachement, pas sur l'existence nominale de l'objet. Décrire les relations et le cycle de vie avant de définir les actions et scopes. |
 | Identity / `financial_delegations` | Le catalogue métier contient `IDN-05 Délégation`, tandis que la matrice place `financial_delegations` dans Identity et interdit à DIR l'administration technique des habilitations. | Distinguer la délégation de pouvoir financier métier de l'administration RBAC. Identifier le propriétaire du workflow, les acteurs, les catégories et les effets sur l'autorisation avant de fixer les permissions DIR/SA. |
 | Costing / `marges` | `CST-05 Marge` figure parmi les 8 objets Costing, mais l'inventaire RBAC conserve la ressource au statut « à préciser / proposé ». | L'objet métier est identifié ; cela ne valide pas automatiquement une ressource autonome ni une permission `view`. Confirmer si la marge est une donnée calculée de Costing ou un objet consultable distinct. |
 | Workforce | Le catalogue métier D07 liste 9 objets, mais la matrice/inventaire RBAC mentionne aussi paies, bulletins, écritures de paie, coordonnées bancaires, dossiers disciplinaires, données médicales et grands déplacements. | Qualifier chacun comme objet autonome, sous-objet du dossier RH ou donnée/processus géré par un autre domaine. Maintenir les restrictions médicales, bancaires et de paie pendant cette qualification. |
 | TimeTracking | Le catalogue métier comprend l'imputation de temps, les corrections et les absences ; l'inventaire RBAC ne décrit pas encore clairement une ressource autonome pour l'imputation et mentionne en plus les heures supplémentaires et justificatifs médicaux. | Déterminer si l'imputation est une ressource autonome ou une capacité de pointage ; qualifier les heures supplémentaires comme workflow/objet ; garder les justificatifs médicaux hors des permissions générales de documents détaillés. |
 | Workshop | Le catalogue métier comprend `DossierDeFabricationExterne` (WKS-08), absent des ressources listées dans l'inventaire RBAC. | Confirmer si l'objet est utilisé dans le périmètre CHAN-40 et, si oui, définir ses actions et rôles ; sinon le déclarer explicitement hors catalogue initial. |
-| Procurement | Le catalogue des objets ne liste pas explicitement `besoins`, `factures_fournisseurs` et `incidents_sous_traitance`, alors que la matrice RBAC les cite. | Distinguer objets autonomes, processus d'approvisionnement et objets possédés par comptabilité (hors périmètre)/Quality. Confirmer la propriété avant d'attribuer des permissions. |
+Distinguer objets autonomes et processus d'approvisionnement ; confirmer la propriété métier avant d'attribuer des permissions.
 | Quality / Safety | Les ressources `signalements` sont présentes dans la matrice RBAC, mais ne figurent pas dans les catalogues d'objets D14/D15. | Confirmer leur autonomie et leur distinction entre signalement qualité et signalement sécurité, ou les rattacher à un objet existant avec une catégorie explicite. |
 | Documents | L'inventaire RBAC ajoute `exports`, alors que le catalogue métier identifie les six objets DOC-01 à DOC-06 sans objet Export dédié. | Traiter l'export comme action sur une ressource documentaire ou confirmer un objet d'export autonome avec cycle de vie, destinataires et conservation. |
 | Reporting | La matrice RBAC cite `tableaux_bord_strategiques` et `exports`, alors que le catalogue métier D18 liste `TableauDeBord` et `Export` sans distinction stratégique. | Déterminer si le tableau stratégique est une audience/configuration du tableau de bord ou un objet distinct ; séparer les exports uniquement si le workflow et les données sources diffèrent. |
@@ -463,20 +457,20 @@ Le catalogue des objets métier précise explicitement qu'il décrit des objets 
 
 | Priorité | Blocage | Pourquoi il bloque | Décision ou preuve attendue |
 | --- | --- | --- | --- |
-| P0 |  comptabilité (hors périmètre) absent du catalogue d'objets métier | Impossible de confirmer les objets propres et les frontières de propriété du domaine | Référentiel comptable validé |
+| P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et GAF | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
 | P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et GAF | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
 | P0 | Ressources/actions des lots 2 et 3 non décomposées | Les lignes « toutes actions applicables » ne sont pas des permissions atomiques | Définition métier des actions et preuve du workflow ou de l'objet |
 | P1 | A-17 — rattachement lots/phases | Les actions et les périmètres dépendront du modèle de rattachement | Relations affaire/chantier/lot/phase et cycle de vie |
 | P1 | M-17 — catégories documentaires sensibles | Les permissions de lecture, téléchargement, signature et export peuvent exposer des données protégées | Classification des catégories/champs et règles d'accès |
 | P1 | Workforce / paie / données bancaires / médicales | Objets, sous-objets et processus ne sont pas distingués partout | Cartographie de propriété et matrice de confidentialité |
 | P1 | Procurement / Inventory / Equipment / Logistics / Quality / Safety / Handover / Reporting | Les actions et parfois la propriété des objets restent à préciser | Décomposition par workflow, sans action générique |
-| P1 | comptabilité (hors périmètre) : paiements, révisions, analytique, données financières, exports | Slugs et frontières de propriété non stabilisés | Ressources comptables propres et séparation de paiement explicite |
+| P1 | Frontières opérationnelles Clients / Procurement / Budgets / Costing | Vérifier que les pièces et workflows restent dans leur domaine propriétaire et qu'aucun traitement comptable n'est introduit | Référentiel métier et permissions opérationnelles cohérents |
 | P2 | A-07 : `treat`, `correct`, `refuse` | Les mappings du lot 4 sont des propositions, pas des validations métier | Confirmation des workflows concernés |
 | P2 | Identity : délégations financières, annuaire, messagerie | Propriété et périmètre fonctionnel non confirmés | Décisions métier et séparation Identity / Finance |
 
 ### 12.5 Ordre de résolution recommandé
 
-1. Compléter le référentiel des objets métier pour comptabilité (hors périmètre)  et trancher les objets RBAC qui ne figurent pas dans le catalogue de 132 objets.
+1. Trancher les objets RBAC qui ne figurent pas dans le catalogue métier de 132 objets, sans introduire d'objet comptable.
 2. Résoudre la propriété et la nature des ressources transverses ou sensibles : délégations financières, paie, données bancaires, signalements, exports.
 3. Décomposer les actions réelles des ressources des lots 2 et 3 à partir de workflows métier validés ; le dépôt ne contient pas encore de code permettant cette vérification.
 4. Résoudre A-17 et M-17, sans étendre leurs effets aux permissions indépendantes.
@@ -489,7 +483,7 @@ Le catalogue des objets métier précise explicitement qu'il décrit des objets 
 ## 13. Lots suivants
 
 - **Lot 2 :** Workforce, TimeTracking, Workshop, Procurement, Inventory, Equipment.
-- **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité (hors périmètre).
+- **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting.
 - **Lot 4 :** déduplication, normalisation finale des actions, matrice complète des huit rôles, contrôles de cohérence et proposition de gel.
 
 M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent isolés ; ils ne bloquent pas les permissions indépendantes.
@@ -513,4 +507,6 @@ Décision utilisateur : le logiciel C2ME ne comportera aucune partie comptable. 
 
 ## 15. Définition du rôle GAF — gestion administrative et financière opérationnelle
 
-Le rôle GAF remplace l'ancien rôle CPT/Comptabilité. Il est conservé comme profil métier dédié aux opérations administratives et financières du logiciel, sans constituer un module comptable. Il peut intervenir sur les factures et règlements clients au titre du suivi opérationnel, les factures fournisseurs et commandes au titre du traitement administratif, les éléments de paie et les données RH strictement nécessaires, ainsi que la consultation des budgets et du costing selon les permissions de chaque ressource. Il ne reçoit aucune permission d'écriture comptable, de journal, de plan comptable, de rapprochement bancaire comptable, de trésorerie comptable, de déclaration ou clôture comptable, d'immobilisation ou d'amortissement. Les paiements bancaires exécutables ne sont pas présumés inclus : leur éventuelle gestion nécessitera un arbitrage distinct.
+Le rôle GAF remplace l'ancien rôle CPT. Il couvre les opérations administratives et financières opérationnelles : factures, avoirs, relances, échéanciers, litiges et suivi opérationnel des règlements clients ; traitement administratif des commandes et factures fournisseurs ; paie, bulletins, éléments variables et données nécessaires à la gestion administrative ; consultation et suivi opérationnel des budgets et du Costing selon les permissions définies pour chaque ressource.
+
+Sont exclus : écritures comptables, journaux, plan comptable, rapprochements bancaires comptables, trésorerie comptable, déclarations, clôtures comptables, immobilisations et amortissements. Aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire n'est attribué à GAF.
