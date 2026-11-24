@@ -44,14 +44,14 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `relations_commerciales` | `view`, `create`, `update`, `qualify`, `track`, `archive` ; `delete` conditionnel | ADM : view/create/update / global-company | Retenu |
 | `conditions_commerciales` | `view`, `create`, `update`, `approve` ; `delete` conditionnel | ADM : view/create/update ; SA : approve | Retenu ; approbation DIR des conditions initiales, modifications et dérogations |
 | `devis_commerciaux` | `view`, `create`, `update`, `submit`, `approve`, `issue`, `close` ; `delete` conditionnel | ADM : view/create/update/submit ; SA : approve | Retenu ; workflow à préciser |
-| `factures_clients` | `view`, `create`, `update`, `issue` ; `delete` conditionnel | GAF : view/create/update/issue | Retenu ; conservation comptable |
-| `avoirs` | `view`, `create`, `update`, `issue` ; `delete` conditionnel | GAF : view/create/update/issue | Retenu ; conservation comptable |
+| `factures_clients` | `view`, `create`, `update`, `issue` ; `delete` conditionnel | GAF : view/create/update/issue | Retenu ; pièces et justificatifs soumis aux règles de conservation applicables, sans traitement comptable |
+| `avoirs` | `view`, `create`, `update`, `issue` ; `delete` conditionnel | GAF : view/create/update/issue | Retenu ; pièces et justificatifs soumis aux règles de conservation applicables, sans traitement comptable |
 | `relances` | `view`, `create`, `update`, `issue`, `close` ; `delete` conditionnel | GAF : view/create/update | Retenu |
 | `echeanciers` | `view`, `create`, `update`, `validate`, `close` ; `delete` conditionnel | GAF : view/create/update | Retenu |
 | `litiges_facturation` | `view`, `create`, `update`, `arbitrate`, `close` ; traitement à normaliser | GAF : view/create/update | Anomalie A-07 : `treat` absent du registre ; régularisation financière distincte |
 | `reglements` | `view`, `create`, `update`, `validate`, `reconcile`, `close` ; `delete` conditionnel | GAF : view/reconcile | Retenu ; aucun droit de préparation/exécution de paiement |
 
-**Propriété des ressources :** les documents de facturation et de gestion client restent dans `clients`.  ne duplique pas ces ressources.
+**Propriété des ressources :** les documents de facturation et de gestion client restent dans `clients`. Procurement reste propriétaire des factures fournisseurs et des commandes fournisseurs ; aucune ressource de facturation n'est dupliquée dans un domaine comptable.
 
 ### Projects
 
@@ -479,13 +479,15 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 **Conclusion du lot 5.** L'audit croisé met en évidence des écarts de référentiel et confirme que les domaines métier ne sont pas encore implémentés dans le dépôt. Il est donc possible de préciser les blocages et les décisions attendues, mais pas de transformer honnêtement les actions « à décomposer » en permissions atomiques sans arbitrages métier supplémentaires. Le catalogue reste non gelé ; aucune migration, aucun seeder, aucune permission métier et aucun test d'autorisation ne sont créés dans ce lot.
 
 
-## 13. Lots suivants
+## 13. État des lots documentaires
 
-- **Lot 2 :** Workforce, TimeTracking, Workshop, Procurement, Inventory, Equipment.
-- **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting.
-- **Lot 4 :** déduplication, normalisation finale des actions, matrice complète des huit rôles, contrôles de cohérence et proposition de gel.
+- **Lot 1 :** Identity, Clients, Projects, Planning, Budgets et Costing.
+- **Lot 2 :** Workforce, TimeTracking, Workshop, Procurement, Inventory et Equipment.
+- **Lot 3 :** Logistics, Quality, Safety, Documents, Handover et Reporting.
+- **Lot 4 :** revue transversale, déduplication et normalisation ; les associations atomiques des huit rôles ne sont pas encore générées.
+- **Lot 5 :** audit croisé avec le catalogue des objets métier et le dépôt ; écarts et blocages consignés.
 
-M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent isolés ; ils ne bloquent pas les permissions indépendantes.
+Les lots 1 à 5 sont documentés. Cette couverture ne signifie pas que toutes les ressources et actions sont gelées : les points ouverts sont regroupés en §11.5, §12.4 et §17 ci-dessous. A-17 et M-17 ne bloquent pas les permissions indépendantes, mais restent nécessaires avant de définir les permissions et scopes qui en dépendent.
 
 ## 14. Critères de gel
 
@@ -509,3 +511,44 @@ Décision utilisateur : le logiciel C2ME ne comportera aucune partie comptable. 
 Le rôle GAF remplace l'ancien rôle CPT. Il couvre les opérations administratives et financières opérationnelles : factures, avoirs, relances, échéanciers, litiges et suivi opérationnel des règlements clients ; traitement administratif des commandes et factures fournisseurs ; paie, bulletins, éléments variables et données nécessaires à la gestion administrative ; consultation et suivi opérationnel des budgets et du Costing selon les permissions définies pour chaque ressource.
 
 Sont exclus : écritures comptables, journaux, plan comptable, rapprochements bancaires comptables, trésorerie comptable, déclarations, clôtures comptables, immobilisations et amortissements. Aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire n'est attribué à GAF.
+
+
+## 17. Finalisation documentaire — synthèse de référence (24/11/2026)
+
+Cette synthèse prévaut sur les formulations historiques des lots précédents. Elle ne vaut ni gel du catalogue ni validation métier des actions encore à décomposer.
+
+### 17.1 État consolidé
+
+- Les 18 domaines sont couverts par les lots documentaires 1 à 3 ; les lots 4 et 5 ont assuré la revue transversale et l'audit croisé.
+- Les huit rôles sont définis dans la matrice. Le présent inventaire ne constitue pas encore une matrice atomique exhaustive permission × rôle.
+- DIR reçoit toutes les permissions fonctionnelles atomiques effectivement retenues, avec scope global, sous réserve des exceptions documentées. Cette règle ne justifie pas d'inventer des actions.
+- GAF est le rôle de gestion administrative et financière opérationnelle ; aucune permission comptable et aucun droit de préparation, d'autorisation ou d'exécution de paiement bancaire ne lui sont attribués.
+- Les factures clients et avoirs restent dans Clients ; les factures fournisseurs et commandes fournisseurs relèvent de Procurement. Budgets et Costing restent dans leurs domaines respectifs. Ces processus opérationnels ne constituent pas un module comptable.
+- Les obligations de conservation des pièces et preuves ne sont pas des fonctions comptables et ne créent aucune permission comptable.
+
+### 17.2 Liste de sortie avant gel
+
+| Référence | Travail restant | Règle de traitement |
+| --- | --- | --- |
+| A-07 | Confirmer les mappings proposés pour les litiges, corrections de pointage et refus | Ne pas ajouter `treat`, `correct` ou `refuse` au registre canonique sans workflow distinct confirmé ; `process` et `update` restent candidats selon la matrice. |
+| A-17 | Fixer le rattachement et le cycle de vie des lots/phases | Ne définir ni action ni scope par supposition. |
+| M-01 à M-16 | Résoudre les paramètres/workflows qui conditionnent une permission | Ne bloquer que les ressources dépendantes ; conserver les permissions indépendantes. |
+| M-17 | Qualifier les catégories/champs documentaires sensibles | Appliquer des droits par catégorie et opération ; aucun accès général par défaut. |
+| Ressources transverses | Qualifier délégations financières, annuaire, messagerie, signalements, exports et sous-objets RH/paie | Confirmer propriétaire, autonomie, cycle de vie et confidentialité avant création de permissions. |
+| Actions des domaines lots 2 et 3 | Décomposer les lignes « à décomposer » à partir des workflows réels | Aucun CRUD ou droit de validation ne doit être inféré de la seule existence d'une ressource. |
+| Matrice des rôles | Produire les associations explicites de chaque permission atomique pour SA, DIR, ADM, CT, CC, RA, SAL et GAF | Pas d'héritage implicite ; appliquer les exceptions DIR et les scopes CHAN-42 séparément. |
+| Audit métier | Confirmer le rattachement de l'audit métier immuable à CHAN-45 ou à un lot dédié | Ne pas confondre définition des événements et stockage technique. |
+
+### 17.3 Critères de gel — contrôle final
+
+Le catalogue pourra être présenté au gel lorsque :
+1. chaque ressource est qualifiée comme objet autonome, sous-objet ou processus d'un domaine propriétaire ;
+2. chaque permission correspond à un triplet unique domaine/ressource/action, justifié par un workflow ;
+3. les slugs sont canoniques et les doublons inter-domaines supprimés ;
+4. les actions conditionnelles ou proposées sont validées ou exclues explicitement ;
+5. les associations des huit rôles sont explicites, avec DIR et ses exceptions ;
+6. les scopes sont documentés séparément des permissions ;
+7. les données sensibles et les règles de conservation sont traitées sans créer de droits trop larges ;
+8. aucune ressource, permission ou workflow comptable n'est introduit.
+
+**État à la fin de la finalisation documentaire :** lots 1 à 5 documentés, référentiel clarifié, catalogue non gelé, associations atomiques non finalisées, implémentation non commencée. Aucun code, migration, seeder ou test n'est créé par cette phase.
