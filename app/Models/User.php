@@ -48,14 +48,10 @@ class User extends Authenticatable implements FilamentUser
 
     /**
      * Determine whether the user can access the given Filament panel.
-     *
-     * L'accès est temporairement ouvert à tous les utilisateurs authentifiés.
-     * Il devra être restreint lorsque le système de rôles et permissions sera
-     * disponible.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return $this->can('identity.admin_panel.access');
     }
 
     /**

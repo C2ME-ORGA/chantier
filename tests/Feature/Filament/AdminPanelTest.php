@@ -1,9 +1,14 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\RbacCatalogSeeder;
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->seed(RbacCatalogSeeder::class);
+});
 
 test('redirige un visiteur non authentifié vers la page de connexion du panel', function () {
     $this->get('/admin')
@@ -29,6 +34,7 @@ test('charge les assets Filament sur la page de connexion', function () {
 
 test('authentifie un utilisateur via le formulaire de connexion Filament', function () {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
 
     Livewire::test(Login::class)
         ->fillForm([
@@ -41,8 +47,9 @@ test('authentifie un utilisateur via le formulaire de connexion Filament', funct
     $this->assertAuthenticatedAs($user);
 });
 
-test('autorise temporairement un utilisateur authentifié à accéder au panel', function () {
+test('autorise un utilisateur disposant de la permission d’accès au panel', function () {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
 
     expect($user->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
 
@@ -51,8 +58,9 @@ test('autorise temporairement un utilisateur authentifié à accéder au panel',
         ->assertOk();
 });
 
-test('déconnecte un utilisateur authentifié', function () {
+test('déconnecte un utilisateur autorisé à accéder au panel', function () {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
 
     $this->actingAs($user)
         ->post(route('filament.admin.auth.logout'))
@@ -63,6 +71,7 @@ test('déconnecte un utilisateur authentifié', function () {
 
 test('redirige vers la connexion après une déconnexion', function () {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
 
     $this->actingAs($user)
         ->post(route('filament.admin.auth.logout'));
