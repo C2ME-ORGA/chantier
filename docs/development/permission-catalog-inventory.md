@@ -552,3 +552,21 @@ Le catalogue pourra être présenté au gel lorsque :
 8. aucune ressource, permission ou workflow comptable n'est introduit.
 
 **État à la fin de la finalisation documentaire :** lots 1 à 5 documentés, référentiel clarifié, catalogue non gelé, associations atomiques non finalisées, implémentation non commencée. Aucun code, migration, seeder ou test n'est créé par cette phase.
+
+## 10. Arbitrage M-17 — catégories documentaires (24/11/2026)
+
+**Statut : arbitrage fonctionnel clôturé pour DOC-01 à DOC-10.** Cette décision remplace les mentions historiques « M-17 reste ouvert » relatives à la classification et aux droits documentaires par catégorie ; elle ne signifie pas que le catalogue RBAC complet est gelé.
+
+Les dix catégories retenues sont : DOC-01 Administratif entreprise ; DOC-02 Clients ; DOC-03 Affaires et chantiers ; DOC-04 Atelier et fabrication ; DOC-05 Ressources humaines ; DOC-06 Paie et rémunération ; DOC-07 Médical ; DOC-08 Banque et finance ; DOC-09 Sécurité et prévention ; DOC-10 Juridique et contentieux.
+
+Pour chaque catégorie, les opérations `view`, `download`, `sign` et `export` conservent strictement les droits et scopes existants. Aucune extension ni réduction automatique n'est décidée. Si les associations atomiques existantes ne sont pas explicitement détaillées dans les sources, elles restent à vérifier lors de la consolidation de la matrice rôle × permission ; aucune attribution n'est inventée.
+
+Garde-fous :
+- SAL conserve uniquement les droits déjà prévus sur ses propres documents, notamment `download` et `sign` own lorsqu'ils s'appliquent.
+- Secret médical et confidentialité des données de santé prévalent sur les droits généraux, y compris DIR ; aucun accès aux documents médicaux détaillés ne découle du seul accès global.
+- Les données RH, paie/rémunération, bancaires/financières et juridiques/contentieuses restent soumises aux restrictions légales et de confidentialité existantes.
+- `export` hérite des restrictions de la source et ne contourne ni scope ni confidentialité.
+- `sign` exige une délégation valable, l'identité du signataire et une preuve conservée.
+- Conservation légale, intégrité des versions, traçabilité, séparation des tâches et interdiction d'auto-approbation restent impératives.
+
+**Conclusion :** les décisions métier M-17 sur les catégories et les quatre opérations sont terminées. La vérification technique des associations atomiques et scopes existants reste une tâche distincte de consolidation ; le catalogue global n'est pas gelé.
