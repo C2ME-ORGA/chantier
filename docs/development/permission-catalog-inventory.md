@@ -21,7 +21,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 | Ressource | Actions candidates | Rôles hors DIR / portée | Statut |
 | --- | --- | --- | --- |
-| `admin_panel` | `access` | SA, ADM, CT, CC, RA, GAF / global | Retenu ; SAL exclu du panel |
+| `admin_panel` | `access` | SA, DIR, ADM, CT, CC, RA, GAF / global | Retenu ; SAL exclu du panel ; permission de panel sans droits sur les ressources |
 | `users` | `view`, `create`, `update`, `deactivate` | SA / global | Proposé ; désactivation à confirmer |
 | `roles` | `view`, `create`, `update`, `delete`, `assign` | SA / global | Proposé ; suppression à confirmer |
 | `permissions` | `view`, `create`, `update`, `delete` | SA / global | Proposé |
@@ -459,12 +459,12 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 | --- | --- | --- | --- |
 | P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et GAF | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
 | P0 | Ressources/actions des lots 2 et 3 non décomposées | Les lignes « toutes actions applicables » ne sont pas des permissions atomiques | Définition métier des actions et preuve du workflow ou de l'objet |
-| P1 | A-17 — actions et scopes lots/phases | Le rattachement est validé ; les actions et attributions détaillées restent à établir | Décrire les workflows réels ; appliquer `assigned_sites` via le chantier parent pour CT/CC et le scope global DIR |
-| P1 | M-17 — catégories documentaires sensibles | Les permissions de lecture, téléchargement, signature et export peuvent exposer des données protégées | Classification des catégories/champs et règles d'accès |
+| P1 | Lots/phases — actions atomiques | Le rattachement A-17 est validé, mais les actions métier et les attributions hors droits explicitement prouvés ne sont pas décrites | Exclure les actions non justifiées du catalogue initial ; compléter ultérieurement par évolution versionnée après validation |
+
 | P1 | Workforce / paie / données bancaires / médicales | Objets, sous-objets et processus ne sont pas distingués partout | Cartographie de propriété et matrice de confidentialité |
 | P1 | Procurement / Inventory / Equipment / Logistics / Quality / Safety / Handover / Reporting | Les actions et parfois la propriété des objets restent à préciser | Décomposition par workflow, sans action générique |
 | P1 | Frontières opérationnelles Clients / Procurement / Budgets / Costing | Vérifier que les pièces et workflows restent dans leur domaine propriétaire et qu'aucun traitement comptable n'est introduit | Référentiel métier et permissions opérationnelles cohérents |
-| P2 | A-07 : `treat`, `correct`, `refuse` | Les mappings du lot 4 sont des propositions, pas des validations métier | Confirmation des workflows concernés |
+
 | P2 | Identity : délégations financières, annuaire, messagerie | Propriété et périmètre fonctionnel non confirmés | Décisions métier et séparation Identity / Finance |
 
 ### 12.5 Ordre de résolution recommandé
@@ -472,9 +472,9 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 1. Trancher les objets RBAC qui ne figurent pas dans le catalogue métier de 132 objets, sans introduire d'objet comptable.
 2. Résoudre la propriété et la nature des ressources transverses ou sensibles : délégations financières, paie, données bancaires, signalements, exports.
 3. Décomposer les actions réelles des ressources des lots 2 et 3 à partir de workflows métier validés ; le dépôt ne contient pas encore de code permettant cette vérification.
-4. Définir les actions atomiques des lots/phases à partir des workflows réels et traiter M-17, sans étendre leurs effets aux permissions indépendantes.
-5. Construire la matrice atomique des huit rôles, appliquer explicitement la règle DIR et ses exceptions, puis effectuer les contrôles de cohérence des slugs et des doublons.
-6. Présenter le catalogue consolidé pour validation formelle ; aucun gel ni développement RBAC ne doit précéder cette validation.
+4. Exclure du catalogue initial les actions lots/phases non justifiées ; M-17 est fonctionnellement clôturé et ses droits existants doivent être vérifiés sans extension.
+5. Construire la matrice atomique des huit rôles uniquement à partir des droits explicitement justifiés, appliquer DIR et ses exceptions, puis contrôler les slugs et doublons.
+6. Présenter les permissions et associations retenues ainsi que les exclusions pour validation formelle ; aucun gel ni développement RBAC ne doit précéder cette validation.
 
 **Conclusion du lot 5.** L'audit croisé met en évidence des écarts de référentiel et confirme que les domaines métier ne sont pas encore implémentés dans le dépôt. Il est donc possible de préciser les blocages et les décisions attendues, mais pas de transformer honnêtement les actions « à décomposer » en permissions atomiques sans arbitrages métier supplémentaires. Le catalogue reste non gelé ; aucune migration, aucun seeder, aucune permission métier et aucun test d'autorisation ne sont créés dans ce lot.
 
@@ -632,3 +632,11 @@ Cette section prévaut sur les statuts historiques encore visibles dans les sect
 - **Ressources transverses non qualifiées** (`financial_delegations`, `directory`, `messages`, `marges`, exports transverses) : exclues du catalogue initial tant que leur autonomie, propriétaire et workflow ne sont pas confirmés.
 
 La règle de gel de la section 21 s'applique à toute la liste initiale : aucune action CRUD, association rôle × permission, ressource autonome ou portée n'est ajoutée par simple analogie ou par existence d'un objet.
+
+### 12.6 Rectifications de cohérence postérieures aux arbitrages
+
+- La permission `identity.admin_panel.access` est retenue pour SA, DIR, ADM, CT, CC, RA et GAF ; SAL est exclu du panel. Elle ne confère aucun droit sur les ressources. La liste de la ligne Identity du lot 1 est corrigée en conséquence.
+- M-17 est clôturé fonctionnellement par Jira 10309 ; il ne constitue plus un blocage métier. La vérification technique porte uniquement sur les droits et scopes existants, sans ajout automatique.
+- A-07 est clôturé fonctionnellement par Jira 10307 ; les mappings sont consignés en §11.3 et en section 22. Aucun des trois cas ne justifie une permission `treat`, `correct` ou `refuse`.
+- M-07 à M-09 sont arbitrés par Jira 10311 et décrits en §20 ; leurs actions atomiques doivent être limitées aux responsabilités explicites de ADM, CC, RA et DIR.
+- `financial_delegations` ne doit pas être confondue avec l'administration des rôles et permissions. Bien que M-16 confirme les responsabilités fonctionnelles DIR/SA sur les délégations financières, le rattachement de cette ressource au domaine Identity et son workflow ne sont pas suffisamment qualifiés : elle est exclue du catalogue initial tant que sa propriété métier n'est pas confirmée.
