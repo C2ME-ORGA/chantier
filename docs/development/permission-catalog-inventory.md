@@ -570,3 +570,31 @@ Garde-fous :
 - Conservation légale, intégrité des versions, traçabilité, séparation des tâches et interdiction d'auto-approbation restent impératives.
 
 **Conclusion :** les décisions métier M-17 sur les catégories et les quatre opérations sont terminées. La vérification technique des associations atomiques et scopes existants reste une tâche distincte de consolidation ; le catalogue global n'est pas gelé.
+
+
+## 18. Arbitrages M-01 à M-16 — synthèse des décisions (24/11/2026)
+
+Les décisions ci-dessous complètent le registre et prévalent sur les anciennes listes de points ouverts ; elles ne valent pas gel du catalogue ni attribution automatique de permissions.
+
+| Référence | Décision consolidée | Résiduel |
+| --- | --- | --- |
+| M-01 | Seuil global 100 000 € HT ; validation DIR/SA au-delà ; aucun plafond individuel ni distinction supplémentaire des rôles dans la matrice ; cumul des bons de commande et avenants d'une même opération, sans fractionnement. | Vérifier les habilitations déjà documentées ; ne pas inventer d'attribution. |
+| M-02 | Double contrôle uniforme pour tous les paiements, avec séparation préparation/autorisation/exécution et interdiction d'auto-autorisation. | Affectation concrète des acteurs à chaque étape à configurer. |
+| M-03 | Déclenchement programmé ; contrôle et confirmation par RH ; clôture exécutée automatiquement par le système ; réouverture exceptionnelle DIR/SA tracée. RH ne reçoit pas le droit technique de clôture. | Date et rattachement du rôle RH à configurer ; aucun nouveau rôle créé implicitement. |
+| M-04 | Distinction des accès DIR/SA, GAF et ADM maintenue ; ADM limité aux données RH administratives courantes ; secret médical prioritaire. | Cartographie technique des familles de données. |
+| M-05 | Aucun export transversal/global implicite ; habilitations et confidentialité de la ressource source conservées. | Inventaire technique et vérification des associations existantes. |
+| M-06 | Archivage privilégié ; suppression distincte de l'archivage et limitée aux suppressions justifiées, compatibles avec conservation et audit. | Qualification ressource par ressource. |
+| M-07 | Signalement de besoin maintenu ; pas de signalement directement depuis le chantier ; aucun droit de commande fournisseur induit. | Canal et workflow à définir. |
+| M-08 | CC crée/signale les incidents sous-traitants ; suivi par le rôle compétent ; aucun droit automatique de traitement/clôture. | Actions et responsable de traitement à définir. |
+| M-09 | Deux circuits distincts qualité et sécurité, avec suivi et historique. | Responsables de traitement à désigner. |
+| M-10 | Annuaire, messagerie et profil personnel SAL rattachés à Identity ; aucun domaine supplémentaire. | Conserver les attributions existantes. |
+| M-11 | Reporting stratégique réservé à DIR ; autres accès opérationnels inchangés. | Ressources/snapshots à identifier techniquement. |
+| M-12 | Paramétrage des barèmes grands déplacements réservé à DIR et SA ; pas de délégation ADM. | Datation et historisation maintenues. |
+| M-13 | Ressources distinctes seulement si workflow distinct ; champs/statuts pour les différences administratives. | Décomposition selon les workflows réels. |
+| M-14 | ADM voit les seuls documents administratifs nécessaires aux absences ; aucun justificatif médical ni donnée médicale détaillée. | Définir les champs administratifs accessibles. |
+| M-15 | Dépassements d'heures supplémentaires validés uniquement par DIR ou SA ; aucune délégation opérationnelle automatique. | Séparer cette validation de la saisie et du suivi des temps. |
+| M-16 | suspend temporaire et réactivable ; revoke retrait définitif ; delete technique conditionnel sans effacer l'audit ; administration DIR/SA. | Historisation obligatoire. |
+
+**M-17 :** arbitrage fonctionnel déjà clôturé pour DOC-01 à DOC-10 et les opérations view, download, sign, export. La vérification technique des associations atomiques et scopes existants reste distincte. Les mentions historiques « M-17 ouvert » sont obsolètes pour la décision métier.
+
+**État :** M-01 à M-06 et M-08 à M-16 sont arbitrés. M-07 reste partiellement ouvert (canal de signalement). Les responsables qualité/sécurité et certains détails techniques restent à préciser ; ne pas déduire de permission ou d'affectation de rôle.
