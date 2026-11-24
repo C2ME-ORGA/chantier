@@ -368,10 +368,10 @@ La revue porte sur les 18 domaines fonctionnels inventoriés dans les lots 1 à 
 
 | Anomalie ou usage | Décision de normalisation | État |
 | --- | --- | --- |
-| `treat` sur les litiges de facturation | Utiliser `process` pour le traitement opérationnel si le workflow correspond ; `arbitrate` reste la décision d'arbitrage. | Mapping proposé, à confirmer dans le workflow litige |
-| `correct` sur les pointages | Ne pas créer une action supplémentaire : utiliser `update` sur le workflow de correction dédié, avec événement immuable contenant avant/après, auteur, date, motif et valideur. | Décision de normalisation proposée ; à vérifier dans le workflow réel |
-| `refuse` sur les paiements | Le refus est un résultat/état de la décision d'autorisation ; ne pas créer une permission `refuse` tant qu'aucune capacité distincte n'est démontrée. | Décision de normalisation proposée |
-| `approve` / `authorize` | `approve` désigne une approbation métier ; `authorize` l'autorisation explicite d'une opération, notamment paiement. | Sémantique A-07 conservée |
+| `treat` sur les litiges de facturation | Utiliser `process` pour l'analyse, l'enregistrement des échanges et justificatifs, la proposition de solution/régularisation et le suivi opérationnel jusqu'à résolution ; `arbitrate` reste réservé à la décision d'arbitrage engageante. | **Validé** : workflow opérationnel GAF confirmé ; arbitrage distinct réservé à la Direction selon ses habilitations |
+| `correct` sur les pointages | Ne pas créer une action supplémentaire : utiliser `update` sur le workflow de correction dédié, avec événement immuable contenant avant/après, auteur, date, motif et valideur. | **Validé** : correction par mise à jour tracée ; pas de permission `correct` ni d'auto-validation |
+| `refuse` sur les paiements | Le refus est un résultat/état de la décision d'autorisation ; ne pas créer de permission `refuse`. Les paiements bancaires étant hors périmètre de CHAN-40, aucune permission de paiement n'est retenue dans ce catalogue. | **Hors périmètre** : aucun droit `refuse`, `authorize` ou d'exécution de paiement à créer dans CHAN-40 |
+| `approve` / `authorize` | `approve` désigne une approbation métier ; `authorize` l'autorisation explicite d'une opération. Ne pas confondre ces actions ni introduire une autorisation de paiement hors périmètre. | Sémantique A-07 conservée ; application limitée aux workflows effectivement retenus |
 | `delete` / `archive` / `deactivate` / `revoke` / `suspend` | Actions non interchangeables ; utiliser seulement selon le cycle de vie réel et les contraintes de conservation. | Sémantique A-07 conservée |
 | `download` / `sign` | Actions rattachées à une ressource documentaire ou à un type de document autorisé ; pas de ressource autonome. | À relier aux objets/documents dans le modèle |
 
