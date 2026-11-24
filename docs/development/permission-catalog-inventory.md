@@ -1,6 +1,6 @@
 # Inventaire canonique des permissions — CHAN-40
 
-> **Statut :** inventaire des 19 domaines documenté — lots 1 à 4 ; catalogue non gelé, implémentation non commencée.
+> **Statut :** inventaire des 18 domaines documenté — lots 1 à 4 ; catalogue non gelé, implémentation non commencée.
 > **Référentiel :** `docs/development/authorization-matrix.md`, relu le 24/11/2026.
 > **Gel :** non effectué. Aucun seeder, migration ou code d'autorisation ne doit être généré à ce stade.
 
@@ -51,7 +51,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `litiges_facturation` | `view`, `create`, `update`, `arbitrate`, `close` ; traitement à normaliser | CPT : view/create/update | Anomalie A-07 : `treat` absent du registre ; régularisation financière distincte |
 | `reglements` | `view`, `create`, `update`, `validate`, `reconcile`, `close` ; `delete` conditionnel | CPT : view/reconcile | Retenu ; aucun droit de préparation/exécution de paiement |
 
-**Propriété des ressources :** les documents de facturation et de gestion client restent dans `clients`. `accounting` ne duplique pas ces ressources.
+**Propriété des ressources :** les documents de facturation et de gestion client restent dans `clients`.  ne duplique pas ces ressources.
 
 ### Projects
 
@@ -225,7 +225,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 
 
-## 8. Lot 3 — Logistics, Quality, Safety, Documents, Handover, Reporting et Accounting
+## 8. Lot 3 — Logistics, Quality, Safety, Documents, Handover et Reporting
 
 > Les ressources et contraintes sont reprises des sections 5.13 à 5.19 de la matrice. Les formulations « toutes actions applicables » restent à décomposer à partir des opérations réellement disponibles ; aucune action supplémentaire n'est créée par simple déduction. DIR reçoit chaque permission fonctionnelle retenue, avec les exceptions de confidentialité, de séparation des tâches, de conservation et de preuve.
 
@@ -306,35 +306,6 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `snapshots` | À décomposer selon création, consultation, export et suppression techniquement permise | SAL : consultation own si applicable | Retenu ; horodatage, périmètre, source et intégrité préservés |
 | `exports` | À décomposer selon préparation, génération, consultation, téléchargement et export | ADM, CPT conservent leurs droits | Retenu ; M-05 levé pour Reporting ; confidentialité et traçabilité restent actives |
 
-### 8.7 Accounting
-
-| Ressource | Actions candidates | Rôles hors DIR / portée | Statut / contraintes |
-| --- | --- | --- | --- |
-| `ecritures` | À décomposer : `view`, `create`, `update`, `validate`, `reverse`, `delete` conditionnel | CPT conserve ses droits | Retenu ; piste d'audit et périodes comptables |
-| `journaux` | À décomposer selon consultation et gestion du référentiel | CPT conserve ses droits | Retenu |
-| `plan_comptable` | À décomposer selon consultation et gestion du référentiel | CPT conserve ses droits | Retenu |
-| `periodes` | `view`, `create`, `update`, `lock`, `unlock`, `close` ; réouverture à préciser | CPT conserve ses droits | Retenu ; déverrouillage/réouverture tracés |
-| `rapprochements_bancaires` | À décomposer : `view`, `create`, `update`, `validate`, `close` | CPT conserve ses droits | Retenu ; relevés, écarts et justificatifs conservés |
-| `payments` / `paiements` | DIR/SA : autorisation et refus selon workflow ; CPT : `prepare`, `execute` | CPT : préparation/exécution ; SA : autorisation selon workflow | Exception impérative ; nom canonique anglais/français à arbitrer ; DIR ne prépare ni n'exécute ; aucun préparateur ne s'auto-autorise |
-| `tresorerie` | À décomposer selon consultation et opérations de trésorerie réellement disponibles | CPT conserve ses droits | Retenu |
-| `declarations` | À décomposer selon préparation, validation, soumission et suivi | CPT conserve ses droits | Retenu ; obligations et échéances légales |
-| `clotures` | À décomposer selon préparation, validation et clôture | CPT conserve ses droits | Retenu ; historique des clôtures |
-| `analytique` | À décomposer selon consultation et opérations analytiques réellement disponibles | CPT conserve ses droits | Retenu ; vérifier le non-recouvrement avec Costing |
-| `revisions_budgetaires` | À décomposer selon consultation, préparation, validation et intégration | CPT conserve ses droits | Retenu ; vérifier l'articulation avec Budgets |
-| `immobilisations` | À décomposer selon création, mise à jour, mise en service, sortie et archivage | CPT conserve ses droits | Retenu |
-| `amortissements` | À décomposer selon calcul, contrôle, validation et clôture | CPT conserve ses droits | Retenu ; plans et historiques conservés |
-| `donnees_financieres` | Ressource transverse à préciser ; ne pas créer de permission contournant les droits des ressources sources | CPT conserve ses droits selon source | À préciser ; éviter une permission générique d'accès qui élargirait les droits |
-| `exports` | À décomposer selon préparation, génération, consultation, téléchargement et export | CPT conserve ses droits | Retenu ; confidentialité, conservation et traçabilité |
-| `relations_organismes` | À décomposer selon gestion des organismes, échanges et justificatifs | CPT conserve ses droits | Retenu ; échanges et pièces conservés |
-
-**Séparation des paiements :** CPT prépare et exécute ; DIR/SA autorisent ou refusent. L'absence de permission DIR de préparation/exécution doit être explicitement représentée dans le catalogue et les contrôles d'autorisation. L'auto-approbation est interdite.
-
-**Frontières inter-domaines :**
-- Documents possède les documents administratifs clients et leurs pièces ; Clients conserve les processus de facturation client ; Accounting conserve les écritures et processus comptables.
-- Accounting `revisions_budgetaires` ne doit pas dupliquer Budgets `revisions` sans distinction fonctionnelle explicite.
-- Accounting `analytique` ne doit pas dupliquer Costing `provisions_analytiques` et `periodes_analytiques` ; les objets et responsabilités doivent être distingués avant gel.
-- Reporting `exports`, Documents `exports` et Accounting `exports` restent des ressources de domaines distincts uniquement si leurs workflows et données sources sont réellement distincts ; sinon déduplication au lot 4.
-
 ## 9. Anomalies et précisions du lot 3
 
 | Référence | Constat | Traitement avant gel |
@@ -345,11 +316,11 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | Documents | M-17 catégories/champs sensibles | Définir les restrictions de consultation, téléchargement, export et signature ; secret médical exclu |
 | Handover | Réception chantier logistique vs réception finale | Confirmer la frontière entre `logistics.receptions_chantier` et `handover.dossiers_reception` |
 | Reporting | Exports du domaine Reporting | M-05 levé selon matrice ; garder les contrôles de confidentialité |
-| Accounting | `payments` vs `paiements` | Choisir un slug canonique et traiter le refus comme permission ou résultat de workflow (A-07) |
-| Accounting | `revisions_budgetaires` | Distinguer ou dédupliquer avec Budgets `revisions` |
-| Accounting | `analytique` | Distinguer ou dédupliquer avec Costing |
-| Accounting | `donnees_financieres` | Préciser les données réellement propres à cette ressource ; aucun contournement des permissions sources |
-| Accounting | `exports` | Dédupliquer avec les exports Documents/Reporting si mêmes opérations |
+| comptabilité hors périmètre | `payments` vs `paiements` | Choisir un slug canonique et traiter le refus comme permission ou résultat de workflow (A-07) |
+| comptabilité hors périmètre | `revisions_budgetaires` | Distinguer ou dédupliquer avec Budgets `revisions` |
+| comptabilité hors périmètre | `analytique` | Distinguer ou dédupliquer avec Costing |
+| comptabilité hors périmètre | `donnees_financieres` | Préciser les données réellement propres à cette ressource ; aucun contournement des permissions sources |
+| comptabilité hors périmètre | `exports` | Dédupliquer avec les exports Documents/Reporting si mêmes opérations |
 | DIR | Accès global au lot 3 | Attribuer explicitement chaque permission fonctionnelle retenue, sauf préparation/exécution des paiements et restrictions légales/documentaires |
 
 
@@ -370,11 +341,11 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 
 ### 11.1 Résultat de la revue transversale
 
-La revue porte sur les 19 domaines fonctionnels inventoriés dans les lots 1 à 3, les huit rôles et les conventions A-01 à A-09. Elle constitue un contrôle documentaire, pas une validation technique issue d'un scan du code applicatif.
+La revue porte sur les 18 domaines fonctionnels inventoriés dans les lots 1 à 3, les huit rôles et les conventions A-01 à A-09. Elle constitue un contrôle documentaire, pas une validation technique issue d'un scan du code applicatif.
 
 | Contrôle | Résultat | Conclusion |
 | --- | --- | --- |
-| Couverture des domaines | 6 domaines lot 1, 6 domaines lot 2, 7 domaines lot 3 | 19 domaines couverts dans l'inventaire |
+| Couverture des domaines | 6 domaines lot 1, 6 domaines lot 2, 7 domaines lot 3 | 18 domaines couverts dans l'inventaire |
 | Couverture des rôles | SA, DIR, ADM, CT, CC, RA, SAL, CPT présents dans la matrice §6 | Matrice synthétique des 8 rôles existante ; associations atomiques à matérialiser au catalogue |
 | Atomicité | Actions séparées par ressource dans les lots 1 et 2 ; plusieurs ressources lot 3 encore « à décomposer » | Non gelable à ce stade |
 | Règle DIR | Règle globale documentée ; exceptions Identity, secret médical, paiements, auto-approbation, conservation et audit | Principe stable ; associations explicites à générer au catalogue |
@@ -387,10 +358,10 @@ La revue porte sur les 19 domaines fonctionnels inventoriés dans les lots 1 à 
 
 | Objets ou fonctions proches | Décision de revue | Conséquence pour le catalogue |
 | --- | --- | --- |
-| Clients / Accounting — factures, avoirs, relances, échéanciers, litiges, règlements | Propriétaire métier unique : Clients. Accounting porte les écritures et traitements comptables associés. | Conserver les permissions de pièces client dans `clients`; ne pas recréer ces ressources dans `accounting`. |
-| Budgets / Accounting — révisions budgétaires | Budgets reste propriétaire des budgets et de leurs révisions. Accounting peut référencer les données comptables résultantes, sans seconde ressource de révision identique. | Exclure `accounting.revisions_budgetaires.*` si aucun workflow comptable distinct n'est démontré. |
-| Costing / Accounting — analytique | Costing conserve chiffrages, coûts, écarts, marges, provisions et périodes analytiques. Accounting porte les écritures/ventilations comptables analytiques seulement si un objet distinct est démontré. | Ne pas créer `accounting.analytique.*` générique en doublon ; préciser l'objet comptable avant ajout. |
-| Documents / Reporting / Accounting — exports | Pas de fusion automatique : l'export documentaire, le rendu d'un rapport et l'extraction comptable peuvent être des workflows distincts. | Garder les ressources candidates en attente ; identifier données sources, format, acteurs et finalité avant de décider de fusionner ou séparer. |
+| Clients / comptabilité hors périmètre — factures, avoirs, relances, échéanciers, litiges, règlements | Propriétaire métier unique : Clients. comptabilité hors périmètre porte les écritures et traitements comptables associés. | Conserver les permissions de pièces client dans `clients`; ne pas recréer ces ressources dans . |
+| Budgets / comptabilité hors périmètre — révisions budgétaires | Budgets reste propriétaire des budgets et de leurs révisions. comptabilité hors périmètre peut référencer les données comptables résultantes, sans seconde ressource de révision identique. | Exclure `accounting.revisions_budgetaires.*` si aucun workflow comptable distinct n'est démontré. |
+| Costing / comptabilité hors périmètre — analytique | Costing conserve chiffrages, coûts, écarts, marges, provisions et périodes analytiques. comptabilité hors périmètre porte les écritures/ventilations comptables analytiques seulement si un objet distinct est démontré. | Ne pas créer `accounting.analytique.*` générique en doublon ; préciser l'objet comptable avant ajout. |
+| Documents / Reporting / comptabilité hors périmètre — exports | Pas de fusion automatique : l'export documentaire, le rendu d'un rapport et l'extraction comptable peuvent être des workflows distincts. | Garder les ressources candidates en attente ; identifier données sources, format, acteurs et finalité avant de décider de fusionner ou séparer. |
 | Quality / Safety — signalements | La matrice attribue des signalements à chaque domaine et distingue les circuits qualité/sécurité. La ressemblance du nom ne suffit pas à conclure à un doublon. | Conserver deux candidats distincts jusqu'à confirmation du modèle : `quality.signalements` et `safety.signalements`. |
 | Logistics / Handover — réceptions | La réception logistique sur chantier et la réception contractuelle/finale n'ont pas la même finalité. Projects possède également `receptions` contractuelles. | Trois objets candidats distincts à confirmer par modèle : `logistics.receptions_chantier`, `projects.receptions`, `handover.dossiers_reception`. Ne pas fusionner par homonymie. |
 | Workforce / Safety — qualifications et habilitations | Workforce porte les qualifications/formations RH ; Safety porte les habilitations et autorisations de sécurité si elles ont un cycle réglementaire propre. | Référencer les justificatifs et statuts communs ; ne pas dupliquer une même entité sans distinction de cycle de vie. |
@@ -435,8 +406,8 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 | Identity `financial_delegations` | DIR exclu de l'administration des habilitations ; SA administre | Déterminer si cette ressource est une délégation financière métier ou un paramètre d'accès Identity ; déplacer vers le domaine financier si nécessaire |
 | Costing `marges` | Statut source « proposé » | Exclure du catalogue initial tant que la ressource n'est pas confirmée |
 | Projects `lots_phases` | A-17 ouvert | Modèle de rattachement affaire/chantier à trancher avant permissions et scopes |
-| Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting, Accounting | Plusieurs lignes « à décomposer » | Reprendre les opérations du code/métier et finaliser chaque action réelle |
-| Accounting | Domaine fonctionnel distinct retenu dans les décisions A-01 ; incohérence documentaire de §4.2 corrigée dans ce lot | Garder seulement les ressources comptables propres ; exclure les doublons Clients/Budgets/Costing |
+| Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité hors périmètre | Plusieurs lignes « à décomposer » | Reprendre les opérations du code/métier et finaliser chaque action réelle |
+| comptabilité hors périmètre | Domaine fonctionnel distinct retenu dans les décisions A-01 ; incohérence documentaire de §4.2 corrigée dans ce lot | Garder seulement les ressources comptables propres ; exclure les doublons Clients/Budgets/Costing |
 | M-17 | Ouvert | Définir catégories/champs sensibles et droits download/sign/export par catégorie |
 | M-01 à M-16 | Paramètres/workflows résiduels documentés dans la matrice | Résoudre ceux qui conditionnent les permissions concernées ; ne pas bloquer les permissions indépendantes |
 | Matrice des 8 rôles | Synthèse existante, associations atomiques non générées | Décliner chaque ligne de ressource/action vers SA, DIR, ADM, CT, CC, RA, SAL, CPT |
@@ -444,7 +415,7 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 
 ### 11.6 Décision de gel
 
-**Le catalogue n'est pas gelé.** Les lots 1 à 3 couvrent le périmètre documentaire des 19 domaines, mais une partie des actions du lot 3 reste à décomposer, des choix de modèle et de propriété demeurent ouverts, et la matrice des huit rôles n'est pas encore convertie en associations atomiques exhaustives. Les anomalies A-07 ont un mapping proposé, pas une validation issue d'un test de workflow. Aucun code, migration, seeder ou test d'autorisation n'a été créé dans les lots documentaires.
+**Le catalogue n'est pas gelé.** Les lots 1 à 3 couvrent le périmètre documentaire des 18 domaines, mais une partie des actions du lot 3 reste à décomposer, des choix de modèle et de propriété demeurent ouverts, et la matrice des huit rôles n'est pas encore convertie en associations atomiques exhaustives. Les anomalies A-07 ont un mapping proposé, pas une validation issue d'un test de workflow. Aucun code, migration, seeder ou test d'autorisation n'a été créé dans les lots documentaires.
 
 
 
@@ -459,20 +430,20 @@ Contrôle documentaire réalisé le 24/11/2026 sur :
 - l'arborescence Git de la branche `chan-40-roles-permissions` ;
 - `app/Models/User.php` et `config/permission.php`.
 
-Le catalogue des objets métier précise explicitement qu'il décrit des objets cibles et non des modèles Eloquent existants. Il recense 132 objets dans 18 domaines (D01 à D18). Le référentiel RBAC recense désormais 19 domaines avec D19 Accounting. Les domaines `app/Domains/*` sont encore des répertoires vides contenant uniquement `.gitkeep` ; aucun workflow métier PHP ne permet donc de confirmer les actions candidates des lots 2 et 3. Le contrôle ne doit pas être présenté comme une revue du comportement applicatif.
+Le catalogue des objets métier précise explicitement qu'il décrit des objets cibles et non des modèles Eloquent existants. Il recense 132 objets dans 18 domaines (D01 à D18). Le référentiel RBAC recense désormais 18 domaines avec  comptabilité hors périmètre. Les domaines `app/Domains/*` sont encore des répertoires vides contenant uniquement `.gitkeep` ; aucun workflow métier PHP ne permet donc de confirmer les actions candidates des lots 2 et 3. Le contrôle ne doit pas être présenté comme une revue du comportement applicatif.
 
 ### 12.2 Écarts entre le catalogue des objets et l'inventaire RBAC
 
 | Sujet | Constat sourcé | Traitement requis avant gel |
 | --- | --- | --- |
-| Accounting / D19 | La matrice RBAC définit D19 et ses ressources. Le catalogue des objets métier s'arrête à D18 et ne décrit aucun objet Accounting. | Ajouter un inventaire d'objets comptables propre à D19 dans le référentiel métier, ou référencer une source métier validée équivalente. Ne pas déduire les objets comptables de simples libellés de permissions. |
+| comptabilité hors périmètre /  | La matrice RBAC définit  et ses ressources. Le catalogue des objets métier s'arrête à D18 et ne décrit aucun objet comptabilité hors périmètre. | Ajouter un inventaire d'objets comptables propre à  dans le référentiel métier, ou référencer une source métier validée équivalente. Ne pas déduire les objets comptables de simples libellés de permissions. |
 | Projects / `lots_phases` | L'objet `PRJ-03 LotPhase` existe dans le catalogue métier ; la matrice RBAC laisse encore A-17 ouvert sur le rattachement affaire/chantier et la modélisation. | A-17 porte sur la relation et les règles de rattachement, pas sur l'existence nominale de l'objet. Décrire les relations et le cycle de vie avant de définir les actions et scopes. |
 | Identity / `financial_delegations` | Le catalogue métier contient `IDN-05 Délégation`, tandis que la matrice place `financial_delegations` dans Identity et interdit à DIR l'administration technique des habilitations. | Distinguer la délégation de pouvoir financier métier de l'administration RBAC. Identifier le propriétaire du workflow, les acteurs, les catégories et les effets sur l'autorisation avant de fixer les permissions DIR/SA. |
 | Costing / `marges` | `CST-05 Marge` figure parmi les 8 objets Costing, mais l'inventaire RBAC conserve la ressource au statut « à préciser / proposé ». | L'objet métier est identifié ; cela ne valide pas automatiquement une ressource autonome ni une permission `view`. Confirmer si la marge est une donnée calculée de Costing ou un objet consultable distinct. |
 | Workforce | Le catalogue métier D07 liste 9 objets, mais la matrice/inventaire RBAC mentionne aussi paies, bulletins, écritures de paie, coordonnées bancaires, dossiers disciplinaires, données médicales et grands déplacements. | Qualifier chacun comme objet autonome, sous-objet du dossier RH ou donnée/processus géré par un autre domaine. Maintenir les restrictions médicales, bancaires et de paie pendant cette qualification. |
 | TimeTracking | Le catalogue métier comprend l'imputation de temps, les corrections et les absences ; l'inventaire RBAC ne décrit pas encore clairement une ressource autonome pour l'imputation et mentionne en plus les heures supplémentaires et justificatifs médicaux. | Déterminer si l'imputation est une ressource autonome ou une capacité de pointage ; qualifier les heures supplémentaires comme workflow/objet ; garder les justificatifs médicaux hors des permissions générales de documents détaillés. |
 | Workshop | Le catalogue métier comprend `DossierDeFabricationExterne` (WKS-08), absent des ressources listées dans l'inventaire RBAC. | Confirmer si l'objet est utilisé dans le périmètre CHAN-40 et, si oui, définir ses actions et rôles ; sinon le déclarer explicitement hors catalogue initial. |
-| Procurement | Le catalogue des objets ne liste pas explicitement `besoins`, `factures_fournisseurs` et `incidents_sous_traitance`, alors que la matrice RBAC les cite. | Distinguer objets autonomes, processus d'approvisionnement et objets possédés par Accounting/Quality. Confirmer la propriété avant d'attribuer des permissions. |
+| Procurement | Le catalogue des objets ne liste pas explicitement `besoins`, `factures_fournisseurs` et `incidents_sous_traitance`, alors que la matrice RBAC les cite. | Distinguer objets autonomes, processus d'approvisionnement et objets possédés par comptabilité hors périmètre/Quality. Confirmer la propriété avant d'attribuer des permissions. |
 | Quality / Safety | Les ressources `signalements` sont présentes dans la matrice RBAC, mais ne figurent pas dans les catalogues d'objets D14/D15. | Confirmer leur autonomie et leur distinction entre signalement qualité et signalement sécurité, ou les rattacher à un objet existant avec une catégorie explicite. |
 | Documents | L'inventaire RBAC ajoute `exports`, alors que le catalogue métier identifie les six objets DOC-01 à DOC-06 sans objet Export dédié. | Traiter l'export comme action sur une ressource documentaire ou confirmer un objet d'export autonome avec cycle de vie, destinataires et conservation. |
 | Reporting | La matrice RBAC cite `tableaux_bord_strategiques` et `exports`, alors que le catalogue métier D18 liste `TableauDeBord` et `Export` sans distinction stratégique. | Déterminer si le tableau stratégique est une audience/configuration du tableau de bord ou un objet distinct ; séparer les exports uniquement si le workflow et les données sources diffèrent. |
@@ -492,20 +463,20 @@ Le catalogue des objets métier précise explicitement qu'il décrit des objets 
 
 | Priorité | Blocage | Pourquoi il bloque | Décision ou preuve attendue |
 | --- | --- | --- | --- |
-| P0 | D19 Accounting absent du catalogue d'objets métier | Impossible de confirmer les objets propres et les frontières de propriété du domaine | Référentiel comptable validé |
+| P0 |  comptabilité hors périmètre absent du catalogue d'objets métier | Impossible de confirmer les objets propres et les frontières de propriété du domaine | Référentiel comptable validé |
 | P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et CPT | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
 | P0 | Ressources/actions des lots 2 et 3 non décomposées | Les lignes « toutes actions applicables » ne sont pas des permissions atomiques | Définition métier des actions et preuve du workflow ou de l'objet |
 | P1 | A-17 — rattachement lots/phases | Les actions et les périmètres dépendront du modèle de rattachement | Relations affaire/chantier/lot/phase et cycle de vie |
 | P1 | M-17 — catégories documentaires sensibles | Les permissions de lecture, téléchargement, signature et export peuvent exposer des données protégées | Classification des catégories/champs et règles d'accès |
 | P1 | Workforce / paie / données bancaires / médicales | Objets, sous-objets et processus ne sont pas distingués partout | Cartographie de propriété et matrice de confidentialité |
 | P1 | Procurement / Inventory / Equipment / Logistics / Quality / Safety / Handover / Reporting | Les actions et parfois la propriété des objets restent à préciser | Décomposition par workflow, sans action générique |
-| P1 | Accounting : paiements, révisions, analytique, données financières, exports | Slugs et frontières de propriété non stabilisés | Ressources comptables propres et séparation de paiement explicite |
+| P1 | comptabilité hors périmètre : paiements, révisions, analytique, données financières, exports | Slugs et frontières de propriété non stabilisés | Ressources comptables propres et séparation de paiement explicite |
 | P2 | A-07 : `treat`, `correct`, `refuse` | Les mappings du lot 4 sont des propositions, pas des validations métier | Confirmation des workflows concernés |
 | P2 | Identity : délégations financières, annuaire, messagerie | Propriété et périmètre fonctionnel non confirmés | Décisions métier et séparation Identity / Finance |
 
 ### 12.5 Ordre de résolution recommandé
 
-1. Compléter le référentiel des objets métier pour Accounting D19 et trancher les objets RBAC qui ne figurent pas dans le catalogue de 132 objets.
+1. Compléter le référentiel des objets métier pour comptabilité hors périmètre  et trancher les objets RBAC qui ne figurent pas dans le catalogue de 132 objets.
 2. Résoudre la propriété et la nature des ressources transverses ou sensibles : délégations financières, paie, données bancaires, signalements, exports.
 3. Décomposer les actions réelles des ressources des lots 2 et 3 à partir de workflows métier validés ; le dépôt ne contient pas encore de code permettant cette vérification.
 4. Résoudre A-17 et M-17, sans étendre leurs effets aux permissions indépendantes.
@@ -518,7 +489,7 @@ Le catalogue des objets métier précise explicitement qu'il décrit des objets 
 ## 13. Lots suivants
 
 - **Lot 2 :** Workforce, TimeTracking, Workshop, Procurement, Inventory, Equipment.
-- **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting, Accounting.
+- **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité hors périmètre.
 - **Lot 4 :** déduplication, normalisation finale des actions, matrice complète des huit rôles, contrôles de cohérence et proposition de gel.
 
 M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent isolés ; ils ne bloquent pas les permissions indépendantes.
@@ -531,5 +502,10 @@ M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent 
 4. Attribution explicite aux huit rôles, sans héritage implicite.
 5. Application explicite de la règle DIR et de ses exceptions.
 6. Scopes opérationnels documentés pour CHAN-42, hors slug.
-7. Absence de doublons entre domaines (notamment Clients/Accounting et Budgets/Accounting).
+7. Absence de doublons entre domaines (notamment Clients/comptabilité hors périmètre et Budgets/comptabilité hors périmètre).
 8. Validation des ressources proposées ou exclusion explicite du catalogue initial.
+
+
+## 13. Décision de périmètre — exclusion de la comptabilité (24/11/2026)
+
+Décision utilisateur : le logiciel C2ME ne comportera aucune partie comptable. Le domaine D19 Accounting et toutes ses ressources, actions et permissions sont exclus du catalogue CHAN-40. Aucun rôle Comptabilité/CPT ne doit être créé. Les processus opérationnels de facturation client, achats/factures fournisseurs, budgets, costing et paie restent dans leurs domaines métier respectifs uniquement pour leurs besoins de gestion ; aucune écriture, journal, rapprochement, trésorerie comptable, déclaration, clôture, immobilisation ou amortissement comptable n'est géré dans le logiciel.
