@@ -1,10 +1,10 @@
 <?php
 
-namespace App\\Domains\\Identity\\Models;
+namespace App\Domains\Identity\Models;
 
-use App\\Models\\User;
-use Illuminate\\Database\\Eloquent\\Model;
-use Illuminate\\Database\\Eloquent\\Relations\\BelongsTo;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
