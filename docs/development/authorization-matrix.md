@@ -153,7 +153,7 @@ Divergences entre documentation et code :
 
 **Données RH et médicales.** DIR dispose des permissions fonctionnelles sur les données RH, y compris les données sensibles métier, dans les limites légales. Les documents médicaux détaillés détenus dans l’espace confidentiel des professionnels de santé et les informations couvertes par le secret médical restent exclus. Les informations médicales légalement accessibles et strictement nécessaires peuvent être consultées dans les limites applicables.
 
-**Paiements et séparation des tâches.** DIR peut autoriser ou refuser les paiements préparés par GAF, mais ne les prépare pas et ne les exécute pas. Le préparateur ne peut pas autoriser son propre paiement. DIR conserve la validation finale de la paie. Toute séparation des tâches obligatoire dans un workflow demeure applicable : le plein accès ne permet pas l'auto-approbation interdite ni le contournement d'un contrôle réglementaire.
+**Séparation des tâches.** DIR conserve la validation finale de la paie. Toute séparation des tâches obligatoire dans un workflow demeure applicable : le plein accès ne permet pas l'auto-approbation interdite ni le contournement d'un contrôle réglementaire. Aucun workflow de paiement bancaire n'est défini dans le périmètre actuel.
 
 **Engagements financiers.** Les règles d'approbation des engagements restent applicables, notamment l'approbation préalable par DIR ou SA au-delà de 100 000 € HT cumulés pour une même opération, commandes et avenants agrégés, sans possibilité de fractionnement. Les délégations et workflows associés ne sont pas supprimés par la règle d'accès intégral.
 
@@ -322,7 +322,7 @@ Divergences entre documentation et code :
 
 **Consultation.** Factures, commandes, paie, banque, trésorerie, comptabilité, données financières.
 
-**Création.** Factures, avoirs, relances, échéanciers, litiges, factures fournisseurs, écritures, journaux, plan comptable, rapprochements, paiements préparés, déclarations, clôtures, analytique, immobilisations, amortissements, indemnités de grands déplacements, exports, relations organismes.
+**Création.** Factures, avoirs, relances, échéanciers, litiges, factures fournisseurs, suivi opérationnel des règlements clients, indemnités de grands déplacements et exports métier.
 
 **Modification.** Mêmes périmètres ; contrepassations, régularisations, verrouillage/déverrouillage des périodes.
 
@@ -336,7 +336,7 @@ Divergences entre documentation et code :
 
 **Restrictions.**
 
-- Paiements exécutés uniquement après autorisation préalable.
+- Aucun droit de paiement bancaire n'est attribué dans le périmètre actuel.
 - Interdiction d’auto-autorisation d’un paiement.
 - Pas d’accès aux tableaux de bord stratégiques réservés à la Direction.
 - Opérations sensibles auditées.
@@ -793,7 +793,7 @@ Cette règle s'applique aux actions de consultation, création, modification, su
 
 - DIR n'administre pas les utilisateurs, rôles, permissions, affectations de rôles ni paramètres d'habilitation.
 - Les documents médicaux détaillés relevant du secret médical et détenus par les professionnels de santé restent exclus.
-- DIR autorise ou refuse les paiements préparés par GAF ; DIR ne prépare ni n'exécute les paiements. Le préparateur ne peut pas autoriser son propre paiement.
+- Aucun workflow de préparation, d'autorisation ou d'exécution de paiement bancaire n'est inclus dans le périmètre actuel.
 - Toute séparation des tâches obligatoire, interdiction d'auto-approbation, obligation légale de conservation, confidentialité, intégrité des preuves et protection des journaux d'audit demeure applicable.
 - Le seuil d'approbation de 100 000 € HT cumulés par opération et les workflows financiers existants sont maintenus.
 - Les Policies CHAN-42 continuent d'appliquer les restrictions légales et de sécurité ; elles ne doivent pas réduire le scope métier global de DIR sans fondement explicite dans ces exceptions.
@@ -1404,4 +1404,4 @@ Cette décision porte sur les devis commerciaux. Elle ne modifie pas la règle d
 
 ## Décision de périmètre — exclusion de la comptabilité (24/11/2026)
 
-Le logiciel Chantier ne comporte aucun module comptable. Le domaine D19 Accounting est supprimé du catalogue fonctionnel et de la matrice RBAC. Le rôle GAF est conservé comme profil de gestion administrative et financière opérationnelle ; aucune permission ni ressource comptable ne doit être créée. Les fonctions opérationnelles Clients, Procurement, Budgets, Costing et Workforce restent limitées à leurs workflows de gestion et ne doivent pas implémenter d'écritures ou de traitements comptables.
+Le logiciel Chantier ne comporte aucun module comptable. Le domaine D19 Accounting n'est pas retenu dans le catalogue fonctionnel ni dans la matrice RBAC. Le rôle GAF est conservé comme profil de gestion administrative et financière opérationnelle ; aucune permission ni ressource comptable ne doit être créée. Les fonctions opérationnelles Clients, Procurement, Budgets, Costing et Workforce restent limitées à leurs workflows de gestion et ne doivent pas implémenter d'écritures ou de traitements comptables.
