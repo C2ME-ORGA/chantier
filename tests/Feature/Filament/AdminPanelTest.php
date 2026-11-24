@@ -29,6 +29,7 @@ test('charge les assets Filament sur la page de connexion', function () {
 
 test('authentifie un utilisateur via le formulaire de connexion Filament', function () {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
 
     Livewire::test(Login::class)
         ->fillForm([
@@ -43,6 +44,7 @@ test('authentifie un utilisateur via le formulaire de connexion Filament', funct
 
 test('autorise temporairement un utilisateur authentifié à accéder au panel', function () {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
 
     expect($user->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
 
@@ -51,8 +53,9 @@ test('autorise temporairement un utilisateur authentifié à accéder au panel',
         ->assertOk();
 });
 
-test('déconnecte un utilisateur authentifié', function () {
+test('déconnecte un utilisateur autorisé à accéder au panel', function () {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
 
     $this->actingAs($user)
         ->post(route('filament.admin.auth.logout'))
@@ -63,6 +66,7 @@ test('déconnecte un utilisateur authentifié', function () {
 
 test('redirige vers la connexion après une déconnexion', function () {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
 
     $this->actingAs($user)
         ->post(route('filament.admin.auth.logout'));
