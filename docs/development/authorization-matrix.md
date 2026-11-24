@@ -369,20 +369,12 @@ Divergences entre documentation et code :
 | D16 | Documents | `documents` | Document, Version, Dossier, TypeDocument, Diffusion, RègleDeConservation |
 | D17 | Handover | `handover` | DossierDeRéception, Réserve, LevéeDeRéserve, DOE, GarantieClient, DossierDeClôture |
 | D18 | Reporting | `reporting` | Rapport, TableauDeBord, Indicateur, Snapshot, Export, TableauDeBordStratégique |
-| D19 | Accounting | `accounting` | Écriture, Journal, PlanComptable, PériodeComptable, RapprochementBancaire, Trésorerie, Déclaration, Clôture, AnalytiqueComptable, Immobilisation, Amortissement, Paiement, RelationOrganisme |
 
-### 4.2 Namespace `accounting`
+### 4.2 Périmètre fonctionnel sans comptabilité
 
-**Décision d'architecture retenue :** `accounting` est un domaine fonctionnel distinct du catalogue, conformément à A-01. Il porte les ressources propres à la comptabilité générale, aux journaux, périodes comptables, rapprochements bancaires, trésorerie, déclarations/clôtures, immobilisations, amortissements, paiements et relations avec les organismes.
+Le logiciel Chantier ne comporte pas de module comptable. La comptabilité générale, les journaux, le plan comptable, les périodes comptables, les rapprochements bancaires, la trésorerie comptable, les déclarations et clôtures comptables, les immobilisations, les amortissements et les écritures comptables sont hors périmètre.
 
-Cette séparation ne crée aucun doublon de propriété :
-- les factures clients, avoirs, relances, échéanciers, litiges et règlements clients restent dans `clients` ;
-- les écritures et traitements comptables associés à ces pièces relèvent de `accounting` et référencent les objets Clients ;
-- les budgets et révisions budgétaires restent dans `budgets` ;
-- les chiffrages, coûts, écarts, marges, provisions et périodes analytiques de gestion restent dans `costing`. Une analytique comptable distincte ne pourra être ajoutée que si son objet et son workflow propres sont établis ;
-- aucune ressource générique `donnees_financieres` ne doit contourner les permissions des ressources sources.
-
-Le domaine Accounting est donc le domaine D19. Les ressources et actions candidates du §5.19 doivent être alignées sur ces frontières avant le gel ; les doublons `revisions_budgetaires` et `analytique` sont à exclure sauf preuve d'un workflow distinct.
+Les fonctions de gestion opérationnelle conservées restent propriétaires de leurs domaines : facturation et règlements clients dans Clients, achats et factures fournisseurs dans Procurement selon leur workflow, budgets dans Budgets, coûts et marges de gestion dans Costing, paie et données RH dans Workforce. Ces fonctions ne constituent pas un module comptable.
 
 ### 4.3 Convention de nommage
 
@@ -629,23 +621,6 @@ Le code candidat `timetracking.timesheets.validate` désigne la validation des f
 | `snapshots` | Accès complet DIR : toutes les actions applicables, y compris création, consultation, modification, suppression et export lorsque disponible | global DIR | Snapshots | 10301, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; préserver horodatage, périmètre, source et intégrité des instantanés |
 | `exports` | Accès complet DIR : toutes les actions applicables, y compris préparation, génération, consultation, téléchargement et export | global DIR | Exports de reporting | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; M-05 levé pour les exports du domaine Reporting, sous réserve des restrictions légales et de confidentialité |
 
-### 5.19 Accounting
-
-| Ressource | Actions / rôles | Scope | Justification | Source | Statut fonctionnel / technique |
-| --- | --- | --- | --- | --- | --- |
-| `ecritures`, `journaux`, `plan_comptable` | Accès complet DIR : toutes les actions applicables, notamment consultation, création, modification, validation, contrepassation et suppression lorsqu'elle est permise ; droits CPT conservés | global DIR / global CPT | Comptabilité générale | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; préserver piste d'audit et périodes comptables |
-| `periodes` | Accès complet DIR : consultation, création, modification, verrouillage, déverrouillage et clôture ; droits CPT conservés | global | Périodes comptables | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; déverrouillage et réouverture doivent être tracés |
-| `rapprochements_bancaires` | Accès complet DIR : toutes les actions applicables, y compris consultation, création, modification, validation et clôture ; droits CPT conservés | global | Rapprochements bancaires | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; conserver relevés, rapprochements, écarts et justificatifs |
-| `payments` (candidat Jira) / `paiements` (normalisation française à arbitrer) | DIR, SA : `approve` / refus selon workflow ; CPT : `prepare`, `execute` ; aucun préparateur ne peut autoriser son propre paiement ; DIR ne prépare ni n'exécute les paiements | global | Séparation obligatoire entre préparation, autorisation et exécution | 10300, 10303, arbitrage A.4.2 Groupe 2 | Accès DIR limité à l'autorisation/refus : exception maintenue malgré l'accès complet au domaine |
-| `tresorerie` | Accès complet DIR : toutes les actions applicables ; droits CPT conservés | global | Trésorerie | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; opérations et soldes historisés |
-| `declarations`, `clotures` | Accès complet DIR : toutes les actions applicables, y compris préparation, validation, soumission et clôture ; droits CPT conservés | global | Déclarations et clôtures comptables | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; respecter échéances, validations et obligations légales |
-| `analytique` | Accès complet DIR : toutes les actions applicables ; droits CPT conservés | global | Comptabilité analytique | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé |
-| `revisions_budgetaires` | Accès complet DIR : toutes les actions applicables ; droits CPT conservés | global | Révisions budgétaires comptables | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; cohérence avec le domaine Budgets à normaliser |
-| `immobilisations`, `amortissements` | Accès complet DIR : toutes les actions applicables ; droits CPT conservés | global | Immobilisations et amortissements | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; préserver fiches, plans et historiques d'amortissement |
-| `donnees_financieres` | Accès complet DIR : toutes les actions applicables, sous réserve des droits spécifiques des ressources sources | global | Données financières | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; ressource transverse à préciser sans contourner les contrôles des domaines sources |
-| `exports` | Accès complet DIR : toutes les actions applicables, y compris préparation, génération, consultation, téléchargement et export ; droits CPT conservés | global | Exports comptables et financiers | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; confidentialité, conservation et traçabilité obligatoires |
-| `relations_organismes` | Accès complet DIR : toutes les actions applicables ; droits CPT conservés | global | Relations avec organismes | 10300, arbitrage A.4.2 Groupe 2 | Accès complet DIR confirmé ; conserver échanges et justificatifs |
-
 ## 6. Matrice rôles × permissions
 
 Cette matrice synthétise les droits des huit rôles. Pour DIR, la règle générale validée est l'attribution de toutes les permissions fonctionnelles du catalogue, présentes et futures, avec scope global société. Les cellules DIR détaillent les exceptions et workflows particuliers ; elles ne constituent pas une liste limitative. Les seules exclusions sont l'administration des habilitations techniques, les documents médicaux couverts par le secret médical, la préparation et l'exécution des paiements, les auto-approbations interdites et les restrictions légales de conservation, confidentialité et audit.
@@ -670,7 +645,6 @@ Cette matrice synthétise les droits des huit rôles. Pour DIR, la règle géné
 | Documents | droits métier globaux | accès complet global à toutes les ressources et actions applicables : consultation, création, modification, suppression, téléchargement, signature, diffusion et export, sous réserve des restrictions légales, de confidentialité et de conservation | documents admin | documents chantier | documents, diffusion | documents atelier | documents personnels | lecture |
 | Handover | droits métier globaux | accès complet global à toutes les ressources et actions applicables, y compris consultation, création, modification, validation, approbation et clôture des réceptions, réserves, levées de réserves, DOE, garanties et dossiers de clôture | — | réceptions | réserves | DOE et clôtures | — | — |
 | Reporting | droits métier globaux | accès complet global DIR à toutes les ressources et actions applicables : rapports, indicateurs, tableaux de bord, tableaux de bord stratégiques, snapshots et exports | rapports | rapports | rapports quotidiens | reporting production | snapshots | exports |
-| Accounting | droits métier globaux | accès complet global DIR à toutes les ressources et actions applicables du §5.19, à l’exception des paiements : DIR/SA autorisent ou refusent, CPT prépare et exécute ; validation finale de paie selon règles RH | comptabilité générale | trésorerie | déclarations et clôtures | analytique | immobilisations | paiements soumis à séparation des tâches |
 
 ## 7. Matrice des restrictions et interdictions
 
@@ -790,12 +764,12 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | M-15 | Validation des dépassements d’heures supplémentaires | `validate_excess` est prévu mais le rôle compétent n’est pas défini | Désigner le rôle habilité et les règles de validation complémentaire | Permission et workflow | Direction / métier |
 | M-16 | Sémantique de `suspend` et `delete` des délégations financières | Seuls DIR et SA administrent les délégations ; l’effet exact de `suspend` et `delete` n’est pas défini | Préciser suspension temporaire, révocation et conservation de l’historique | Permissions et audit | Direction |
 | M-17 | Documents hors Salarié | SAL dispose de `download` et `sign` sur ses documents ; les autres attributions ne sont pas définies | Identifier les rôles autorisés à télécharger ou signer d’autres documents | Permissions documentaires | Direction / métier |
-| A-01 | Namespace `accounting` | Domaine Accounting distinct conservé comme domaine fonctionnel du catalogue ; il ne crée pas un doublon des ressources Clients | Les ressources de comptabilité générale, trésorerie, déclarations/clôtures, analytique, immobilisations et paiements restent dans Accounting ; les factures, avoirs, relances, échéanciers, litiges et règlements clients restent propriétaires du domaine Clients. Les écritures comptables liées à ces pièces restent dans Accounting. | Convention de domaine | Décision d'architecture retenue ; mapping détaillé à vérifier au moment du catalogue technique |
-| A-02 | Facturation clients | Propriétaire métier des pièces de facturation client : domaine Clients ; propriétaire des écritures et traitements comptables : Accounting | Ne pas créer une seconde ressource de facture client dans Accounting. Référencer la pièce Clients depuis les écritures/objets comptables par identifiant et relation. | Catalogue | Décision d'architecture retenue ; intégration comptable externe reste A-14 |
+| | A-01 | Namespace comptable | Aucun namespace comptable dans le logiciel | Le domaine comptable est exclu du périmètre applicatif ; ne créer aucune ressource ni permission comptable. | Périmètre produit | Décision confirmée le 24/11/2026 ||
+| | A-02 | Frontière facturation / comptabilité | Les pièces opérationnelles restent dans leurs domaines métier ; aucune écriture comptable n'est gérée dans le logiciel | Ne pas ajouter de module ni de permissions comptables. | Périmètre produit | Décision confirmée le 24/11/2026 ||
 | A-03 | Slug TimeTracking | `timetracking` est le slug canonique | Conserver `timetracking` en un seul mot dans les domaines, ressources et permissions. `time_tracking` est un alias interdit dans le catalogue canonique ; toute occurrence existante devra être migrée avant gel. | Codes | Normalisé ; occurrence dans le dépôt à vérifier avant implémentation |
 | A-04 | Singulier/pluriel et libellés de ressources | Les slugs de collections sont au pluriel ; les ressources singleton sont au singulier | Utiliser des slugs techniques anglais cohérents et stables, sans accents ni libellés français dans les identifiants. Les noms français restent dans les libellés/documentation. Une ressource métier ne reçoit qu'un seul slug canonique ; les synonymes sont documentés comme libellés, jamais comme permissions alternatives. | Codes | Convention normalisée ; mapping complet au catalogue technique |
 | A-05 | Ressource Budget | `budgets` est le slug canonique de la collection et de la ressource métier Budgets | Ne pas créer un slug `budget` concurrent. Les éléments unitaires (lignes, révisions, contingences) conservent leurs propres ressources explicites : `lignes_budgetaires`, `revisions_budgetaires`, `contingences`. | Codes | Normalisé ; vérifier les références du dépôt avant implémentation |
-| A-06 | Factures clients | `factures_clients` est le slug canonique de la ressource facture client dans le domaine Clients | Écarter `factures` comme alias de permission. Le domaine Accounting référence les factures clients sans redéfinir la ressource métier. Les noms de permissions canoniques suivent `clients.factures_clients.action` selon la convention domaine.ressource.action. | Codes | Normalisé ; mapping propriétaire Clients / écritures Accounting confirmé |
+| A-06 | Factures clients | `factures_clients` est le slug canonique de la ressource facture client dans le domaine Clients | Écarter `factures` comme alias de permission. Le domaine comptabilité (hors périmètre) référence les factures clients sans redéfinir la ressource métier. Les noms de permissions canoniques suivent `clients.factures_clients.action` selon la convention domaine.ressource.action. | Codes | Normalisé ; mapping propriétaire Clients / écritures comptabilité (hors périmètre) confirmé |
 | A-07 | Registre d’actions | Registre atomique canonique étendu et stabilisé | Actions canoniques : `view`, `create`, `update`, `delete`, `submit`, `validate`, `approve`, `issue`, `prepare`, `execute`, `export`, `reverse`, `reconcile`, `lock`, `unlock`, `reopen`, `close`, `download`, `acknowledge`, `sign`, `assign`, `access`, `deactivate`, `archive`, `revoke`, `send`, `adjust`, `arbitrate`, `review`, `control`, `declare`, `process`, `request_update`, `supervise`, `validate_excess`, `suspend`, `authorize`, `merge`, `convert`, `qualify`, `track`. Actions distinctes : `approve` = décision d'approbation ; `arbitrate` = décision d'arbitrage ; `authorize` = autorisation explicite d'une opération ; `issue` = émission/édition officielle ; `send` = transmission ; `archive` = archivage réversible ou logique ; `delete` = suppression réellement permise ; `deactivate` = désactivation ; `revoke` = retrait/révocation ; `suspend` = suspension temporaire ; `review` = revue ; `control` = contrôle ; `process` = traitement ; `supervise` = supervision ; `adjust` = ajustement ; `reverse` = contrepassation/annulation compensatrice ; `reopen` = réouverture ; `validate_excess` = validation d'un dépassement. N'utiliser une action que si le workflow et la ressource la justifient. | Registre commun | Actions normalisées ; chaque usage doit être relié à une ressource et un workflow ; aucun alias implicite |
 | A-08 | Source de vérité du catalogue | Source de vérité technique : `app/Domains/Identity/Catalog/` ; `PermissionCatalog` et `RoleCatalog` constituent les définitions canoniques | Les seeders consomment ces catalogues ; la matrice Markdown documente les décisions et doit rester synchronisée. Les permissions sont construites sous forme `domaine.ressource.action`. | Architecture Identity | Décision d'architecture retenue ; à implémenter dans CHAN-40 |
 | A-09 | Versionnement | Slugs de permissions immuables ; version du catalogue distincte des identifiants | Ne jamais inclure un numéro de version dans un slug de permission. Toute modification de sens ou renommage passe par une migration explicite avec période de compatibilité si nécessaire, mise à jour des attributions et tests ; les permissions obsolètes sont dépréciées puis retirées de façon contrôlée. Porter une constante `CATALOG_VERSION` dans le catalogue et incrémenter selon les changements structurels/compatibilité. | Maintenance | Décision d'architecture retenue ; stratégie à implémenter et tester |
@@ -832,7 +806,7 @@ Cette règle s'applique aux actions de consultation, création, modification, su
 
 Les décisions ci-dessous fixent les conventions techniques nécessaires au gel du catalogue. Elles ne changent pas les attributions métier des rôles, à l'exception de l'application systématique de la règle globale DIR déjà arbitrée.
 
-1. **Domaines.** `accounting` reste un domaine fonctionnel distinct. Les pièces de facturation client restent propriétaires de Clients ; Accounting porte les écritures et traitements comptables et référence les pièces Clients sans dupliquer leur ressource.
+1. **Domaines.**  reste un domaine fonctionnel distinct. Les pièces de facturation client restent propriétaires de Clients ; comptabilité (hors périmètre) porte les écritures et traitements comptables et référence les pièces Clients sans dupliquer leur ressource.
 2. **Facturation client.** `factures_clients` est le slug canonique dans Clients ; `factures` n'est pas un alias de permission.
 3. **TimeTracking.** `timetracking` est le slug canonique ; `time_tracking` est écarté.
 4. **Noms de ressources.** Les collections utilisent le pluriel ; les ressources singleton le singulier. Les slugs sont anglais, stables, sans accents ; les libellés français restent des labels.
@@ -875,7 +849,6 @@ Ces choix sont désormais les conventions de référence pour le catalogue CHAN-
 | Documents | Accès complet DIR à toutes les ressources et actions applicables, y compris téléchargement, signature, diffusion et export, sous réserve des restrictions légales | Qualifier les catégories et champs sensibles (M-17) et normaliser les actions | Conservation, confidentialité, protection des données et restrictions légales maintenues ; M-05 levé uniquement pour Reporting |
 | Handover | Accès complet DIR confirmé sur toutes les ressources et actions applicables du §5.17 | Préserver l'historique des validations, réceptions, réserves, levées, DOE, garanties et clôtures | Réception contractuelle Projects distincte ; preuves et signatures conservées |
 | Reporting | Accès complet DIR à toutes les ressources et actions applicables du §5.18, exports compris | Préserver les sources, définitions, périodes, horodatages et intégrité des snapshots | M-05 levé pour les exports Reporting ; les autres points M-11 non couverts restent ouverts |
-| Accounting | Accès complet DIR à toutes les ressources et actions applicables du §5.19, à l'exception de la préparation et de l'exécution des paiements | DIR/SA autorisent ou refusent ; CPT prépare et exécute ; normalisation technique comptable à traiter séparément | Séparation des tâches et piste d'audit maintenues ; A-01 porte uniquement sur le découpage/namespace technique |
 
 ### Décisions à obtenir en séance métier
 
@@ -1027,13 +1000,13 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 - Les droits existants de RA, CT, CC et CPT sont conservés ; les responsabilités opérationnelles ne leur sont pas retirées.
 - Cette décision concerne uniquement Inventory (§5.11) et ne crée aucun droit supplémentaire dans Equipment, Logistics, Quality ou Safety.
 
-### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Accounting / Comptabilité
+### A.4.2 — Registre des arbitrages DIR, Groupe 2 — comptabilité (hors périmètre) / Comptabilité
 
-**Décision métier reçue le 24/11/2026.** DIR bénéficie d’un accès complet à toutes les ressources et actions applicables du domaine Accounting (§5.19), sous réserve de l’exception impérative du workflow des paiements.
+**Décision métier reçue le 24/11/2026.** DIR bénéficie d’un accès complet à toutes les ressources et actions applicables du domaine comptabilité (hors périmètre) (§5.19), sous réserve de l’exception impérative du workflow des paiements.
 
 | Domaine / ressource | Décision DIR | Actions / portée | Scope métier | Statut / réserve |
 | --- | --- | --- | --- | --- |
-| Accounting / toutes les ressources du §5.19 | Accès complet DIR | Toutes les actions applicables sur écritures, journaux, plan comptable, périodes, rapprochements, trésorerie, déclarations, clôtures, analytique, révisions budgétaires, immobilisations, amortissements, données financières, exports et relations organismes | Global pour DIR | Décision confirmée |
+| comptabilité (hors périmètre) / toutes les ressources du §5.19 | Accès complet DIR | Toutes les actions applicables sur écritures, journaux, plan comptable, périodes, rapprochements, trésorerie, déclarations, clôtures, analytique, révisions budgétaires, immobilisations, amortissements, données financières, exports et relations organismes | Global pour DIR | Décision confirmée |
 | Paiements | Autorisation ou refus uniquement | DIR/SA autorisent ou refusent ; CPT prépare et exécute ; interdiction pour le préparateur d’autoriser son propre paiement | Global | Exception de séparation des tâches maintenue ; aucun droit DIR de préparation ou d’exécution |
 
 **Garde-fous et limites.**
@@ -1043,7 +1016,7 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 - Les opérations de trésorerie et rapprochements bancaires doivent conserver les relevés, justificatifs, écarts et décisions.
 - L’accès complet DIR n’autorise pas la préparation ni l’exécution des paiements ; CPT conserve ces fonctions et la séparation préparateur/autorisateur.
 - Les droits CPT existants sont conservés. Les droits de validation finale de paie déjà définis dans RH ne sont pas déplacés ni remplacés par cette décision.
-- A-01 reste ouvert pour déterminer le découpage technique et le namespace du domaine Accounting ; cette question ne suspend pas l’arbitrage métier des droits DIR.
+- A-01 reste ouvert pour déterminer le découpage technique et le namespace du domaine comptabilité (hors périmètre) ; cette question ne suspend pas l’arbitrage métier des droits DIR.
 
 ### A.4.2 — Registre des arbitrages DIR, Groupe 2 — Reporting
 
@@ -1437,3 +1410,8 @@ Cette décision porte sur les devis commerciaux. Elle ne modifie pas la règle d
 | --- | --- | --- | --- | --- |
 | Documents clients / `documents`, `versions`, `dossiers_documentaires` | Accès complet DIR aux dossiers administratifs clients et pièces associées | Toutes les actions applicables, notamment `view`, `create`, `update`, `validate`, `download`, `archive` ; `delete` si disponible et légalement autorisée | global pour DIR dans le périmètre documentaire | Décision validée ; restrictions légales, conservation, traçabilité et M-17 maintenus |
 
+
+
+## Décision de périmètre — exclusion de la comptabilité (24/11/2026)
+
+Le logiciel Chantier ne comporte aucun module comptable. Le domaine D19 Accounting est supprimé du catalogue fonctionnel et de la matrice RBAC. Aucun rôle « Comptabilité » ni permission comptable ne doit être créé. Les fonctions opérationnelles Clients, Procurement, Budgets, Costing et Workforce restent limitées à leurs workflows de gestion et ne doivent pas implémenter d'écritures ou de traitements comptables.
