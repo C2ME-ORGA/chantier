@@ -1,15 +1,15 @@
 <?php
 
-use App\\Models\\User;
-use Database\\Seeders\\RbacCatalogSeeder;
-use Filament\\Auth\\Notifications\\ResetPassword as ResetPasswordNotification;
-use Filament\\Auth\\Pages\\PasswordReset\\RequestPasswordReset;
-use Filament\\Auth\\Pages\\PasswordReset\\ResetPassword;
-use Filament\\Facades\\Filament;
-use Illuminate\\Support\\Facades\\Hash;
-use Illuminate\\Support\\Facades\\Notification;
-use Illuminate\\Support\\Facades\\Password;
-use Livewire\\Livewire;
+use App\Models\User;
+use Database\Seeders\RbacCatalogSeeder;
+use Filament\Auth\Notifications\ResetPassword as ResetPasswordNotification;
+use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
+use Filament\Auth\Pages\PasswordReset\ResetPassword;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
+use Livewire\Livewire;
 
 beforeEach(function () {
     $this->seed(RbacCatalogSeeder::class);
