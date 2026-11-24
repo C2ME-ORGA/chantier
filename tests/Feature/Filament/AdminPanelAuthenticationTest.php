@@ -3,6 +3,7 @@
 use App\Models\User;
 use Database\Seeders\RbacCatalogSeeder;
 use Filament\Auth\Notifications\ResetPassword as ResetPasswordNotification;
+use Filament\Auth\Pages\Login;
 use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
 use Filament\Auth\Pages\PasswordReset\ResetPassword;
 use Filament\Facades\Filament;
@@ -87,7 +88,7 @@ test('renouvelle l’identifiant de session après une connexion réussie', func
     $user->assignRole('ADM');
     $sessionId = session()->getId();
 
-    Livewire::test(\\Filament\\Auth\\Pages\\Login::class)
+    Livewire::test(Login::class)
         ->fillForm([
             'email' => $user->email,
             'password' => 'password',
@@ -103,7 +104,7 @@ test('limite les tentatives de connexion après cinq échecs', function () {
     $user = User::factory()->create();
     $user->assignRole('ADM');
 
-    $component = Livewire::test(\\Filament\\Auth\\Pages\\Login::class)
+    $component = Livewire::test(Login::class)
         ->fillForm([
             'email' => $user->email,
             'password' => 'incorrect-password',
@@ -123,7 +124,7 @@ test('limite les tentatives de connexion après cinq échecs', function () {
 test('refuse la connexion d’un utilisateur sans permission d’accès au panel', function () {
     $user = User::factory()->create();
 
-    Livewire::test(\\Filament\\Auth\\Pages\\Login::class)
+    Livewire::test(Login::class)
         ->fillForm([
             'email' => $user->email,
             'password' => 'password',
