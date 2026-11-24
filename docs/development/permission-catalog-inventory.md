@@ -353,10 +353,10 @@ La revue porte sur les 18 domaines fonctionnels inventoriés dans les lots 1 à 
 
 | Objets ou fonctions proches | Décision de revue | Conséquence pour le catalogue |
 | --- | --- | --- |
-| Clients / comptabilité (hors périmètre) — factures, avoirs, relances, échéanciers, litiges, règlements | Propriétaire métier unique : Clients. comptabilité (hors périmètre) porte les écritures et traitements comptables associés. | Conserver les permissions de pièces client dans `clients`; ne pas recréer ces ressources dans . |
-| Budgets / comptabilité (hors périmètre) — révisions budgétaires | Budgets reste propriétaire des budgets et de leurs révisions. Aucun traitement comptable n'est géré dans le logiciel. | Aucune permission comptable à créer ; les révisions restent exclusivement dans Budgets. |
-| Costing / comptabilité (hors périmètre) — analytique | Costing conserve chiffrages, coûts, écarts, marges, provisions et périodes analytiques comme outils de gestion opérationnelle, sans écritures comptables. | Aucune permission comptable à créer ; les objets de gestion restent exclusivement dans Costing. |
-| Documents / Reporting / comptabilité (hors périmètre) — exports | Pas de fusion automatique : l'export documentaire, le rendu d'un rapport et l'extraction comptable peuvent être des workflows distincts. | Garder les ressources candidates en attente ; identifier données sources, format, acteurs et finalité avant de décider de fusionner ou séparer. |
+| Clients / facturation client | Propriétaire métier unique : Clients ; les pièces et leur suivi restent dans ce domaine, sans écriture comptable associée. | Conserver les permissions dans `clients`; ne créer aucune ressource comptable. |
+| Budgets / révisions budgétaires | Budgets reste propriétaire des budgets et de leurs révisions ; aucun traitement comptable n'est géré. | Aucune permission comptable ; les révisions restent exclusivement dans Budgets. |
+| Costing / données analytiques de gestion | Costing conserve chiffrages, coûts, écarts, marges, provisions et périodes analytiques comme outils de gestion opérationnelle, sans écritures comptables. | Aucune permission comptable ; les objets de gestion restent exclusivement dans Costing. |
+| Documents / Reporting / exports | Distinguer export documentaire et rendu de rapport selon les workflows et données sources ; aucune extraction comptable n'est prévue. | Garder les ressources candidates en attente jusqu'à qualification des données sources, formats, acteurs et finalités. |
 | Quality / Safety — signalements | La matrice attribue des signalements à chaque domaine et distingue les circuits qualité/sécurité. La ressemblance du nom ne suffit pas à conclure à un doublon. | Conserver deux candidats distincts jusqu'à confirmation du modèle : `quality.signalements` et `safety.signalements`. |
 | Logistics / Handover — réceptions | La réception logistique sur chantier et la réception contractuelle/finale n'ont pas la même finalité. Projects possède également `receptions` contractuelles. | Trois objets candidats distincts à confirmer par modèle : `logistics.receptions_chantier`, `projects.receptions`, `handover.dossiers_reception`. Ne pas fusionner par homonymie. |
 | Workforce / Safety — qualifications et habilitations | Workforce porte les qualifications/formations RH ; Safety porte les habilitations et autorisations de sécurité si elles ont un cycle réglementaire propre. | Référencer les justificatifs et statuts communs ; ne pas dupliquer une même entité sans distinction de cycle de vie. |
@@ -401,7 +401,7 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 | Identity `financial_delegations` | DIR exclu de l'administration des habilitations ; SA administre | Déterminer si cette ressource est une délégation financière métier ou un paramètre d'accès Identity ; déplacer vers le domaine financier si nécessaire |
 | Costing `marges` | Statut source « proposé » | Exclure du catalogue initial tant que la ressource n'est pas confirmée |
 | Projects `lots_phases` | A-17 ouvert | Modèle de rattachement affaire/chantier à trancher avant permissions et scopes |
-| Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting, comptabilité (hors périmètre) | Plusieurs lignes « à décomposer » | Reprendre les opérations du code/métier et finaliser chaque action réelle |
+| Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting | Plusieurs lignes « à décomposer » | Reprendre les opérations métier et finaliser chaque action réelle |
 | M-17 | Ouvert | Définir catégories/champs sensibles et droits download/sign/export par catégorie |
 | M-01 à M-16 | Paramètres/workflows résiduels documentés dans la matrice | Résoudre ceux qui conditionnent les permissions concernées ; ne pas bloquer les permissions indépendantes |
 | Matrice des 8 rôles | Synthèse existante, associations atomiques non générées | Décliner chaque ligne de ressource/action vers SA, DIR, ADM, CT, CC, RA, SAL, GAF |
@@ -496,7 +496,7 @@ M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent 
 4. Attribution explicite aux huit rôles, sans héritage implicite.
 5. Application explicite de la règle DIR et de ses exceptions.
 6. Scopes opérationnels documentés pour CHAN-42, hors slug.
-7. Absence de doublons entre domaines (notamment Clients/comptabilité (hors périmètre) et Budgets/comptabilité (hors périmètre)).
+7. Absence de doublons entre domaines propriétaires des pièces et workflows opérationnels.
 8. Validation des ressources proposées ou exclusion explicite du catalogue initial.
 
 
