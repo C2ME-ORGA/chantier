@@ -1441,3 +1441,45 @@ Cette section fait foi pour la lecture de l'état documentaire après les lots 1
 6. **Implémentation :** seulement après gel : `PermissionCatalog`, `RoleCatalog`, seeders idempotents, synchronisation contrôlée, contrôle Filament et tests CHAN-40/CHAN-46 selon leur périmètre.
 
 **État à la fin de cette phase :** référentiel documentaire consolidé, mais catalogue non gelé et CHAN-40 non livré. Aucun code, migration, seeder, test ni statut Jira n'est modifié par la phase de finalisation documentaire.
+
+## 18. M-17 — arbitrage documentaire final (24/11/2026)
+
+**Statut : arbitrage fonctionnel des catégories et des opérations clôturé.** Cet arbitrage remplace les mentions historiques indiquant que M-17 reste ouvert ou à arbitrer pour la matrice des catégories documentaires. Il ne vaut pas gel global du catalogue RBAC.
+
+### 18.1 Règle générale retenue
+
+Pour chacune des dix catégories DOC-01 à DOC-10, les droits existants sont conservés sans extension ni réduction automatique pour chacune des opérations `view`, `download`, `sign` et `export`. Aucune nouvelle attribution à un rôle n'est déduite de cet arbitrage : les associations existantes et leurs scopes restent la référence. Lorsqu'une attribution atomique existante n'est pas explicitée dans les documents sources, elle reste à vérifier lors de la consolidation de la matrice rôle × permission ; elle n'est pas inventée ici.
+
+| Code | Catégorie | Périmètre documentaire |
+| --- | --- | --- |
+| DOC-01 | Administratif entreprise | Kbis, attestations d'assurance, fiscales et sociales, documents de l'entreprise, administrations et organismes |
+| DOC-02 | Clients | Contrats, devis, commandes, correspondances et factures |
+| DOC-03 | Affaires et chantiers | Plans, études, notes de calcul, DOE et comptes rendus |
+| DOC-04 | Atelier et fabrication | Plans de fabrication, nomenclatures et listes de débit |
+| DOC-05 | Ressources humaines | Contrats, avenants et dossiers salariés |
+| DOC-06 | Paie et rémunération | Bulletins, variables de paie, rémunérations et DSN |
+| DOC-07 | Médical | Visites, avis, justificatifs et données médicales détaillées |
+| DOC-08 | Banque et finance | RIB, coordonnées bancaires, financements et relevés |
+| DOC-09 | Sécurité et prévention | Plans de prévention, autorisations, formations et documents de sécurité |
+| DOC-10 | Juridique et contentieux | Procédures, mises en demeure, litiges et documents d'avocats |
+
+### 18.2 Décision par opération
+
+| Opération | Décision applicable aux DOC-01 à DOC-10 |
+| --- | --- |
+| `view` | Conservation stricte des droits existants et de leurs scopes |
+| `download` | Conservation stricte des droits existants et de leurs scopes |
+| `sign` | Conservation stricte des droits existants ; signature uniquement dans le cadre d'une délégation valable, avec identité et preuve |
+| `export` | Conservation stricte des droits existants ; mêmes restrictions de confidentialité et de périmètre que pour les données/documents sources |
+
+### 18.3 Exceptions et garde-fous impératifs
+
+- Les droits SAL sur ses propres documents restent limités aux droits déjà prévus, notamment `download` et `sign` own lorsqu'ils s'appliquent.
+- Le secret médical et la confidentialité des données de santé prévalent sur les droits généraux, y compris ceux de DIR. Aucun accès aux documents médicaux détaillés n'est accordé par la seule règle d'accès global.
+- Les documents RH, de paie/rémunération, bancaires/financiers et juridiques/contentieux restent soumis à leurs restrictions légales et de confidentialité existantes.
+- Les exports héritent des restrictions de la source ; l'export ne permet pas de contourner un scope ou une restriction d'accès.
+- La signature suppose une délégation applicable, l'identification du signataire et la conservation de la preuve.
+- Les obligations de conservation, l'intégrité des versions et la traçabilité demeurent applicables ; aucune permission ne permet de détruire une pièce ou une preuve dont la conservation est obligatoire.
+- Les règles de séparation des tâches et l'interdiction d'auto-approbation restent applicables.
+
+**Conclusion :** M-17 est clôturé pour la classification DOC-01 à DOC-10 et pour les opérations `view`, `download`, `sign`, `export`, sur la base du maintien des droits existants. La consolidation technique des associations atomiques et scopes déjà existants reste distincte et ne constitue pas une réouverture de cet arbitrage.
