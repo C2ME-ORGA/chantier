@@ -145,32 +145,23 @@ Divergences entre documentation et code :
 
 ### 3.2 Direction
 
-**Finalité.** Piloter l’entreprise et exercer les décisions opérationnelles, stratégiques et financières relevant de la Direction.
+**Finalité.** Piloter l’entreprise et exercer l’ensemble des décisions opérationnelles, stratégiques, administratives et financières relevant de la Direction.
 
-**Périmètre.** Tous les modules métier et toutes les données métier sont dans le champ de responsabilité de la Direction. Les capacités effectives de consultation, création, modification et validation sont toutefois définies ressource par ressource et selon les workflows du catalogue §5 ; la portée transversale ne vaut pas attribution automatique de toutes ces actions. La matrice §6 synthétise exclusivement les permissions explicites du §5. Les droits validés mais non encore traduits sont recensés dans A-16, sans extension implicite du catalogue. La gestion des habilitations techniques reste exclue.
+**Périmètre et règle d’attribution.** DIR dispose par défaut de toutes les permissions fonctionnelles existantes dans le catalogue RBAC, sur l’ensemble des modules, ressources et données métier de l’application, avec un scope global société. Cela comprend toutes les actions atomiques applicables à chaque ressource (consultation, création, modification, suppression lorsqu'elle existe, affectation, soumission, validation, approbation, arbitrage, export, clôture et toute action métier spécifique). Toute permission ou ressource fonctionnelle ajoutée ultérieurement au catalogue est accordée à DIR sans nouvel arbitrage individuel, sauf exception expressément identifiée ci-dessous. Cette règle remplace les validations ressource par ressource précédemment demandées pour DIR.
 
-**Consultation.** Consultation transversale des données métier nécessaires à ses fonctions, sous réserve des permissions explicites du catalogue §5 et des Policies applicables. Pour les données RH sensibles, accès limité aux informations légalement accessibles et nécessaires. Pour les données médicales, aucun accès aux documents détenus dans l’espace confidentiel des professionnels de santé.
+**Administration des habilitations.** Le plein accès fonctionnel ne confère pas l’administration technique des identités et habilitations : DIR ne gère pas les utilisateurs, rôles, permissions, affectations de rôles ni paramètres d’accès. L’accès au panel Filament ne donne pas, à lui seul, de droits d’administration des habilitations.
 
-**Création et modification.** Ces capacités sont attribuées uniquement lorsqu’une action correspondante est explicitement prévue pour DIR dans la ligne de ressource concernée au §5 et par le workflow applicable. Une capacité de consultation transversale ne confère pas, à elle seule, un droit de création ou de modification. Les droits sur les données RH sensibles restent strictement différenciés.
+**Données RH et médicales.** DIR dispose des permissions fonctionnelles sur les données RH, y compris les données sensibles métier, dans les limites légales. Les documents médicaux détaillés détenus dans l’espace confidentiel des professionnels de santé et les informations couvertes par le secret médical restent exclus. Les informations médicales légalement accessibles et strictement nécessaires peuvent être consultées dans les limites applicables.
 
-**Suppression.** Aucune suppression universelle implicite. La suppression reste définie ressource par ressource, lorsqu’une décision métier l’autorise.
+**Paiements et séparation des tâches.** DIR peut autoriser ou refuser les paiements préparés par CPT, mais ne les prépare pas et ne les exécute pas. Le préparateur ne peut pas autoriser son propre paiement. DIR conserve la validation finale de la paie. Toute séparation des tâches obligatoire dans un workflow demeure applicable : le plein accès ne permet pas l'auto-approbation interdite ni le contournement d'un contrôle réglementaire.
 
-**Validation / approbation.**
+**Engagements financiers.** Les règles d'approbation des engagements restent applicables, notamment l'approbation préalable par DIR ou SA au-delà de 100 000 € HT cumulés pour une même opération, commandes et avenants agrégés, sans possibilité de fractionnement. Les délégations et workflows associés ne sont pas supprimés par la règle d'accès intégral.
 
-- Peut autoriser les paiements préparés par Comptabilité et valider définitivement la paie.
-- Peut approuver les engagements financiers selon le seuil et les délégations paramétrées.
-- Au-delà de 100 000 € HT cumulés pour une même opération, validation préalable de DIR ou SA obligatoire.
-- Pas de motif obligatoire pour ses approbations, mais auteur, date, décision, montant et objet sont historisés.
-- Les validations opérationnelles attribuées à CT, CC ou RA ne lui sont pas transférées implicitement : chaque workflow conserve ses responsabilités dédiées.
+**Traçabilité et conservation.** Toutes les actions sensibles de DIR sont historisées. Les obligations légales de conservation, l'intégrité des preuves, l'immuabilité des journaux d'audit et les restrictions légales demeurent applicables. Une permission de suppression n'autorise jamais la destruction d'une pièce ou d'une preuve dont la conservation est obligatoire.
 
-**Restrictions.**
+**Policies et périmètre technique.** Le scope fonctionnel de DIR est global société. Les Policies CHAN-42 continuent d'appliquer les restrictions légales, de confidentialité et de sécurité ; elles ne doivent pas réintroduire de limitation métier par chantier pour DIR en dehors de ces restrictions.
 
-- Aucun droit de création, modification, attribution ou suppression des utilisateurs, rôles, permissions ou paramètres d’habilitation.
-- Aucun contournement des workflows de séparation des tâches ou des Policies CHAN-42.
-- Respect du secret médical et des restrictions légales applicables.
-- Interdiction d’autoriser son propre paiement ou de s’auto-approuver lorsque le workflow impose un tiers.
-
-**Limites de périmètre.** Société entière pour les données et opérations métier, dans les limites légales, des workflows et des restrictions de confidentialité.
+**Lots et phases.** La règle générale d'accès intégral s'applique également aux ressources métier de lots et phases dès leur intégration au catalogue. A-17 reste ouvert uniquement pour fixer leur modèle de rattachement et leur modélisation technique, pas pour demander un nouvel arbitrage sur le principe des droits DIR.
 
 ### 3.3 Administratif
 
@@ -420,12 +411,12 @@ Points à vérifier :
 
 Les tableaux indiquent les actions et les rôles. Chaque action listée forme une permission atomique `{domain}.{resource}.{action}`. Les ressources non listées ne reçoivent aucune permission par défaut. La dernière colonne sépare le statut fonctionnel et le statut technique ; une décision métier validée ne signifie pas que le code est normalisé ou implémenté.
 
-Deux rôles ont une portée fonctionnelle globale décidée par 10303. Ces règles ne sont pas répétées sur chaque ligne métier :
+Deux rôles disposent d'une portée fonctionnelle globale, avec des réserves distinctes :
 
-- **SA** : droit métier et administratif global sur les modules et données métier, sous réserve de l’exception médicale et des Policies CHAN-42. Les permissions SA listées dans les tableaux sont celles qui nécessitent une précision.
-- **DIR** : responsabilité métier transversale sur les modules et les données nécessaires au pilotage. Elle ne crée pas automatiquement de CRUDV générique : les accès complets accordés par arbitrage explicite sont détaillés ressource par ressource au §5 (notamment Costing, Workforce, TimeTracking, Workshop, Procurement, Inventory, Equipment, Logistics et Quality). Les autres actions DIR effectivement inscrites au §5 sont les seules permissions explicites ; toute capacité non traduite est suivie en A-16 et toute capacité dont l’existence ou l’étendue n’est pas suffisamment établie reste à arbitrer. Les approbations financières, paiements, paie, données médicales et reporting stratégique conservent leurs règles spécifiques.
+- **SA** : droit métier et administratif global sur les modules et données métier, sous réserve de l’exception médicale et des Policies CHAN-42. Les permissions SA listées dans les tableaux précisent les workflows et actions dédiés.
+- **DIR** : toutes les permissions fonctionnelles présentes et futures du catalogue, sur tous les domaines et ressources métier, avec scope global société. Les lignes du §5 détaillent les autres rôles, les workflows et les exceptions ; elles ne limitent pas le principe d'accès intégral de DIR. Aucune validation individuelle supplémentaire n'est requise lorsqu'une nouvelle permission métier est ajoutée. Les seules exceptions sont l'administration des habilitations techniques, les documents médicaux couverts par le secret médical, les séparations de tâches obligatoires (notamment préparation/exécution des paiements), ainsi que les restrictions légales de conservation, confidentialité et audit.
 
-Les règles de portée globale sont fonctionnellement `Validé` et techniquement `À normaliser` pour SA. Pour DIR, le principe de responsabilité transversale est validé, mais les permissions restent celles explicitement définies au §5 ; les écarts non traduits ou à arbitrer sont suivis en A-16. Aucun de ces principes ne crée un droit d’administration des habilitations pour DIR ni un accès automatique aux documents médicaux détaillés pour SA.
+La règle DIR est fonctionnellement `Validé` et techniquement `À normaliser`. Le rôle DIR reçoit chaque permission fonctionnelle atomique du catalogue, y compris celles ajoutées ultérieurement, sans permission générique `manage` ni wildcard : les associations sont explicites dans le seeder. Cette règle ne donne pas à DIR l'administration des habilitations et ne supprime aucun contrôle légal ou workflow obligatoire.
 
 ### 5.1 Identity
 
@@ -655,7 +646,7 @@ Le code candidat `timetracking.timesheets.validate` désigne la validation des f
 
 ## 6. Matrice rôles × permissions
 
-Cette matrice est une synthèse du catalogue §5 et ne peut pas accorder de droit supplémentaire. Les cellules DIR reprennent uniquement les permissions explicites du §5. Lorsqu’un droit transversal DIR est validé fonctionnellement mais non encore traduit en permission, la cellule indique `transversal à normaliser` et le point A-16 est ouvert. Aucune cellule DIR n’implique `delete` universel, administration des habilitations ou accès médical illimité.
+Cette matrice synthétise les droits des huit rôles. Pour DIR, la règle générale validée est l'attribution de toutes les permissions fonctionnelles du catalogue, présentes et futures, avec scope global société. Les cellules DIR détaillent les exceptions et workflows particuliers ; elles ne constituent pas une liste limitative. Les seules exclusions sont l'administration des habilitations techniques, les documents médicaux couverts par le secret médical, la préparation et l'exécution des paiements, les auto-approbations interdites et les restrictions légales de conservation, confidentialité et audit.
 
 | Domaine | SA | DIR | ADM | CT | CC | RA | SAL | CPT |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -812,9 +803,28 @@ Les décisions fonctionnelles explicitement validées dans Jira 10297 à 10303 n
 | A-13 | Cache Spatie | Cache standard constaté | Documenter l’invalidation après synchronisation et opérations SQL directes | Exploitation | Développement |
 | A-14 | Intégration comptable externe | Périmètre non défini dans les commentaires disponibles | Déterminer l’interface et la frontière avec un logiciel/prestataire comptable | Architecture | Direction / architecture |
 | A-15 | Périmètre CHAN-45 et audit | CHAN-45 est mentionné dans la documentation du dépôt comme journalisation de sécurité ; le périmètre exact sur l’audit métier immuable n’est pas vérifié | Confirmer si CHAN-45 porte l’audit métier ou prévoir un lot dédié | Périmètre du stockage d’audit | Architecture / sécurité |
-| A-16 | Droits DIR validés à normaliser et synchroniser | La revue métier A.4.2 Groupes 1 à 4 couvre les 19 domaines du catalogue ; les décisions DIR confirmées sont consignées au §5 et dans les registres A.4.2. La synthèse §6 et le dossier historique A.4.1 sont synchronisés par le présent audit. | Finaliser la normalisation des actions et identifiants canoniques, vérifier les workflows et scopes dans les lots dédiés, puis intégrer uniquement les permissions suffisamment définies au catalogue CHAN-40. | Les droits DIR confirmés sur Clients, Projects, Planning, Budgets, Costing, Workforce, TimeTracking, Workshop, Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting et Accounting ne sont pas remis en arbitrage. Restent applicables : secret médical et restrictions légales, conservation, traçabilité, séparation des tâches, seuil de 100 000 € HT cumulé par opération pour les engagements d'achat/sous-traitance, absence de préparation/exécution des paiements par DIR et absence de droit sur lots/phases avant A-17. Les actions `arbitrate` restent à normaliser (A-07) ; M-17 reste ouvert pour les catégories documentaires sensibles ; A-01 reste ouvert sur l'architecture du domaine comptable. | Normaliser ressource par ressource ; conserver les points techniques ou workflows non résolus avec leur dépendance ; ne pas créer de permission par hypothèse. | Architecture / métier / Direction |
+| A-16 | Règle générale d'accès intégral DIR et normalisation | La Direction a confirmé le 24/11/2026 que DIR doit disposer de toutes les permissions fonctionnelles, présentes et futures, sur tous les modules et ressources métier, avec scope global société. Il n'est plus nécessaire de faire arbitrer les actions DIR une par une. | Appliquer automatiquement à DIR chaque permission atomique du catalogue, sans wildcard ni permission générique ; conserver uniquement les exceptions explicitement définies (administration des habilitations, secret médical, séparation des tâches de paiement et auto-approbation interdite, obligations légales de conservation/confidentialité/audit). | Les droits métier DIR ne sont plus à arbitrer ressource par ressource. A-16 est clos sur le plan fonctionnel ; restent la normalisation technique et la synchronisation des associations. A-07 (nomenclature `arbitrate`), A-01 (architecture du domaine comptable), M-17 (catégories/champs documentaires sensibles) et A-17 (modélisation des lots/phases) restent des dépendances techniques ou de conformité, sans remise en cause du principe général DIR. Le workflow de paiement conserve CPT en préparation/exécution et DIR/SA en autorisation/refus. | Normaliser le catalogue atomique, intégrer toutes les permissions au rôle DIR dans le seeder et vérifier les exceptions dans les tests CHAN-46 ; ne pas rouvrir un arbitrage métier par ressource. | Architecture / métier / Direction |
 | A-17 | Rattachement des lots et phases | `affaires` et `chantiers` disposent de scopes distincts (`assigned_projects` et `assigned_sites`) ; aucun élément validé ne permet d’attribuer un scope aux `lots_phases` | Confirmer si chaque lot/phase relève de l’affaire, du chantier ou d’une relation propre. Tant que ce rattachement n’est pas validé, conserver la ressource sans permission opérationnelle ni scope attribué ; ne pas déduire `assigned_projects`, `assigned_sites` ou `policy_defined` de l’ancien regroupement | §5.3 et §8 ; accès non attribué en attente d’arbitrage | Architecture / métier |
 
+
+### A.4.2 — Décision générale complémentaire DIR (24/11/2026)
+
+**Arbitrage métier définitif.** La Direction a confirmé que le rôle DIR dispose de toutes les permissions fonctionnelles du logiciel, sur tous les domaines et toutes les ressources métier, avec un scope global société. Toutes les actions atomiques existantes et futures sont accordées à DIR par défaut. Il n'est plus demandé de valider chaque ressource ou action individuellement.
+
+Cette règle s'applique aux actions de consultation, création, modification, suppression lorsqu'elle existe, affectation, fusion, conversion, qualification, suivi, soumission, émission, validation, approbation, arbitrage, export, téléchargement, signature, clôture, verrouillage, déverrouillage et à toute action métier spécifique effectivement présente dans le catalogue. Toute nouvelle permission fonctionnelle ajoutée au catalogue doit être associée à DIR sans nouvel arbitrage individuel.
+
+**Exceptions impératives et garde-fous conservés :**
+
+- DIR n'administre pas les utilisateurs, rôles, permissions, affectations de rôles ni paramètres d'habilitation.
+- Les documents médicaux détaillés relevant du secret médical et détenus par les professionnels de santé restent exclus.
+- DIR autorise ou refuse les paiements préparés par CPT ; DIR ne prépare ni n'exécute les paiements. Le préparateur ne peut pas autoriser son propre paiement.
+- Toute séparation des tâches obligatoire, interdiction d'auto-approbation, obligation légale de conservation, confidentialité, intégrité des preuves et protection des journaux d'audit demeure applicable.
+- Le seuil d'approbation de 100 000 € HT cumulés par opération et les workflows financiers existants sont maintenus.
+- Les Policies CHAN-42 continuent d'appliquer les restrictions légales et de sécurité ; elles ne doivent pas réduire le scope métier global de DIR sans fondement explicite dans ces exceptions.
+
+**Conséquences sur les points ouverts.** A-16 est clos sur l'arbitrage fonctionnel : seules restent la normalisation des permissions atomiques et la synchronisation des associations rôle/permission. A-07, A-01, M-17 et A-17 restent des dépendances de nomenclature, architecture, conformité ou modélisation ; elles ne nécessitent pas une nouvelle validation des droits DIR. Pour les lots/phases, l'accès intégral DIR s'appliquera dès que la ressource et son modèle de rattachement seront intégrés au catalogue.
+
+**Effet sur les décisions précédentes.** Cet arbitrage remplace toute formulation antérieure indiquant que DIR ne dispose que des actions explicitement listées ligne par ligne, qu'un CRUDV doit être validé ressource par ressource ou qu'une action supplémentaire doit être confirmée individuellement. Les exceptions expressément conservées ci-dessus prévalent.
 
 ## 11.1 Dossier d'arbitrage A.4.1 — couverture transversale de DIR
 
