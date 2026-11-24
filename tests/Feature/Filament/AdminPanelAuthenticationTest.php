@@ -7,6 +7,7 @@ use Filament\Auth\Pages\Login;
 use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
 use Filament\Auth\Pages\PasswordReset\ResetPassword;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
@@ -162,4 +163,91 @@ test('ne réinitialise pas le mot de passe d’un utilisateur sans accès au pan
 
     expect($user->fresh()->password)->toBe($originalPassword);
     $this->assertGuest();
+});
+
+
+test('refuse un jeton de réinitialisation expiré sans modifier le mot de passe', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+    $originalPassword = $user->password;
+    $token = Password::broker('users')->createToken($user);
+
+    DB::table('password_reset_tokens')
+        ->where('email', $user->email)
+        ->update(['created_at' => now()->subMinutes(config('auth.passwords.users.expire') + 1)]);
+
+    Livewire::test(ResetPassword::class, [
+        'email' => $user->email,
+        'token' => $token,
+    ])
+        ->set('password', 'NewSecurePassword123!')
+        ->set('passwordConfirmation', 'NewSecurePassword123!')
+        ->call('resetPassword');
+
+    expect($user->fresh()->password)->toBe($originalPassword);
+});
+
+test('refuse la réutilisation d’un jeton déjà consommé', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+    $token = Password::broker('users')->createToken($user);
+
+    Livewire::test(ResetPassword::class, [
+        'email' => $user->email,
+        'token' => $token,
+    ])
+        ->set('password', 'FirstNewPassword123!')
+        ->set('passwordConfirmation', 'FirstNewPassword123!')
+        ->call('resetPassword');
+
+    $passwordAfterFirstReset = $user->fresh()->password;
+
+    Livewire::test(ResetPassword::class, [
+        'email' => $user->email,
+        'token' => $token,
+    ])
+        ->set('password', 'SecondNewPassword123!')
+        ->set('passwordConfirmation', 'SecondNewPassword123!')
+        ->call('resetPassword');
+
+    expect($user->fresh()->password)->toBe($passwordAfterFirstReset)
+        ->and(Hash::check('FirstNewPassword123!', $user->fresh()->password))->toBeTrue()
+        ->and(Hash::check('SecondNewPassword123!', $user->fresh()->password))->toBeFalse();
+});
+
+test('permet une connexion Filament avec le nouveau mot de passe après réinitialisation', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+    $token = Password::broker('users')->createToken($user);
+
+    Livewire::test(ResetPassword::class, [
+        'email' => $user->email,
+        'token' => $token,
+    ])
+        ->set('password', 'NewSecurePassword123!')
+        ->set('passwordConfirmation', 'NewSecurePassword123!')
+        ->call('resetPassword');
+
+    auth('web')->logout();
+
+    Livewire::test(Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'NewSecurePassword123!',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $this->assertAuthenticatedAs($user, 'web');
+});
+
+test('retourne un résultat sans erreur de validation pour une adresse inconnue lors d’une demande de réinitialisation', function () {
+    Notification::fake();
+
+    Livewire::test(RequestPasswordReset::class)
+        ->fillForm(['email' => 'unknown-account@example.test'])
+        ->call('request')
+        ->assertHasNoFormErrors();
+
+    Notification::assertNothingSent();
 });
