@@ -47,7 +47,7 @@ test('authentifie un utilisateur via le formulaire de connexion Filament', funct
     $this->assertAuthenticatedAs($user);
 });
 
-test('autorise temporairement un utilisateur authentifié à accéder au panel', function () {
+test('autorise un utilisateur disposant de la permission d’accès au panel', function () {
     $user = User::factory()->create();
     $user->assignRole('ADM');
 
