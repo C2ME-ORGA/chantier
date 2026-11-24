@@ -93,10 +93,10 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `chiffrages` | `view`, `create`, `update`, `validate` | ADM/CT/RA/GAF : view ; CT/RA : create/update selon objet | Retenu |
 | `couts` | `view`, `create`, `update`, `validate` | ADM/CT/RA/GAF : view ; CT/RA : create/update selon objet | Retenu |
 | `ecarts` | `view`, `create`, `update`, `validate` | ADM/CT/RA/GAF : view ; CT/RA : create/update selon objet | Retenu |
-| `engagements` | `view`, `approve` | CT/GAF : view ; SA : approve selon seuil | Retenu ; DIR/SA approuvent seulement au-delà de 100 000 € HT cumulés par opération |
+| `engagements` | `view`, `approve` | CT : view ; GAF : aucun droit d'approbation ou d'engagement ; SA/DIR : approve selon seuil | Retenu ; GAF n'approuve pas les engagements |
 | `marges` | `view` | CT/RA/GAF : view selon matrice | À préciser ; source au statut « Proposé » |
 | `provisions_analytiques` | `view`, `approve` | CT/GAF : view ; SA : approve | Retenu ; approbation sans seuil |
-| `periodes_analytiques` | `view`, `lock`, `unlock`, `close` | GAF : view/lock/unlock/close | Retenu |
+| `periodes_analytiques` | `view`, `lock`, `unlock`, `close` | GAF : `view` uniquement ; DIR : view/lock/unlock/close | Retenu ; GAF ne verrouille ni ne clôture les périodes analytiques |
 
 
 ## 6. Lot 2 — Workforce, TimeTracking, Workshop, Procurement, Inventory et Equipment
@@ -117,8 +117,8 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `dossiers_rh` | `view`, `create`, `update`, `delete` | ADM : view/create/update ; SAL : view own | Retenu ; hors documents médicaux confidentiels |
 | `dossiers_disciplinaires` | `view`, `create`, `update`, `delete` | SA conserve ses droits globaux sous restrictions applicables | Retenu ; données sensibles et scope restricted |
 | `donnees_medicales` | Aucune permission générale de consultation détaillée à générer | DIR : seules informations légalement accessibles et strictement nécessaires ; ADM : traitement administratif ; GAF : informations nécessaires paie/administration de la paie | Exception ; documents médicaux détaillés détenus par les professionnels de santé exclus |
-| `coordonnees_bancaires` | `view`, `create`, `update`, `delete`, `validate` | SA et GAF conservent leurs droits ; SAL : view own, `request_update` | Retenu ; validation indépendante du demandeur/modificateur et historique sécurisé |
-| `elements_variables_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `submit`, `validate` | ADM : préparation/soumission ; GAF : view | Retenu ; séparation des tâches maintenue |
+| `coordonnees_bancaires` | `view`, `create`, `update`, `delete`, `validate` | SA conserve ses droits ; GAF : `view` uniquement pour les données strictement nécessaires à la gestion administrative de la paie ; SAL : view own, request_update | Retenu ; aucun droit de paiement ou de virement pour GAF |
+| `elements_variables_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `submit`, `validate` | ADM : préparation/soumission ; GAF : view/prepare/control | Retenu ; GAF prépare et contrôle les éléments variables, sans validation finale |
 | `paies` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SA conserve ses droits | Retenu ; interdiction d'auto-approbation |
 | `bulletins_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SAL : view own ; SA conserve ses droits | Retenu ; confidentialité et conservation |
 |  | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SA conserve ses droits | Retenu ; validation finale indépendante |
