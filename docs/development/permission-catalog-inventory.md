@@ -447,7 +447,75 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 **Le catalogue n'est pas gelé.** Les lots 1 à 3 couvrent le périmètre documentaire des 19 domaines, mais une partie des actions du lot 3 reste à décomposer, des choix de modèle et de propriété demeurent ouverts, et la matrice des huit rôles n'est pas encore convertie en associations atomiques exhaustives. Les anomalies A-07 ont un mapping proposé, pas une validation issue d'un test de workflow. Aucun code, migration, seeder ou test d'autorisation n'a été créé dans les lots documentaires.
 
 
-## 12. Lots suivants
+
+
+## 12. Lot 5 — audit croisé avec le catalogue des objets métier et le dépôt
+
+### 12.1 Sources et portée du contrôle
+
+Contrôle documentaire réalisé le 24/11/2026 sur :
+- `docs/development/authorization-matrix.md` ;
+- `docs/architecture/business-objects.md` ;
+- l'arborescence Git de la branche `chan-40-roles-permissions` ;
+- `app/Models/User.php` et `config/permission.php`.
+
+Le catalogue des objets métier précise explicitement qu'il décrit des objets cibles et non des modèles Eloquent existants. Il recense 132 objets dans 18 domaines (D01 à D18). Le référentiel RBAC recense désormais 19 domaines avec D19 Accounting. Les domaines `app/Domains/*` sont encore des répertoires vides contenant uniquement `.gitkeep` ; aucun workflow métier PHP ne permet donc de confirmer les actions candidates des lots 2 et 3. Le contrôle ne doit pas être présenté comme une revue du comportement applicatif.
+
+### 12.2 Écarts entre le catalogue des objets et l'inventaire RBAC
+
+| Sujet | Constat sourcé | Traitement requis avant gel |
+| --- | --- | --- |
+| Accounting / D19 | La matrice RBAC définit D19 et ses ressources. Le catalogue des objets métier s'arrête à D18 et ne décrit aucun objet Accounting. | Ajouter un inventaire d'objets comptables propre à D19 dans le référentiel métier, ou référencer une source métier validée équivalente. Ne pas déduire les objets comptables de simples libellés de permissions. |
+| Projects / `lots_phases` | L'objet `PRJ-03 LotPhase` existe dans le catalogue métier ; la matrice RBAC laisse encore A-17 ouvert sur le rattachement affaire/chantier et la modélisation. | A-17 porte sur la relation et les règles de rattachement, pas sur l'existence nominale de l'objet. Décrire les relations et le cycle de vie avant de définir les actions et scopes. |
+| Identity / `financial_delegations` | Le catalogue métier contient `IDN-05 Délégation`, tandis que la matrice place `financial_delegations` dans Identity et interdit à DIR l'administration technique des habilitations. | Distinguer la délégation de pouvoir financier métier de l'administration RBAC. Identifier le propriétaire du workflow, les acteurs, les catégories et les effets sur l'autorisation avant de fixer les permissions DIR/SA. |
+| Costing / `marges` | `CST-05 Marge` figure parmi les 8 objets Costing, mais l'inventaire RBAC conserve la ressource au statut « à préciser / proposé ». | L'objet métier est identifié ; cela ne valide pas automatiquement une ressource autonome ni une permission `view`. Confirmer si la marge est une donnée calculée de Costing ou un objet consultable distinct. |
+| Workforce | Le catalogue métier D07 liste 9 objets, mais la matrice/inventaire RBAC mentionne aussi paies, bulletins, écritures de paie, coordonnées bancaires, dossiers disciplinaires, données médicales et grands déplacements. | Qualifier chacun comme objet autonome, sous-objet du dossier RH ou donnée/processus géré par un autre domaine. Maintenir les restrictions médicales, bancaires et de paie pendant cette qualification. |
+| TimeTracking | Le catalogue métier comprend l'imputation de temps, les corrections et les absences ; l'inventaire RBAC ne décrit pas encore clairement une ressource autonome pour l'imputation et mentionne en plus les heures supplémentaires et justificatifs médicaux. | Déterminer si l'imputation est une ressource autonome ou une capacité de pointage ; qualifier les heures supplémentaires comme workflow/objet ; garder les justificatifs médicaux hors des permissions générales de documents détaillés. |
+| Workshop | Le catalogue métier comprend `DossierDeFabricationExterne` (WKS-08), absent des ressources listées dans l'inventaire RBAC. | Confirmer si l'objet est utilisé dans le périmètre CHAN-40 et, si oui, définir ses actions et rôles ; sinon le déclarer explicitement hors catalogue initial. |
+| Procurement | Le catalogue des objets ne liste pas explicitement `besoins`, `factures_fournisseurs` et `incidents_sous_traitance`, alors que la matrice RBAC les cite. | Distinguer objets autonomes, processus d'approvisionnement et objets possédés par Accounting/Quality. Confirmer la propriété avant d'attribuer des permissions. |
+| Quality / Safety | Les ressources `signalements` sont présentes dans la matrice RBAC, mais ne figurent pas dans les catalogues d'objets D14/D15. | Confirmer leur autonomie et leur distinction entre signalement qualité et signalement sécurité, ou les rattacher à un objet existant avec une catégorie explicite. |
+| Documents | L'inventaire RBAC ajoute `exports`, alors que le catalogue métier identifie les six objets DOC-01 à DOC-06 sans objet Export dédié. | Traiter l'export comme action sur une ressource documentaire ou confirmer un objet d'export autonome avec cycle de vie, destinataires et conservation. |
+| Reporting | La matrice RBAC cite `tableaux_bord_strategiques` et `exports`, alors que le catalogue métier D18 liste `TableauDeBord` et `Export` sans distinction stratégique. | Déterminer si le tableau stratégique est une audience/configuration du tableau de bord ou un objet distinct ; séparer les exports uniquement si le workflow et les données sources diffèrent. |
+| Annuaire / messagerie | `directory` et `messages` apparaissent dans la matrice Identity, sans objet correspondant au catalogue métier. | Garder ces permissions à arbitrer ; confirmer leur périmètre et leur propriétaire avant inclusion. |
+| Sessions | Le catalogue RBAC les renvoie à CHAN-43. | Ne pas les intégrer à CHAN-40. |
+
+### 12.3 Constat technique vérifié
+
+| Élément | Constat sur la branche contrôlée | Conséquence |
+| --- | --- | --- |
+| Domaines métier | Les répertoires `app/Domains/*` ne contiennent que `.gitkeep`. | Impossible de déduire les actions réelles depuis les services métier ; les lignes « à décomposer » ne peuvent pas être complétées par une inspection de code. |
+| Modèle utilisateur | `App\\Models\\User` utilise `HasRoles` et implémente `FilamentUser`. | Le socle Spatie est présent ; cela ne prouve aucune association de rôle ou permission métier. |
+| Accès Filament | `canAccessPanel()` retourne actuellement `true`. | Le contrôle `identity.admin_panel.access` reste un livrable technique non implémenté. |
+| Configuration Spatie | Guard par défaut, Teams désactivé et wildcard désactivé dans la configuration contrôlée. | Les principes de configuration sont conformes au cadrage ; catalogue, rôles et associations restent absents. |
+
+### 12.4 Registre des blocages avant gel
+
+| Priorité | Blocage | Pourquoi il bloque | Décision ou preuve attendue |
+| --- | --- | --- | --- |
+| P0 | D19 Accounting absent du catalogue d'objets métier | Impossible de confirmer les objets propres et les frontières de propriété du domaine | Référentiel comptable validé |
+| P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et CPT | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
+| P0 | Ressources/actions des lots 2 et 3 non décomposées | Les lignes « toutes actions applicables » ne sont pas des permissions atomiques | Définition métier des actions et preuve du workflow ou de l'objet |
+| P1 | A-17 — rattachement lots/phases | Les actions et les périmètres dépendront du modèle de rattachement | Relations affaire/chantier/lot/phase et cycle de vie |
+| P1 | M-17 — catégories documentaires sensibles | Les permissions de lecture, téléchargement, signature et export peuvent exposer des données protégées | Classification des catégories/champs et règles d'accès |
+| P1 | Workforce / paie / données bancaires / médicales | Objets, sous-objets et processus ne sont pas distingués partout | Cartographie de propriété et matrice de confidentialité |
+| P1 | Procurement / Inventory / Equipment / Logistics / Quality / Safety / Handover / Reporting | Les actions et parfois la propriété des objets restent à préciser | Décomposition par workflow, sans action générique |
+| P1 | Accounting : paiements, révisions, analytique, données financières, exports | Slugs et frontières de propriété non stabilisés | Ressources comptables propres et séparation de paiement explicite |
+| P2 | A-07 : `treat`, `correct`, `refuse` | Les mappings du lot 4 sont des propositions, pas des validations métier | Confirmation des workflows concernés |
+| P2 | Identity : délégations financières, annuaire, messagerie | Propriété et périmètre fonctionnel non confirmés | Décisions métier et séparation Identity / Finance |
+
+### 12.5 Ordre de résolution recommandé
+
+1. Compléter le référentiel des objets métier pour Accounting D19 et trancher les objets RBAC qui ne figurent pas dans le catalogue de 132 objets.
+2. Résoudre la propriété et la nature des ressources transverses ou sensibles : délégations financières, paie, données bancaires, signalements, exports.
+3. Décomposer les actions réelles des ressources des lots 2 et 3 à partir de workflows métier validés ; le dépôt ne contient pas encore de code permettant cette vérification.
+4. Résoudre A-17 et M-17, sans étendre leurs effets aux permissions indépendantes.
+5. Construire la matrice atomique des huit rôles, appliquer explicitement la règle DIR et ses exceptions, puis effectuer les contrôles de cohérence des slugs et des doublons.
+6. Présenter le catalogue consolidé pour validation formelle ; aucun gel ni développement RBAC ne doit précéder cette validation.
+
+**Conclusion du lot 5.** L'audit croisé met en évidence des écarts de référentiel et confirme que les domaines métier ne sont pas encore implémentés dans le dépôt. Il est donc possible de préciser les blocages et les décisions attendues, mais pas de transformer honnêtement les actions « à décomposer » en permissions atomiques sans arbitrages métier supplémentaires. Le catalogue reste non gelé ; aucune migration, aucun seeder, aucune permission métier et aucun test d'autorisation ne sont créés dans ce lot.
+
+
+## 13. Lots suivants
 
 - **Lot 2 :** Workforce, TimeTracking, Workshop, Procurement, Inventory, Equipment.
 - **Lot 3 :** Logistics, Quality, Safety, Documents, Handover, Reporting, Accounting.
@@ -455,7 +523,7 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 
 M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent isolés ; ils ne bloquent pas les permissions indépendantes.
 
-## 13. Critères de gel
+## 14. Critères de gel
 
 1. Une entrée unique par triplet domaine/ressource/action.
 2. Résolution des anomalies A-07 et des slugs ambigus.
