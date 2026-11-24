@@ -607,3 +607,15 @@ Les décisions ci-dessous complètent le registre et prévalent sur les ancienne
 - **M-09 — Qualité et sécurité :** deux circuits distincts sont conservés, chacun avec création, attribution, traitement, suivi, clôture et historique. RA est responsable du traitement opérationnel des deux circuits ; DIR intervient pour les situations graves ou nécessitant un arbitrage.
 
 Les responsabilités fonctionnelles sont arbitrées. Les permissions atomiques, les affectations détaillées par rôle et les contrôles techniques restent à décomposer ; aucun code, migration, seeder ou test n'est livré par ces décisions.
+
+## 20. Règle de gel du catalogue RBAC — décision utilisateur (24/11/2026)
+
+**Décision validée :** toute action et toute association rôle × permission non explicitement justifiée par les décisions fonctionnelles, un workflow documenté ou un droit existant confirmé est exclue du catalogue initial. Aucune permission ni attribution ne peut être déduite de la seule existence d'une ressource ou d'une formulation générale (« toutes actions applicables », « conserve ses droits »).
+
+- Permissions atomiques uniquement : `domaine.ressource.action` ; aucun wildcard, héritage implicite ou permission générique.
+- Les huit rôles sont traités explicitement. DIR reçoit les permissions fonctionnelles atomiques effectivement retenues, sous réserve des exceptions déjà documentées.
+- Les actions et associations insuffisamment justifiées sont exclues du catalogue initial ; elles pourront être ajoutées par évolution versionnée après justification et validation.
+- Scopes, workflows, seuils et contrôles restent distincts des slugs et relèvent notamment de CHAN-42.
+- Les décisions A-07, A-17 et M-01 à M-17 déjà clôturées ne sont pas rouvertes. Les détails de configuration ou de mise en œuvre qui restent nécessaires ne créent aucun droit implicite.
+
+**Conséquence :** cette règle permet de produire un catalogue initial strictement fondé sur les éléments vérifiables. Le catalogue n'est gelé qu'après contrôle de chaque entrée et de chaque association retenue.
