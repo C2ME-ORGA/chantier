@@ -137,3 +137,29 @@ test('Sanctum authentifie un utilisateur et conserve la résolution des permissi
 
     expect(auth('sanctum')->user()->can('clients.reglements.validate'))->toBeTrue();
 });
+
+test('la synchronisation remplace les permissions des rôles gérés sans toucher aux autres attributions', function () {
+    $permissionManuelle = Permission::findOrCreate('legacy.manual.permission', 'web');
+
+    $administratif = Role::findByName('ADM', 'web');
+    $administratif->givePermissionTo($permissionManuelle);
+
+    $roleExterne = Role::create([
+        'name' => 'EXTERNAL',
+        'guard_name' => 'web',
+    ]);
+    $roleExterne->givePermissionTo($permissionManuelle);
+
+    $utilisateur = User::factory()->create();
+    $utilisateur->givePermissionTo($permissionManuelle);
+
+    $this->seed(RbacCatalogSeeder::class);
+
+    expect(Permission::query()
+        ->where('name', 'legacy.manual.permission')
+        ->where('guard_name', 'web')
+        ->exists())->toBeTrue()
+        ->and($administratif->fresh()->hasPermissionTo($permissionManuelle))->toBeFalse()
+        ->and($roleExterne->fresh()->hasPermissionTo($permissionManuelle))->toBeTrue()
+        ->and($utilisateur->fresh()->hasPermissionTo($permissionManuelle))->toBeTrue();
+});
