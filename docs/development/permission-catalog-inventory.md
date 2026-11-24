@@ -121,7 +121,7 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `elements_variables_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `submit`, `validate` | ADM : préparation/soumission ; GAF : view/prepare/control | Retenu ; GAF prépare et contrôle les éléments variables, sans validation finale |
 | `paies` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SA conserve ses droits | Retenu ; interdiction d'auto-approbation |
 | `bulletins_paie` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SAL : view own ; SA conserve ses droits | Retenu ; confidentialité et conservation |
-|  | `view`, `create`, `update`, `delete`, `prepare`, `control`, `validate` | GAF : view/prepare/control ; SA conserve ses droits | Retenu ; validation finale indépendante |
+| `indemnites_grands_deplacements` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `process`, `validate` | GAF conserve les droits administratifs et de préparation/contrôle paie attribués dans le workflow ; SAL : view own | Retenu ; validation finale indépendante |
 | `indemnites_grands_deplacements` | `view`, `create`, `update`, `delete`, `prepare`, `control`, `process`, `validate` | SAL : view own ; ADM/GAF conservent leurs droits | Retenu |
 | `grands_deplacements` | `view`, `create`, `update`, `delete`, `declare`, `control`, `prepare`, `process`, `validate` | CT/RA : déclaration de leurs équipes ; ADM/GAF/SAL conservent leurs droits | Retenu |
 | `baremes_grands_deplacements` | `view`, `create`, `update`, `delete` | SA conserve ses droits globaux | Retenu ; barèmes datés/historisés, aucune modification rétroactive des périodes traitées |
@@ -166,16 +166,16 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | `demandes_achat` | Actions fonctionnelles à décomposer ; soumission à confirmer selon workflow | ADM, CT, RA conservent leurs droits | Ressource retenue ; scope opérationnel CHAN-42 |
 | `besoins` | Actions fonctionnelles à décomposer | CC, CT, RA conservent leurs droits | Ressource retenue |
 | `offres_fournisseurs` | Actions fonctionnelles à décomposer | ADM, RA conservent leurs droits | Ressource retenue |
-| `commandes_achats` | `view`, `prepare`, `update`, `submit`, `approve` (actions citées dans l'arbitrage) | ADM, CT, RA, GAF, SA conservent leurs droits | Retenu ; DIR approuve uniquement au-delà de 100 000 € HT cumulés par opération |
-| `lignes_commande` | `view`, `prepare`, `update`, `submit`, `approve` (à confirmer si action portée par la ligne ou la commande) | ADM, CT, RA, GAF, SA conservent leurs droits | À préciser ; ne pas dupliquer l'approbation si elle appartient à la commande |
-| `commandes_sous_traitance` | `view`, `prepare`, `update`, `submit`, `approve` (actions citées dans l'arbitrage) | ADM, CT, RA, GAF, SA conservent leurs droits | Retenu ; même seuil cumulé que les achats |
+| `commandes_achats` | `view`, `prepare`, `update`, `submit`, `approve` (approbation selon seuil et rôle autorisé) | GAF : `view`, `prepare`, `update`, `submit` ; aucun `approve` ; ADM/CT/RA conservent leurs droits selon le workflow | Retenu ; GAF assure le traitement administratif sans pouvoir d'approbation d'engagement |
+| `lignes_commande` | `view`, `prepare`, `update`, `submit`, `approve` (à confirmer si action portée par la ligne ou la commande) | GAF : `view`, `prepare`, `update`, `submit` ; aucun `approve` ; ADM/CT/RA selon workflow | À préciser ; ne pas dupliquer l'approbation si elle appartient à la commande |
+| `commandes_sous_traitance` | `view`, `prepare`, `update`, `submit`, `approve` (approbation selon seuil et rôle autorisé) | GAF : `view`, `prepare`, `update`, `submit` ; aucun `approve` ; ADM/CT/RA conservent leurs droits selon le workflow | Retenu ; GAF assure le traitement administratif sans pouvoir d'approbation d'engagement |
 | `evaluations_fournisseurs` | Actions à décomposer selon les étapes d'évaluation effectivement disponibles | ADM, RA conservent leurs droits | Ressource retenue |
 | `accords_cadres` | Actions à décomposer ; approbation uniquement si le workflow prévoit une action distincte | ADM, RA conservent leurs droits | Ressource retenue |
 | `garanties_fournisseurs` | Actions à décomposer selon suivi, consultation et gestion des garanties | ADM, RA conservent leurs droits | Ressource retenue |
-| `factures_fournisseurs` | `view`, `create`, `update`, `reconcile` | GAF et ADM conservent leurs droits | Retenu ; aucun droit d'exécution des paiements n'est impliqué |
+| `factures_fournisseurs` | `view`, `create`, `update`, `reconcile` | GAF : `view`, `create`, `update`, `reconcile` ; ADM conserve ses droits administratifs | Retenu ; `reconcile` désigne le rapprochement administratif commande/facture, jamais un rapprochement bancaire |
 | `incidents_sous_traitance` | Actions à décomposer selon déclaration, traitement et clôture réellement disponibles | CC, CT, RA conservent leurs droits | Ressource retenue |
 
-**Règle financière Procurement :** l'approbation DIR des commandes d'achat et de sous-traitance est exigée uniquement lorsque le seuil cumulé de 100 000 € HT par opération est dépassé, en agrégeant commandes et avenants et en empêchant le fractionnement artificiel. La préparation et l'exécution des paiements restent séparées et réservées au workflow financier dédié.
+**Règle financière Procurement :** l'approbation des commandes d'achat et de sous-traitance suit le seuil cumulé de 100 000 € HT par opération, en agrégeant commandes et avenants et en empêchant le fractionnement artificiel. GAF peut préparer, modifier et soumettre les commandes dans le cadre de leur traitement administratif, sans pouvoir d'approbation d'engagement. Aucun workflow de préparation, d'autorisation ou d'exécution de paiement bancaire n'est inclus dans le périmètre.
 
 ### 6.5 Inventory
 
@@ -424,7 +424,7 @@ Contrôle documentaire réalisé le 24/11/2026 sur :
 - l'arborescence Git de la branche `chan-40-roles-permissions` ;
 - `app/Models/User.php` et `config/permission.php`.
 
-Le référentiel RBAC doit rester limité aux domaines métier retenus, sans domaine comptable. Les domaines
+Le référentiel RBAC doit rester limité aux domaines métier retenus, sans domaine comptable. Les domaines `app/Domains/*` sont encore des répertoires vides contenant uniquement `.gitkeep` ; aucun workflow métier PHP ne permet donc de confirmer les actions candidates des lots 2 et 3. Le contrôle documentaire ne doit pas être présenté comme une revue du comportement applicatif.
 
 ### 12.2 Écarts entre le catalogue des objets et l'inventaire RBAC
 
@@ -437,7 +437,7 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 | Workforce | Le catalogue métier D07 liste 9 objets, mais la matrice/inventaire RBAC mentionne aussi paies, bulletins, écritures de paie, coordonnées bancaires, dossiers disciplinaires, données médicales et grands déplacements. | Qualifier chacun comme objet autonome, sous-objet du dossier RH ou donnée/processus géré par un autre domaine. Maintenir les restrictions médicales, bancaires et de paie pendant cette qualification. |
 | TimeTracking | Le catalogue métier comprend l'imputation de temps, les corrections et les absences ; l'inventaire RBAC ne décrit pas encore clairement une ressource autonome pour l'imputation et mentionne en plus les heures supplémentaires et justificatifs médicaux. | Déterminer si l'imputation est une ressource autonome ou une capacité de pointage ; qualifier les heures supplémentaires comme workflow/objet ; garder les justificatifs médicaux hors des permissions générales de documents détaillés. |
 | Workshop | Le catalogue métier comprend `DossierDeFabricationExterne` (WKS-08), absent des ressources listées dans l'inventaire RBAC. | Confirmer si l'objet est utilisé dans le périmètre CHAN-40 et, si oui, définir ses actions et rôles ; sinon le déclarer explicitement hors catalogue initial. |
-Distinguer objets autonomes et processus d'approvisionnement ; confirmer la propriété métier avant d'attribuer des permissions.
+| Procurement | Le catalogue des objets ne liste pas explicitement `besoins`, `factures_fournisseurs` et `incidents_sous_traitance`, alors que la matrice RBAC les cite. | Distinguer objets autonomes et processus d'approvisionnement ; confirmer la propriété métier avant d'attribuer des permissions. |
 | Quality / Safety | Les ressources `signalements` sont présentes dans la matrice RBAC, mais ne figurent pas dans les catalogues d'objets D14/D15. | Confirmer leur autonomie et leur distinction entre signalement qualité et signalement sécurité, ou les rattacher à un objet existant avec une catégorie explicite. |
 | Documents | L'inventaire RBAC ajoute `exports`, alors que le catalogue métier identifie les six objets DOC-01 à DOC-06 sans objet Export dédié. | Traiter l'export comme action sur une ressource documentaire ou confirmer un objet d'export autonome avec cycle de vie, destinataires et conservation. |
 | Reporting | La matrice RBAC cite `tableaux_bord_strategiques` et `exports`, alors que le catalogue métier D18 liste `TableauDeBord` et `Export` sans distinction stratégique. | Déterminer si le tableau stratégique est une audience/configuration du tableau de bord ou un objet distinct ; séparer les exports uniquement si le workflow et les données sources diffèrent. |
@@ -457,7 +457,6 @@ Distinguer objets autonomes et processus d'approvisionnement ; confirmer la prop
 
 | Priorité | Blocage | Pourquoi il bloque | Décision ou preuve attendue |
 | --- | --- | --- | --- |
-| P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et GAF | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
 | P0 | Associations atomiques des 8 rôles incomplètes | Le catalogue ne peut pas être généré sans attribution explicite, notamment pour SA, ADM, CT, CC, RA, SAL et GAF | Matrice exhaustive permission × rôle, avec scopes documentés séparément |
 | P0 | Ressources/actions des lots 2 et 3 non décomposées | Les lignes « toutes actions applicables » ne sont pas des permissions atomiques | Définition métier des actions et preuve du workflow ou de l'objet |
 | P1 | A-17 — rattachement lots/phases | Les actions et les périmètres dépendront du modèle de rattachement | Relations affaire/chantier/lot/phase et cycle de vie |
@@ -500,12 +499,12 @@ M-17 (catégories/champs documentaires sensibles) et A-17 (lots/phases) restent 
 8. Validation des ressources proposées ou exclusion explicite du catalogue initial.
 
 
-## 13. Décision de périmètre — exclusion de la comptabilité (24/11/2026)
+## 15. Décision de périmètre — exclusion
 
 Décision utilisateur : le logiciel C2ME ne comportera aucune partie comptable. Le domaine D19 Accounting n'est pas retenu dans le catalogue CHAN-40 ; aucune ressource, action ou permission comptable ne doit être ajoutée. Le rôle GAF est conservé comme profil de gestion administrative et financière opérationnelle ; aucune permission ni ressource comptable ne doit être créée. Les processus opérationnels de facturation client, achats/factures fournisseurs, budgets, costing et paie restent dans leurs domaines métier respectifs uniquement pour leurs besoins de gestion ; aucune écriture, journal, rapprochement, trésorerie comptable, déclaration, clôture, immobilisation ou amortissement comptable n'est géré dans le logiciel.
 
 
-## 15. Définition du rôle GAF — gestion administrative et financière opérationnelle
+## 16. Définition du rôle GAF
 
 Le rôle GAF remplace l'ancien rôle CPT. Il couvre les opérations administratives et financières opérationnelles : factures, avoirs, relances, échéanciers, litiges et suivi opérationnel des règlements clients ; traitement administratif des commandes et factures fournisseurs ; paie, bulletins, éléments variables et données nécessaires à la gestion administrative ; consultation et suivi opérationnel des budgets et du Costing selon les permissions définies pour chaque ressource.
 
