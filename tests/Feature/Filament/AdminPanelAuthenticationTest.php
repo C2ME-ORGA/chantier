@@ -165,7 +165,6 @@ test('ne réinitialise pas le mot de passe d’un utilisateur sans accès au pan
     $this->assertGuest();
 });
 
-
 test('refuse un jeton de réinitialisation expiré sans modifier le mot de passe', function () {
     $user = User::factory()->create();
     $user->assignRole('ADM');
