@@ -1404,4 +1404,4 @@ Cette décision porte sur les devis commerciaux. Elle ne modifie pas la règle d
 
 ## Décision de périmètre — exclusion de la comptabilité (24/11/2026)
 
-Le logiciel Chantier ne comporte aucun module comptable. Le domaine D19 Accounting est supprimé du catalogue fonctionnel et de la matrice RBAC. Aucun rôle « Gestion administrative et financière opérationnelle » ni permission comptable ne doit être créé. Les fonctions opérationnelles Clients, Procurement, Budgets, Costing et Workforce restent limitées à leurs workflows de gestion et ne doivent pas implémenter d'écritures ou de traitements comptables.
+Le logiciel Chantier ne comporte aucun module comptable. Le domaine D19 Accounting est supprimé du catalogue fonctionnel et de la matrice RBAC. Le rôle GAF est conservé comme profil de gestion administrative et financière opérationnelle ; aucune permission ni ressource comptable ne doit être créée. Les fonctions opérationnelles Clients, Procurement, Budgets, Costing et Workforce restent limitées à leurs workflows de gestion et ne doivent pas implémenter d'écritures ou de traitements comptables.
