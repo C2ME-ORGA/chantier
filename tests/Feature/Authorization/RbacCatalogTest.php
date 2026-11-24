@@ -82,3 +82,24 @@ test('le panel est réservé aux rôles disposant de la permission dédiée', fu
         ->and($salarie->canAccessPanel($panel))->toBeFalse()
         ->and($sansRole->canAccessPanel($panel))->toBeFalse();
 });
+
+test('le catalogue respecte les conventions atomiques et la règle DIR', function () {
+    $roleNames = array_keys(RoleCatalog::all());
+
+    foreach (PermissionCatalog::all() as $permission => $assignedRoles) {
+        expect($permission)->toMatch('/^[a-z_]+\.[a-z_]+\.[a-z_]+$/')
+            ->and($assignedRoles)->not->toBeEmpty();
+
+        foreach ($assignedRoles as $roleName) {
+            expect($roleNames)->toContain($roleName);
+        }
+
+        if ($permission !== 'identity.admin_panel.access') {
+            expect($assignedRoles)->toContain('DIR');
+        }
+    }
+
+    expect(array_keys(PermissionCatalog::all()))
+        ->not->toContain('accounting.journals.view')
+        ->not->toContain('bank_payments.execute');
+});
