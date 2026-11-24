@@ -414,7 +414,7 @@ La règle DIR est fonctionnellement `Validé` et techniquement `À normaliser`. 
 | `permissions` | `view`, `create`, `update`, `delete` : SA | global | Administration des permissions | 10298 | `Proposé` |
 | `role_assignments` | `assign`, `revoke` : SA | global | Attribution et retrait de rôles | 10298 | `Proposé` / `revoke` à arbitrer |
 | `access_settings` | `view`, `update` : SA | global | Paramètres d’accès | 10298 | `Proposé` |
-| `financial_delegations` | `view`, `create`, `update`, `suspend`, `delete` : SA, DIR | global | Paramétrage des délégations par rôle et catégorie ; toute modification est historisée ; `suspend` et `delete` restent à préciser | 10303 | Décision métier validée ; sémantique de `suspend`/`delete` à arbitrer |
+| `financial_delegations` | Exclue du catalogue initial à ce stade ; les responsabilités DIR/SA sur les délégations financières sont confirmées par M-16, mais les actions atomiques et le propriétaire métier restent à qualifier | — | Délégation de pouvoir financier métier, distincte de l'administration RBAC | 10303, Jira 10310 | Décision fonctionnelle partielle ; ressource et actions non intégrées tant que le workflow et le rattachement de domaine ne sont pas confirmés |
 | `sessions` | Hors périmètre CHAN-40 — géré par CHAN-43 | own | Sessions personnelles | 10299, CHAN-43 | `Hors périmètre` / `À vérifier` |
 | `directory` | `view` : SAL et autres rôles à confirmer | global | Annuaire interne | 10299 | `À arbitrer` |
 | `messages` | `send` : SAL et autres rôles à confirmer | own / global | Messagerie interne | 10299 | `À arbitrer` |
@@ -591,7 +591,7 @@ Le code candidat `timetracking.timesheets.validate` désigne la validation des f
 | `documents`, `versions`, `dossiers_documentaires` | Accès complet DIR : toutes les actions applicables ; ADM, CT, CC, RA, GAF et SAL conservent leurs droits | global DIR / company / assigned_projects / own | Documents, versions et dossiers documentaires, y compris les dossiers administratifs clients et leurs pièces associées ; création, modification, validation, téléchargement, archivage et autres actions applicables | 10298, 10299, arbitrage A.4.2 Groupe 2 et décision du 24/11/2026 | Accès complet DIR confirmé pour les dossiers administratifs clients ; droits soumis aux restrictions légales et catégories sensibles à qualifier (M-17) ; versions et traces conservées |
 | `types_document`, `regles_conservation` | Accès complet DIR : toutes les actions applicables ; ADM conserve ses droits | global DIR / global | Types documentaires et règles de conservation | 10298, arbitrage A.4.2 Groupe 2 | Décision DIR confirmée ; ne pas autoriser une suppression contraire aux obligations de conservation |
 | `diffusions` | Accès complet DIR : toutes les actions applicables ; ADM, CT, CC, RA et SAL conservent leurs droits | global DIR / assigned_projects / own | Diffusion documentaire et accusés de réception | 10298, 10299, arbitrage A.4.2 Groupe 2 | Décision DIR confirmée ; conserver destinataires, dates, versions diffusées et accusés de réception |
-| `download`, `sign` | Accès complet DIR : téléchargement et signature sur les documents auxquels DIR est légalement habilité à accéder ; SAL conserve `download`, `sign` own | global DIR sous réserve des catégories sensibles / own / policy_defined | Téléchargement et signature documentaire | 10299, arbitrage A.4.2 Groupe 2 | Décision DIR confirmée ; signature soumise aux règles de délégation, d'identité et de preuve ; M-17 reste ouvert pour les catégories/champs sensibles |
+| `download`, `sign` | Conservation des droits documentaires existants pour DIR et SAL sur ses propres documents, sous réserve des restrictions par catégorie | global DIR sous réserve des restrictions / own / policy_defined | Téléchargement et signature documentaire | 10299, arbitrage A.4.2 Groupe 2, Jira 10309 | M-17 clôturé fonctionnellement ; associations et scopes existants à vérifier ; signature soumise aux règles de délégation, d'identité et de preuve |
 | `exports` | Accès complet DIR : toutes les actions applicables, dont `export` ; ADM et GAF conservent leurs droits | global DIR / global | Exports documentaires | 10300, arbitrage A.4.2 Groupe 2 | Export DIR confirmé ; appliquer les mêmes restrictions de confidentialité et de périmètre que la consultation |
 
 ### 5.17 Handover
@@ -883,8 +883,8 @@ Une réponse « accès transversal » ou « accès complet » n'est pas suffisan
 
 - Action atomique, objet et circuit de l'approbation des régularisations financières liées aux litiges.
 - Actions atomiques et attribution détaillée des rôles pour lots/phases, après validation du rattachement A-17.
-- M-16 et les autres points M encore ouverts ; M-05 est levé uniquement pour les exports Reporting et M-17 reste ouvert pour les catégories documentaires sensibles.
-- A-01 à A-15 selon leur état respectif ; A-07 reste notamment ouvert pour la normalisation de `arbitrate`.
+- M-16 et les autres points M encore ouverts à la date de rédaction de ce passage ; M-05 est levé uniquement pour les exports Reporting. M-17 est clôturé ultérieurement par l'arbitrage du 24/11/2026 (section 18 et Jira 10309).
+- A-01 à A-15 selon leur état à la date de rédaction ; A-07 est clôturé ultérieurement par le mapping documenté en section 22 et Jira 10307.
 - Les actions et workflows non explicitement arbitrés demeurent à définir sans déduire de permission supplémentaire.
 
 **État du lot.** Les décisions du Groupe 1 sont complétées par les arbitrages des Groupes 2 à 4. La couverture métier des 19 domaines a été revue ; A-16 reste ouvert uniquement pour la normalisation, la synchronisation et les dépendances techniques ou de workflow identifiées. A-17 est clos sur le rattachement métier ; les actions atomiques et attributions détaillées des rôles restent à définir. Aucun code, migration, seeder, test ou paramètre applicatif n'est modifié par cette mise à jour documentaire.
@@ -1036,7 +1036,7 @@ GAF ne dispose d'aucune approbation générale d'engagement ou de commande ni de
 
 | Domaine / ressource | Décision DIR | Actions / portée | Scope métier | Statut / réserve |
 | --- | --- | --- | --- | --- |
-| Documents / toutes les ressources du §5.16 | Accès complet DIR | Toutes les actions applicables : consultation, création, modification, suppression, téléchargement, signature, diffusion, accusé de réception et export | Global pour DIR, sous réserve des restrictions légales et de confidentialité | Décision confirmée ; M-17 reste ouvert pour les catégories et champs sensibles |
+| Documents / toutes les ressources du §5.16 | Accès DIR selon les permissions fonctionnelles retenues et les restrictions documentaires | Les actions doivent être justifiées par la ressource et le workflow ; droits existants view/download/sign/export conservés par catégorie | Global DIR sous réserve des restrictions légales et de confidentialité | M-17 clôturé fonctionnellement par Jira 10309 ; aucune extension automatique des associations |
 
 **Garde-fous et limites.**
 
@@ -1392,7 +1392,7 @@ Cette décision porte sur les devis commerciaux. Elle ne modifie pas la règle d
 
 ### A.4.2 — Registre des arbitrages DIR — Dossiers administratifs clients
 
-**Décision métier reçue le 24/11/2026.** DIR bénéficie d'un accès complet aux dossiers administratifs clients et à leurs pièces associées, via les ressources documentaires existantes `documents`, `versions` et `dossiers_documentaires`. Cet accès couvre toutes les actions applicables, notamment création, modification, validation, téléchargement et archivage. La suppression reste conditionnée à son existence dans le modèle applicatif et au respect des obligations légales de conservation et de traçabilité. Les restrictions légales et les catégories documentaires sensibles restent applicables ; M-17 demeure ouvert pour leur qualification. Aucun nouveau type de ressource ou droit documentaire distinct n'est créé par cet arbitrage.
+**Décision métier reçue le 24/11/2026.** DIR bénéficie d'un accès complet aux dossiers administratifs clients et à leurs pièces associées, via les ressources documentaires existantes `documents`, `versions` et `dossiers_documentaires`. Cet accès couvre toutes les actions applicables, notamment création, modification, validation, téléchargement et archivage. La suppression reste conditionnée à son existence dans le modèle applicatif et au respect des obligations légales de conservation et de traçabilité. Les restrictions légales et les catégories documentaires sensibles restent applicables ; M-17 sera clôturé ultérieurement pour la classification et les quatre opérations documentaires par l'arbitrage de la section 18 (Jira 10309). Aucun nouveau type de ressource ou droit documentaire distinct n'est créé par cet arbitrage.
 
 | Domaine / ressource | Décision métier | Actions / portée | Scope métier | Statut / réserve |
 | --- | --- | --- | --- | --- |
@@ -1497,7 +1497,7 @@ Cette section consigne les décisions métier confirmées pendant la séance du 
 | M-04 — Données RH sensibles | Distinction DIR/SA, GAF et ADM conservée. ADM limité aux données RH administratives courantes. Restrictions médicales prioritaires ; les responsables opérationnels ne voient que les informations de disponibilité nécessaires. | Déclinaison technique par famille de données et ressource à poursuivre. |
 | M-05 — Exports sensibles | Aucun droit d'export transversal ou global implicite. Chaque export dépend de la ressource et des habilitations existantes ; les restrictions de la source s'appliquent. | Inventorier les exports et vérifier les associations existantes ; aucune extension de droit. |
 | M-06 — Suppression et archivage | Archivage privilégié lorsque l'historique doit être conservé. Suppression et archivage restent distincts ; suppression définitive uniquement lorsqu'elle est justifiée et compatible avec conservation légale, intégrité et traçabilité. | Qualification ressource par ressource des suppressions réellement possibles. |
-| M-07 — Besoins Chef de chantier | Signalement de besoin maintenu, mais le signalement directement depuis le chantier n'est pas retenu. Aucun droit de commande fournisseur n'en découle. | Canal et workflow de signalement à définir ; point partiellement ouvert. |
+| M-07 — Besoins Chef de chantier | Signalement maintenu dans un espace dédié indépendant des fiches chantier ; ADM centralise, contrôle la complétude et oriente ; accepte/refuse les demandes administratives courantes dans sa délégation. | Décision complétée ultérieurement par la section 22 et Jira 10311 ; aucun droit de commande ou d'engagement induit. |
 | M-08 — Incidents sous-traitance | CC peut créer et signaler un incident ; le suivi opérationnel relève du rôle compétent. La création ne confère pas automatiquement les droits de traitement ou de clôture. | Actions de mise à jour, traitement, responsable et clôture à préciser. |
 | M-09 — Signalements salariés | Deux circuits distincts : signalements qualité et signalements sécurité. Chaque circuit comporte création, affectation, traitement, suivi et clôture tracés. | Responsables de traitement qualité et sécurité à désigner ; aucune attribution de rôle supposée. |
 | M-10 — Annuaire et messagerie | Fonctionnalités personnelles de SAL (annuaire, messagerie, profil) rattachées au domaine Identity. Aucun domaine supplémentaire. | Conserver les habilitations existantes ; pas de droits transverses implicites. |
@@ -1508,7 +1508,7 @@ Cette section consigne les décisions métier confirmées pendant la séance du 
 | M-15 — Dépassements d'heures supplémentaires | Validation des dépassements réservée à DIR ou SA ; aucune délégation automatique aux responsables opérationnels. Validation tracée. | Droits ordinaires de saisie et de suivi des temps restent distincts. |
 | M-16 — Délégations financières | suspend = suspension temporaire réactivable ; revoke = retrait définitif ; delete = suppression technique uniquement si justifiée, sans effacement de l'audit. Administration réservée à DIR et SA. | Toute modification conserve l'historique et la traçabilité. |
 
-**État :** décisions fonctionnelles M-01 à M-06 et M-08 à M-16 confirmées. M-07 est partiellement ouvert sur le canal de signalement. Les tâches techniques et responsabilités non désignées restent ouvertes sans remettre en cause les décisions prises. Aucun droit atomique non validé n'est créé par cette synthèse.
+**État historique au moment de cette section :** M-07 à M-09 restaient partiellement à arbitrer. Les décisions ultérieures de la section 22 et Jira 10311 clôturent ces points fonctionnels ; les tâches de configuration et de mise en œuvre restent distinctes.
 
 
 ## 20. Arbitrages M-07 à M-09 — demandes internes et signalements (24/11/2026)
