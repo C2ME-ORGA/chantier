@@ -104,7 +104,6 @@ test('le catalogue respecte les conventions atomiques et la règle DIR', functio
         ->not->toContain('bank_payments.execute');
 });
 
-
 test('DIR possède exactement toutes les permissions fonctionnelles du catalogue', function () {
     $direction = Role::findByName('DIR', 'web');
 
