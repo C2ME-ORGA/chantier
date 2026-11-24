@@ -1,6 +1,6 @@
 # Inventaire canonique des permissions — CHAN-40
 
-> **Statut :** inventaire des 18 domaines documenté — lots 1 à 4 ; catalogue non gelé, implémentation non commencée.
+> **Statut :** inventaire des 18 domaines documenté — lots 1 à 5 ; catalogue non gelé, implémentation non commencée.
 > **Référentiel :** `docs/development/authorization-matrix.md`, relu le 24/11/2026.
 > **Gel :** non effectué. Aucun seeder, migration ou code d'autorisation ne doit être généré à ce stade.
 
@@ -319,17 +319,17 @@ Les actions ci-dessous sont des candidats issus des actions explicitement citée
 | DIR | Accès global au lot 3 | Attribuer explicitement chaque permission fonctionnelle retenue, sauf préparation/exécution des paiements et restrictions légales/documentaires |
 
 
-## 10. Anomalies à résoudre avant gel
+## 10. Anomalies et exclusions à traiter avant gel
 
-| Référence | Constat | Traitement |
+| Référence | État consolidé | Traitement retenu |
 | --- | --- | --- |
-| A-07 | `treat` est cité pour les litiges, absent du registre | Déterminer si `process` le remplace ou si une action distincte est nécessaire |
-| A-07 | `correct` est cité pour les pointages/corrections, absent du registre | Vérifier si `update` couvre la correction ; la traçabilité relève du workflow |
-| A-07 | `refuse` apparaît dans le workflow paiement, absent du registre | Déterminer si le refus est un résultat de workflow ou une permission distincte |
-| Identity | `financial_delegations` sous Identity, mais DIR n'administre pas les habilitations | Clarifier propriétaire et exception DIR |
-| Costing | `marges` au statut « Proposé » | Exclure du catalogue initial ou obtenir validation |
-| Projects | Rattachement de `lots_phases` validé par A-17 ; actions atomiques non définies | Décrire les workflows réels avant de générer les permissions définitives |
-| DIR | « Toutes actions applicables » n'est pas une liste d'actions | Identifier les actions légitimes par ressource, puis associer explicitement DIR |
+| A-07 — litiges | `process` remplace `treat` pour le traitement opérationnel ; `arbitrate` reste distinct | Mapping validé (arbitrage A-07 / Jira 10307) ; ne pas créer `treat` |
+| A-07 — pointages | `update` couvre la correction tracée ; aucune action `correct` | Mapping validé (Jira 10307) ; conserver l'événement immuable avant/après |
+| A-07 — paiements | Paiements bancaires hors périmètre ; aucun `refuse`, `authorize` ou droit d'exécution | Exclusion confirmée (Jira 10307) |
+| Identity — `financial_delegations` | Délégation financière métier à distinguer de l'administration RBAC | Exclure du catalogue initial tant que le propriétaire et le workflow métier ne sont pas qualifiés |
+| Costing — `marges` | Objet identifié dans le catalogue métier, mais autonomie de la ressource et droit de consultation non confirmés | Exclure du catalogue initial tant que la ressource et son accès ne sont pas justifiés |
+| Projects — `lots_phases` | Hiérarchie A-17 validée ; actions atomiques non décrites | Conserver la structure métier ; exclure les actions non justifiées du catalogue initial |
+| DIR | Accès global aux permissions fonctionnelles retenues ; aucune génération de CRUD implicite | Associer DIR à chaque permission atomique retenue, en appliquant les exceptions documentées |
 
 
 ## 11. Lot 4 — déduplication, normalisation et contrôle de cohérence
@@ -340,7 +340,7 @@ La revue porte sur les 18 domaines fonctionnels inventoriés dans les lots 1 à 
 
 | Contrôle | Résultat | Conclusion |
 | --- | --- | --- |
-| Couverture des domaines | 6 domaines lot 1, 6 domaines lot 2, 7 domaines lot 3 | 18 domaines couverts dans l'inventaire |
+| Couverture des domaines | 6 domaines lot 1, 6 domaines lot 2, 6 domaines lot 3 | 18 domaines couverts dans l'inventaire |
 | Couverture des rôles | SA, DIR, ADM, CT, CC, RA, SAL, GAF présents dans la matrice §6 | Matrice synthétique des 8 rôles existante ; associations atomiques à matérialiser au catalogue |
 | Atomicité | Actions séparées par ressource dans les lots 1 et 2 ; plusieurs ressources lot 3 encore « à décomposer » | Non gelable à ce stade |
 | Règle DIR | Règle globale documentée ; exceptions Identity, secret médical, paiements, auto-approbation, conservation et audit | Principe stable ; associations explicites à générer au catalogue |
@@ -397,19 +397,19 @@ Cette table est un résumé de contrôle, pas un seeder ni une matrice exhaustiv
 | Sujet | État lot 4 | Action avant gel |
 | --- | --- | --- |
 | A-01 à A-06, A-08, A-09 | Conventions documentées | Contrôle mécanique de toutes les clés du catalogue à effectuer au moment de sa construction |
-| A-07 `treat`, `correct`, `refuse` | Mapping proposé | Confirmer les workflows réels ; ne pas ajouter ces actions au registre canonique |
+| A-07 `treat`, `correct`, `refuse` | Mappings arbitrés et documentés (§11.3 ; Jira 10307) | `process` pour le traitement du litige ; `update` pour la correction tracée ; aucun droit de paiement ni action `refuse` |
 | Identity `financial_delegations` | DIR exclu de l'administration des habilitations ; SA administre | Déterminer si cette ressource est une délégation financière métier ou un paramètre d'accès Identity ; déplacer vers le domaine financier si nécessaire |
 | Costing `marges` | Statut source « proposé » | Exclure du catalogue initial tant que la ressource n'est pas confirmée |
 | Projects `lots_phases` | A-17 validé le 24/11/2026 : Affaire 1—N Chantier, Chantier 1—N Lot, Lot 1—N Phase | Appliquer `assigned_sites` aux accès opérationnels CT/CC via le chantier parent ; définir les actions atomiques séparément |
 | Procurement, Inventory, Equipment, Logistics, Quality, Safety, Documents, Handover, Reporting | Plusieurs lignes « à décomposer » | Reprendre les opérations métier et finaliser chaque action réelle |
-| M-17 | Ouvert | Définir catégories/champs sensibles et droits download/sign/export par catégorie |
-| M-01 à M-16 | Paramètres/workflows résiduels documentés dans la matrice | Résoudre ceux qui conditionnent les permissions concernées ; ne pas bloquer les permissions indépendantes |
+| M-17 | Arbitrage fonctionnel clôturé (§18 ; Jira 10309) | Maintenir les droits existants par catégorie et vérifier techniquement les associations/scopes sans en inventer |
+| M-01 à M-16 | Arbitrages fonctionnels consolidés (§19 ; Jira 10310), complétés pour M-07 à M-09 (§20 ; Jira 10311) | Seuls les paramètres et détails techniques expressément signalés restent à configurer ; ne pas rouvrir les décisions clôturées |
 | Matrice des 8 rôles | Synthèse existante, associations atomiques non générées | Décliner chaque ligne de ressource/action vers SA, DIR, ADM, CT, CC, RA, SAL, GAF |
 | Audit | Événements définis, stockage technique non confirmé | Confirmer l'affectation CHAN-45 ou ticket dédié |
 
 ### 11.6 Décision de gel
 
-**Le catalogue n'est pas gelé.** Les lots 1 à 3 couvrent le périmètre documentaire des 18 domaines, mais une partie des actions du lot 3 reste à décomposer, des choix de modèle et de propriété demeurent ouverts, et la matrice des huit rôles n'est pas encore convertie en associations atomiques exhaustives. Les anomalies A-07 ont un mapping proposé, pas une validation issue d'un test de workflow. Aucun code, migration, seeder ou test d'autorisation n'a été créé dans les lots documentaires.
+**Le catalogue n'est pas gelé.** Les lots 1 à 3 couvrent le périmètre documentaire des 18 domaines, mais une partie des actions du lot 3 reste à décomposer, des choix de modèle et de propriété demeurent ouverts, et la matrice des huit rôles n'est pas encore convertie en associations atomiques exhaustives. Les mappings A-07 sont arbitrés fonctionnellement ; ils ne nécessitent pas de permission supplémentaire. Les associations atomiques insuffisamment justifiées restent exclues. Aucun code, migration, seeder ou test d'autorisation n'a été créé dans les lots documentaires.
 
 
 
@@ -487,7 +487,7 @@ Le référentiel RBAC doit rester limité aux domaines métier retenus, sans dom
 - **Lot 4 :** revue transversale, déduplication et normalisation ; les associations atomiques des huit rôles ne sont pas encore générées.
 - **Lot 5 :** audit croisé avec le catalogue des objets métier et le dépôt ; écarts et blocages consignés.
 
-Les lots 1 à 5 sont documentés. Cette couverture ne signifie pas que toutes les ressources et actions sont gelées : les points ouverts sont regroupés en §11.5, §12.4 et §17 ci-dessous. Le rattachement A-17 est validé ; seules les actions atomiques et attributions détaillées des lots/phases restent à définir. M-17 demeure ouvert pour les catégories documentaires sensibles.
+Les lots 1 à 5 sont documentés. Cette couverture ne signifie pas que toutes les ressources et actions sont gelées : les points ouverts sont regroupés en §11.5, §12.4 et §17 ci-dessous. Le rattachement A-17 est validé ; seules les actions atomiques et attributions détaillées des lots/phases restent à définir. M-17 est clôturé fonctionnellement ; la vérification des associations existantes reste technique.
 
 ## 14. Critères de gel
 
@@ -619,3 +619,16 @@ Les responsabilités fonctionnelles sont arbitrées. Les permissions atomiques, 
 - Les décisions A-07, A-17 et M-01 à M-17 déjà clôturées ne sont pas rouvertes. Les détails de configuration ou de mise en œuvre qui restent nécessaires ne créent aucun droit implicite.
 
 **Conséquence :** cette règle permet de produire un catalogue initial strictement fondé sur les éléments vérifiables. Le catalogue n'est gelé qu'après contrôle de chaque entrée et de chaque association retenue.
+
+## 22. Mise en cohérence des états historiques — 24/11/2026
+
+Cette section prévaut sur les statuts historiques encore visibles dans les sections antérieures ; ces mentions sont conservées comme traces de l'état au moment de leur rédaction et ne décrivent plus l'état courant.
+
+- **A-07 : clôturé fonctionnellement.** Litiges : `process` pour le traitement et `arbitrate` pour la décision engageante. Pointages : `update` sur le workflow de correction tracé, sans permission `correct`. Paiements bancaires : hors périmètre, sans permission `refuse`, `authorize` ou d'exécution.
+- **A-17 : clôturé fonctionnellement.** Affaire 1—N Chantier, Chantier 1—N Lot, Lot 1—N Phase. Les actions atomiques et attributions CT/CC autres que les droits explicitement prouvés ne sont pas générées par déduction.
+- **M-01 à M-16 : arbitrages fonctionnels consolidés** dans la section 19 ; **M-07 à M-09** sont complétés par la section 20. Les dates, acteurs techniques et paramétrages identifiés comme résiduels restent des tâches de configuration, pas des arbitrages métier à rouvrir.
+- **M-17 : clôturé fonctionnellement** pour DOC-01 à DOC-10 et les opérations `view`, `download`, `sign`, `export`. La vérification des droits existants et de leurs scopes ne permet aucune extension implicite.
+- **WKS-08 — `DossierDeFabricationExterne` : exclu du catalogue initial** tant qu'un workflow, des acteurs et des actions autorisés ne sont pas explicitement justifiés. La seule présence dans le catalogue des objets métier ne suffit pas à créer une permission.
+- **Ressources transverses non qualifiées** (`financial_delegations`, `directory`, `messages`, `marges`, exports transverses) : exclues du catalogue initial tant que leur autonomie, propriétaire et workflow ne sont pas confirmés.
+
+La règle de gel de la section 21 s'applique à toute la liste initiale : aucune action CRUD, association rôle × permission, ressource autonome ou portée n'est ajoutée par simple analogie ou par existence d'un objet.
