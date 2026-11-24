@@ -1604,7 +1604,7 @@ php artisan tinker
 ```
 
 ```php
-$user = App\\Models\\User::where('email', 'administrateur@exemple.fr')->firstOrFail();
+$user = App\Models\User::where('email', 'administrateur@exemple.fr')->firstOrFail();
 $user->assignRole('SA');
 ```
 
