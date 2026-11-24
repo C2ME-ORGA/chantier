@@ -598,3 +598,12 @@ Les décisions ci-dessous complètent le registre et prévalent sur les ancienne
 **M-17 :** arbitrage fonctionnel déjà clôturé pour DOC-01 à DOC-10 et les opérations view, download, sign, export. La vérification technique des associations atomiques et scopes existants reste distincte. Les mentions historiques « M-17 ouvert » sont obsolètes pour la décision métier.
 
 **État :** M-01 à M-06 et M-08 à M-16 sont arbitrés. M-07 reste partiellement ouvert (canal de signalement). Les responsables qualité/sécurité et certains détails techniques restent à préciser ; ne pas déduire de permission ou d'affectation de rôle.
+
+
+## 19. Arbitrages M-07 à M-09 — demandes internes et signalements (24/11/2026)
+
+- **M-07 — Demandes internes :** le signalement des besoins des chefs de chantier est réalisé dans un espace dédié, indépendant des fiches chantier. ADM centralise, contrôle la complétude et oriente les demandes. ADM peut accepter ou refuser les demandes administratives courantes relevant de sa délégation. Les demandes techniques, opérationnelles ou financières relèvent du responsable compétent ; DIR arbitre au-delà des délégations. Ce pouvoir ne vaut pas autorisation d'achat ou engagement financier et ne modifie pas les seuils/circuits d'approbation des engagements.
+- **M-08 — Incidents sous-traitants :** CC peut créer et signaler. RA assure le traitement opérationnel, le suivi et la clôture. DIR intervient pour les arbitrages supérieurs. La création ne donne pas au CC de droit implicite de traitement ou de clôture.
+- **M-09 — Qualité et sécurité :** deux circuits distincts sont conservés, chacun avec création, attribution, traitement, suivi, clôture et historique. RA est responsable du traitement opérationnel des deux circuits ; DIR intervient pour les situations graves ou nécessitant un arbitrage.
+
+Les responsabilités fonctionnelles sont arbitrées. Les permissions atomiques, les affectations détaillées par rôle et les contrôles techniques restent à décomposer ; aucun code, migration, seeder ou test n'est livré par ces décisions.
