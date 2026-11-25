@@ -5,6 +5,7 @@ namespace App\Domains\Identity\Actions;
 use App\Domains\Identity\Models\UserDevice;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 
 final class RegisterUserDevice
@@ -32,9 +33,7 @@ final class RegisterUserDevice
         }
 
         if ($device?->revoked_at !== null) {
-            throw ValidationException::withMessages([
-                'device' => 'Cet appareil a été révoqué.',
-            ]);
+            throw new AuthorizationException('Cet appareil a été révoqué.');
         }
 
         $created = $device === null;
