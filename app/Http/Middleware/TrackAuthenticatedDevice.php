@@ -34,8 +34,13 @@ final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEn
                         ->whereNull('revoked_at')
                         ->first();
 
-                    if ($device !== null && $request->hasSession()) {
-                        DB::table(config('session.table', 'sessions'))
+                    if (
+                        $device !== null
+                        && $request->hasSession()
+                        && config('session.driver') === 'database'
+                    ) {
+                        DB::connection(config('session.connection'))
+                            ->table(config('session.table', 'sessions'))
                             ->where('id', $request->session()->getId())
                             ->where('user_id', $user->getKey())
                             ->update(['device_id' => $device->getKey()]);
