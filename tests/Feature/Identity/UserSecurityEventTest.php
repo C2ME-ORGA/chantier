@@ -1,10 +1,8 @@
 <?php
 
 use App\Domains\Identity\Actions\RecordSecurityEvent;
-use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use App\Models\User;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Validation\ValidationException;
 
 test('enregistre un événement de sécurité lié à un utilisateur et un appareil', function () {
