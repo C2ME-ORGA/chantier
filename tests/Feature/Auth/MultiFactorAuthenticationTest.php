@@ -74,12 +74,15 @@ it('refuses to consume a recovery code again from a stale user instance', functi
     $provider = AppAuthentication::make()->recoverable();
 
     $recoveryCode = 'single-use-recovery-code';
-    $provider->saveRecoveryCodes($user, [$recoveryCode]);
+    $remainingCode = 'another-single-use-recovery-code';
+
+    $provider->saveRecoveryCodes($user, [$recoveryCode, $remainingCode]);
 
     $firstInstance = $user->fresh();
     $staleInstance = $user->fresh();
 
     expect($provider->verifyRecoveryCode($recoveryCode, $firstInstance))->toBeTrue()
         ->and($provider->verifyRecoveryCode($recoveryCode, $staleInstance))->toBeFalse()
-        ->and($user->fresh()->getAppAuthenticationRecoveryCodes())->toBe([]);
+        ->and($user->fresh()->getAppAuthenticationRecoveryCodes())->toHaveCount(1)
+        ->and(Hash::check($remainingCode, $user->fresh()->getAppAuthenticationRecoveryCodes()[0]))->toBeTrue();
 });
