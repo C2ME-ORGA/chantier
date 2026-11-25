@@ -77,4 +77,9 @@ test('journalise le succès uniquement après validation du code MFA', function 
     expect(auth('web')->check())->toBeTrue()
         ->and($user->fresh()->securityEvents()->where('event', 'authentication.succeeded')->count())->toBe(1)
         ->and($user->fresh()->securityEvents()->where('event', 'mfa.failed')->count())->toBe(0);
+
+    $this->get('/admin')->assertOk();
+
+    expect($user->fresh()->devices()->count())->toBe(1)
+        ->and($user->fresh()->securityEvents()->where('event', 'device.registered')->count())->toBe(1);
 });
