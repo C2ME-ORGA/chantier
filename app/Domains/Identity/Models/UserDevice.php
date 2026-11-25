@@ -47,6 +47,16 @@ class UserDevice extends Model
      *
      * @return array<string, string>
      */
+    /**
+     * Get the security audit events associated with this device.
+     *
+     * @return HasMany<UserSecurityEvent, $this>
+     */
+    public function securityEvents(): HasMany
+    {
+        return $this->hasMany(UserSecurityEvent::class);
+    }
+
     protected function casts(): array
     {
         return [
