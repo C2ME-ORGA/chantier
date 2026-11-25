@@ -63,12 +63,32 @@ test('requires the TOTP challenge after validating the password', function () {
     $this->assertAuthenticatedAs($user);
 });
 
+test('redirects an authenticated user without MFA enrollment to mandatory setup', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+
+    Livewire::test(Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $this->assertAuthenticatedAs($user);
+
+    $this->get('/admin')
+        ->assertRedirect(route('filament.admin.auth.multi-factor-authentication.set-up-required'));
+});
+
 test('rejects an invalid TOTP code without authenticating the user', function () {
     $user = User::factory()->create();
     $user->assignRole('ADM');
 
     $provider = AppAuthentication::make();
-    $provider->saveSecret($user, $provider->generateSecret());
+    $secret = $provider->generateSecret();
+    $provider->saveSecret($user, $secret);
+    $invalidCode = str_pad((string) (((int) $provider->getCurrentCode($user, $secret) + 500000) % 1000000), 6, '0', STR_PAD_LEFT);
 
     Livewire::test(Login::class)
         ->fillForm([
@@ -77,7 +97,7 @@ test('rejects an invalid TOTP code without authenticating the user', function ()
         ])
         ->call('authenticate')
         ->assertHasNoFormErrors()
-        ->fillForm(['code' => '000000'], 'multiFactorChallengeForm')
+        ->fillForm(['code' => $invalidCode], 'multiFactorChallengeForm')
         ->call('authenticate')
         ->assertHasFormErrors(['data.multiFactor.code']);
 
