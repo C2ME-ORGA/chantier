@@ -40,7 +40,7 @@ final class DeviceActivityTracker
                 60 * 24 * 365 * 2,
                 '/',
                 null,
-                $request->isSecure(),
+                config('session.secure') === true || $request->isSecure(),
                 true,
                 false,
                 'lax',
@@ -64,7 +64,6 @@ final class DeviceActivityTracker
                 $result['device'],
                 ['source' => 'authenticated_panel'],
             );
-
         }
     }
 
