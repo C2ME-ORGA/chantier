@@ -1,9 +1,11 @@
 <?php
 
-use App\Models\User;
-use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
-use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
-use Illuminate\Support\Facades\Crypt;
+use App\\Models\\User;
+use Filament\\Auth\\MultiFactor\\App\\AppAuthentication;
+use Filament\\Auth\\MultiFactor\\App\\Contracts\\HasAppAuthentication;
+use Filament\\Auth\\MultiFactor\\App\\Contracts\\HasAppAuthenticationRecovery;
+use Illuminate\\Support\\Facades\\Crypt;
+use Illuminate\\Support\\Facades\\Hash;
 
 it('supports Filament app authentication and recovery codes', function (): void {
     $user = new User;
@@ -51,16 +53,17 @@ it('does not expose MFA secrets when serializing a user', function (): void {
         ->not->toHaveKey('app_authentication_recovery_codes');
 });
 
-it('consumes each recovery code exactly once', function (): void {
+it('consumes each recovery code exactly once while preserving other codes', function (): void {
     $user = User::factory()->create();
-    $provider = \Filament\Auth\MultiFactor\App\AppAuthentication::make()
-        ->recoverable();
+    $provider = AppAuthentication::make()->recoverable();
 
     $recoveryCode = 'one-time-recovery-code';
+    $remainingCode = 'another-recovery-code';
 
-    $provider->saveRecoveryCodes($user, [$recoveryCode]);
+    $provider->saveRecoveryCodes($user, [$recoveryCode, $remainingCode]);
 
     expect($provider->verifyRecoveryCode($recoveryCode, $user))->toBeTrue()
         ->and($provider->verifyRecoveryCode($recoveryCode, $user))->toBeFalse()
-        ->and($user->fresh()->getAppAuthenticationRecoveryCodes())->toBe([]);
+        ->and($user->fresh()->getAppAuthenticationRecoveryCodes())->toHaveCount(1)
+        ->and(Hash::check($remainingCode, $user->fresh()->getAppAuthenticationRecoveryCodes()[0]))->toBeTrue();
 });
