@@ -79,7 +79,11 @@ final class RecordSecurityEvent
         $filtered = [];
 
         foreach (self::CONTEXT_KEYS as $key) {
-            $value = $context[$key] ?? null;
+            if (! array_key_exists($key, $context)) {
+                continue;
+            }
+
+            $value = $context[$key];
 
             if (is_string($value)) {
                 $filtered[$key] = mb_substr($value, 0, 100);
