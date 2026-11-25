@@ -29,3 +29,15 @@ pest()->extend(TestCase::class)
 */
 
 pest()->extend(MariaDbTestCase::class)->in('MariaDb');
+
+/*
+|--------------------------------------------------------------------------
+| MySQL Test Case
+|--------------------------------------------------------------------------
+|
+| La suite MySQL locale utilise une base dédiée déjà migrée et une
+| transaction annulée après chaque test.
+|
+*/
+
+pest()->extend(\Tests\MySqlTestCase::class)->in('MySql');
