@@ -1,19 +1,14 @@
 <?php
 
-use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Services\DeviceActivityTracker;
 use App\Models\User;
-use Illuminate\Support\Facades\Cookie;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-
-beforeEach(function () {
-    Cookie::queue([]);
-});
 
 test('crée et approuve un appareil avec un UUID applicatif lorsque le cookie est absent', function () {
     $user = User::factory()->create();
 
-    $request = Request::create('/', 'GET');
+    $request = Request::create('/');
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
 
     app(DeviceActivityTracker::class)->track($request, $user);
@@ -34,7 +29,7 @@ test('réutilise le cookie valide appartenant au même utilisateur', function ()
     $user = User::factory()->create();
     $uuid = (string) Str::uuid();
 
-    $request = request()->create('/', 'GET', cookies: [
+    $request = Request::create('/', 'GET', [
         DeviceActivityTracker::COOKIE_NAME => $uuid,
     ]);
 
@@ -51,7 +46,7 @@ test('fait tourner un UUID déjà associé à un autre utilisateur', function ()
 
     $owner->devices()->create(['uuid' => $uuid]);
 
-    $request = request()->create('/', 'GET', cookies: [
+    $request = Request::create('/', 'GET', [
         DeviceActivityTracker::COOKIE_NAME => $uuid,
     ]);
 
@@ -74,7 +69,7 @@ test('ne crée pas un second événement lors du suivi d’un appareil déjà en
         'trusted_at' => now()->subDay(),
     ]);
 
-    $request = request()->create('/', 'GET', cookies: [
+    $request = Request::create('/', 'GET', [
         DeviceActivityTracker::COOKIE_NAME => $uuid,
     ]);
 
@@ -93,7 +88,7 @@ test('refuse de réactiver un appareil révoqué', function () {
         'revoked_at' => now(),
     ]);
 
-    $request = request()->create('/', 'GET', cookies: [
+    $request = Request::create('/', 'GET', [
         DeviceActivityTracker::COOKIE_NAME => $uuid,
     ]);
 
