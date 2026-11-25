@@ -3,10 +3,17 @@
 use App\Domains\Identity\Models\PersonalAccessToken;
 use App\Domains\Identity\Services\DeviceActivityTracker;
 use App\Models\User;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
-test('adds nullable device references to sessions and Sanctum tokens', function () {\n    expect(Illuminate\\Support\\Facades\\Schema::hasColumn('sessions', 'device_id'))->toBeTrue()\n        ->and(Illuminate\\Support\\Facades\\Schema::hasColumn('personal_access_tokens', 'device_id'))->toBeTrue();\n});\n\ntest('associates a newly issued Sanctum token with the registered device cookie', function () {
+test('adds nullable device references to sessions and Sanctum tokens', function () {
+    expect(Schema::hasColumn('sessions', 'device_id'))->toBeTrue()
+        ->and(Schema::hasColumn('personal_access_tokens', 'device_id'))->toBeTrue();
+});
+
+test('associates a newly issued Sanctum token with the registered device cookie', function () {
     $user = User::factory()->create();
-    $uuid = (string) Illuminate\Support\Str::uuid();
+    $uuid = (string) Str::uuid();
 
     $device = $user->devices()->create([
         'uuid' => $uuid,
@@ -26,7 +33,7 @@ test('adds nullable device references to sessions and Sanctum tokens', function 
 
 test('does not associate a Sanctum token with a revoked device', function () {
     $user = User::factory()->create();
-    $uuid = (string) Illuminate\Support\Str::uuid();
+    $uuid = (string) Str::uuid();
 
     $user->devices()->create([
         'uuid' => $uuid,
