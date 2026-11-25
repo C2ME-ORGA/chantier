@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -31,6 +32,12 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->authGuard('web')
             ->authPasswordBroker('users')
+            ->profile()
+            ->multiFactorAuthentication([
+                AppAuthentication::make()
+                    ->brandName('C2ME')
+                    ->recoverable(),
+            ], isRequired: true)
             ->colors([
                 'primary' => Color::Amber,
             ])

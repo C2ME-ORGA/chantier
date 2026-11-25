@@ -63,6 +63,9 @@ test('réinitialise le mot de passe avec un jeton valide et invalide le jeton', 
 
     expect(Hash::check('NewSecurePassword123!', $user->password))->toBeTrue();
 
+    // Password reset must not create an authenticated web session or bypass panel MFA.
+    $this->assertGuest('web');
+
     $this->assertDatabaseMissing('password_reset_tokens', [
         'email' => $user->email,
     ]);
