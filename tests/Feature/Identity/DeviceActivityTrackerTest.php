@@ -13,7 +13,7 @@ beforeEach(function () {
 test('crée et approuve un appareil avec un UUID applicatif lorsque le cookie est absent', function () {
     $user = User::factory()->create();
 
-    $request = request()->create('/', 'GET');
+    $request = Request::create('/', 'GET');
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
 
     app(DeviceActivityTracker::class)->track($request, $user);
