@@ -50,3 +50,17 @@ it('does not expose MFA secrets when serializing a user', function (): void {
         ->not->toHaveKey('app_authentication_secret')
         ->not->toHaveKey('app_authentication_recovery_codes');
 });
+
+it('consumes each recovery code exactly once', function (): void {
+    $user = User::factory()->create();
+    $provider = Filament\\Auth\\MultiFactor\\App\\AppAuthentication::make()
+        ->recoverable();
+
+    $recoveryCode = 'one-time-recovery-code';
+
+    $provider->saveRecoveryCodes($user, [$recoveryCode]);
+
+    expect($provider->verifyRecoveryCode($recoveryCode, $user))->toBeTrue()
+        ->and($provider->verifyRecoveryCode($recoveryCode, $user))->toBeFalse()
+        ->and($user->fresh()->getAppAuthenticationRecoveryCodes())->toBe([]);
+});
