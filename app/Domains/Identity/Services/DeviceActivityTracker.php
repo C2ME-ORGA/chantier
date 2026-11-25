@@ -65,13 +65,6 @@ final class DeviceActivityTracker
                 ['source' => 'authenticated_panel'],
             );
 
-            $this->recordSecurityEvent->handle(
-                'authentication.succeeded',
-                'filament',
-                $user,
-                $result['device'],
-                ['source' => 'authenticated_panel'],
-            );
         }
     }
 
