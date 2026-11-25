@@ -12,9 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEnabled
 {
-    public function __construct(
-        private readonly DeviceActivityTracker $deviceActivityTracker,
-    ) {}
+    public function __construct(private readonly DeviceActivityTracker $deviceActivityTracker) {}
 
     public function handle(Request $request, Closure $next): Response
     {
