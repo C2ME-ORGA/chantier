@@ -67,3 +67,19 @@ it('consumes each recovery code exactly once while preserving other codes', func
         ->and($user->fresh()->getAppAuthenticationRecoveryCodes())->toHaveCount(1)
         ->and(Hash::check($remainingCode, $user->fresh()->getAppAuthenticationRecoveryCodes()[0]))->toBeTrue();
 });
+
+
+it('refuses to consume a recovery code again from a stale user instance', function (): void {
+    $user = User::factory()->create();
+    $provider = AppAuthentication::make()->recoverable();
+
+    $recoveryCode = 'single-use-recovery-code';
+    $provider->saveRecoveryCodes($user, [$recoveryCode]);
+
+    $firstInstance = $user->fresh();
+    $staleInstance = $user->fresh();
+
+    expect($provider->verifyRecoveryCode($recoveryCode, $firstInstance))->toBeTrue()
+        ->and($provider->verifyRecoveryCode($recoveryCode, $staleInstance))->toBeFalse()
+        ->and($user->fresh()->getAppAuthenticationRecoveryCodes())->toBe([]);
+});
