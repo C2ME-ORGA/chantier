@@ -4,7 +4,7 @@ use App\Domains\Identity\Models\PersonalAccessToken;
 use App\Domains\Identity\Services\DeviceActivityTracker;
 use App\Models\User;
 
-test('associates a newly issued Sanctum token with the registered device cookie', function () {
+test('adds nullable device references to sessions and Sanctum tokens', function () {\n    expect(Illuminate\\Support\\Facades\\Schema::hasColumn('sessions', 'device_id'))->toBeTrue()\n        ->and(Illuminate\\Support\\Facades\\Schema::hasColumn('personal_access_tokens', 'device_id'))->toBeTrue();\n});\n\ntest('associates a newly issued Sanctum token with the registered device cookie', function () {
     $user = User::factory()->create();
     $uuid = (string) Illuminate\Support\Str::uuid();
 
