@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Domains\Identity\Services\DeviceActivityTracker;
+use App\Models\User;
 use Closure;
 use Filament\Auth\MultiFactor\Http\Middleware\EnsureMultiFactorAuthenticationIsEnabled;
 use Filament\Facades\Filament;
@@ -13,14 +14,15 @@ final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEn
 {
     public function __construct(
         private readonly DeviceActivityTracker $deviceActivityTracker,
-    ) {}
+    ) {
+    }
 
     public function handle(Request $request, Closure $next): Response
     {
         return parent::handle($request, function (Request $request) use ($next): Response {
             $user = Filament::auth()->user();
 
-            if ($user instanceof \App\Models\User) {
+            if ($user instanceof User) {
                 $this->deviceActivityTracker->track($request, $user);
             }
 
