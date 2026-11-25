@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\TrackedLogin;
 use App\Http\Middleware\TrackAuthenticatedDevice;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
@@ -29,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(TrackedLogin::class)
             ->passwordReset()
             ->authGuard('web')
             ->authPasswordBroker('users')
