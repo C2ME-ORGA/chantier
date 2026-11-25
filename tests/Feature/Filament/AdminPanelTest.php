@@ -63,7 +63,6 @@ test('requires the TOTP challenge after validating the password', function () {
     $this->assertAuthenticatedAs($user);
 });
 
-
 test('allows login with a one-time recovery code', function () {
     $user = User::factory()->create();
     $user->assignRole('ADM');
