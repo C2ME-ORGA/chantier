@@ -50,6 +50,7 @@ test('authentifie un utilisateur via le formulaire de connexion Filament', funct
 test('autorise un utilisateur disposant de la permission d’accès au panel', function () {
     $user = User::factory()->create();
     $user->assignRole('ADM');
+    $user->saveAppAuthenticationSecret('test-totp-secret');
 
     expect($user->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
 
