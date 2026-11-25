@@ -43,6 +43,16 @@ class UserDevice extends Model
     }
 
     /**
+     * Get the Sanctum tokens associated with this device.
+     *
+     * @return HasMany<PersonalAccessToken, $this>
+     */
+    public function accessTokens(): HasMany
+    {
+        return $this->hasMany(PersonalAccessToken::class, 'device_id');
+    }
+
+    /**
      * Get the security audit events associated with this device.
      *
      * @return HasMany<UserSecurityEvent, $this>
