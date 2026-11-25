@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->configureDefaults();
+        Sanctum::usePersonalAccessTokenModel(\\App\\Domains\\Identity\\Models\\PersonalAccessToken::class);\n\n        $this->configureDefaults();
     }
 
     /**
