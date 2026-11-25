@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\MariaDbTestCase;
+use Tests\MySqlTestCase;
 use Tests\TestCase;
 
 /*
@@ -40,4 +41,4 @@ pest()->extend(MariaDbTestCase::class)->in('MariaDb');
 |
 */
 
-pest()->extend(\Tests\MySqlTestCase::class)->in('MySql');
+pest()->extend(MySqlTestCase::class)->in('MySql');
