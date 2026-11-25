@@ -99,7 +99,7 @@ test('rejects reuse of an already accepted TOTP code', function () {
         ->assertHasNoFormErrors()
         ->fillForm(['app' => ['code' => $code]], 'multiFactorChallengeForm')
         ->call('authenticate')
-        ->assertHasErrors();
+        ->assertHasErrors(['data.multiFactor.app.code']);
 
     $this->assertGuest();
 });
@@ -128,7 +128,7 @@ test('rate limits MFA challenges after five attempts', function () {
     $component
         ->fillForm(['app' => ['code' => '000000']], 'multiFactorChallengeForm')
         ->call('authenticate')
-        ->assertNotified();
+        ->assertNotified(__('filament-panels::auth/pages/login.notifications.throttled.title'));
 
     $this->assertGuest();
 });
@@ -203,7 +203,7 @@ test('rejects an invalid TOTP code without authenticating the user', function ()
         ->assertHasNoFormErrors()
         ->fillForm(['app' => ['code' => $invalidCode]], 'multiFactorChallengeForm')
         ->call('authenticate')
-        ->assertHasErrors();
+        ->assertHasErrors(['data.multiFactor.app.code']);
 
     $this->assertGuest();
 });
