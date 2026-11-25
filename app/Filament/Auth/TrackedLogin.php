@@ -37,11 +37,13 @@ final class TrackedLogin extends Login
             throw $exception;
         }
 
-        if ($response !== null && Filament::auth()->user() instanceof User) {
+        $authenticatedUser = Filament::auth()->user();
+
+        if ($response !== null && $authenticatedUser instanceof User) {
             app(RecordSecurityEvent::class)->handle(
                 'authentication.succeeded',
                 'filament',
-                Filament::auth()->user(),
+                $authenticatedUser,
                 context: ['source' => 'filament_login'],
             );
         }
