@@ -2,6 +2,7 @@
 
 use App\Domains\Identity\Services\DeviceActivityTracker;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -93,7 +94,7 @@ test('refuse de réactiver un appareil révoqué', function () {
     ]);
 
     expect(fn () => app(DeviceActivityTracker::class)->track($request, $user))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 
     expect($user->devices()->sole()->revoked_at)->not->toBeNull();
 });
