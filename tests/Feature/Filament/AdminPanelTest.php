@@ -134,7 +134,7 @@ test('rejects an invalid TOTP code without authenticating the user', function ()
         ->assertHasNoFormErrors()
         ->fillForm(['app' => ['code' => $invalidCode]], 'multiFactorChallengeForm')
         ->call('authenticate')
-        ->assertHasFormErrors(['data.multiFactor.app.code']);
+        ->assertHasFormErrors(['data.data.multiFactor.app.code']);
 
     $this->assertGuest();
 });
