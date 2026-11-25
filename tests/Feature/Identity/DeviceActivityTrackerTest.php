@@ -29,7 +29,7 @@ test('réutilise le cookie valide appartenant au même utilisateur', function ()
     $user = User::factory()->create();
     $uuid = (string) Str::uuid();
 
-    $request = Request::create('/', 'GET', [
+    $request = Request::create('/', 'GET', [], [
         DeviceActivityTracker::COOKIE_NAME => $uuid,
     ]);
 
@@ -46,7 +46,7 @@ test('fait tourner un UUID déjà associé à un autre utilisateur', function ()
 
     $owner->devices()->create(['uuid' => $uuid]);
 
-    $request = Request::create('/', 'GET', [
+    $request = Request::create('/', 'GET', [], [
         DeviceActivityTracker::COOKIE_NAME => $uuid,
     ]);
 
@@ -69,7 +69,7 @@ test('ne crée pas un second événement lors du suivi d’un appareil déjà en
         'trusted_at' => now()->subDay(),
     ]);
 
-    $request = Request::create('/', 'GET', [
+    $request = Request::create('/', 'GET', [], [
         DeviceActivityTracker::COOKIE_NAME => $uuid,
     ]);
 
@@ -88,7 +88,7 @@ test('refuse de réactiver un appareil révoqué', function () {
         'revoked_at' => now(),
     ]);
 
-    $request = Request::create('/', 'GET', [
+    $request = Request::create('/', 'GET', [], [
         DeviceActivityTracker::COOKIE_NAME => $uuid,
     ]);
 
