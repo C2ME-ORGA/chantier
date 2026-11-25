@@ -3,6 +3,7 @@
 use App\Models\User;
 use Database\Seeders\RbacCatalogSeeder;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Auth\MultiFactor\MultiFactorChallenge;
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
@@ -99,6 +100,35 @@ test('rejects reuse of an already accepted TOTP code', function () {
         ->fillForm(['app' => ['code' => $code]], 'multiFactorChallengeForm')
         ->call('authenticate')
         ->assertHasErrors();
+
+    $this->assertGuest();
+});
+
+test('rate limits MFA challenges after five attempts', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+
+    $provider = AppAuthentication::make();
+    $provider->saveSecret($user, $provider->generateSecret());
+
+    $challenge = MultiFactorChallenge::make();
+
+    foreach (range(1, 5) as $attempt) {
+        $challenge->hitRateLimiter($user);
+    }
+
+    $component = Livewire::test(Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $component
+        ->fillForm(['app' => ['code' => '000000']], 'multiFactorChallengeForm')
+        ->call('authenticate')
+        ->assertNotified();
 
     $this->assertGuest();
 });
