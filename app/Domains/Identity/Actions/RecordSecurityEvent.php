@@ -29,7 +29,7 @@ final class RecordSecurityEvent
     /**
      * Record one immutable security event.
      *
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      */
     public function handle(
         string $event,
@@ -71,7 +71,7 @@ final class RecordSecurityEvent
     }
 
     /**
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      * @return array<string, scalar|null>
      */
     private function filterContext(array $context): array
