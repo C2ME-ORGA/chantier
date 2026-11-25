@@ -16,10 +16,8 @@ beforeEach(function () {
 
 function createUserWithEnabledAppMfa(): User
 {
-    $user = User::factory()->create([
-        'app_authentication_secret' => app(AppAuthentication::class)->generateSecret(),
-    ]);
-
+    $user = User::factory()->create();
+    $user->saveAppAuthenticationSecret(AppAuthentication::make()->generateSecret());
     $user->givePermissionTo('identity.admin_panel.access');
 
     return $user;
