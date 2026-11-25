@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken as SanctumPersonalAccessToken;
 
-class PersonalAccessToken extends SanctumPersonalAccessToken
+/**\n * @property int|null $device_id\n */\nclass PersonalAccessToken extends SanctumPersonalAccessToken
 {
     protected static function booted(): void
     {
