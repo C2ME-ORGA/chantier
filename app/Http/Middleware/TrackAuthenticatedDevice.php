@@ -14,8 +14,7 @@ final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEn
 {
     public function __construct(
         private readonly DeviceActivityTracker $deviceActivityTracker,
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
