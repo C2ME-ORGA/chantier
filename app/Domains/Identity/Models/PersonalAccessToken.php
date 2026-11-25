@@ -2,6 +2,7 @@
 
 namespace App\Domains\Identity\Models;
 
+use App\Domains\Identity\Services\DeviceActivityTracker;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
@@ -9,14 +10,6 @@ use Laravel\Sanctum\PersonalAccessToken as SanctumPersonalAccessToken;
 
 class PersonalAccessToken extends SanctumPersonalAccessToken
 {
-    protected $fillable = [
-        'name',
-        'token',
-        'abilities',
-        'expires_at',
-        'device_id',
-    ];
-
     protected static function booted(): void
     {
         static::creating(function (self $token): void {
