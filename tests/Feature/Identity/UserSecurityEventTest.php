@@ -84,3 +84,37 @@ test('expose les événements depuis les relations utilisateur et appareil', fun
     expect($user->securityEvents()->sole()->is($event))->toBeTrue()
         ->and($device->securityEvents()->sole()->is($event))->toBeTrue();
 });
+
+test('ne conserve que les champs de contexte autorisés et les types scalaires', function () {
+    $event = app(RecordSecurityEvent::class)->handle(
+        event: 'login.failed',
+        channel: 'web',
+        context: [
+            'method' => 'password',
+            'failure_code' => 'invalid_credentials',
+            'source' => ['untrusted' => 'payload'],
+            'mfa_method' => null,
+            'password' => 'secret',
+            'access_token' => 'secret-token',
+        ],
+    );
+
+    expect($event->context)->toBe([
+        'method' => 'password',
+        'failure_code' => 'invalid_credentials',
+        'mfa_method' => null,
+    ]);
+});
+
+test('tronque les métadonnées textuelles aux longueurs prévues', function () {
+    request()->headers->set('User-Agent', str_repeat('A', 1200));
+
+    $event = app(RecordSecurityEvent::class)->handle(
+        event: 'login.succeeded',
+        channel: 'web',
+        context: ['source' => str_repeat('B', 150)],
+    );
+
+    expect(mb_strlen($event->user_agent))->toBe(1000)
+        ->and(mb_strlen($event->context['source']))->toBe(100);
+});
