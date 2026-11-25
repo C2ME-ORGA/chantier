@@ -43,11 +43,6 @@ class UserDevice extends Model
     }
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    /**
      * Get the security audit events associated with this device.
      *
      * @return HasMany<UserSecurityEvent, $this>
@@ -57,6 +52,11 @@ class UserDevice extends Model
         return $this->hasMany(UserSecurityEvent::class);
     }
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
