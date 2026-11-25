@@ -63,6 +63,46 @@ test('requires the TOTP challenge after validating the password', function () {
     $this->assertAuthenticatedAs($user);
 });
 
+test('rejects reuse of an already accepted TOTP code', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+
+    $provider = AppAuthentication::make();
+    $secret = $provider->generateSecret();
+    $provider->saveSecret($user, $secret);
+    $code = $provider->getCurrentCode($user, $secret);
+
+    Livewire::test(Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors()
+        ->fillForm(['app' => ['code' => $code]], 'multiFactorChallengeForm')
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $this->assertAuthenticatedAs($user);
+
+    $this->post(route('filament.admin.auth.logout'));
+
+    $this->assertGuest();
+
+    Livewire::test(Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors()
+        ->fillForm(['app' => ['code' => $code]], 'multiFactorChallengeForm')
+        ->call('authenticate')
+        ->assertHasErrors();
+
+    $this->assertGuest();
+});
+
 test('allows login with a one-time recovery code', function () {
     $user = User::factory()->create();
     $user->assignRole('ADM');
