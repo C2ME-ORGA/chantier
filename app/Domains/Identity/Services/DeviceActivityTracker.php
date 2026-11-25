@@ -4,11 +4,11 @@ namespace App\Domains\Identity\Services;
 
 use App\Domains\Identity\Actions\RecordSecurityEvent;
 use App\Domains\Identity\Actions\RegisterUserDevice;
+use App\Domains\Identity\Models\UserDevice;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\Cookie as SymfonyCookie;
 
 final class DeviceActivityTracker
 {
@@ -23,6 +23,14 @@ final class DeviceActivityTracker
     {
         $uuid = $request->cookie(self::COOKIE_NAME);
         $isNewIdentifier = ! is_string($uuid) || ! Str::isUuid($uuid);
+
+        if (! $isNewIdentifier) {
+            $existingDevice = UserDevice::query()->where('uuid', $uuid)->first();
+
+            if ($existingDevice !== null && $existingDevice->user_id !== $user->getKey()) {
+                $isNewIdentifier = true;
+            }
+        }
 
         if ($isNewIdentifier) {
             $uuid = (string) Str::uuid();
