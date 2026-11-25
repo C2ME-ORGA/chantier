@@ -36,7 +36,6 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'email', 'password'])]
-
 #[Hidden(['password', 'remember_token', 'app_authentication_secret', 'app_authentication_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -44,9 +43,9 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     use HasApiTokens;
     use HasFactory;
     use HasRoles;
-    use Notifiable;
     use InteractsWithAppAuthentication;
     use InteractsWithAppAuthenticationRecovery;
+    use Notifiable;
 
     /**
      * Get the attributes that should be cast.
