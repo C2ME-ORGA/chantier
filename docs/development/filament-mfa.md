@@ -14,7 +14,7 @@ La page de profil Filament permet ensuite de gérer l'authentification par appli
 
 ## Connexion et protections
 
-Après validation du mot de passe, le panel exige un code TOTP. Le challenge applique une limite de cinq tentatives par utilisateur avant throttling. Le mécanisme natif de Filament mémorise l'horodatage du dernier code TOTP accepté et rejette ce code ainsi que les périodes antérieures : un code déjà accepté ne peut donc pas être rejoué.
+Après validation du mot de passe, le panel exige un code TOTP. Le challenge applique une limite de cinq tentatives par utilisateur avant throttling. Le compteur MFA est distinct de la limitation des tentatives de mot de passe et est associé à l'identifiant utilisateur scoped par Filament. Le mécanisme natif de Filament mémorise l'horodatage du dernier code TOTP accepté et rejette ce code ainsi que les périodes antérieures : un code déjà accepté ne peut donc pas être rejoué.
 
 En cas de perte de l'application, un code de récupération peut être utilisé une seule fois. Les codes consommés ne doivent pas être réutilisés. Leur consommation est protégée par un verrou de cache et une transaction avec verrouillage de la ligne utilisateur (`lockForUpdate`).
 
