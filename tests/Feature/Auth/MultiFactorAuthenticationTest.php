@@ -53,7 +53,7 @@ it('does not expose MFA secrets when serializing a user', function (): void {
 
 it('consumes each recovery code exactly once', function (): void {
     $user = User::factory()->create();
-    $provider = Filament\\Auth\\MultiFactor\\App\\AppAuthentication::make()
+    $provider = \Filament\Auth\MultiFactor\App\AppAuthentication::make()
         ->recoverable();
 
     $recoveryCode = 'one-time-recovery-code';
