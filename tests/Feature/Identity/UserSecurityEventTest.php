@@ -14,8 +14,8 @@ test('enregistre un événement de sécurité lié à un utilisateur et un appar
         'name' => 'Poste atelier',
     ]);
 
-    Request::server->set('REMOTE_ADDR', '192.0.2.10');
-    Request::headers->set('User-Agent', 'C2ME-Test-Agent/1.0');
+    request()->server->set('REMOTE_ADDR', '192.0.2.10');
+    request()->headers->set('User-Agent', 'C2ME-Test-Agent/1.0');
 
     $event = app(RecordSecurityEvent::class)->handle(
         event: 'device.registered',
