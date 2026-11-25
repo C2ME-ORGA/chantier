@@ -1,11 +1,11 @@
 <?php
 
-use App\\Models\\User;
-use Filament\\Auth\\MultiFactor\\App\\AppAuthentication;
-use Filament\\Auth\\MultiFactor\\App\\Contracts\\HasAppAuthentication;
-use Filament\\Auth\\MultiFactor\\App\\Contracts\\HasAppAuthenticationRecovery;
-use Illuminate\\Support\\Facades\\Crypt;
-use Illuminate\\Support\\Facades\\Hash;
+use App\Models\User;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Hash;
 
 it('supports Filament app authentication and recovery codes', function (): void {
     $user = new User;
