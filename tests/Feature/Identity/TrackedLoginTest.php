@@ -50,7 +50,7 @@ test('journalise un échec MFA sur le compte concerné sans authentifier ni enre
         ->assertHasNoErrors();
 
     $component
-        ->set('data.multiFactor.app.code', '000000')
+        ->set('data.multiFactor.app.code', 'invalid-code')
         ->call('authenticate')
         ->assertHasErrors();
 
