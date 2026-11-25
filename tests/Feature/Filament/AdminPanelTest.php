@@ -63,6 +63,39 @@ test('requires the TOTP challenge after validating the password', function () {
     $this->assertAuthenticatedAs($user);
 });
 
+
+test('allows login with a one-time recovery code', function () {
+    $user = User::factory()->create();
+    $user->assignRole('ADM');
+
+    $provider = AppAuthentication::make()->recoverable();
+    $provider->saveSecret($user, $provider->generateSecret());
+
+    $recoveryCode = 'recovery-code-for-login';
+    $provider->saveRecoveryCodes($user, [$recoveryCode, 'unused-recovery-code']);
+
+    $component = Livewire::test(Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $this->assertGuest();
+
+    $component
+        ->fillForm([
+            'useRecoveryCode' => true,
+            'recoveryCode' => $recoveryCode,
+        ], 'multiFactorChallengeForm')
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $this->assertAuthenticatedAs($user);
+    expect($user->fresh()->getAppAuthenticationRecoveryCodes())->toHaveCount(1);
+});
+
 test('redirects an authenticated user without MFA enrollment to mandatory setup', function () {
     $user = User::factory()->create();
     $user->assignRole('ADM');
