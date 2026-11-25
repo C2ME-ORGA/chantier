@@ -56,7 +56,7 @@ test('requires the TOTP challenge after validating the password', function () {
     $code = $provider->getCurrentCode($user, $secret);
 
     $component
-        ->fillForm(['code' => $code], 'multiFactorChallengeForm')
+        ->fillForm(['app' => ['code' => $code]], 'multiFactorChallengeForm')
         ->call('authenticate')
         ->assertHasNoFormErrors();
 
@@ -86,8 +86,10 @@ test('allows login with a one-time recovery code', function () {
 
     $component
         ->fillForm([
-            'useRecoveryCode' => true,
-            'recoveryCode' => $recoveryCode,
+            'app' => [
+                'useRecoveryCode' => true,
+                'recoveryCode' => $recoveryCode,
+            ],
         ], 'multiFactorChallengeForm')
         ->call('authenticate')
         ->assertHasNoFormErrors();
@@ -130,9 +132,9 @@ test('rejects an invalid TOTP code without authenticating the user', function ()
         ])
         ->call('authenticate')
         ->assertHasNoFormErrors()
-        ->fillForm(['code' => $invalidCode], 'multiFactorChallengeForm')
+        ->fillForm(['app' => ['code' => $invalidCode]], 'multiFactorChallengeForm')
         ->call('authenticate')
-        ->assertHasFormErrors(['data.multiFactor.code']);
+        ->assertHasFormErrors(['data.multiFactor.app.code']);
 
     $this->assertGuest();
 });
