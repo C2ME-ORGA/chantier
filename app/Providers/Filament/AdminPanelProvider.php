@@ -35,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->profile()
             ->multiFactorAuthentication([
                 AppAuthentication::make()
+                    ->brandName('C2ME')
                     ->recoverable(),
             ], isRequired: true)
             ->colors([
