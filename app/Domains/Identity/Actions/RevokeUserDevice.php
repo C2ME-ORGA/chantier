@@ -2,6 +2,7 @@
 
 namespace App\Domains\Identity\Actions;
 
+use App\Domains\Identity\Models\PersonalAccessToken;
 use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Notifications\DeviceRevokedNotification;
 use App\Models\User;
@@ -45,7 +46,7 @@ final class RevokeUserDevice
             }
 
             $device->forceFill(['revoked_at' => now()])->save();
-            $device->accessTokens()->delete();
+            PersonalAccessToken::query()->where('device_id', $device->getKey())->delete();
 
             if (config('session.driver') === 'database') {
                 DB::connection(config('session.connection'))
