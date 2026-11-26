@@ -85,18 +85,29 @@ test('le panel est réservé aux rôles disposant de la permission dédiée', fu
 
 test('le catalogue respecte les conventions atomiques et la règle DIR', function () {
     $roleNames = array_keys(RoleCatalog::all());
+    $sensitivePermissions = [
+        'identity.security_events.view',
+        'identity.devices.manage',
+    ];
 
     foreach (PermissionCatalog::all() as $permission => $assignedRoles) {
-        expect($permission)->toMatch('/^[a-z_]+\.[a-z_]+\.[a-z_]+$/')
-            ->and($assignedRoles)->not->toBeEmpty();
+        expect($permission)->toMatch('/^[a-z_]+\.[a-z_]+\.[a-z_]+$/');
 
         foreach ($assignedRoles as $roleName) {
             expect($roleNames)->toContain($roleName);
         }
 
-        if ($permission !== 'identity.admin_panel.access') {
-            expect($assignedRoles)->toContain('DIR');
+        if ($permission === 'identity.admin_panel.access' || in_array($permission, $sensitivePermissions, true)) {
+            continue;
         }
+
+        expect($assignedRoles)->not->toBeEmpty()
+            ->and($assignedRoles)->toContain('DIR');
+    }
+
+    foreach ($sensitivePermissions as $permission) {
+        expect(PermissionCatalog::all())->toHaveKey($permission)
+            ->and(PermissionCatalog::all()[$permission])->toBe([]);
     }
 
     expect(array_keys(PermissionCatalog::all()))
@@ -108,7 +119,11 @@ test('DIR possède exactement toutes les permissions fonctionnelles du catalogue
     $direction = Role::findByName('DIR', 'web');
 
     $expected = collect(PermissionCatalog::all())
-        ->reject(fn (array $roles, string $permission) => $permission === 'identity.admin_panel.access')
+        ->reject(fn (array $roles, string $permission) => in_array($permission, [
+            'identity.admin_panel.access',
+            'identity.security_events.view',
+            'identity.devices.manage',
+        ], true))
         ->keys()
         ->sort()
         ->values()
