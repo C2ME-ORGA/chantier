@@ -55,7 +55,7 @@ class DeviceManagementPage extends Page implements HasTable
                 SelectFilter::make('status')
                     ->label('État')
                     ->options(['active' => 'Actif', 'revoked' => 'Révoqué'])
-                    ->query(fn ($query, array $data) => match ($data['value'] ?? null) {
+                    ->query(fn (\\Illuminate\\Database\\Eloquent\\Builder $query, array $data): \\Illuminate\\Database\\Eloquent\\Builder => match ($data['value'] ?? null) {
                         'active' => $query->whereNull('revoked_at'),
                         'revoked' => $query->whereNotNull('revoked_at'),
                         default => $query,
