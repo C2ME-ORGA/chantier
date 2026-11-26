@@ -55,12 +55,14 @@ class MyDevicesPage extends Page implements HasTable
                     ->color(fn ($state): string => $state === null ? 'success' : 'danger'),
             ])
             ->filters([
-                Filter::make('active')
-                    ->label('Appareils actifs')
-                    ->query(fn (Builder $query): Builder => $query->whereNull('revoked_at')),
-                Filter::make('revoked')
-                    ->label('Appareils révoqués')
-                    ->query(fn (Builder $query): Builder => $query->whereNotNull('revoked_at')),
+                SelectFilter::make('status')
+                    ->label('État')
+                    ->options(['active' => 'Actif', 'revoked' => 'Révoqué'])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'active' => $query->whereNull('revoked_at'),
+                        'revoked' => $query->whereNotNull('revoked_at'),
+                        default => $query,
+                    }),
             ])
             ->recordActions([
                 Action::make('revoke')
