@@ -24,7 +24,7 @@ class SecurityEventsPage extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Journal de sécurité global';
 
-    protected static ?string $navigationGroup = 'Administration sécurité';
+    protected static string|\\UnitEnum|null $navigationGroup = 'Administration sécurité';
 
     protected static ?int $navigationSort = 1;
 
