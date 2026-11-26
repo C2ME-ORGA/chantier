@@ -24,6 +24,7 @@ final class RecordSecurityEvent
         'failure_code',
         'source',
         'mfa_method',
+        'actor_id',
     ];
 
     /**
