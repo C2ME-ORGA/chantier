@@ -47,8 +47,8 @@ class DeviceManagementPage extends Page implements HasTable
                 TextColumn::make('revoked_at')
                     ->label('État')
                     ->badge()
-                    ->formatStateUsing(fn (?string $state): string => $state === null ? 'Actif' : 'Révoqué')
-                    ->color(fn (?string $state): string => $state === null ? 'success' : 'danger'),
+                    ->formatStateUsing(fn ($state): string => $state === null ? 'Actif' : 'Révoqué')
+                    ->color(fn ($state): string => $state === null ? 'success' : 'danger'),
             ])
             ->filters([
                 SelectFilter::make('user_id')->label('Utilisateur')->relationship('user', 'name')->searchable()->preload(),
