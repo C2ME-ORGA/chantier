@@ -12,6 +12,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 class DeviceManagementPage extends Page implements HasTable
@@ -55,7 +56,7 @@ class DeviceManagementPage extends Page implements HasTable
                 SelectFilter::make('status')
                     ->label('État')
                     ->options(['active' => 'Actif', 'revoked' => 'Révoqué'])
-                    ->query(fn (\\Illuminate\\Database\\Eloquent\\Builder $query, array $data): \\Illuminate\\Database\\Eloquent\\Builder => match ($data['value'] ?? null) {
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
                         'active' => $query->whereNull('revoked_at'),
                         'revoked' => $query->whereNotNull('revoked_at'),
                         default => $query,
