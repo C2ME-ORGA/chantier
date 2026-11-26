@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Models\UserProfile;
+use App\Domains\Identity\Models\UserSecurityEvent;
 use Database\Factories\UserFactory;
 use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
 use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
@@ -90,6 +91,16 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function devices(): HasMany
     {
         return $this->hasMany(UserDevice::class);
+    }
+
+    /**
+     * Get the user's security audit events.
+     *
+     * @return HasMany<UserSecurityEvent, $this>
+     */
+    public function securityEvents(): HasMany
+    {
+        return $this->hasMany(UserSecurityEvent::class);
     }
 
     /**

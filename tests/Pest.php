@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\MariaDbTestCase;
+use Tests\MySqlTestCase;
 use Tests\TestCase;
 
 /*
@@ -29,3 +30,15 @@ pest()->extend(TestCase::class)
 */
 
 pest()->extend(MariaDbTestCase::class)->in('MariaDb');
+
+/*
+|--------------------------------------------------------------------------
+| MySQL Test Case
+|--------------------------------------------------------------------------
+|
+| La suite MySQL locale utilise une base dédiée déjà migrée et une
+| transaction annulée après chaque test.
+|
+*/
+
+pest()->extend(MySqlTestCase::class)->in('MySql');

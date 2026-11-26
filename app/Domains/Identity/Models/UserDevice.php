@@ -5,6 +5,7 @@ namespace App\Domains\Identity\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -39,6 +40,16 @@ class UserDevice extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the security events associated with this device.
+     *
+     * @return HasMany<UserSecurityEvent, $this>
+     */
+    public function securityEvents(): HasMany
+    {
+        return $this->hasMany('App\\Domains\\Identity\\Models\\UserSecurityEvent', 'user_device_id');
     }
 
     /**
