@@ -49,11 +49,11 @@ class PersonalAccessToken extends SanctumPersonalAccessToken
             }
 
             app(RecordSecurityEvent::class)->handle(
-                'token.created',
-                'api',
-                $user,
-                $token->device,
-                [
+                event: 'token.created',
+                channel: 'api',
+                user: $user,
+                device: $token->device,
+                context: [
                     'source' => 'sanctum',
                     'method' => 'personal_access_token',
                 ],
@@ -68,11 +68,11 @@ class PersonalAccessToken extends SanctumPersonalAccessToken
             }
 
             app(RecordSecurityEvent::class)->handle(
-                'token.revoked',
-                'api',
-                $user,
-                $token->device,
-                [
+                event: 'token.revoked',
+                channel: 'api',
+                user: $user,
+                device: $token->device,
+                context: [
                     'source' => 'sanctum',
                     'method' => 'personal_access_token',
                 ],
