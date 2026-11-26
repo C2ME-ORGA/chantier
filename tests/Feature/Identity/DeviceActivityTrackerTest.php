@@ -96,7 +96,7 @@ test('renouvelle le cookie lorsqu’un appareil est révoqué sans réactiver l�
     app(DeviceActivityTracker::class)->track($request, $user);
 
     $devices = $user->devices()->orderBy('id')->get();
-    $newDevice = $devices->sole(fn ($device) => $device->getKey() !== $revokedDevice->getKey());
+    $newDevice = $devices->sole('id', '!=', $revokedDevice->getKey());
 
     expect($devices)->toHaveCount(2)
         ->and($revokedDevice->fresh()->revoked_at)->not->toBeNull()
