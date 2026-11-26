@@ -1,6 +1,5 @@
 <?php
 
-use App\Domains\Identity\Models\PersonalAccessToken;
 use App\Models\User;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
