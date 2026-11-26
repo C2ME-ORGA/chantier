@@ -28,6 +28,7 @@ test('revokes a device, its tokens and records a notification and security event
     expect($device->fresh()->revoked_at)->not->toBeNull()
         ->and($user->tokens()->whereKey($token->getKey())->exists())->toBeFalse()
         ->and(UserSecurityEvent::query()->where('event', 'device.revoked')->count())->toBe(1)
+        ->and(UserSecurityEvent::query()->where('event', 'token.revoked')->count())->toBe(1)
         ->and($user->notifications()->where('type', DeviceRevokedNotification::class)->count())->toBe(1);
 });
 
