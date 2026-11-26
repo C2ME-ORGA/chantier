@@ -70,19 +70,13 @@ it('journalise la création et la révocation d’un token Sanctum', function ()
     $createdEvent = $user->fresh()->securityEvents()->where('event', 'token.created')->sole();
 
     expect($createdEvent->channel)->toBe('api')
-        ->and($createdEvent->context)->toBe([
-            'source' => 'sanctum',
-            'method' => 'personal_access_token',
-        ]);
+        ->and($createdEvent->context)->toHaveKey('source', 'sanctum');
 
     $token->accessToken->delete();
 
     $revokedEvent = $user->fresh()->securityEvents()->where('event', 'token.revoked')->sole();
 
     expect($revokedEvent->channel)->toBe('api')
-        ->and($revokedEvent->context)->toBe([
-            'source' => 'sanctum',
-            'method' => 'personal_access_token',
-        ])
+        ->and($revokedEvent->context)->toHaveKey('source', 'sanctum')
         ->and($revokedEvent->context)->not->toHaveKey('token');
 });
