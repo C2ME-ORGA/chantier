@@ -62,10 +62,10 @@ test('rejects API access when the bearer token belongs to a revoked device', fun
         'revoked_at' => now(),
     ]);
 
-    $token = $user->createToken('revoked device token')->accessToken;
-    $token->forceFill(['device_id' => $device->getKey()])->save();
+    $newToken = $user->createToken('revoked device token');
+    $newToken->accessToken->forceFill(['device_id' => $device->getKey()])->save();
 
-    $this->withToken($user->tokens()->whereKey($token->getKey())->first()->getKey() ? $user->createToken('api')->plainTextToken : '')
+    $this->withToken($newToken->plainTextToken)
         ->getJson('/api/user')
         ->assertUnauthorized();
 });
