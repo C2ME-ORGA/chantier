@@ -80,21 +80,29 @@ test('ne crée pas un second événement lors du suivi d’un appareil déjà en
         ->and($user->securityEvents()->where('event', 'device.registered')->count())->toBe(0);
 });
 
-test('refuse de réactiver un appareil révoqué', function () {
+test('renouvelle le cookie lorsqu’un appareil est révoqué sans réactiver l’ancien', function () {
     $user = User::factory()->create();
-    $uuid = (string) Str::uuid();
+    $revokedUuid = (string) Str::uuid();
 
-    $user->devices()->create([
-        'uuid' => $uuid,
+    $revokedDevice = $user->devices()->create([
+        'uuid' => $revokedUuid,
         'revoked_at' => now(),
     ]);
 
     $request = Request::create('/', 'GET', [], [
-        DeviceActivityTracker::COOKIE_NAME => $uuid,
+        DeviceActivityTracker::COOKIE_NAME => $revokedUuid,
     ]);
 
-    expect(fn () => app(DeviceActivityTracker::class)->track($request, $user))
-        ->toThrow(AuthorizationException::class);
+    app(DeviceActivityTracker::class)->track($request, $user);
 
-    expect($user->devices()->sole()->revoked_at)->not->toBeNull();
+    $devices = $user->devices()->orderBy('id')->get();
+    $newDevice = $devices->sole(fn ($device) => $device->getKey() !== $revokedDevice->getKey());
+
+    expect($devices)->toHaveCount(2)
+        ->and($revokedDevice->fresh()->revoked_at)->not->toBeNull()
+        ->and($newDevice->uuid)->not->toBe($revokedUuid)
+        ->and(Str::isUuid($newDevice->uuid))->toBeTrue()
+        ->and($newDevice->trusted_at)->not->toBeNull()
+        ->and($user->securityEvents()->where('event', 'device.registered')->count())->toBe(1)
+        ->and(Cookie::queued(DeviceActivityTracker::COOKIE_NAME)?->getValue())->toBe($newDevice->uuid);
 });
