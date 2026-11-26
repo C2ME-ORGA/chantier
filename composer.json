@@ -96,7 +96,10 @@
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
         ],
         "test:sqlite": "pest -c phpunit.sqlite.xml",
-        "test:mysql": "pest -c phpunit.mysql.xml",
+        "test:mysql": [
+            "@php tests/prepare-mysql.php",
+            "pest -c phpunit.mysql.xml"
+        ],
         "test:mariadb": "pest -c phpunit.mariadb.xml"
     },
     "extra": {
