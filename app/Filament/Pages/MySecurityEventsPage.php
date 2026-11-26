@@ -21,7 +21,7 @@ class MySecurityEventsPage extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Mon historique de sécurité';
 
-    protected static ?string $navigationGroup = 'Sécurité';
+    protected static string|\\UnitEnum|null $navigationGroup = 'Sécurité';
 
     protected static ?int $navigationSort = 91;
 
