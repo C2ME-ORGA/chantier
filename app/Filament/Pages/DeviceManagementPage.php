@@ -24,7 +24,7 @@ class DeviceManagementPage extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Gestion des appareils';
 
-    protected static ?string $navigationGroup = 'Administration sécurité';
+    protected static string|\\UnitEnum|null $navigationGroup = 'Administration sécurité';
 
     protected static ?int $navigationSort = 2;
 
