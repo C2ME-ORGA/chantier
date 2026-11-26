@@ -3,20 +3,24 @@
 namespace App\Domains\Identity\Listeners;
 
 use App\Domains\Identity\Actions\RecordSecurityEvent;
+use App\Domains\Identity\Support\AuthenticationChannelResolver;
 use App\Models\User;
-use Filament\Facades\Filament;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
-use Illuminate\Support\Facades\Request;
 
 final class RecordAuthenticationEvent
 {
-    public function __construct(private readonly RecordSecurityEvent $recordSecurityEvent) {}
+    public function __construct(
+        private readonly RecordSecurityEvent $recordSecurityEvent,
+        private readonly AuthenticationChannelResolver $channelResolver,
+    ) {}
 
     public function login(Login $event): void
     {
-        if ($this->isFilamentRequest()) {
+        $channel = $this->channelResolver->resolve($event->guard);
+
+        if ($channel === 'filament') {
             return;
         }
 
@@ -24,7 +28,7 @@ final class RecordAuthenticationEvent
 
         $this->recordSecurityEvent->handle(
             'login.succeeded',
-            $this->channel($event->guard),
+            $channel,
             $user,
             context: [
                 'method' => $event->remember ? 'remembered_session' : 'password_or_guard',
@@ -35,7 +39,9 @@ final class RecordAuthenticationEvent
 
     public function failed(Failed $event): void
     {
-        if ($this->isFilamentRequest()) {
+        $channel = $this->channelResolver->resolve($event->guard);
+
+        if ($channel === 'filament') {
             return;
         }
 
@@ -43,7 +49,7 @@ final class RecordAuthenticationEvent
 
         $this->recordSecurityEvent->handle(
             'login.failed',
-            $this->channel($event->guard),
+            $channel,
             $user,
             context: [
                 'method' => 'password_or_guard',
@@ -59,29 +65,9 @@ final class RecordAuthenticationEvent
 
         $this->recordSecurityEvent->handle(
             'logout.succeeded',
-            $this->channel($event->guard),
+            $this->channelResolver->resolve($event->guard),
             $user,
             context: ['source' => 'laravel_auth'],
         );
-    }
-
-    private function channel(string $guard): string
-    {
-        if ($this->isFilamentRequest()) {
-            return 'filament';
-        }
-
-        if (in_array($guard, ['sanctum', 'api'], true) || Request::is('api/*')) {
-            return 'api';
-        }
-
-        return 'web';
-    }
-
-    private function isFilamentRequest(): bool
-    {
-        return Filament::getCurrentPanel()?->getId() === 'admin'
-            || Request::is('admin', 'admin/*')
-            || Request::routeIs('filament.*');
     }
 }
