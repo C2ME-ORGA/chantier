@@ -25,7 +25,7 @@ class MyDevicesPage extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Mes appareils';
 
-    protected static ?string $navigationGroup = 'Sécurité';
+    protected static string|\\UnitEnum|null $navigationGroup = 'Sécurité';
 
     protected static ?int $navigationSort = 90;
 
