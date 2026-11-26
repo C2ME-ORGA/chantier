@@ -15,14 +15,14 @@ final class RevokeUserDevice
 
     public function handle(User $actor, UserDevice $device): UserDevice
     {
-        if ($device->user_id !== $actor->getKey()) {
+        if ($device->user_id !== $actor->getKey() && ! $actor->can('identity.devices.manage')) {
             throw new AuthorizationException('Vous ne pouvez pas révoquer cet appareil.');
         }
 
         return DB::transaction(function () use ($actor, $device): UserDevice {
             $device = UserDevice::query()->whereKey($device->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($device->user_id !== $actor->getKey()) {
+            if ($device->user_id !== $actor->getKey() && ! $actor->can('identity.devices.manage')) {
                 throw new AuthorizationException('Vous ne pouvez pas révoquer cet appareil.');
             }
 
