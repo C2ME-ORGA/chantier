@@ -2,7 +2,7 @@
 
 namespace App\Domains\Identity\Models;
 
-use App\Domains\Identity\Services\DeviceActivityTracker;
+use App\Domains\Identity\Support\DeviceCookie;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
@@ -23,7 +23,7 @@ class PersonalAccessToken extends SanctumPersonalAccessToken
                 return;
             }
 
-            $uuid = request()->cookie(DeviceActivityTracker::COOKIE_NAME);
+            $uuid = request()->cookie(DeviceCookie::NAME);
 
             if (! is_string($uuid) || ! Str::isUuid($uuid)) {
                 return;
