@@ -19,6 +19,8 @@ final class PermissionCatalog
     {
         return [
             'identity.admin_panel.access' => ['SA', 'DIR', 'ADM', 'CT', 'CC', 'RA', 'GAF'],
+            'identity.security_events.view' => [],
+            'identity.devices.manage' => [],
 
             'clients.prospects.view' => ['DIR', 'ADM'],
             'clients.prospects.create' => ['DIR', 'ADM'],
