@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Console\Input\ArgvInput;
 
 require __DIR__.'/bootstrap-mysql.php';
 
 $app = require dirname(__DIR__).'/bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 $connection = DB::connection();
 
@@ -32,7 +33,7 @@ if ($database !== 'chantier_test_mysql') {
 
 $serverVersion = (string) DB::selectOne('SELECT VERSION() AS version')->version;
 
-if (stripos($serverVersion, 'mariadb') !== false || ! preg_match('/^8\./', $serverVersion)) {
+if (stripos($serverVersion, 'mariadb') !== false || !preg_match('/^8\./', $serverVersion)) {
     fwrite(STDERR, sprintf(
         "ERREUR : MySQL 8.x requis, serveur détecté : %s. Aucune migration exécutée.\n",
         $serverVersion,
