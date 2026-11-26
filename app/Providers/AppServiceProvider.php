@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Domains\Identity\Listeners\RecordAuthenticationEvent;
 use App\Domains\Identity\Models\PersonalAccessToken;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -30,17 +33,17 @@ class AppServiceProvider extends ServiceProvider
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         Event::listen(
-            \Illuminate\Auth\Events\Login::class,
+            Login::class,
             [RecordAuthenticationEvent::class, 'login'],
         );
 
         Event::listen(
-            \Illuminate\Auth\Events\Failed::class,
+            Failed::class,
             [RecordAuthenticationEvent::class, 'failed'],
         );
 
         Event::listen(
-            \Illuminate\Auth\Events\Logout::class,
+            Logout::class,
             [RecordAuthenticationEvent::class, 'logout'],
         );
 
