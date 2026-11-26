@@ -42,7 +42,6 @@ it('journalise un échec Web sans conserver les identifiants soumis', function (
 it('journalise les connexions API sans enregistrer de secret de token', function (): void {
     $user = User::factory()->create();
 
-    request()->server->set('REQUEST_URI', '/api/session');
     Event::dispatch(new Login('sanctum', $user, false));
 
     $event = $user->fresh()->securityEvents()->sole();
