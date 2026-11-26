@@ -4,7 +4,6 @@ use App\Domains\Identity\Actions\RecordSecurityEvent;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
-use LogicException;
 
 test('enregistre un événement de sécurité lié à un utilisateur et un appareil', function () {
     $user = User::factory()->create();
