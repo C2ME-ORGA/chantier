@@ -31,7 +31,13 @@ final class DeviceActivityTracker
         if (! $isNewIdentifier) {
             $existingDevice = UserDevice::query()->where('uuid', $uuid)->first();
 
-            if ($existingDevice !== null && $existingDevice->user_id !== $user->getKey()) {
+            if (
+                $existingDevice !== null
+                && (
+                    $existingDevice->user_id !== $user->getKey()
+                    || $existingDevice->revoked_at !== null
+                )
+            ) {
                 $isNewIdentifier = true;
             }
         }
