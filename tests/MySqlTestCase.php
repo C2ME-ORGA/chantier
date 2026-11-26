@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Base des tests exécutés sur MySQL 8.x local.
  *
- * La suite est volontairement non destructive : elle suppose que les
- * migrations ont déjà été exécutées sur `chantier_test_mysql` et encadre
- * chaque test dans une transaction annulée à la fin. Le garde-fou refuse
- * toute exécution sur un autre moteur ou une autre base.
+ * La préparation de la suite exécute les migrations sur `chantier_test_mysql`
+ * après vérification du moteur et de la base. Chaque test est ensuite encadré
+ * dans une transaction annulée à la fin. Le garde-fou refuse toute exécution
+ * sur un autre moteur ou une autre base.
  */
 abstract class MySqlTestCase extends TestCase
 {
