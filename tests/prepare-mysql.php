@@ -33,7 +33,7 @@ if ($database !== 'chantier_test_mysql') {
 
 $serverVersion = (string) DB::selectOne('SELECT VERSION() AS version')->version;
 
-if (stripos($serverVersion, 'mariadb') !== false || !preg_match('/^8\./', $serverVersion)) {
+if (stripos($serverVersion, 'mariadb') !== false || ! preg_match('/^8\./', $serverVersion)) {
     fwrite(STDERR, sprintf(
         "ERREUR : MySQL 8.x requis, serveur détecté : %s. Aucune migration exécutée.\n",
         $serverVersion,
