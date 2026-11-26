@@ -5,7 +5,6 @@ namespace App\Domains\Identity\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -40,26 +39,6 @@ class UserDevice extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get the Sanctum tokens associated with this device.
-     *
-     * @return HasMany<PersonalAccessToken, $this>
-     */
-    public function accessTokens(): HasMany
-    {
-        return $this->hasMany(PersonalAccessToken::class, 'device_id');
-    }
-
-    /**
-     * Get the security audit events associated with this device.
-     *
-     * @return HasMany<UserSecurityEvent, $this>
-     */
-    public function securityEvents(): HasMany
-    {
-        return $this->hasMany(UserSecurityEvent::class);
     }
 
     /**
