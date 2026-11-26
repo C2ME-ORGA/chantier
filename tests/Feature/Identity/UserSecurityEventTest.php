@@ -4,6 +4,7 @@ use App\Domains\Identity\Actions\RecordSecurityEvent;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 test('enregistre un événement de sécurité lié à un utilisateur et un appareil', function () {
     $user = User::factory()->create();
@@ -117,4 +118,19 @@ test('tronque les métadonnées textuelles aux longueurs prévues', function () 
 
     expect(mb_strlen($event->user_agent))->toBe(1000)
         ->and(mb_strlen($event->context['source']))->toBe(100);
+});
+
+test('refuse la modification et la suppression des événements via Eloquent', function () {
+    $event = app(RecordSecurityEvent::class)->handle(
+        event: 'device.registered',
+        channel: 'web',
+    );
+
+    expect(fn () => $event->forceFill(['event' => 'tampered'])->save())
+        ->toThrow(LogicException::class);
+
+    expect(fn () => $event->delete())
+        ->toThrow(LogicException::class);
+
+    expect(UserSecurityEvent::query()->whereKey($event->getKey())->exists())->toBeTrue();
 });
