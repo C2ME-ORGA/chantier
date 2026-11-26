@@ -87,7 +87,7 @@ it('protects global security pages with their dedicated permissions', function (
 });
 
 it('allows a user with the device management permission to revoke another users device', function (): void {
-    $administrator = User::factory()->create();
+    Notification::fake();\n\n    $administrator = User::factory()->create();
     $owner = User::factory()->create();
 
     Permission::findOrCreate('identity.devices.manage', 'web');
@@ -104,5 +104,5 @@ it('allows a user with the device management permission to revoke another users 
 
     $revoked = app(RevokeUserDevice::class)->handle($administrator, $device);
 
-    expect($revoked->revoked_at)->not->toBeNull();
+    expect($revoked->revoked_at)->not->toBeNull();\n\n    $event = UserSecurityEvent::query()->where('event', 'device.revoked')->sole();\n\n    expect($event->user_id)->toBe($owner->getKey())\n        ->and($event->context['actor_id'])->toBe($administrator->getKey());\n\n    Notification::assertSentTo($owner, DeviceRevokedNotification::class);\n    Notification::assertNotSentTo($administrator, DeviceRevokedNotification::class);
 });
