@@ -202,6 +202,22 @@ test('une attestation avec preuve intacte est acceptée', function (): void {
     rmdir($directory);
 });
 
+/**
+ * Nettoie un chemin de test sans appeler unlink() sur un dossier ni sur un fichier absent.
+ */
+function chan98CleanupPath(string $path): void
+{
+    if (is_dir($path)) {
+        rmdir($path);
+
+        return;
+    }
+
+    if (is_file($path) || is_link($path)) {
+        unlink($path);
+    }
+}
+
 test('une preuve modifiée, absente ou non régulière invalide l attestation', function (string $mode): void {
     if ($mode === 'modified') {
         [$attestationPath, $proofPath, $directory] = chan98WriteAttestationWithProof();
@@ -219,10 +235,9 @@ test('une preuve modifiée, absente ou non régulière invalide l attestation', 
 
     expect($errors)->not->toBe([]);
 
-    @unlink($attestationPath);
-    @unlink($proofPath);
-    @rmdir($proofPath);
-    @rmdir($directory);
+    chan98CleanupPath($attestationPath);
+    chan98CleanupPath($proofPath);
+    chan98CleanupPath($directory);
 })->with(['modified', 'absent', 'directory']);
 
 test('un digest incorrect est refusé', function (): void {
