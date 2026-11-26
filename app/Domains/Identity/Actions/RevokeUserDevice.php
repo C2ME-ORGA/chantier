@@ -46,7 +46,12 @@ final class RevokeUserDevice
             }
 
             $device->forceFill(['revoked_at' => now()])->save();
-            PersonalAccessToken::query()->where('device_id', $device->getKey())->delete();
+
+            PersonalAccessToken::query()
+                ->where('device_id', $device->getKey())
+                ->chunkById(100, static function ($tokens): void {
+                    $tokens->each(static fn (PersonalAccessToken $token) => $token->delete());
+                });
 
             if (config('session.driver') === 'database') {
                 DB::connection(config('session.connection'))

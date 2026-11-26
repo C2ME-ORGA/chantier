@@ -24,7 +24,7 @@ final class TrackedLogin extends Login
             $response = parent::authenticate();
         } catch (ValidationException $exception) {
             app(RecordSecurityEvent::class)->handle(
-                $isMultiFactorChallenge ? 'mfa.failed' : 'authentication.failed',
+                $isMultiFactorChallenge ? 'mfa.challenge.failed' : 'login.failed',
                 'filament',
                 $challengeUser instanceof User ? $challengeUser : null,
                 context: [
@@ -40,8 +40,20 @@ final class TrackedLogin extends Login
         $authenticatedUser = Filament::auth()->user();
 
         if ($response !== null && $authenticatedUser instanceof User) {
+            if ($isMultiFactorChallenge) {
+                app(RecordSecurityEvent::class)->handle(
+                    'mfa.challenge.succeeded',
+                    'filament',
+                    $authenticatedUser,
+                    context: [
+                        'method' => 'totp',
+                        'source' => 'filament_login',
+                    ],
+                );
+            }
+
             app(RecordSecurityEvent::class)->handle(
-                'authentication.succeeded',
+                'login.succeeded',
                 'filament',
                 $authenticatedUser,
                 context: ['source' => 'filament_login'],

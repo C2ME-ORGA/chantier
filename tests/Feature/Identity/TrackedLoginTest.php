@@ -33,7 +33,7 @@ test('ne journalise pas un succès et ne suit pas un appareil avant la validatio
         ->assertSet('userUndertakingMultiFactorAuthentication', fn ($value): bool => filled($value));
 
     expect(auth('web')->check())->toBeFalse()
-        ->and($user->fresh()->securityEvents()->where('event', 'authentication.succeeded')->count())->toBe(0)
+        ->and($user->fresh()->securityEvents()->where('event', 'login.succeeded')->count())->toBe(0)
         ->and($user->fresh()->devices()->count())->toBe(0);
 });
 
@@ -52,8 +52,8 @@ test('journalise un échec MFA sur le compte concerné sans authentifier ni enre
         ->assertHasErrors();
 
     expect(auth('web')->check())->toBeFalse()
-        ->and($user->fresh()->securityEvents()->where('event', 'mfa.failed')->count())->toBe(1)
-        ->and($user->fresh()->securityEvents()->where('event', 'authentication.succeeded')->count())->toBe(0)
+        ->and($user->fresh()->securityEvents()->where('event', 'mfa.challenge.failed')->count())->toBe(1)
+        ->and($user->fresh()->securityEvents()->where('event', 'login.succeeded')->count())->toBe(0)
         ->and($user->fresh()->devices()->count())->toBe(0);
 });
 
@@ -74,8 +74,9 @@ test('journalise le succès uniquement après validation du code MFA', function 
         ->assertHasNoErrors();
 
     expect(auth('web')->check())->toBeTrue()
-        ->and($user->fresh()->securityEvents()->where('event', 'authentication.succeeded')->count())->toBe(1)
-        ->and($user->fresh()->securityEvents()->where('event', 'mfa.failed')->count())->toBe(0);
+        ->and($user->fresh()->securityEvents()->where('event', 'login.succeeded')->count())->toBe(1)
+        ->and($user->fresh()->securityEvents()->where('event', 'mfa.challenge.succeeded')->count())->toBe(1)
+        ->and($user->fresh()->securityEvents()->where('event', 'mfa.challenge.failed')->count())->toBe(0);
 
     $this->get('/admin')->assertOk();
 
