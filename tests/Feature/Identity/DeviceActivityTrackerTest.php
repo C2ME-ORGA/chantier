@@ -2,8 +2,8 @@
 
 use App\Domains\Identity\Services\DeviceActivityTracker;
 use App\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 
 test('crée et approuve un appareil avec un UUID applicatif lorsque le cookie est absent', function () {
