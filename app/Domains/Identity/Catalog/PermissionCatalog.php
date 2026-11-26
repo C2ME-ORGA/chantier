@@ -19,7 +19,8 @@ final class PermissionCatalog
     {
         return [
             'identity.admin_panel.access' => ['SA', 'DIR', 'ADM', 'CT', 'CC', 'RA', 'GAF'],
-            // CHAN-45: sensitive permissions intentionally have no default role assignment.\n            'identity.security_events.view' => [],
+            // CHAN-45: sensitive permissions intentionally have no default role assignment.
+            'identity.security_events.view' => [],
             'identity.devices.manage' => [],
 
             'clients.prospects.view' => ['DIR', 'ADM'],
