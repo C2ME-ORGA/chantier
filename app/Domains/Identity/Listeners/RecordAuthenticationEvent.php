@@ -4,6 +4,7 @@ namespace App\Domains\Identity\Listeners;
 
 use App\Domains\Identity\Actions\RecordSecurityEvent;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -79,7 +80,8 @@ final class RecordAuthenticationEvent
 
     private function isFilamentRequest(): bool
     {
-        return Request::is('admin', 'admin/*')
+        return Filament::getCurrentPanel()?->getId() === 'admin'
+            || Request::is('admin', 'admin/*')
             || Request::routeIs('filament.*');
     }
 }
