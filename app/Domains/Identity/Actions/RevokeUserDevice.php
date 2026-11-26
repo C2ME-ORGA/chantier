@@ -54,15 +54,20 @@ final class RevokeUserDevice
                     ->delete();
             }
 
+            $owner = $device->user()->firstOrFail();
+
             $this->recordSecurityEvent->handle(
                 'device.revoked',
                 'web',
-                $actor,
+                $owner,
                 $device,
-                ['source' => 'user_device_management'],
+                [
+                    'source' => 'user_device_management',
+                    'actor_id' => (int) $actor->getKey(),
+                ],
             );
 
-            $actor->notify(new DeviceRevokedNotification($device));
+            $owner->notify(new DeviceRevokedNotification($device));
 
             if ($currentSessionMatches) {
                 Auth::guard('web')->logout();
