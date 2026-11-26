@@ -49,8 +49,9 @@ final class RevokeUserDevice
 
             PersonalAccessToken::query()
                 ->where('device_id', $device->getKey())
-                ->get()
-                ->each(static fn (PersonalAccessToken $token) => $token->delete());
+                ->chunkById(100, static function ($tokens): void {
+                    $tokens->each(static fn (PersonalAccessToken $token) => $token->delete());
+                });
 
             if (config('session.driver') === 'database') {
                 DB::connection(config('session.connection'))
