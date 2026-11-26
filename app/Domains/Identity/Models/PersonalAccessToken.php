@@ -2,6 +2,7 @@
 
 namespace App\Domains\Identity\Models;
 
+use App\Domains\Identity\Actions\RecordSecurityEvent;
 use App\Domains\Identity\Support\DeviceCookie;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,6 +39,44 @@ class PersonalAccessToken extends SanctumPersonalAccessToken
             if ($device !== null) {
                 $token->device_id = $device->getKey();
             }
+        });
+
+        static::created(function (self $token): void {
+            $user = $token->tokenable;
+
+            if (! $user instanceof User) {
+                return;
+            }
+
+            app(RecordSecurityEvent::class)->handle(
+                'token.created',
+                'api',
+                $user,
+                $token->device,
+                [
+                    'source' => 'sanctum',
+                    'method' => 'personal_access_token',
+                ],
+            );
+        });
+
+        static::deleted(function (self $token): void {
+            $user = $token->tokenable;
+
+            if (! $user instanceof User) {
+                return;
+            }
+
+            app(RecordSecurityEvent::class)->handle(
+                'token.revoked',
+                'api',
+                $user,
+                $token->device,
+                [
+                    'source' => 'sanctum',
+                    'method' => 'personal_access_token',
+                ],
+            );
         });
     }
 
