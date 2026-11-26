@@ -72,9 +72,17 @@ class SecurityEventsPage extends Page implements HasTable
                         DatePicker::make('from')->label('Du'),
                         DatePicker::make('until')->label('Au'),
                     ])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '>=', $date))
-                        ->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '<=', $date))),
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (is_string($data['from'] ?? null)) {
+                            $query->whereDate('occurred_at', '>=', $data['from']);
+                        }
+
+                        if (is_string($data['until'] ?? null)) {
+                            $query->whereDate('occurred_at', '<=', $data['until']);
+                        }
+
+                        return $query;
+                    }),
             ])
             ->defaultSort('occurred_at', 'desc')
             ->paginated([10, 25, 50, 100]);
