@@ -13,6 +13,11 @@ use Illuminate\Support\Str;
 
 final class DeviceActivityTracker
 {
+    /**
+     * @deprecated Use DeviceCookie::NAME.
+     */
+    public const COOKIE_NAME = DeviceCookie::NAME;
+
     public function __construct(
         private readonly RegisterUserDevice $registerUserDevice,
         private readonly RecordSecurityEvent $recordSecurityEvent,
