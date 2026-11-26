@@ -6,9 +6,14 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * Append-only security audit record.
+ *
+ * Updates and deletes through Eloquent are rejected. Direct SQL and bulk query
+ * operations bypass model events and must be restricted by database privileges
+ * or database-specific controls where a stronger guarantee is required.
  *
  * @property int $id
  * @property int|null $user_id
@@ -37,6 +42,17 @@ class UserSecurityEvent extends Model
         'context',
         'occurred_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(static function (): never {
+            throw new LogicException('Les événements de sécurité ne peuvent pas être modifiés.');
+        });
+
+        static::deleting(static function (): never {
+            throw new LogicException('Les événements de sécurité ne peuvent pas être supprimés.');
+        });
+    }
 
     /**
      * Get the user associated with this event, when identifiable.
