@@ -5,6 +5,7 @@ namespace App\Domains\Identity\Services;
 use App\Domains\Identity\Actions\RecordSecurityEvent;
 use App\Domains\Identity\Actions\RegisterUserDevice;
 use App\Domains\Identity\Models\UserDevice;
+use App\Domains\Identity\Support\DeviceCookie;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -12,8 +13,6 @@ use Illuminate\Support\Str;
 
 final class DeviceActivityTracker
 {
-    public const COOKIE_NAME = 'c2me_device_uuid';
-
     public function __construct(
         private readonly RegisterUserDevice $registerUserDevice,
         private readonly RecordSecurityEvent $recordSecurityEvent,
@@ -21,7 +20,7 @@ final class DeviceActivityTracker
 
     public function track(Request $request, User $user): void
     {
-        $uuid = $request->cookie(self::COOKIE_NAME);
+        $uuid = $request->cookie(DeviceCookie::NAME);
         $isNewIdentifier = ! is_string($uuid) || ! Str::isUuid($uuid);
 
         if (! $isNewIdentifier) {
