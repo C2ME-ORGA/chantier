@@ -54,17 +54,11 @@ class SecurityEventsPage extends Page implements HasTable
                     'filament' => 'Filament',
                 ]),
                 SelectFilter::make('event')->label('Événement')->options([
-                    'login.succeeded' => 'Connexion réussie',
-                    'login.failed' => 'Échec de connexion',
-                    'logout.succeeded' => 'Déconnexion',
-                    'mfa.challenge.succeeded' => 'MFA validé',
-                    'mfa.challenge.failed' => 'Échec MFA',
+                    'authentication.succeeded' => 'Connexion réussie',
+                    'authentication.failed' => 'Échec de connexion',
+                    'mfa.failed' => 'Échec MFA',
                     'device.registered' => 'Appareil enregistré',
-                    'device.trusted' => 'Appareil approuvé',
                     'device.revoked' => 'Appareil révoqué',
-                    'token.created' => 'Token créé',
-                    'token.revoked' => 'Token révoqué',
-                    'session.revoked' => 'Session révoquée',
                 ]),
                 Filter::make('period')
                     ->label('Période')
