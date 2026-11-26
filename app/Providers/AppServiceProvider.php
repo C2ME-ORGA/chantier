@@ -2,18 +2,11 @@
 
 namespace App\Providers;
 
-use App\Domains\Identity\Listeners\RecordAuthenticationEvent;
-use App\Domains\Identity\Models\PersonalAccessToken;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Events\Failed;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,23 +23,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
-
-        Event::listen(
-            Login::class,
-            [RecordAuthenticationEvent::class, 'login'],
-        );
-
-        Event::listen(
-            Failed::class,
-            [RecordAuthenticationEvent::class, 'failed'],
-        );
-
-        Event::listen(
-            Logout::class,
-            [RecordAuthenticationEvent::class, 'logout'],
-        );
-
         $this->configureDefaults();
     }
 
