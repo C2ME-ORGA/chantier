@@ -3,6 +3,7 @@
 namespace App\Domains\Identity\Actions;
 
 use App\Domains\Identity\Models\UserDevice;
+use App\Domains\Identity\Notifications\DeviceRevokedNotification;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
@@ -60,6 +61,8 @@ final class RevokeUserDevice
                 $device,
                 ['source' => 'user_device_management'],
             );
+
+            $actor->notify(new DeviceRevokedNotification($device));
 
             if ($currentSessionMatches) {
                 Auth::guard('web')->logout();
