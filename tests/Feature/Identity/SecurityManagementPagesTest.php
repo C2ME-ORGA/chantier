@@ -8,6 +8,7 @@ use App\Filament\Pages\MySecurityEventsPage;
 use App\Filament\Pages\SecurityEventsPage;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 
@@ -67,6 +68,7 @@ it('limits the personal security history query to the authenticated user', funct
 
 it('protects global security pages with their dedicated permissions', function (): void {
     $user = User::factory()->create();
+    Auth::login($user);
 
     expect(SecurityEventsPage::canAccess())->toBeFalse()
         ->and(DeviceManagementPage::canAccess())->toBeFalse();
