@@ -6,6 +6,7 @@ use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class PurgeSecurityEvents extends Command
 {
@@ -60,7 +61,9 @@ final class PurgeSecurityEvents extends Command
      * Bulk deletion deliberately bypasses the append-only Eloquent model hooks.
      * Foreign keys preserve surviving event rows by nulling their device link.
      *
-     * @param  Builder<UserSecurityEvent|UserDevice>  $query
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
      */
     private function deleteInChunks(Builder $query, int $chunkSize): int
     {
