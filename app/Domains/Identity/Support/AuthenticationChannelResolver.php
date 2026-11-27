@@ -2,6 +2,7 @@
 
 namespace App\Domains\Identity\Support;
 
+use App\Domains\Identity\Catalog\SecurityEventChannel;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Request;
 
@@ -10,14 +11,14 @@ final class AuthenticationChannelResolver
     public function resolve(string $guard): string
     {
         if ($this->isFilamentRequest()) {
-            return 'filament';
+            return SecurityEventChannel::FILAMENT;
         }
 
         if (in_array($guard, ['sanctum', 'api'], true) || Request::is('api/*')) {
-            return 'api';
+            return SecurityEventChannel::API;
         }
 
-        return 'web';
+        return SecurityEventChannel::WEB;
     }
 
     private function isFilamentRequest(): bool
