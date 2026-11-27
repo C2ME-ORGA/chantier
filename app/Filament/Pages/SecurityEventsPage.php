@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domains\Identity\Catalog\SecurityEventCatalog;
+use App\Domains\Identity\Catalog\SecurityEventChannel;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
@@ -21,11 +22,11 @@ class SecurityEventsPage extends Page implements HasTable
 
     protected string $view = 'filament.pages.identity.table-page';
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string|\\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $navigationLabel = 'Journal de sécurité global';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Administration sécurité';
+    protected static string|\\UnitEnum|null $navigationGroup = 'Administration sécurité';
 
     protected static ?int $navigationSort = 1;
 
@@ -53,11 +54,7 @@ class SecurityEventsPage extends Page implements HasTable
             ->filters([
                 SelectFilter::make('user_id')->label('Utilisateur')->relationship('user', 'name')->searchable()->preload(),
                 SelectFilter::make('user_device_id')->label('Appareil')->relationship('device', 'name')->searchable()->preload(),
-                SelectFilter::make('channel')->label('Canal')->options([
-                    'web' => 'Web',
-                    'api' => 'API',
-                    'filament' => 'Filament',
-                ]),
+                SelectFilter::make('channel')->label('Canal')->options(SecurityEventChannel::options()),
                 SelectFilter::make('event')->label('Événement')->options(SecurityEventCatalog::options()),
                 Filter::make('period')
                     ->label('Période')
