@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 beforeEach(function (): void {
     Carbon::setTestNow(Carbon::parse('2026-11-27 12:00:00'));
@@ -118,7 +119,7 @@ test('empêche de modifier les métadonnées après la première préservation',
     expect(fn () => $preserved->forceFill([
         'preserved_at' => now()->addDay(),
         'preservation_reason' => 'Motif remplacé',
-    ])->save())->toThrow(\LogicException::class);
+    ])->save())->toThrow(LogicException::class);
 
     $fresh = $preserved->fresh();
 
