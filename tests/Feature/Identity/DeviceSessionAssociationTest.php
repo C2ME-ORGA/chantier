@@ -31,7 +31,7 @@ test('persists the device association after the database session has been saved'
         'session_id' => $sessionId,
     ]);
 
-    $event = new RequestHandled($request, new Response());
+    $event = new RequestHandled($request, new Response);
     app(AssociateDeviceWithSession::class)->handle($event);
 
     expect(DB::table(config('session.table', 'sessions'))
@@ -49,7 +49,7 @@ test('does not attempt database association when the session driver is not datab
         'session_id' => (string) Str::uuid(),
     ]);
 
-    $event = new RequestHandled($request, new Response());
+    $event = new RequestHandled($request, new Response);
 
     expect(fn () => app(AssociateDeviceWithSession::class)->handle($event))
         ->not->toThrow(Throwable::class);
