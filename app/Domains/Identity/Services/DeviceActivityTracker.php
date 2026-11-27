@@ -5,6 +5,7 @@ namespace App\Domains\Identity\Services;
 use App\Domains\Identity\Actions\RecordSecurityEvent;
 use App\Domains\Identity\Actions\RegisterUserDevice;
 use App\Domains\Identity\Models\UserDevice;
+use App\Domains\Identity\Notifications\DeviceRegisteredNotification;
 use App\Domains\Identity\Support\DeviceCookie;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -74,6 +75,8 @@ final class DeviceActivityTracker
                 $result['device'],
                 ['source' => 'authenticated_panel'],
             );
+
+            $user->notify(new DeviceRegisteredNotification($result['device']));
         }
 
         return $result['device'];
