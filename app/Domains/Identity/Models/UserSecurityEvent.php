@@ -54,7 +54,19 @@ class UserSecurityEvent extends Model
                 throw new LogicException('Les données d’un événement de sécurité ne peuvent pas être modifiées.');
             }
 
-            if ($event->preserved_at === null || blank($event->preservation_reason)) {
+            if (
+                $event->getOriginal('preserved_at') !== null
+                || $event->getOriginal('preservation_reason') !== null
+            ) {
+                throw new LogicException('Les métadonnées de préservation ne peuvent pas être modifiées après leur définition.');
+            }
+
+            if (
+                ! $event->isDirty('preserved_at')
+                || ! $event->isDirty('preservation_reason')
+                || $event->preserved_at === null
+                || blank($event->preservation_reason)
+            ) {
                 throw new LogicException('La préservation d’un événement exige une date et un motif.');
             }
         });
