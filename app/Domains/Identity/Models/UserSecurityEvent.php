@@ -11,9 +11,8 @@ use LogicException;
 /**
  * Append-only security audit record.
  *
- * Updates and deletes through Eloquent are rejected. Direct SQL and bulk query
- * operations bypass model events and must be restricted by database privileges
- * or database-specific controls where a stronger guarantee is required.
+ * Only preservation metadata may be added after creation. Bulk maintenance
+ * deletion is reserved for the explicit retention command.
  *
  * @property int $id
  * @property int|null $user_id
@@ -24,6 +23,8 @@ use LogicException;
  * @property string|null $user_agent
  * @property array<string, scalar|null>|null $context
  * @property Carbon $occurred_at
+ * @property Carbon|null $preserved_at
+ * @property string|null $preservation_reason
  * @property Carbon $created_at
  */
 class UserSecurityEvent extends Model
@@ -45,12 +46,33 @@ class UserSecurityEvent extends Model
 
     protected static function booted(): void
     {
-        static::updating(static function (): never {
-            throw new LogicException('Les événements de sécurité ne peuvent pas être modifiés.');
+        static::updating(static function (UserSecurityEvent $event): void {
+            $allowed = ['preserved_at', 'preservation_reason'];
+            $dirty = array_keys($event->getDirty());
+
+            if (array_diff($dirty, $allowed) !== []) {
+                throw new LogicException('Les données d’un événement de sécurité ne peuvent pas être modifiées.');
+            }
+
+            if (
+                $event->getOriginal('preserved_at') !== null
+                || $event->getOriginal('preservation_reason') !== null
+            ) {
+                throw new LogicException('Les métadonnées de préservation ne peuvent pas être modifiées après leur définition.');
+            }
+
+            if (
+                ! $event->isDirty('preserved_at')
+                || ! $event->isDirty('preservation_reason')
+                || $event->preserved_at === null
+                || blank($event->preservation_reason)
+            ) {
+                throw new LogicException('La préservation d’un événement exige une date et un motif.');
+            }
         });
 
         static::deleting(static function (): never {
-            throw new LogicException('Les événements de sécurité ne peuvent pas être supprimés.');
+            throw new LogicException('Les événements de sécurité ne peuvent pas être supprimés hors purge contrôlée.');
         });
     }
 
@@ -84,6 +106,7 @@ class UserSecurityEvent extends Model
         return [
             'context' => 'array',
             'occurred_at' => 'immutable_datetime',
+            'preserved_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
         ];
     }
