@@ -1,6 +1,8 @@
 <?php
 
-use App\\Http\\Middleware\\TrackAuthenticatedDevice;
+use App\\Domains\\Identity\\Listeners\\AssociateDeviceWithSession;
+use App\\Models\\User;
+use Illuminate\\Foundation\\Http\\Events\\RequestHandled;
 use Illuminate\\Http\\Request;
 use Illuminate\\Support\\Facades\\DB;
 use Illuminate\\Support\\Str;
@@ -9,7 +11,7 @@ use Symfony\\Component\\HttpFoundation\\Response;
 test('persists the device association after the database session has been saved', function (): void {
     config(['session.driver' => 'database', 'session.connection' => null]);
 
-    $user = App\\Models\\User::factory()->create();
+    $user = User::factory()->create();
     $device = $user->devices()->create(['uuid' => (string) Str::uuid()]);
     $sessionId = (string) Str::uuid();
 
@@ -29,7 +31,8 @@ test('persists the device association after the database session has been saved'
         'session_id' => $sessionId,
     ]);
 
-    app(TrackAuthenticatedDevice::class)->terminate($request, new Response());
+    $event = new RequestHandled(app(\\Illuminate\\Contracts\\Http\\Kernel::class), $request, new Response());
+    app(AssociateDeviceWithSession::class)->handle($event);
 
     expect(DB::table(config('session.table', 'sessions'))
         ->where('id', $sessionId)
@@ -46,6 +49,8 @@ test('does not attempt database association when the session driver is not datab
         'session_id' => (string) Str::uuid(),
     ]);
 
-    expect(fn () => app(TrackAuthenticatedDevice::class)->terminate($request, new Response()))
+    $event = new RequestHandled(app(\\Illuminate\\Contracts\\Http\\Kernel::class), $request, new Response());
+
+    expect(fn () => app(AssociateDeviceWithSession::class)->handle($event))
         ->not->toThrow(Throwable::class);
 });

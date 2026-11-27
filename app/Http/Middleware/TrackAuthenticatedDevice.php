@@ -77,26 +77,4 @@ final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEn
             return $next($request);
         });
     }
-
-    /**
-     * Persist the device association after StartSession has saved the session row.
-     */
-    public function terminate(Request $request, Response $response): void
-    {
-        $association = $request->attributes->get(self::SESSION_DEVICE_ATTRIBUTE);
-
-        if (
-            ! is_array($association)
-            || config('session.driver') !== 'database'
-            || ! isset($association['device_id'], $association['user_id'], $association['session_id'])
-        ) {
-            return;
-        }
-
-        DB::connection(config('session.connection'))
-            ->table(config('session.table', 'sessions'))
-            ->where('id', $association['session_id'])
-            ->where('user_id', $association['user_id'])
-            ->update(['device_id' => $association['device_id']]);
-    }
 }
