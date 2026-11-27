@@ -3,6 +3,7 @@
 namespace App\Domains\Identity\Actions;
 
 use App\Domains\Identity\Models\UserSecurityEvent;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class PreserveSecurityEvent
@@ -17,15 +18,22 @@ final class PreserveSecurityEvent
             ]);
         }
 
-        if ($event->preserved_at !== null) {
-            return $event;
-        }
+        return DB::transaction(function () use ($event, $reason): UserSecurityEvent {
+            $lockedEvent = UserSecurityEvent::query()
+                ->whereKey($event->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $event->forceFill([
-            'preserved_at' => now(),
-            'preservation_reason' => $reason,
-        ])->save();
+            if ($lockedEvent->preserved_at !== null) {
+                return $lockedEvent;
+            }
 
-        return $event->refresh();
+            $lockedEvent->forceFill([
+                'preserved_at' => now(),
+                'preservation_reason' => $reason,
+            ])->save();
+
+            return $lockedEvent->refresh();
+        });
     }
 }
