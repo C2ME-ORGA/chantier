@@ -71,6 +71,13 @@ it('rejects a previously authenticated browser session after its device is revok
         ->get('/admin')
         ->assertRedirect('/admin/login');
 
-    expect(DB::table(config('session.table', 'sessions'))
-        ->where('id', $sessionId)->exists())->toBeFalse();
+    // Laravel may persist a new anonymous session row while handling the
+    // deleted session cookie. The security requirement is that the replayed
+    // session cannot restore the user or the revoked device association.
+    $replayedSession = DB::table(config('session.table', 'sessions'))
+        ->where('id', $sessionId)
+        ->first();
+
+    expect($replayedSession?->user_id)->toBeNull()
+        ->and($replayedSession?->device_id)->toBeNull();
 });
