@@ -1,7 +1,7 @@
 <?php
 
-use App\Domains\Identity\Services\DeviceActivityTracker;
 use App\Domains\Identity\Notifications\DeviceRegisteredNotification;
+use App\Domains\Identity\Services\DeviceActivityTracker;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
