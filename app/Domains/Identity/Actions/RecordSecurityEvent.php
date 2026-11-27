@@ -2,6 +2,7 @@
 
 namespace App\Domains\Identity\Actions;
 
+use App\Domains\Identity\Catalog\SecurityEventChannel;
 use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use App\Models\User;
@@ -11,8 +12,6 @@ use Illuminate\Validation\ValidationException;
 
 final class RecordSecurityEvent
 {
-    private const CHANNELS = ['web', 'api', 'filament'];
-
     /**
      * Context keys are intentionally allow-listed to prevent credentials or
      * arbitrary request payloads from entering the security journal.
@@ -40,7 +39,7 @@ final class RecordSecurityEvent
         array $context = [],
         ?Carbon $occurredAt = null,
     ): UserSecurityEvent {
-        if (! in_array($channel, self::CHANNELS, true)) {
+        if (! in_array($channel, SecurityEventChannel::values(), true)) {
             throw ValidationException::withMessages([
                 'channel' => 'Le canal de sécurité est invalide.',
             ]);
