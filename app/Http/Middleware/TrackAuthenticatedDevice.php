@@ -10,6 +10,7 @@ use Filament\Auth\MultiFactor\Http\Middleware\EnsureMultiFactorAuthenticationIsE
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -42,7 +43,10 @@ final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEn
                             $request->session()->regenerateToken();
                         }
 
-                        return response()->json(\n                            ['message' => 'Cet appareil a été révoqué. Veuillez vous reconnecter.'],\n                            401,\n                        )->withCookie(Cookie::forget(DeviceActivityTracker::COOKIE_NAME));
+                        return response()->json(
+                            ['message' => 'Cet appareil a été révoqué. Veuillez vous reconnecter.'],
+                            401,
+                        )->withCookie(Cookie::forget(DeviceActivityTracker::COOKIE_NAME));
                     }
                 }
 
