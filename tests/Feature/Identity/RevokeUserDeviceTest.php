@@ -1,12 +1,12 @@
 <?php
 
-use App\\Domains\\Identity\\Actions\\RevokeUserDevice;
-use App\\Domains\\Identity\\Models\\UserSecurityEvent;
-use App\\Domains\\Identity\\Notifications\\DeviceRevokedNotification;
-use App\\Models\\User;
-use Illuminate\\Auth\\Access\\AuthorizationException;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\Support\\Str;
+use App\Domains\Identity\Actions\RevokeUserDevice;
+use App\Domains\Identity\Models\UserSecurityEvent;
+use App\Domains\Identity\Notifications\DeviceRevokedNotification;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use LogicException;
 
 beforeEach(function (): void {

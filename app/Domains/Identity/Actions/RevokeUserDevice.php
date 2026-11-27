@@ -1,14 +1,14 @@
 <?php
 
-namespace App\\Domains\\Identity\\Actions;
+namespace App\Domains\Identity\Actions;
 
-use App\\Domains\\Identity\\Models\\PersonalAccessToken;
-use App\\Domains\\Identity\\Models\\UserDevice;
-use App\\Domains\\Identity\\Notifications\\DeviceRevokedNotification;
-use App\\Models\\User;
-use Illuminate\\Auth\\Access\\AuthorizationException;
-use Illuminate\\Support\\Facades\\Auth;
-use Illuminate\\Support\\Facades\\DB;
+use App\Domains\Identity\Models\PersonalAccessToken;
+use App\Domains\Identity\Models\UserDevice;
+use App\Domains\Identity\Notifications\DeviceRevokedNotification;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use LogicException;
 
 final class RevokeUserDevice

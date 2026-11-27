@@ -46,30 +46,18 @@ final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEn
                     }
                 }
 
-                $this->deviceActivityTracker->track($request, $user);
-
-                $uuid = $request->cookie(DeviceActivityTracker::COOKIE_NAME);
+                $device = $this->deviceActivityTracker->track($request, $user);
 
                 if (
-                    is_string($uuid)
-                    && Str::isUuid($uuid)
-                    && $request->hasSession()
+                    $request->hasSession()
                     && config('session.driver') === 'database'
                 ) {
-                    $device = UserDevice::query()
-                        ->where('user_id', $user->getKey())
-                        ->where('uuid', $uuid)
-                        ->whereNull('revoked_at')
-                        ->first();
-
-                    if ($device !== null) {
-                        $request->session()->put('_identity_device_id', $device->getKey());
-                        $request->attributes->set(self::SESSION_DEVICE_ATTRIBUTE, [
-                            'device_id' => (int) $device->getKey(),
-                            'user_id' => (int) $user->getKey(),
-                            'session_id' => $request->session()->getId(),
-                        ]);
-                    }
+                    $request->session()->put('_identity_device_id', $device->getKey());
+                    $request->attributes->set(self::SESSION_DEVICE_ATTRIBUTE, [
+                        'device_id' => (int) $device->getKey(),
+                        'user_id' => (int) $user->getKey(),
+                        'session_id' => $request->session()->getId(),
+                    ]);
                 }
             }
 
