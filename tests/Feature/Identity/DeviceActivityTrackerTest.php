@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Identity\Services\DeviceActivityTracker;
+use App\Domains\Identity\Notifications\DeviceRegisteredNotification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -23,7 +24,8 @@ test('crée et approuve un appareil avec un UUID applicatif lorsque le cookie es
         ->and($device->platform)->toBe('Windows')
         ->and($device->device_type)->toBe('browser');
 
-    expect($user->securityEvents()->where('event', 'device.registered')->count())->toBe(1);
+    expect($user->securityEvents()->where('event', 'device.registered')->count())->toBe(1)
+        ->and($user->notifications()->where('type', DeviceRegisteredNotification::class)->count())->toBe(1);
 });
 
 test('réutilise le cookie valide appartenant au même utilisateur', function () {
@@ -77,7 +79,8 @@ test('ne crée pas un second événement lors du suivi d’un appareil déjà en
     app(DeviceActivityTracker::class)->track($request, $user);
 
     expect($user->devices()->count())->toBe(1)
-        ->and($user->securityEvents()->where('event', 'device.registered')->count())->toBe(0);
+        ->and($user->securityEvents()->where('event', 'device.registered')->count())->toBe(0)
+        ->and($user->notifications()->where('type', DeviceRegisteredNotification::class)->count())->toBe(0);
 });
 
 test('renouvelle le cookie lorsqu’un appareil est révoqué sans réactiver l’ancien', function () {
