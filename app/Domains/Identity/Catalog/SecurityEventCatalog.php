@@ -6,7 +6,8 @@ namespace App\Domains\Identity\Catalog;
  * Canonical event names currently emitted by the Identity domain.
  *
  * Keep this catalogue aligned with RecordAuthenticationEvent,
- * TrackedLogin, DeviceActivityTracker and RevokeUserDevice.
+ * TrackedLogin, DeviceActivityTracker, RevokeUserDevice and
+ * PersonalAccessTokenObserver.
  */
 final class SecurityEventCatalog
 {
@@ -21,6 +22,8 @@ final class SecurityEventCatalog
         'mfa.challenge.failed' => 'Échec de validation MFA',
         'device.registered' => 'Nouvel appareil enregistré',
         'device.revoked' => 'Appareil révoqué',
+        'token.created' => 'Jeton API créé',
+        'token.revoked' => 'Jeton API révoqué',
     ];
 
     /**
