@@ -108,6 +108,24 @@ test('une conservation exige un motif et reste idempotente', function (): void {
         ->and($again->preservation_reason)->toBe('Enquête INC-123');
 });
 
+test('empêche de modifier les métadonnées après la première préservation', function (): void {
+    $event = createRetentionEvent();
+
+    $preserved = app(PreserveSecurityEvent::class)->handle($event, 'Enquête INC-123');
+    $originalDate = $preserved->preserved_at;
+    $originalReason = $preserved->preservation_reason;
+
+    expect(fn () => $preserved->forceFill([
+        'preserved_at' => now()->addDay(),
+        'preservation_reason' => 'Motif remplacé',
+    ])->save())->toThrow(\\LogicException::class);
+
+    $fresh = $preserved->fresh();
+
+    expect($fresh->preserved_at->equalTo($originalDate))->toBeTrue()
+        ->and($fresh->preservation_reason)->toBe($originalReason);
+});
+
 test('refuse une taille de lot invalide', function (): void {
     $this->artisan('identity:purge-security-events', ['--chunk' => 0])
         ->assertFailed();
