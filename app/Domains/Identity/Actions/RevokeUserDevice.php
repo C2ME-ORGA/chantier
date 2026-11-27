@@ -23,7 +23,7 @@ final class RevokeUserDevice
 
         $this->assertSessionRevocationIsSupported();
 
-        return DB::transaction(function () use ($actor, $device): UserDevice {
+        [$revokedDevice, $ownerToNotify] = DB::transaction(function () use ($actor, $device): array {
             $device = UserDevice::query()->whereKey($device->getKey())->lockForUpdate()->firstOrFail();
 
             if ($device->user_id !== $actor->getKey() && ! $actor->can('identity.devices.manage')) {
@@ -31,7 +31,7 @@ final class RevokeUserDevice
             }
 
             if ($device->revoked_at !== null) {
-                return $device;
+                return [$device, null];
             }
 
             $request = request();
@@ -76,16 +76,20 @@ final class RevokeUserDevice
                 ],
             );
 
-            $owner->notify(new DeviceRevokedNotification($device));
-
             if ($currentSessionMatches) {
                 Auth::guard('web')->logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
             }
 
-            return $device->refresh();
+            return [$device->refresh(), $owner];
         });
+
+        if ($ownerToNotify instanceof User) {
+            $ownerToNotify->notify(new DeviceRevokedNotification($revokedDevice));
+        }
+
+        return $revokedDevice;
     }
 
     /**
