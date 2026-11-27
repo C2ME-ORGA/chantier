@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
+    $this->seed(RbacCatalogSeeder::class);
+
     config([
         'session.driver' => 'database',
         'session.connection' => null,
@@ -15,6 +17,8 @@ beforeEach(function (): void {
 
 it('rejects a previously authenticated browser session after its device is revoked', function (): void {
     $user = User::factory()->create();
+    $user->assignRole('ADM');
+
     $device = $user->devices()->create([
         'uuid' => (string) Str::uuid(),
         'name' => 'Chrome desktop',
