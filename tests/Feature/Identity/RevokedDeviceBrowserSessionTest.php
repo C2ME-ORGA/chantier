@@ -1,11 +1,10 @@
 <?php
 
-use App\Domains\Identity\Actions\RevokeUserDevice;
-use App\Models\User;
-use Database\Seeders\RbacCatalogSeeder;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use App\\Domains\\Identity\\Actions\\RevokeUserDevice;
+use App\\Models\\User;
+use Database\\Seeders\\RbacCatalogSeeder;
+use Illuminate\\Support\\Facades\\Auth;
+use Illuminate\\Support\\Facades\\DB;
 
 beforeEach(function (): void {
     $this->seed(RbacCatalogSeeder::class);
@@ -19,50 +18,37 @@ beforeEach(function (): void {
 it('rejects a previously authenticated browser session after its device is revoked', function (): void {
     $user = User::factory()->create();
     $user->assignRole('ADM');
+    $user->saveAppAuthenticationSecret('test-totp-secret');
 
-    $device = $user->devices()->create([
-        'uuid' => (string) Str::uuid(),
-        'name' => 'Chrome desktop',
-        'trusted_at' => now(),
-    ]);
+    // Exercise the real authenticated panel middleware and session lifecycle.
+    $this->actingAs($user, 'web')
+        ->get('/admin')
+        ->assertOk();
 
-    // Persist a real authenticated Laravel session, as a browser would retain it.
-    $session = app('session')->driver();
-    $sessionId = (string) Str::uuid();
-    $session->setId($sessionId);
-    $session->start();
+    // TrackAuthenticatedDevice creates the browser device and AssociateDeviceWithSession
+    // associates it with the persisted database session after the response is handled.
+    $session = DB::table(config('session.table', 'sessions'))
+        ->where('user_id', $user->getKey())
+        ->whereNotNull('device_id')
+        ->orderByDesc('last_activity')
+        ->first();
 
-    Auth::guard('web')->login($user);
+    expect($session)->not->toBeNull();
 
-    // The session guard regenerates the ID during authentication.
-    // Use the final ID that the browser will receive, not the pre-login ID.
-    $sessionId = $session->getId();
-    $session->save();
-
-    DB::table(config('session.table', 'sessions'))
-        ->where('id', $sessionId)
-        ->update([
-            'user_id' => $user->getKey(),
-            'device_id' => $device->getKey(),
-        ]);
-
-    expect(DB::table(config('session.table', 'sessions'))
-        ->where('id', $sessionId)
-        ->value('user_id'))->toBe($user->getKey());
+    $sessionId = $session->id;
+    $deviceId = $session->device_id;
+    $device = $user->devices()->findOrFail($deviceId);
 
     app(RevokeUserDevice::class)->handle($user, $device);
 
     expect(DB::table(config('session.table', 'sessions'))
         ->where('id', $sessionId)->exists())->toBeFalse();
 
-    // Simulate a fresh HTTP request in a separate request lifecycle.
-    // The session manager caches drivers, so discard the in-memory store as well
-    // as the guard; otherwise the test can reuse the authenticated session state
-    // even though its database row has already been deleted.
+    // Start a fresh guard and session store, then replay the exact browser cookie.
+    // The database no longer contains the session, so Laravel must treat it as a guest.
     Auth::forgetGuards();
     app('session')->forgetDrivers();
 
-    // Reuse the exact session cookie retained by the browser after revocation.
     $this->withCookie(config('session.cookie'), $sessionId)
         ->get('/admin')
         ->assertRedirect('/admin/login');
