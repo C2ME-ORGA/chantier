@@ -22,11 +22,11 @@ class SecurityEventsPage extends Page implements HasTable
 
     protected string $view = 'filament.pages.identity.table-page';
 
-    protected static string|\\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $navigationLabel = 'Journal de sécurité global';
 
-    protected static string|\\UnitEnum|null $navigationGroup = 'Administration sécurité';
+    protected static string|\UnitEnum|null $navigationGroup = 'Administration sécurité';
 
     protected static ?int $navigationSort = 1;
 
