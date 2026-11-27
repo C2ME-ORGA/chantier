@@ -118,7 +118,7 @@ test('empêche de modifier les métadonnées après la première préservation',
     expect(fn () => $preserved->forceFill([
         'preserved_at' => now()->addDay(),
         'preservation_reason' => 'Motif remplacé',
-    ])->save())->toThrow(\\LogicException::class);
+    ])->save())->toThrow(\LogicException::class);
 
     $fresh = $preserved->fresh();
 
