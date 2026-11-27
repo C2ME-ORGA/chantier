@@ -3,6 +3,7 @@
 namespace App\Domains\Identity\Listeners;
 
 use App\Domains\Identity\Actions\RecordSecurityEvent;
+use App\Domains\Identity\Catalog\SecurityEventChannel;
 use App\Domains\Identity\Support\AuthenticationChannelResolver;
 use App\Models\User;
 use Illuminate\Auth\Events\Failed;
@@ -20,7 +21,7 @@ final class RecordAuthenticationEvent
     {
         $channel = $this->channelResolver->resolve($event->guard);
 
-        if ($channel === 'filament') {
+        if ($channel === SecurityEventChannel::FILAMENT) {
             return;
         }
 
@@ -41,7 +42,7 @@ final class RecordAuthenticationEvent
     {
         $channel = $this->channelResolver->resolve($event->guard);
 
-        if ($channel === 'filament') {
+        if ($channel === SecurityEventChannel::FILAMENT) {
             return;
         }
 
