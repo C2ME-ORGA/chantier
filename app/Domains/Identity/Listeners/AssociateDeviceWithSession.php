@@ -1,9 +1,9 @@
 <?php
 
-namespace App\\Domains\\Identity\\Listeners;
+namespace App\Domains\Identity\Listeners;
 
-use Illuminate\\Foundation\\Http\\Events\\RequestHandled;
-use Illuminate\\Support\\Facades\\DB;
+use Illuminate\Foundation\Http\Events\RequestHandled;
+use Illuminate\Support\Facades\DB;
 
 final class AssociateDeviceWithSession
 {

@@ -1,18 +1,17 @@
 <?php
 
-namespace App\\Http\\Middleware;
+namespace App\Http\Middleware;
 
-use App\\Domains\\Identity\\Models\\UserDevice;
-use App\\Domains\\Identity\\Services\\DeviceActivityTracker;
-use App\\Models\\User;
+use App\Domains\Identity\Models\UserDevice;
+use App\Domains\Identity\Services\DeviceActivityTracker;
+use App\Models\User;
 use Closure;
-use Filament\\Auth\\MultiFactor\\Http\\Middleware\\EnsureMultiFactorAuthenticationIsEnabled;
-use Filament\\Facades\\Filament;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\Auth;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\Support\\Str;
-use Symfony\\Component\\HttpFoundation\\Response;
+use Filament\Auth\MultiFactor\Http\Middleware\EnsureMultiFactorAuthenticationIsEnabled;
+use Filament\Facades\Filament;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEnabled
 {
