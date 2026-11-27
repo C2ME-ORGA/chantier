@@ -23,7 +23,7 @@ final class DeviceActivityTracker
         private readonly RecordSecurityEvent $recordSecurityEvent,
     ) {}
 
-    public function track(Request $request, User $user): void
+    public function track(Request $request, User $user): UserDevice
     {
         $uuid = $request->cookie(DeviceCookie::NAME);
         $isNewIdentifier = ! is_string($uuid) || ! Str::isUuid($uuid);
@@ -75,6 +75,8 @@ final class DeviceActivityTracker
                 ['source' => 'authenticated_panel'],
             );
         }
+
+        return $result['device'];
     }
 
     private function detectPlatform(string $userAgent): ?string

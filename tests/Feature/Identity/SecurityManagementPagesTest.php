@@ -16,6 +16,7 @@ use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 
 beforeEach(function (): void {
+    config(['session.driver' => 'database', 'session.connection' => null]);
     Filament::setCurrentPanel(Filament::getPanel('admin'));
 });
 

@@ -7,9 +7,10 @@ use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use LogicException;
 
 beforeEach(function (): void {
-    config(['session.driver' => 'array']);
+    config(['session.driver' => 'database', 'session.connection' => null]);
 });
 
 test('revokes a device, its tokens and records a notification and security event', function (): void {
@@ -57,8 +58,6 @@ test('repeated revocation is idempotent and does not duplicate records', functio
 });
 
 test('deletes every database session associated with the revoked device', function (): void {
-    config(['session.driver' => 'database']);
-
     $user = User::factory()->create();
     $device = $user->devices()->create(['uuid' => (string) Str::uuid()]);
 
@@ -76,6 +75,30 @@ test('deletes every database session associated with the revoked device', functi
 
     expect(DB::table(config('session.table', 'sessions'))
         ->where('device_id', $device->getKey())->exists())->toBeFalse();
+});
+
+test('fails closed when the configured session driver cannot revoke database sessions', function (): void {
+    $user = User::factory()->create();
+    $device = $user->devices()->create(['uuid' => (string) Str::uuid()]);
+    config(['session.driver' => 'array']);
+
+    expect(fn () => app(RevokeUserDevice::class)->handle($user, $device))
+        ->toThrow(LogicException::class, 'SESSION_DRIVER=database');
+
+    expect($device->fresh()->revoked_at)->toBeNull()
+        ->and(UserSecurityEvent::query()->count())->toBe(0);
+});
+
+test('fails closed when sessions use a different database connection', function (): void {
+    $user = User::factory()->create();
+    $device = $user->devices()->create(['uuid' => (string) Str::uuid()]);
+    config(['session.connection' => 'secondary']);
+
+    expect(fn () => app(RevokeUserDevice::class)->handle($user, $device))
+        ->toThrow(LogicException::class, 'identique');
+
+    expect($device->fresh()->revoked_at)->toBeNull()
+        ->and(UserSecurityEvent::query()->count())->toBe(0);
 });
 
 test('rejects API access when the bearer token belongs to a revoked device', function (): void {
