@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Identity\Catalog\SecurityEventCatalog;
+use App\Domains\Identity\Catalog\SecurityEventChannel;
 
 it('expose les noms canoniques réellement émis par le domaine Identity', function (): void {
     expect(SecurityEventCatalog::options())->toBe([
@@ -22,4 +23,13 @@ it('traduit les événements connus et conserve les événements historiques inc
         ->and(SecurityEventCatalog::label('token.revoked'))->toBe('Jeton API révoqué')
         ->and(SecurityEventCatalog::label('authentication.succeeded'))->toBe('authentication.succeeded')
         ->and(SecurityEventCatalog::label(null))->toBe('Événement inconnu');
+});
+
+it('centralise les canaux autorisés et leurs libellés', function (): void {
+    expect(SecurityEventChannel::values())->toBe(['web', 'api', 'filament'])
+        ->and(SecurityEventChannel::options())->toBe([
+            'web' => 'Web',
+            'api' => 'API',
+            'filament' => 'Filament',
+        ]);
 });
