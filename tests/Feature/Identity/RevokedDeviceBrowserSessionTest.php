@@ -55,9 +55,14 @@ it('rejects a previously authenticated browser session after its device is revok
     expect(DB::table(config('session.table', 'sessions'))
         ->where('id', $sessionId)->exists())->toBeFalse();
 
-    // Reuse the exact session cookie retained by the browser after revocation.
+    // Simulate a fresh HTTP request in a separate request lifecycle.
+    // The session manager caches drivers, so discard the in-memory store as well
+    // as the guard; otherwise the test can reuse the authenticated session state
+    // even though its database row has already been deleted.
     Auth::forgetGuards();
+    app('session')->forgetDrivers();
 
+    // Reuse the exact session cookie retained by the browser after revocation.
     $this->withCookie(config('session.cookie'), $sessionId)
         ->get('/admin')
         ->assertRedirect('/admin/login');
