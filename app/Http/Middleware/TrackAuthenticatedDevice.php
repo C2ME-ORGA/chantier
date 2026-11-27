@@ -43,10 +43,18 @@ final class TrackAuthenticatedDevice extends EnsureMultiFactorAuthenticationIsEn
                             $request->session()->regenerateToken();
                         }
 
-                        return response()->json(
-                            ['message' => 'Cet appareil a été révoqué. Veuillez vous reconnecter.'],
-                            401,
-                        )->withCookie(Cookie::forget(DeviceActivityTracker::COOKIE_NAME));
+                        $forgetCookie = Cookie::forget(DeviceActivityTracker::COOKIE_NAME);
+
+                        if ($request->expectsJson()) {
+                            return response()->json(
+                                ['message' => 'Cet appareil a été révoqué. Veuillez vous reconnecter.'],
+                                401,
+                            )->withCookie($forgetCookie);
+                        }
+
+                        return redirect()
+                            ->guest(Filament::getCurrentPanel()->getLoginUrl())
+                            ->withCookie($forgetCookie);
                     }
                 }
 
