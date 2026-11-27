@@ -3,8 +3,11 @@
 use App\Domains\Identity\Actions\RevokeUserDevice;
 use App\Models\User;
 use Database\Seeders\RbacCatalogSeeder;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Auth\Pages\Login;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->seed(RbacCatalogSeeder::class);
@@ -18,15 +21,32 @@ beforeEach(function (): void {
 it('rejects a previously authenticated browser session after its device is revoked', function (): void {
     $user = User::factory()->create();
     $user->assignRole('ADM');
-    $user->saveAppAuthenticationSecret('test-totp-secret');
 
-    // Exercise the real authenticated panel middleware and session lifecycle.
-    $this->actingAs($user, 'web')
-        ->get('/admin')
-        ->assertOk();
+    $provider = AppAuthentication::make();
+    $secret = $provider->generateSecret();
+    $provider->saveSecret($user, $secret);
 
-    // TrackAuthenticatedDevice creates the browser device and AssociateDeviceWithSession
-    // associates it with the persisted database session after the response is handled.
+    // Authenticate through Filament's real password + MFA flow so the browser
+    // receives a genuine Laravel session containing the authenticated user.
+    $component = Livewire::test(Login::class)
+        ->fillForm([
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $component
+        ->fillForm(['app' => ['code' => $provider->getCurrentCode($user, $secret)]], 'multiFactorChallengeForm')
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    $this->assertAuthenticatedAs($user, 'web');
+
+    // The next authenticated panel request tracks the device and associates
+    // its persisted database session in the RequestHandled listener.
+    $this->get('/admin')->assertOk();
+
     $session = DB::table(config('session.table', 'sessions'))
         ->where('user_id', $user->getKey())
         ->whereNotNull('device_id')
@@ -36,8 +56,7 @@ it('rejects a previously authenticated browser session after its device is revok
     expect($session)->not->toBeNull();
 
     $sessionId = $session->id;
-    $deviceId = $session->device_id;
-    $device = $user->devices()->findOrFail($deviceId);
+    $device = $user->devices()->findOrFail($session->device_id);
 
     app(RevokeUserDevice::class)->handle($user, $device);
 
@@ -45,7 +64,6 @@ it('rejects a previously authenticated browser session after its device is revok
         ->where('id', $sessionId)->exists())->toBeFalse();
 
     // Start a fresh guard and session store, then replay the exact browser cookie.
-    // The database no longer contains the session, so Laravel must treat it as a guest.
     Auth::forgetGuards();
     app('session')->forgetDrivers();
 
