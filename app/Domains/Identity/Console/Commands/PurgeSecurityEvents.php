@@ -6,7 +6,6 @@ use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
-use InvalidArgumentException;
 
 final class PurgeSecurityEvents extends Command
 {
@@ -21,7 +20,9 @@ final class PurgeSecurityEvents extends Command
         $chunkSize = filter_var($this->option('chunk'), FILTER_VALIDATE_INT);
 
         if ($chunkSize === false || $chunkSize < 1 || $chunkSize > 10000) {
-            throw new InvalidArgumentException('L’option --chunk doit être comprise entre 1 et 10000.');
+            $this->components->error('L’option --chunk doit être comprise entre 1 et 10000.');
+
+            return self::FAILURE;
         }
 
         $cutoff = now()->subMonths(12);
