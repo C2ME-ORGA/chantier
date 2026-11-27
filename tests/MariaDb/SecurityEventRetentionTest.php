@@ -1,15 +1,14 @@
 <?php
 
-use App\Domains\Identity\Models\UserDevice;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use App\Models\User;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 test('MariaDB conserve les événements lorsque leur appareil est purgé', function (): void {
     $user = User::factory()->create();
     $device = $user->devices()->create([
-        'uuid' => (string) Illuminate\Support\Str::uuid(),
+        'uuid' => (string) Str::uuid(),
         'revoked_at' => now()->subMonths(13),
     ]);
 
@@ -26,7 +25,7 @@ test('MariaDB conserve les événements lorsque leur appareil est purgé', funct
     expect(UserSecurityEvent::query()->whereKey($event->getKey())->value('user_device_id'))->toBeNull();
 });
 
-test('MariaDB accepte la migration des métadonnées de conservation', function (): void {
+test('MariaDB persiste les métadonnées de conservation', function (): void {
     $columns = DB::getSchemaBuilder()->getColumnListing('user_security_events');
 
     expect($columns)->toContain('preserved_at', 'preservation_reason');
@@ -34,7 +33,7 @@ test('MariaDB accepte la migration des métadonnées de conservation', function 
     $event = UserSecurityEvent::query()->create([
         'event' => 'login.failed',
         'channel' => 'web',
-        'occurred_at' => Carbon::now()->subYears(2),
+        'occurred_at' => now()->subYears(2),
     ]);
 
     DB::table('user_security_events')->where('id', $event->getKey())->update([
