@@ -28,6 +28,10 @@ it('rejects a previously authenticated browser session after its device is revok
     $session->start();
 
     Auth::guard('web')->login($user);
+
+    // The session guard regenerates the ID during authentication.
+    // Use the final ID that the browser will receive, not the pre-login ID.
+    $sessionId = $session->getId();
     $session->save();
 
     DB::table(config('session.table', 'sessions'))
