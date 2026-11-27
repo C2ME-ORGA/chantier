@@ -1,10 +1,10 @@
 <?php
 
-use App\\Domains\\Identity\\Actions\\RevokeUserDevice;
-use App\\Models\\User;
-use Database\\Seeders\\RbacCatalogSeeder;
-use Illuminate\\Support\\Facades\\Auth;
-use Illuminate\\Support\\Facades\\DB;
+use App\Domains\Identity\Actions\RevokeUserDevice;
+use App\Models\User;
+use Database\Seeders\RbacCatalogSeeder;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     $this->seed(RbacCatalogSeeder::class);
