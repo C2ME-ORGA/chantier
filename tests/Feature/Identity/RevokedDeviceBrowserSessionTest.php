@@ -32,7 +32,10 @@ it('rejects a previously authenticated browser session after its device is revok
 
     DB::table(config('session.table', 'sessions'))
         ->where('id', $sessionId)
-        ->update(['device_id' => $device->getKey()]);
+        ->update([
+            'user_id' => $user->getKey(),
+            'device_id' => $device->getKey(),
+        ]);
 
     expect(DB::table(config('session.table', 'sessions'))
         ->where('id', $sessionId)
