@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domains\Identity\Catalog\SecurityEventCatalog;
 use App\Domains\Identity\Models\UserSecurityEvent;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
@@ -40,7 +41,11 @@ class SecurityEventsPage extends Page implements HasTable
             ->columns([
                 TextColumn::make('occurred_at')->label('Date')->dateTime('d/m/Y H:i:s')->sortable(),
                 TextColumn::make('user.name')->label('Utilisateur')->searchable()->placeholder('Non identifié'),
-                TextColumn::make('event')->label('Événement')->searchable()->badge(),
+                TextColumn::make('event')
+                    ->label('Événement')
+                    ->formatStateUsing(fn (?string $state): string => SecurityEventCatalog::label($state))
+                    ->searchable()
+                    ->badge(),
                 TextColumn::make('channel')->label('Canal')->badge(),
                 TextColumn::make('device.name')->label('Appareil')->placeholder('Non associé'),
                 TextColumn::make('ip_address')->label('Adresse IP')->toggleable(),
@@ -53,13 +58,7 @@ class SecurityEventsPage extends Page implements HasTable
                     'api' => 'API',
                     'filament' => 'Filament',
                 ]),
-                SelectFilter::make('event')->label('Événement')->options([
-                    'authentication.succeeded' => 'Connexion réussie',
-                    'authentication.failed' => 'Échec de connexion',
-                    'mfa.failed' => 'Échec MFA',
-                    'device.registered' => 'Appareil enregistré',
-                    'device.revoked' => 'Appareil révoqué',
-                ]),
+                SelectFilter::make('event')->label('Événement')->options(SecurityEventCatalog::options()),
                 Filter::make('period')
                     ->label('Période')
                     ->schema([
