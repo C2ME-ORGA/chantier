@@ -3,6 +3,7 @@
 namespace App\Filament\Auth;
 
 use App\Domains\Identity\Actions\RecordSecurityEvent;
+use App\Domains\Identity\Catalog\SecurityEventChannel;
 use App\Models\User;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Auth\Pages\Login;
@@ -25,7 +26,7 @@ final class TrackedLogin extends Login
         } catch (ValidationException $exception) {
             app(RecordSecurityEvent::class)->handle(
                 $isMultiFactorChallenge ? 'mfa.challenge.failed' : 'login.failed',
-                'filament',
+                SecurityEventChannel::FILAMENT,
                 $challengeUser instanceof User ? $challengeUser : null,
                 context: [
                     'method' => $isMultiFactorChallenge ? 'totp' : 'password',
@@ -43,7 +44,7 @@ final class TrackedLogin extends Login
             if ($isMultiFactorChallenge) {
                 app(RecordSecurityEvent::class)->handle(
                     'mfa.challenge.succeeded',
-                    'filament',
+                    SecurityEventChannel::FILAMENT,
                     $authenticatedUser,
                     context: [
                         'method' => 'totp',
@@ -54,7 +55,7 @@ final class TrackedLogin extends Login
 
             app(RecordSecurityEvent::class)->handle(
                 'login.succeeded',
-                'filament',
+                SecurityEventChannel::FILAMENT,
                 $authenticatedUser,
                 context: ['source' => 'filament_login'],
             );

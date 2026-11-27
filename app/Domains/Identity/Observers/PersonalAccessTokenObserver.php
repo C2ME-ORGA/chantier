@@ -3,6 +3,7 @@
 namespace App\Domains\Identity\Observers;
 
 use App\Domains\Identity\Actions\RecordSecurityEvent;
+use App\Domains\Identity\Catalog\SecurityEventChannel;
 use App\Domains\Identity\Models\PersonalAccessToken;
 use App\Models\User;
 
@@ -30,7 +31,7 @@ final class PersonalAccessTokenObserver
 
         $this->recordSecurityEvent->handle(
             event: $event,
-            channel: 'api',
+            channel: SecurityEventChannel::API,
             user: $user,
             device: $token->device,
             context: [
